@@ -1,0 +1,68 @@
+{
+  "name": "claudecodetricks",
+  "owner": {
+    "name": "x85446",
+    "email": "x85446@users.noreply.github.com",
+    "url": "https://github.com/x85446"
+  },
+  "metadata": {
+    "description": "Claude Code productivity plugins and automation tools",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "session-hooks",
+      "source": "./plugins/session-hooks",
+      "description": "Voice announcements, AI-powered session logging, and auto-commit with Conventional Commits",
+      "version": "1.0.0",
+      "author": {
+        "name": "x85446",
+        "email": "x85446@users.noreply.github.com",
+        "url": "https://github.com/x85446"
+      },
+      "homepage": "https://github.com/x85446/claudecodetricks",
+      "repository": "https://github.com/x85446/claudecodetricks",
+      "license": "MIT",
+      "keywords": [
+        "hooks",
+        "voice",
+        "logging",
+        "git",
+        "automation"
+      ],
+      "category": "productivity",
+      "strict": false,
+      "hooks": [
+        "./hooks/voice-announcer",
+        "./hooks/session-logger",
+        "./hooks/git-committer"
+      ]
+    },
+    {
+      "name": "test-suite",
+      "source": "./plugins/test-suite",
+      "description": "Expert test engineer agent for comprehensive test suite design and implementation",
+      "version": "1.0.0",
+      "author": {
+        "name": "x85446",
+        "email": "x85446@users.noreply.github.com",
+        "url": "https://github.com/x85446"
+      },
+      "homepage": "https://github.com/x85446/claudecodetricks",
+      "repository": "https://github.com/x85446/claudecodetricks",
+      "license": "MIT",
+      "keywords": [
+        "testing",
+        "tdd",
+        "quality",
+        "coverage",
+        "agent"
+      ],
+      "category": "testing",
+      "strict": false,
+      "agents": [
+        "./agents/test-expert.md"
+      ]
+    }
+  ]
+}
