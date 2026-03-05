@@ -143,7 +143,25 @@ Content rules:
 
 If your skill needs detailed reference docs, examples, or scripts, add them alongside SKILL.md in the same directory. Reference them from SKILL.md so Claude knows they exist. Supporting files are NOT loaded automatically -- they load only when Claude needs them. See [reference.md](reference.md) for the full pattern.
 
-**Step 5: Document in CLAUDE.md**
+**Step 5: Deploy & Backup**
+
+After writing the skill content and any supporting files, prompt the user for two locations using AskUserQuestion:
+
+1. **Deploy location** -- Where the skill will be installed for Claude Code to use. This is a project's `.claude/skills/` directory. Ask the user which project to deploy to. There is no default -- the user must specify.
+2. **Backup location** -- A version-controlled copy of the skill for safekeeping. Default: `~/workspace/x85446/claudecodetricks/skills/[skill-name]/`
+
+Use AskUserQuestion with two questions:
+- "Where should this skill be deployed?" (header: "Deploy to", options for common project paths the user has used before, or "Other" for custom input)
+- "Where should the backup copy be saved?" (header: "Backup to", default option: `~/workspace/x85446/claudecodetricks/skills/[skill-name]/`)
+
+Then:
+1. Write the skill files (SKILL.md + any supporting files) to the **deploy location** first: `[deploy-path]/.claude/skills/[skill-name]/`
+2. Copy the same files to the **backup location**: `[backup-path]/[skill-name]/`
+3. Confirm both writes succeeded
+
+If the user declines a location (skips deploy or backup), respect that and only write to the location(s) they confirmed.
+
+**Step 6: Document in CLAUDE.md**
 
 Your project's `CLAUDE.md` file is where Claude loads project-wide instructions every conversation. After creating a skill, add a brief entry so you (and your team) know what's available:
 
@@ -154,7 +172,7 @@ Your project's `CLAUDE.md` file is where Claude loads project-wide instructions 
 
 This isn't required for the skill to work, but it keeps your project organized and helps Claude understand how skills fit into your broader workflow.
 
-**Step 6: Test**
+**Step 7: Test**
 
 Test both invocation methods:
 

@@ -1,0 +1,4 @@
+# md-tester skill configuration
+#
+# test_docs_path: directory containing test spec .md files (relative to project root)
+test_docs_path: docs/tests/
