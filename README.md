@@ -1,8 +1,27 @@
 # Claude Code Tricks
 
-A Claude Code marketplace providing session hooks for voice announcements, AI-powered logging, and automatic git commits.
+A Claude Code marketplace providing:
+- **Agent Teams**: Pre-configured multi-agent teams for product development
+- **Session Hooks**: Voice announcements, AI-powered logging, and automatic git commits
 
 ## Plugins
+
+### new-product-team
+
+A 41-agent product development team for greenfield projects. Includes managers and specialists across 8 domains:
+
+| Domain | Agents |
+|--------|--------|
+| Architecture | Manager, Data Architect, Infrastructure Architect, Security Architect, Solutions Architect |
+| Backend | Manager, API Engineer, Database Engineer, Integration Engineer, Performance Engineer, Security Engineer |
+| Frontend | Manager, React Developer, UI Engineer, Accessibility Specialist, Performance Engineer, Testing Specialist |
+| Marketing | Manager, Brand Strategist, Content Specialist, SEO Specialist, Social Media Specialist, Analytics Specialist |
+| Operations | Manager, CI/CD Engineer, Infrastructure Engineer, Platform Engineer, SRE Engineer |
+| Orchestrator | Project Manager, Build Engineer, Documentation Engineer |
+| Product | Manager, Analyst, Designer, Technical Manager, UX Researcher |
+| Quality | Manager, Analyst, Test Automation Engineer, Performance Test Engineer, Security Test Engineer |
+
+Each agent has specialized expertise for new product development workflows.
 
 ### session-hooks
 
@@ -78,13 +97,15 @@ make build
 make test
 ```
 
-### 2. Add to Claude Code
+### 2. Register the Marketplace
 
-The marketplace has been added to `~/.claude/plugins/known_marketplaces.json` and the plugin enabled in `~/.claude/settings.json`.
+Before installing plugins, you must register this marketplace with Claude Code.
 
-To manually add the marketplace:
-```bash
-# Edit ~/.claude/plugins/known_marketplaces.json
+#### Option A: Manual Registration (Recommended)
+
+Edit `~/.claude/plugins/known_marketplaces.json` and add the `claudecodetricks` entry:
+
+```json
 {
   "claudecodetricks": {
     "source": {
@@ -92,25 +113,49 @@ To manually add the marketplace:
       "path": "/Users/travis/workspace/x85446/claudecodetricks"
     },
     "installLocation": "/Users/travis/workspace/x85446/claudecodetricks",
-    "lastUpdated": "2025-10-17T00:48:00.000Z"
+    "lastUpdated": "2025-12-15T00:00:00.000Z"
   }
 }
+```
 
-# Enable in ~/.claude/settings.json
+#### Option B: CLI Registration
+
+```bash
+/plugin marketplace add /Users/travis/workspace/x85446/claudecodetricks
+```
+
+### 3. Install Plugins
+
+Once the marketplace is registered, install the plugins you want:
+
+#### Option A: CLI Installation
+
+```bash
+# Install the agent team
+/plugin install new-product-team@claudecodetricks
+
+# Install session hooks
+/plugin install session-hooks@claudecodetricks
+
+# Enable/disable plugins
+/plugin enable new-product-team@claudecodetricks
+/plugin disable session-hooks@claudecodetricks
+```
+
+#### Option B: Manual Installation
+
+Edit `~/.claude/settings.json` and add to the `enabledPlugins` section:
+
+```json
 {
   "enabledPlugins": {
+    "new-product-team@claudecodetricks": true,
     "session-hooks@claudecodetricks": true
   }
 }
 ```
 
-Alternatively, use the Claude Code CLI:
-```bash
-/plugin marketplace add /Users/travis/workspace/x85446/claudecodetricks
-/plugin install session-hooks@claudecodetricks
-```
-
-### 3. Configure
+### 4. Configure (for session-hooks)
 
 **Required:**
 ```bash
@@ -124,7 +169,7 @@ export ANTHROPIC_API_KEY="your-api-key-here"
 export PATH="$PATH:/path/to/kokoroSay.sh"
 ```
 
-### 4. Restart Claude Code
+### 5. Restart Claude Code
 
 Restart your Claude Code session to load the new hooks.
 
@@ -156,6 +201,17 @@ claudecodetricks/
 ├── .claude-plugin/
 │   └── marketplace.json          # Marketplace definition
 ├── plugins/
+│   ├── new-product-team/         # 41-agent team plugin
+│   │   ├── agents/               # Agent definition files
+│   │   │   ├── Architecture-*.md
+│   │   │   ├── Backend-*.md
+│   │   │   ├── Frontend-*.md
+│   │   │   ├── Marketing-*.md
+│   │   │   ├── Operations-*.md
+│   │   │   ├── Orchestrator-*.md
+│   │   │   ├── Product-*.md
+│   │   │   └── Quality-*.md
+│   │   └── team.md               # Team documentation
 │   └── session-hooks/
 │       └── hooks/                # Built binaries (output)
 │           ├── voice-announcer
@@ -172,6 +228,8 @@ claudecodetricks/
 │   │   └── voice/               # Voice announcements
 │   └── pkg/
 │       └── hooks/               # Shared types
+├── teams/
+│   └── agent2clip.sh             # Utility: extract agents to clipboard
 ├── Makefile
 └── README.md
 ```

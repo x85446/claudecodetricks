@@ -22,6 +22,7 @@ fi
 #   #### Staff Engineer: Name
 #   #### Manager: Name
 #   #### Specialist: Name
+#   ### Expert: Name (new-product-light-team format)
 # Sections end at --- or next agent header
 
 extract_agents() {
@@ -34,7 +35,7 @@ extract_agents() {
         line_num=$((line_num + 1))
 
         # Check if this is an agent header
-        if [[ "$line" =~ ^###[[:space:]]+(Orchestrator|Staff\ Engineer|Manager|Specialist):[[:space:]]+ ]] || \
+        if [[ "$line" =~ ^###[[:space:]]+(Orchestrator|Staff\ Engineer|Manager|Specialist|Expert):[[:space:]]+ ]] || \
            [[ "$line" =~ ^####[[:space:]]+(Staff\ Engineer|Manager|Specialist):[[:space:]]+ ]]; then
 
             # If we were already collecting an agent, output it
@@ -46,7 +47,7 @@ extract_agents() {
 
             # Start new agent
             in_agent=1
-            agent_name=$(echo "$line" | sed -E 's/^#{3,4}[[:space:]]+(Orchestrator|Staff Engineer|Manager|Specialist):[[:space:]]+//')
+            agent_name=$(echo "$line" | sed -E 's/^#{3,4}[[:space:]]+(Orchestrator|Staff Engineer|Manager|Specialist|Expert):[[:space:]]+//')
             agent_content="$line"$'\n'
 
         elif [[ $in_agent -eq 1 ]]; then

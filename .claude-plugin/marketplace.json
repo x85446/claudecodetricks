@@ -33,9 +33,9 @@
       "category": "productivity",
       "strict": false,
       "hooks": [
-        "./hooks/voice-announcer",
-        "./hooks/session-logger",
-        "./hooks/git-committer"
+        "./hooks/voice-announcer.json",
+        "./hooks/session-logger.json",
+        "./hooks/git-committer.json"
       ]
     },
     {
@@ -62,6 +62,72 @@
       "strict": false,
       "agents": [
         "./agents/test-expert.md"
+      ]
+    },
+    {
+      "name": "new-product-team",
+      "source": "./plugins/new-product-team",
+      "description": "41-agent product development team for greenfield projects - includes managers and specialists across Architecture, Backend, Frontend, Marketing, Operations, Orchestrator, Product, and Quality domains",
+      "version": "1.0.0",
+      "author": {
+        "name": "x85446",
+        "email": "x85446@users.noreply.github.com",
+        "url": "https://github.com/x85446"
+      },
+      "homepage": "https://github.com/x85446/claudecodetricks",
+      "repository": "https://github.com/x85446/claudecodetricks",
+      "license": "MIT",
+      "keywords": [
+        "agents",
+        "team",
+        "product-development",
+        "multi-agent",
+        "orchestration"
+      ],
+      "category": "agents",
+      "strict": false,
+      "agents": [
+        "./agents/Architecture-Data-Architect.md",
+        "./agents/Architecture-Infrastructure-Architect.md",
+        "./agents/Architecture-Manager.md",
+        "./agents/Architecture-Security-Architect.md",
+        "./agents/Architecture-Solutions-Architect.md",
+        "./agents/Backend-API-Engineer.md",
+        "./agents/Backend-Database-Engineer.md",
+        "./agents/Backend-Integration-Engineer.md",
+        "./agents/Backend-Manager.md",
+        "./agents/Backend-Performance-Engineer.md",
+        "./agents/Backend-Security-Engineer.md",
+        "./agents/Frontend-Accessibility-Specialist.md",
+        "./agents/Frontend-Manager.md",
+        "./agents/Frontend-Performance-Engineer.md",
+        "./agents/Frontend-React-Developer.md",
+        "./agents/Frontend-Testing-Specialist.md",
+        "./agents/Frontend-UI-Engineer.md",
+        "./agents/Marketing-Analytics-Specialist.md",
+        "./agents/Marketing-Brand-Strategist.md",
+        "./agents/Marketing-Content-Specialist.md",
+        "./agents/Marketing-Manager.md",
+        "./agents/Marketing-SEO-Specialist.md",
+        "./agents/Marketing-Social-Media-Specialist.md",
+        "./agents/Operations-CICD-Engineer.md",
+        "./agents/Operations-Infrastructure-Engineer.md",
+        "./agents/Operations-Manager.md",
+        "./agents/Operations-Platform-Engineer.md",
+        "./agents/Operations-SRE-Engineer.md",
+        "./agents/Orchestrator-Build-Engineer.md",
+        "./agents/Orchestrator-Documentation-Engineer.md",
+        "./agents/Orchestrator-Project-Manager.md",
+        "./agents/Product-Analyst.md",
+        "./agents/Product-Designer.md",
+        "./agents/Product-Manager.md",
+        "./agents/Product-Technical-Manager.md",
+        "./agents/Product-UX-Researcher.md",
+        "./agents/Quality-Analyst.md",
+        "./agents/Quality-Manager.md",
+        "./agents/Quality-Performance-Test-Engineer.md",
+        "./agents/Quality-Security-Test-Engineer.md",
+        "./agents/Quality-Test-Automation-Engineer.md"
       ]
     }
   ]
