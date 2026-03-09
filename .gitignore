@@ -33,3 +33,9 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Warden local configuration
+.warden.local/
+.warden/.env
+.warden.bak/
+.warden/warden-cellserver

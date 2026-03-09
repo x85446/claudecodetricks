@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(make help:*)",
+      "Bash(make version:*)",
+      "Bash(make info:*)",
+      "Bash(make rebuild:*)",
+      "Bash(make clean:*)",
+      "Bash(make:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:claudelog.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:code.claude.com)",
+      "Bash(find:*)",
+      "Bash(chmod:*)",
+      "Bash(/Users/travis/workspace/x85446/claudecodetricks/teams/agent2clip.sh:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(ls:*)",
+      "Bash(file:*)",
+      "Bash(glab repo:*)",
+      "Bash(python3:*)",
+      "Bash(grep:*)",
+      "Read(//Users/travis/workspace/gravhl/backend/.claude/**)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(sqlite3:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

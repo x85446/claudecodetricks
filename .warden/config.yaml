@@ -1,0 +1,148 @@
+project:
+    name: claudecodetricks
+cell_mode: mirror-softlink
+provider: docker
+providers:
+    docker:
+        base_image: debian:bookworm
+        workdir: /home/travis/workspace/x85446/claudecodetricks
+        build:
+            packages:
+                - curl
+                - coreutils
+                - emacs-nox
+                - git
+                - gnupg
+                - curl
+                - ca-certificates
+                - openssh-client
+                - openssh-client
+            commands:
+                - |
+                  cat > /usr/local/bin/pbpaste << 'CLIPSCRIPT'
+                  #!/bin/bash
+                  # Warden clipboard paste - fetches from host clipboard server
+                  set -e
+                  HOST="${WARDEN_CLIPBOARD_HOST:-host.docker.internal}"
+                  PORT="${WARDEN_CLIPBOARD_PORT:-8377}"
+                  if [ "$1" = "--image" ] || [ "$1" = "-i" ]; then
+                    curl -sf "http://${HOST}:${PORT}/paste?type=image" || {
+                      echo "Clipboard server not available at ${HOST}:${PORT}" >&2
+                      exit 1
+                    }
+                  else
+                    curl -sf "http://${HOST}:${PORT}/paste" || {
+                      echo "Clipboard server not available at ${HOST}:${PORT}" >&2
+                      exit 1
+                    }
+                  fi
+                  CLIPSCRIPT
+                  chmod +x /usr/local/bin/pbpaste
+                - |
+                  cat > /usr/local/bin/pbcopy << 'CLIPSCRIPT'
+                  #!/bin/bash
+                  # Warden clipboard copy - sends to host clipboard server
+                  set -e
+                  HOST="${WARDEN_CLIPBOARD_HOST:-host.docker.internal}"
+                  PORT="${WARDEN_CLIPBOARD_PORT:-8377}"
+                  curl -sf -X POST --data-binary @- "http://${HOST}:${PORT}/copy" || {
+                    echo "Clipboard server not available at ${HOST}:${PORT}" >&2
+                    exit 1
+                  }
+                  CLIPSCRIPT
+                  chmod +x /usr/local/bin/pbcopy
+                - echo "# Emacs as default editor" >> ~/.bashrc
+                - echo "export EDITOR=emacs" >> ~/.bashrc
+                - echo "export VISUAL=emacs" >> ~/.bashrc
+                - |
+                  if command -v apt-get &>/dev/null; then
+                    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+                    apt-get install -y nodejs
+                  elif command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+                    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+                    yum install -y nodejs || dnf install -y nodejs
+                  fi
+                - npm install -g npm@latest
+                - npm install -g yarn pnpm
+                - echo "# Node.js 20 LTS" >> ~/.bashrc
+                - echo "export NPM_CONFIG_PREFIX=/root/.npm-global" >> ~/.bashrc
+                - echo "export PATH=/root/.npm-global/bin:\$PATH" >> ~/.bashrc
+                - |
+                  cat >> /etc/bash.bashrc << 'PROMPTRC'
+                  # Warden cell prompt - badge style
+                  # [☻ AGENT] with blue brackets/icon, orange agent name
+                  # Shorten common agent names for cleaner prompt
+                  case "$WARDEN_AI_AGENT" in
+                    CLAUDE-CODE) WARDEN_AI_AGENT="CLAUDE" ;;
+                    CURSOR-CODE) WARDEN_AI_AGENT="CURSOR" ;;
+                  esac
+                  export PS1="\[\033[94m\][☻ \[\033[38;5;208m\]${WARDEN_AI_AGENT}\[\033[94m\]]\[\033[0m\] \[\033[96m\]\u@\h\[\033[0m\]:\[\033[1m\]\w\[\033[0m\]\\$ "
+                  PROMPTRC
+                - |
+                  cat >> /root/.bashrc << 'PROMPTRC'
+                  # Warden cell prompt - badge style
+                  case "$WARDEN_AI_AGENT" in
+                    CLAUDE-CODE) WARDEN_AI_AGENT="CLAUDE" ;;
+                    CURSOR-CODE) WARDEN_AI_AGENT="CURSOR" ;;
+                  esac
+                  export PS1="\[\033[94m\][☻ \[\033[38;5;208m\]${WARDEN_AI_AGENT}\[\033[94m\]]\[\033[0m\] \[\033[96m\]\u@\h\[\033[0m\]:\[\033[1m\]\w\[\033[0m\]\\$ "
+                  PROMPTRC
+        clipboard: true
+volumes:
+    additional-.gitconfig:
+        enabled: true
+        host: /Users/travis/.gitconfig
+        cell: /home/travis/.gitconfig
+    additional-.ssh:
+        enabled: true
+        host: /Users/travis/.ssh
+        cell: /home/travis/.ssh
+    additional-config.d:
+        enabled: true
+        host: /Users/travis/workspace/x85446/personal-mac-tools/applications/ssh/config.d
+        cell: /Users/travis/workspace/x85446/personal-mac-tools/applications/ssh/config.d
+    additional-temp:
+        enabled: true
+        host: /Users/travis/workspace/x85446/financeSheets/personaldb
+        cell: /Users/travis/workspace/x85446/claudecodetricks/temp/
+    additional-workspace:
+        enabled: true
+        host: /Users/travis/workspace/x85446/claudecodetricks(sysdef) travis@cypressMini ~/workspace/x85446/financeSheets/personaldb/db  ->  ls personaldb.sqlite (sysdef) travis@cypressMini ~/workspace/x85446/financeSheets/personaldb/db  ->  pwd /Users/travis/workspace/x85446/financeSheets/personaldb/db
+        cell: /workspace
+    claude-global:
+        enabled: true
+        host: ${HOME}/.claude
+        cell: /home/travis/.claude
+    claude-project:
+        enabled: true
+        host: .claude
+        cell: /home/travis/workspace/x85446/claudecodetricks/.claude
+    snippet-gpg-keys-gnupg-dir:
+        enabled: true
+        host: /Users/travis/.gnupg
+        cell: /home/travis/.gnupg
+    workspace:
+        enabled: true
+        host: /Users/travis/workspace/x85446/claudecodetricks
+        cell: /home/travis/workspace/x85446/claudecodetricks
+ssh_agent:
+    enabled: true
+ai:
+    agent: claude-code
+    install_method: native
+    yolo_mode: true
+environment:
+    NODE_VERSION: "20"
+    NPM_CONFIG_PREFIX: /root/.npm-global
+    PATH: /root/.npm-global/bin:$PATH
+    WARDEN_CLIPBOARD_HOST: host.docker.internal
+    WARDEN_CLIPBOARD_PORT: "8377"
+snippets:
+    - clipboard
+    - emacs-nox
+    - git-config
+    - gpg-keys
+    - nodejs-20
+    - ssh-agent
+    - ssh-keys
+    - warden-prompt
