@@ -143,23 +143,43 @@ Content rules:
 
 If your skill needs detailed reference docs, examples, or scripts, add them alongside SKILL.md in the same directory. Reference them from SKILL.md so Claude knows they exist. Supporting files are NOT loaded automatically -- they load only when Claude needs them. See [reference.md](reference.md) for the full pattern.
 
-**Step 5: Deploy & Backup**
+**Step 5: Deploy, Backup & Register in Installer**
 
-After writing the skill content and any supporting files, prompt the user for two locations using AskUserQuestion:
+All skills are backed up to the central skill repository and deployed to their target project.
 
-1. **Deploy location** -- Where the skill will be installed for Claude Code to use. This is a project's `.claude/skills/` directory. Ask the user which project to deploy to. There is no default -- the user must specify.
-2. **Backup location** -- A version-controlled copy of the skill for safekeeping. Default: `~/workspace/x85446/claudecodetricks/skills/[skill-name]/`
+**Backup location (always):** `~/workspace/x85446/claudecodetricks/skills/[skill-name]/`
+This is the canonical copy. The installer script deploys from here.
 
-Use AskUserQuestion with two questions:
-- "Where should this skill be deployed?" (header: "Deploy to", options for common project paths the user has used before, or "Other" for custom input)
-- "Where should the backup copy be saved?" (header: "Backup to", default option: `~/workspace/x85446/claudecodetricks/skills/[skill-name]/`)
+**Deploy location:** The target project's `.claude/skills/` directory. Ask the user which project to deploy to using AskUserQuestion. There is no default -- the user must specify.
+
+Known deploy targets (for reference):
+
+| Target | Path |
+|---|---|
+| Izuma Marketing | `~/workspace/izuma/marketing/.claude/skills/` |
+| Travis Taxes (Google Drive) | `~/Library/CloudStorage/GoogleDrive-travis.mccollum@gmail.com/My Drive/TRAVIS_Taxes/.claude/skills/` |
+| ClaudeCodeTricks (finance pipeline) | `~/workspace/x85446/claudecodetricks/temp/.claude/skills/` |
 
 Then:
-1. Write the skill files (SKILL.md + any supporting files) to the **deploy location** first: `[deploy-path]/.claude/skills/[skill-name]/`
-2. Copy the same files to the **backup location**: `[backup-path]/[skill-name]/`
-3. Confirm both writes succeeded
+1. Write the skill files (SKILL.md + any supporting files) to the **backup location** first: `~/workspace/x85446/claudecodetricks/skills/[skill-name]/`
+2. Copy the same files to the **deploy location**: `[deploy-path]/.claude/skills/[skill-name]/`
+3. **Register in the installer** — add a case entry to `~/workspace/x85446/claudecodetricks/skills/skillinstall.sh`:
 
-If the user declines a location (skips deploy or backup), respect that and only write to the location(s) they confirmed.
+```bash
+# In the do_install() function, add:
+<skill-name>)  install_skill <skill-name> "$TARGET_VAR" ;;
+```
+
+Where `$TARGET_VAR` is one of the predefined deploy target variables at the top of `skillinstall.sh`:
+- `$IMARKETING` — Izuma Marketing
+- `$TAXES` — Travis Taxes (Google Drive)
+- `$CCTRICKS` — ClaudeCodeTricks finance pipeline
+
+If the deploy target doesn't have a variable yet, add one to the "Deploy targets" section of `skillinstall.sh`.
+
+4. Confirm all three steps succeeded (backup, deploy, installer registration).
+
+If the user declines a location (skips deploy), still write to backup and register in the installer.
 
 **Step 6: Document in CLAUDE.md**
 
