@@ -172,6 +172,21 @@ CREATE TABLE IF NOT EXISTS discontinuation_log (
     asked_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(institution_id, year_asked)
 );
+
+CREATE TABLE IF NOT EXISTS brokerage_accounts (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    institution_id  INTEGER NOT NULL REFERENCES institutions(id),
+    account_last4   TEXT NOT NULL,
+    account_name    TEXT NOT NULL,          -- 'LOGI', 'MJoint', 'TRoth'
+    account_type    TEXT NOT NULL,          -- 'brokerage', 'bank', 'ira-roth', 'ira-traditional'
+    owner           TEXT,                   -- 'Travis', 'Melissa', 'Joint'
+    full_account    TEXT,                   -- full account number if known
+    migrated_from   TEXT,                   -- old account last4 for migration tracking
+    notes           TEXT,
+    first_year      INTEGER,
+    last_year       INTEGER,
+    UNIQUE(institution_id, account_last4)
+);
 ```
 
 ### Seed Data — Known Institutions
@@ -191,7 +206,8 @@ INSERT INTO institutions (code, name, institution_type, portal_url, doc_retrieva
 ('godaddy',  'GoDaddy',           'payment',   'https://account.godaddy.com/receipts', 'Login > Account > Billing > Receipts', 2021),
 ('aws',      'Amazon Web Services','payment',  'https://us-east-1.console.aws.amazon.com/billing/home#/bills', 'Login > Billing > Bills > Download invoices', 2021),
 ('lowes',    'Lowes',             'payment',   'https://www.lowes.com/mylowes/purchasehistory', 'Login > My Purchases > Download receipts', 2021),
-('usaa',     'USAA',              'insurance', 'https://www.usaa.com/inet/wc/insurance-documents', 'Login > Documents > Insurance > Declaration pages', 2021);
+('usaa',     'USAA',              'insurance', 'https://www.usaa.com/inet/wc/insurance-documents', 'Login > Documents > Insurance > Declaration pages', 2021),
+('franklin', 'Franklin Templeton','brokerage', 'https://www.franklintempleton.com/investor/investments/my-account', 'Login > Tax Center > Download consolidated 1099 (MUST SPLIT per account)', 2021);
 
 -- Government / Tax Authorities
 INSERT INTO institutions (code, name, institution_type, portal_url, doc_retrieval_notes, first_year) VALUES
@@ -277,6 +293,11 @@ INSERT INTO institution_docs (institution_id, doc_type, description) VALUES
 INSERT INTO institution_docs (institution_id, doc_type, description) VALUES
 ((SELECT id FROM institutions WHERE code='texas'), 'franchise-tax', 'Franchise tax filing confirmation');
 
+-- Franklin Templeton (consolidated 1099 must be split per account)
+INSERT INTO institution_docs (institution_id, doc_type, description) VALUES
+((SELECT id FROM institutions WHERE code='franklin'), '1099-b', 'Capital gains (consolidated, split per account)'),
+((SELECT id FROM institutions WHERE code='franklin'), '1099-div', 'Dividends (consolidated, split per account)');
+
 -- Business entities
 INSERT INTO institution_docs (institution_id, doc_type, description) VALUES
 ((SELECT id FROM institutions WHERE code='tmctech'), 'k1', 'Schedule K-1'),
@@ -285,6 +306,25 @@ INSERT INTO institution_docs (institution_id, doc_type, description) VALUES
 ((SELECT id FROM institutions WHERE code='gravhl'), 'k1', 'Schedule K-1'),
 ((SELECT id FROM institutions WHERE code='izuma'), 'k1', 'Schedule K-1'),
 ((SELECT id FROM institutions WHERE code='tetech'), 'k1', 'Schedule K-1');
+
+-- Brokerage account seed data
+INSERT INTO brokerage_accounts (institution_id, account_last4, account_name, account_type, owner, notes, first_year) VALUES
+((SELECT id FROM institutions WHERE code='etrade'), '9099', 'LOGI', 'brokerage', 'Travis', 'Logitech stock plan. Morgan Stanley acct: 572 369099 209', 2021),
+((SELECT id FROM institutions WHERE code='etrade'), '7027', 'MJoint', 'brokerage', 'Joint', 'Joint brokerage. Morgan Stanley acct: 676 407027 205', 2021),
+((SELECT id FROM institutions WHERE code='etrade'), '3362', 'MRoth', 'ira-roth', 'Melissa', 'Melissa Roth IRA', 2021),
+((SELECT id FROM institutions WHERE code='etrade'), '7978', 'MRoth', 'ira-roth', 'Melissa', 'Melissa Roth IRA (alternate number)', 2021),
+((SELECT id FROM institutions WHERE code='etrade'), '0159', 'TRoth', 'ira-roth', 'Travis', 'Travis Roth IRA', 2021),
+((SELECT id FROM institutions WHERE code='etrade'), '9558', 'TBroke', 'brokerage', 'Travis', 'Travis brokerage', 2021),
+((SELECT id FROM institutions WHERE code='etrade'), '7800', 'Melissa', 'bank', 'Melissa', 'Bank account (1099-INT only)', 2021),
+((SELECT id FROM institutions WHERE code='franklin'), '3611', 'FranklinZroth', 'ira-roth', NULL, 'Full acct: 076-509113611', 2021),
+((SELECT id FROM institutions WHERE code='franklin'), '4491', 'FranklinZ', 'brokerage', NULL, 'Full acct: 076-508314491', 2021),
+((SELECT id FROM institutions WHERE code='franklin'), '7487', 'FranklinA', 'brokerage', NULL, 'Full acct: 476-2747487', 2021);
+
+-- Migration tracking for 2023 E*TRADE → Morgan Stanley
+UPDATE brokerage_accounts SET migrated_from = '3020'
+WHERE account_last4 = '9099' AND institution_id = (SELECT id FROM institutions WHERE code='etrade');
+UPDATE brokerage_accounts SET migrated_from = '5088'
+WHERE account_last4 = '7027' AND institution_id = (SELECT id FROM institutions WHERE code='etrade');
 ```
 
 ## Workflow
@@ -455,6 +495,120 @@ When processing incoming files, use these patterns to identify documents:
 
 For PDFs: read the first 2-3 pages with the Read tool.
 For images: read with the Read tool (multimodal).
+
+### Filename-Based Detection
+
+Some downloads have predictable filenames. Use these to speed up identification:
+
+| Original Filename Pattern | Institution | Doc Type |
+|---|---|---|
+| `MS_YYYY_1099-CONS_*` | etrade (Morgan Stanley) | `1099-b` (consolidated) |
+| `TY YYYY-1099+CONSOLIDATED-*` | etrade (E*TRADE era) | `1099-b` (consolidated) |
+| `getSupplementalInformation*` | etrade | `1099-supplemental` |
+| `taxreportpdf*` or `tsptaxreportpdf*` | etrade | `1099-int` |
+| `tradesdownload*` | etrade | `trades` (CSV) |
+| `tx1099int_*` | etrade | `1099-int` (TXF import) |
+
+Always confirm by reading the PDF content — don't rely on filename alone.
+
+## Brokerage Account Registry
+
+### E*TRADE / Morgan Stanley Accounts
+
+Multiple accounts exist across family members. Use the last 4 digits of the account number to identify which account a document belongs to.
+
+| Last 4 | Type | Account Name | Owner | Notes |
+|---|---|---|---|---|
+| 9099 | Brokerage | LOGI | Travis | Logitech stock plan |
+| 7027 | Brokerage | MJoint | Joint | Joint brokerage |
+| 3362 | Brokerage | MRoth | Melissa | Melissa's Roth IRA |
+| 7978 | Brokerage | MRoth | Melissa | Melissa's Roth IRA (alternate) |
+| 0159 | Brokerage | TRoth | Travis | Travis's Roth IRA |
+| 9558 | Brokerage | TBroke | Travis | Travis's brokerage |
+| 7800 | Bank | Melissa | Melissa | Bank accounts (1099-INT only) |
+
+**Naming for brokerage docs with multiple accounts:**
+```
+etrade-1099-b-9099-logi.pdf
+etrade-1099-b-7027-mjoint.pdf
+etrade-1099-div-3362-mroth.pdf
+etrade-5498-0159-troth.pdf
+etrade-1099-int-7800-melissa.pdf
+```
+
+When reading an E*TRADE/Morgan Stanley PDF, extract the account number and match against this table. If unknown, ask the user for the account name.
+
+### E*TRADE → Morgan Stanley Migration (2023)
+
+In 2023, E*TRADE accounts migrated to Morgan Stanley. Some accounts have **two 1099s** for the same tax year — both are needed:
+- One from E*TRADE (pre-migration, Jan–Sep 2023)
+- One from Morgan Stanley (post-migration, Sep–Dec 2023)
+
+| Morgan Stanley Acct | Old E*TRADE Acct | Account Name |
+|---|---|---|
+| 572 369099 209 (-9099) | 63933020 (-3020) | LOGI |
+| 676 407027 205 (-7027) | 67315088 (-5088) | MJoint |
+
+**Naming for migration year:**
+```
+etrade-1099-b-9099-logi-morganstanley.pdf
+etrade-1099-b-3020-logi-etrade-premigration.pdf
+```
+
+### Franklin Templeton Accounts
+
+Franklin Templeton sends a **single consolidated PDF** containing multiple accounts. This must be split before filing.
+
+| Full Account | Last 4 | Account Name |
+|---|---|---|
+| 076-509113611 | 3611 | FranklinZroth |
+| 076-508314491 | 4491 | FranklinZ |
+| 476-2747487 | 7487 | FranklinA |
+
+**Splitting workflow:**
+1. Read the consolidated PDF
+2. Scan for account numbers: `076-509113611`, `076-508314491`, `476-2747487`
+3. Each account section starts on a new page with its account number
+4. Use `pypdf` to split pages per account
+5. File each split as a separate document
+
+```python
+from pypdf import PdfReader, PdfWriter
+
+reader = PdfReader("consolidated.pdf")
+# Identify page boundaries by scanning text for account numbers
+# Write separate PDFs per account
+```
+
+**Naming:**
+```
+franklin-1099-b-3611-franklinzroth.pdf
+franklin-1099-b-4491-franklinz.pdf
+franklin-1099-b-7487-franklina.pdf
+```
+
+### Adding Brokerage Accounts to the Database
+
+The `institutions` table tracks institutions, but brokerage accounts need sub-account tracking. Add accounts to the database:
+
+```sql
+CREATE TABLE IF NOT EXISTS brokerage_accounts (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    institution_id  INTEGER NOT NULL REFERENCES institutions(id),
+    account_last4   TEXT NOT NULL,
+    account_name    TEXT NOT NULL,
+    account_type    TEXT NOT NULL,         -- 'brokerage', 'bank', 'ira-roth', 'ira-traditional'
+    owner           TEXT,                  -- 'Travis', 'Melissa', 'Joint'
+    full_account    TEXT,                  -- full account number if known
+    migrated_from   TEXT,                  -- old account last4 for migration tracking
+    notes           TEXT,
+    first_year      INTEGER,
+    last_year       INTEGER,
+    UNIQUE(institution_id, account_last4)
+);
+```
+
+When filing a brokerage document, the detail portion of the filename uses `<last4>-<account_name>`.
 
 ## Adding a New Institution
 
