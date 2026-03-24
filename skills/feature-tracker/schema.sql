@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS product_features (
     version         INTEGER NOT NULL DEFAULT 1,  -- auto-incremented on edits
     target_release  TEXT,                        -- '1.0', '2.0', etc.
     status          TEXT DEFAULT 'draft',        -- 'draft', 'approved', 'implemented', 'deprecated'
+    human_approved  BOOLEAN DEFAULT 0,           -- 0 = AI-discovered (needs review), 1 = human approved
+    source          TEXT DEFAULT 'interview',    -- 'interview', 'docs:<path>', 'code:<path>'
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -66,4 +68,12 @@ CREATE TABLE IF NOT EXISTS product_feature_test_versions (
     detailed_desc   TEXT NOT NULL,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(test_id, version)
+);
+
+-- Publish tag ordering (controls section order in generated markdown)
+CREATE TABLE IF NOT EXISTS publish_tag_order (
+    product_id  INTEGER NOT NULL REFERENCES our_products(id),
+    tag_id      INTEGER NOT NULL REFERENCES tags(id),
+    position    INTEGER NOT NULL,
+    PRIMARY KEY (product_id, tag_id)
 );

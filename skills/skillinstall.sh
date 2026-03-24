@@ -18,6 +18,7 @@ RESET='\033[0m'
 
 # ── Deploy targets ──────────────────────────────────────────────
 IMARKETING=~/workspace/izuma/marketing/.claude/skills
+IMYRIPLAY=~/workspace/izuma/myriplay/.claude/skills
 TAXES="$HOME/Library/CloudStorage/GoogleDrive-travis.mccollum@gmail.com/My Drive/TRAVIS_Taxes/.claude/skills"
 CCTRICKS=~/workspace/x85446/claudecodetricks/temp/.claude/skills
 
@@ -64,12 +65,25 @@ install_skill() {
 do_install() {
     local skill=$1
     case "$skill" in
-        competitive-intel)   install_skill competitive-intel "$IMARKETING" ;;
-        feature-tracker)     install_skill feature-tracker "$IMARKETING" ;;
-        tax-organizer)       install_skill tax-organizer "$TAXES" ;;
-        tax-doc-combiner)    install_skill tax-doc-combiner "$TAXES" ;;
-        categorize)          install_skill categorize "$CCTRICKS" ;;
-        *)                   skip "$skill" ;;
+        competitive-intel)
+            install_skill competitive-intel "$IMARKETING"
+            ;;
+        feature-tracker)
+            install_skill feature-tracker "$IMARKETING"
+            install_skill feature-tracker "$IMYRIPLAY"
+            ;;
+        tax-organizer)
+            install_skill tax-organizer "$TAXES"
+            ;;
+        tax-doc-combiner)
+            install_skill tax-doc-combiner "$TAXES"
+            ;;
+        categorize)
+            install_skill categorize "$CCTRICKS"
+            ;;
+        *)
+            skip "$skill"
+            ;;
     esac
 }
 

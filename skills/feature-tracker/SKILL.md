@@ -12,13 +12,19 @@ Maintain detailed product feature specifications in SQLite. Features are authore
 
 ```
 /feature-tracker <product> add                        # Add a new feature (full interview)
+/feature-tracker <product> scan-docs <path>           # Discover features from documentation
+/feature-tracker <product> scan-code <path>           # Discover features from a codebase
+/feature-tracker <product> review                     # Review AI-discovered features (approve/reject)
 /feature-tracker <product> edit <uuid>                # Edit a feature (new version created)
 /feature-tracker <product> list                       # List all features
 /feature-tracker <product> list tag=X AND tag=Y       # Query by tags (AND/OR)
 /feature-tracker <product> list release=2.0           # Filter by target release
+/feature-tracker <product> list unapproved            # Show only AI-discovered, not yet approved
 /feature-tracker <product> show <uuid>                # Full detail + test + version history
 /feature-tracker <product> test <uuid>                # Add/edit human-described test
 /feature-tracker <product> tag <uuid> <tags>          # Add tags to a feature
+/feature-tracker <product> publish                    # Generate products/<product>-features.md
+/feature-tracker <product> publish <tag-order>        # Custom section ordering
 /feature-tracker <product> release <version>          # Show release summary
 /feature-tracker <product> status                     # Dashboard
 /feature-tracker <product> init                       # Initialize product
@@ -130,7 +136,7 @@ Test title: "Verify sub-millisecond P99 latency from edge nodes"
 
 1. Generate UUID: `SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))`
 2. Ensure all tags exist in `tags` table (INSERT OR IGNORE)
-3. INSERT into `product_features` (version = 1)
+3. INSERT into `product_features` (version = 1, human_approved = 1, source = 'interview')
 4. INSERT into `product_feature_versions` (snapshot version 1)
 5. INSERT into `product_feature_tags`
 6. Generate test UUID, INSERT into `product_feature_tests`
@@ -182,10 +188,13 @@ See [queries.sql](queries.sql) for the query templates.
 Display results as a table:
 
 ```
-UUID (short)  | Short Description              | Release | Status      | Tags
-a1b2c3d4      | Sub-ms edge inference          | 1.0     | implemented | performance, edge, latency
-e5f6a7b8      | Mutual TLS for device auth     | 1.0     | approved    | security, api, tls
+UUID (short)  | Short Description              | Release | Status      | ✔ | Tags
+a1b2c3d4      | Sub-ms edge inference          | 1.0     | implemented | ✔ | performance, edge, latency
+e5f6a7b8      | Mutual TLS for device auth     | 1.0     | approved    | ✔ | security, api, tls
+c9d0e1f2      | Batch device provisioning      | 2.0     | draft       | ⬡ | provisioning, batch, api
 ```
+
+The `✔` column shows human approval status. `✔` = approved, `⬡` = AI-discovered, not yet reviewed.
 
 ### Status Dashboard
 
@@ -207,6 +216,8 @@ By Release:
 Top Tags: security(14), api(12), performance(9), edge(8), ux(6)
 
 Missing Tests: 5 features have no test defined
+
+Sources: 31 interview, 10 docs, 6 code
 ```
 
 ### Init
@@ -218,6 +229,190 @@ Missing Tests: 5 features have no test defined
 1. Run [schema.sql](schema.sql) against `.claude/db/marketing.sqlite`
 2. Ensure product exists in `our_products` (reuse if already there from competitive-intel)
 3. Confirm ready
+
+### Scan Docs
+
+```
+/feature-tracker izuma-edge scan-docs ./docs/
+```
+
+AI autonomously reads documentation and extracts features. **All features added this way are `human_approved = 0`.**
+
+1. Use the Agent tool to launch a research agent:
+
+```
+Agent(subagent_type="Explore", prompt="Read all documentation in <path>.
+For each distinct product feature or capability described, extract:
+  1. A short description (≤10 words)
+  2. A detailed description (1-3 paragraphs, factual, from the docs)
+  3. Suggested tags (comma-separated)
+Return as a structured list. Do NOT include internal implementation details —
+only user-facing features and capabilities.")
+```
+
+2. For each discovered feature, check for duplicates:
+   - Query existing features by short_desc similarity and tags overlap
+   - Skip if a close match exists (flag as "already tracked")
+3. INSERT each new feature with `human_approved = 0`, `source = 'docs:<filepath>'`
+4. Report summary:
+
+```
+Scanned: 23 documents
+Discovered: 14 features (8 new, 6 already tracked)
+All 8 new features are UNAPPROVED — run /feature-tracker izuma-edge review
+```
+
+### Scan Code
+
+```
+/feature-tracker izuma-edge scan-code ~/workspace/izuma/edge-runtime/
+```
+
+AI reads source code to discover implemented features. **All features added this way are `human_approved = 0`.**
+
+1. Use the Agent tool to launch a research agent:
+
+```
+Agent(subagent_type="Explore", prompt="Explore the codebase at <path>.
+Identify user-facing features and capabilities by examining:
+  - API endpoints, route handlers, CLI commands
+  - Public interfaces, exported functions
+  - Feature flags, configuration options
+  - README, inline documentation, comments describing behavior
+For each feature found, extract:
+  1. A short description (≤10 words)
+  2. A detailed description of what it does (from the code's perspective)
+  3. Suggested tags
+  4. Source file(s) where it's implemented
+Do NOT list internal utilities, helpers, or implementation details.")
+```
+
+2. Deduplicate against existing features
+3. INSERT with `human_approved = 0`, `source = 'code:<filepath>'`
+4. Report summary, prompt to review
+
+### Review (Approve/Reject AI-Discovered Features)
+
+```
+/feature-tracker izuma-edge review
+```
+
+Present unapproved features one at a time using AskUserQuestion (Interview Pattern):
+
+```
+[1/8] UNAPPROVED — discovered from docs/api-reference.md
+
+  "WebSocket streaming for real-time events"
+
+  Detailed: The platform supports WebSocket connections for streaming
+  real-time device events to client applications. Clients can subscribe
+  to specific device topics and receive push notifications...
+
+  Tags: api, websocket, real-time, streaming, events
+
+  > approve | edit | reject | skip | stop
+```
+
+| Response | Action |
+|---|---|
+| `approve` / `y` | SET `human_approved = 1` |
+| `edit` | Enter edit flow (h/ai iterate on description, tags, etc.), then approve |
+| `reject` | DELETE the feature from the database |
+| `skip` | Leave as unapproved, move to next |
+| `stop` | Stop reviewing, remaining stay unapproved |
+
+After review, show summary:
+
+```
+Reviewed: 8 features
+  Approved: 5 | Edited+Approved: 2 | Rejected: 1
+```
+
+### Publish
+
+```
+/feature-tracker izuma-edge publish
+/feature-tracker izuma-edge publish security,api,performance,ux
+```
+
+Generate `products/<product>-features.md` — organized by tags as sections. **Only `human_approved = 1` features are published.**
+
+**Section ordering:** If tags provided as argument, use that order. Otherwise use stored order from `publish_tag_order` table (see [schema.sql](schema.sql)). Fallback: order by feature count descending. Each tag = one `##` section. A feature appears once, in its first matching section. Unmatched features go in "Other" at the end.
+
+**Output format:**
+
+```markdown
+# Izuma Edge — Features
+
+> Auto-generated by feature-tracker. Do not edit directly.
+> 47 features | Last published: 2026-03-23
+
+---
+
+## Security
+
+### Mutual TLS for device authentication
+*Release: 1.0 | Version: 3 | Status: implemented*
+
+The platform enforces mutual TLS (mTLS) for all device-to-cloud
+communication. Each device presents a client certificate signed by
+the organization's certificate authority during the TLS handshake...
+
+**Test:** Verify mTLS handshake rejects unsigned device certificates
+> Connect a device without a valid client certificate. The connection
+> must be rejected at the TLS layer with a certificate_required alert.
+> Verify the rejection is logged with the device ID and timestamp.
+
+`Tags: security, tls, authentication, devices`
+
+---
+
+### End-to-end payload encryption
+*Release: 1.0 | Version: 1 | Status: implemented*
+
+All device payloads are encrypted end-to-end using AES-256-GCM...
+
+**Test:** Verify payload encryption round-trip
+> Send a payload from device to cloud. Intercept at the network layer
+> and confirm the payload is not readable.
+
+`Tags: security, encryption, devices`
+
+---
+
+## API
+
+### WebSocket streaming for real-time events
+*Release: 2.0 | Version: 1 | Status: approved*
+
+...
+```
+
+**Format rules:**
+- `# Product Name — Features` title
+- `## Tag` section per tag in order
+- `### Feature short description` per feature
+- `*Release: X | Version: N | Status: STATUS*` metadata
+- Detailed description as body paragraphs
+- `**Test:** title` then test description as blockquote (`>`)
+- `` `Tags: ...` `` at the bottom of each feature
+- `---` between features
+- Features within a section: sorted by release ASC, then short_desc ASC
+- Each feature appears **once** — in its first matching section
+
+**Stored ordering** — save tag order for reuse:
+
+```sql
+-- In schema.sql
+CREATE TABLE IF NOT EXISTS publish_tag_order (
+    product_id  INTEGER NOT NULL REFERENCES our_products(id),
+    tag_id      INTEGER NOT NULL REFERENCES tags(id),
+    position    INTEGER NOT NULL,
+    PRIMARY KEY (product_id, tag_id)
+);
+```
+
+When tags are provided as argument, save them to `publish_tag_order` for next time.
 
 ## Versioning Rules
 
@@ -240,3 +435,5 @@ Missing Tests: 5 features have no test defined
 8. **Accept `y`/`yes`/`ok`/`good`** as approval in iteration loops.
 9. **Always show UUID** after create/edit so user can reference it.
 10. **Tests are required** — prompt during add, flag missing in status dashboard.
+11. **human_approved** — `add` (interview) → `1`. `scan-docs`/`scan-code` → `0`. Only `review` or `edit` flips 0 → 1.
+12. **source tracking** — every feature records origin: `interview`, `docs:<path>`, or `code:<path>`.
