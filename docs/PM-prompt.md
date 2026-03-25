@@ -1,7 +1,6 @@
 # PM — Product Manager Skill System
 
-> Design document for the feature-tracker rewrite.
-> Travis: add comments inline with `<!-- TRAVIS: your comment -->` and I'll iterate.
+> Design document for the feature-tracker rewrite. v2 — incorporates Travis's feedback.
 
 ---
 
@@ -15,36 +14,43 @@ The current feature-tracker is one monolithic SKILL.md (~440 lines). Problems:
 4. **No iterator/macro system** — repeated lists get copy-pasted and drift
 5. **No orchestration** — the skill tries to do everything itself
 6. **sqlite3 dependency** not enforced — Claude falls back to writing markdown directly
+7. **No dependency tracking** — upstream changes silently invalidate downstream work
+8. **No human review UI** — approvals happen in chat, which is slow and error-prone
 
 ---
 
-## Architecture: PM + Focused Skills
+## Architecture: PM + Focused Skills + ViteTool
 
 ```
-                         /pm <product> <mode> <scope>
+    Natural language → /pm myriplay scan this code and write the epics and features
+                       /pm myriplay interview me about a new feature
+                       /pm myriplay I need a new feature, when X happens we want Y
                                     |
                               +-----+-----+
                               |    PM     |  (orchestrator)
                               +-----+-----+
                                     |
-                 +------------------+------------------+
-                 |          |          |         |      |
-           meta-feature  feature  requirement  test  iterator
-              skill       skill     skill     skill   skill
-                 |          |          |         |      |
-                 +----------+----------+---------+------+
+          +----------+---------+----+----+---------+----------+
+          |          |         |         |         |          |
+        epic     feature  requirement  test    iterator   auditor
+        skill     skill     skill     skill    skill      skill
+          |          |         |         |         |          |
+          +----------+---------+---------+---------+----------+
                                     |
                               +-----+-----+
                               |  shared   |
                               |  database |
                               +-----------+
+                             /      |      \
+                      preflight  publish   status
                                     |
-                          +---------+---------+
-                          |         |         |
-                       preflight  publish   status
+                              +-----+-----+
+                              | ViteTool  |  (web UI — Python + Vite + SQLite)
+                              +-----------+
 ```
 
 Each box is a separate SKILL.md — small, focused, and independently testable.
+ViteTool is a standalone web app that reads/writes the same database.
 
 ---
 
@@ -55,28 +61,28 @@ Each box is a separate SKILL.md — small, focused, and independently testable.
 PM is pointed at code, documents, or websites. AI does the heavy lifting.
 
 ```
-/pm myriplay crawl ./src/
-/pm myriplay crawl ./docs/architecture.md
-/pm myriplay crawl https://docs.example.com/api
+/pm myriplay scan this codebase and write the epics and features
+/pm myriplay crawl ./src/ ./docs/architecture.md https://docs.example.com/api
 ```
 
 PM dispatches work:
-1. Calls **meta-feature** skill to identify epics from source material
+1. Calls **epic** skill to identify epics from source material
 2. Calls **feature** skill to break epics into features
 3. Calls **requirement** skill to derive requirements from features
 4. Calls **test** skill to write test criteria for each requirement
 5. Calls **iterator** skill whenever repeated value lists are detected
+6. Calls **auditor** skill to verify dependency chain integrity
 
-All results land in DB with `human_approved = 0`. Nothing is "real" until reviewed.
+All results land in DB with `human_approved = 0`. Human reviews in ViteTool.
 
 ### Mode 2: Interact
 
 PM interviews a human. Human leads the conversation.
 
 ```
-/pm myriplay interact
-/pm myriplay interact meta-features
-/pm myriplay interact requirements
+/pm myriplay interview me about a new feature
+/pm myriplay I need a new feature. When x happens we want .....
+/pm myriplay I need to add requirements to feature <uuid>
 ```
 
 PM dispatches to the appropriate skill which runs its own h/ai or ai/h iteration loop. PM tracks what's been covered and what's missing.
@@ -92,31 +98,31 @@ PM dispatches to the appropriate skill which runs its own h/ai or ai/h iteration
 **Role:** Coordinator. Never writes to the DB directly. Delegates to sub-skills and tracks completion.
 
 **Responsibilities:**
-- Parse user intent (crawl vs interact, scope)
-- Dispatch to sub-skills in correct order (meta-features before features before requirements before tests)
-- Track coverage: which meta-features have features? which features have requirements? which requirements have tests?
+- Parse natural language intent (crawl vs interact, scope)
+- Dispatch to sub-skills in correct order (epics → features → requirements → tests)
+- Track coverage: which epics have features? which features have requirements? which requirements have tests?
 - Surface gaps: "3 features have no requirements, 7 requirements have no test criteria"
-- Handle preflight before any work begins
+- Run preflight before any work begins
+- Coordinate review workflows — but NEVER set `human_approved = 1` itself
 
 **Does NOT do:**
-- Write features, requirements, or tests
+- Write epics, features, requirements, or tests
 - Make content decisions
+- Set `human_approved` on anything — only ViteTool or explicit human action does that
 - Talk to the database directly (except for coverage queries)
-
-<!-- TRAVIS: Should PM also handle review/approval workflows? Currently review is part of the old feature-tracker. PM could orchestrate "review all unapproved items" as a batch workflow. -->
 
 ---
 
-### 2. Meta-Feature Skill — Epic-Level Thinking
+### 2. Epic Skill — Big-Picture Thinking
 
-**File:** `skills/pm-meta-feature/SKILL.md`
+**File:** `skills/pm-epic/SKILL.md`
 
 **Role:** Big-picture product capability researcher and writer.
 
-**What is a meta-feature?**
-A meta-feature is an epic — a large product capability that decomposes into multiple features. Examples:
-- "Multi-tenant cluster visualization" (decomposes into: topology rendering, detail levels, interactive controls, export)
-- "Device lifecycle management" (decomposes into: provisioning, monitoring, decommissioning, certificate rotation)
+**What is an epic?**
+An epic is a large product capability that decomposes into multiple features. Examples:
+- "Multi-tenant cluster visualization" → topology rendering, detail levels, interactive controls, export
+- "Device lifecycle management" → provisioning, monitoring, decommissioning, certificate rotation
 
 **Crawl mode:**
 - Read source material (code, docs, URLs)
@@ -132,12 +138,37 @@ A meta-feature is an epic — a large product capability that decomposes into mu
 - Present for approval
 - Insert with `human_approved = 1`
 
-**DB table:** `meta_features` (new)
-- id (UUID), product_id, name, description, rationale, tags, version, human_approved, source, status
+**DB table:** `epics` (new)
 
-**Relationship:** One meta-feature has many features.
+```sql
+CREATE TABLE IF NOT EXISTS epics (
+    id              TEXT PRIMARY KEY,
+    product_id      INTEGER NOT NULL REFERENCES our_products(id),
+    name            TEXT NOT NULL,
+    description     TEXT NOT NULL,
+    rationale       TEXT,
+    version         INTEGER NOT NULL DEFAULT 1,
+    base_version    INTEGER NOT NULL DEFAULT 1,   -- version this was derived from (self-ref for root)
+    human_approved  INTEGER NOT NULL DEFAULT 0,
+    source          TEXT NOT NULL DEFAULT 'interview',
+    status          TEXT NOT NULL DEFAULT 'draft',
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
-<!-- TRAVIS: Do meta-features need their own versioning like features do? Or is a simple version counter enough? -->
+CREATE TABLE IF NOT EXISTS epic_versions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    epic_id     TEXT NOT NULL REFERENCES epics(id),
+    version     INTEGER NOT NULL,
+    name        TEXT NOT NULL,
+    description TEXT NOT NULL,
+    rationale   TEXT,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(epic_id, version)
+);
+```
+
+**Relationship:** One epic has many features. Every feature MUST belong to an epic.
 
 ---
 
@@ -145,31 +176,29 @@ A meta-feature is an epic — a large product capability that decomposes into mu
 
 **File:** `skills/pm-feature/SKILL.md`
 
-**Role:** Takes a meta-feature and breaks it into specific, testable, implementable features.
+**Role:** Takes an epic and breaks it into specific, testable, implementable features.
 
 **What is a feature?**
 A feature is a single deliverable capability. Small enough to implement in one PR or sprint. Large enough to be meaningful to a user.
 
 **Crawl mode:**
-- Given a meta-feature UUID, read its description
+- Given an epic UUID, read its description
 - Read relevant source material
-- Propose features that decompose the meta-feature
+- Propose features that decompose the epic
 - Each feature: short_desc, detailed_desc, target_release, tags
-- Insert all with `human_approved = 0`, linked to parent meta-feature
+- Insert all with `human_approved = 0`, linked to parent epic
 
 **Interact mode (h/ai iterate):**
-- Show the parent meta-feature for context
+- Show the parent epic for context
 - Ask: "What specific capabilities make up this epic?"
 - Human describes, AI structures into features
 - Each feature iterated individually until approved
 
 **DB changes:**
-- Add `meta_feature_id` FK to `product_features` table (nullable — standalone features still allowed)
-- Existing schema otherwise unchanged
+- Add `epic_id` FK to `product_features` table (**NOT NULL** — every feature must belong to an epic)
+- Add `base_version` to track which version of the parent epic this feature was derived from
 
 **Iterator awareness:** When describing a feature that applies across a set (architectures, protocols, regions), reference or create an iterator instead of listing values inline.
-
-<!-- TRAVIS: Should features that don't belong to any meta-feature be allowed? The current system has standalone features. I'd say yes — keep it flexible. -->
 
 ---
 
@@ -185,7 +214,6 @@ A requirement is a single, testable statement about system behavior. It's smalle
 Examples (for feature "Render multi-tenant cluster topology diagrams"):
 - REQ: "System renders Host Cluster containers with CP and worker node counts"
 - REQ: "System switches to compact layout when cluster count exceeds 50"
-- REQ: "System renders node labels using the cluster's display name, not internal ID"
 - REQ: "System supports rendering for each CLUSTER_TYPES" (uses iterator)
 
 **Crawl mode:**
@@ -204,23 +232,33 @@ Examples (for feature "Render multi-tenant cluster topology diagrams"):
 
 ```sql
 CREATE TABLE IF NOT EXISTS requirements (
-    id                TEXT PRIMARY KEY,           -- UUID
-    feature_id        TEXT NOT NULL REFERENCES product_features(id),
-    title             TEXT NOT NULL,              -- short imperative statement
-    description       TEXT NOT NULL,              -- detailed requirement
-    acceptance_criteria TEXT,                     -- when is this "done"?
-    version           INTEGER NOT NULL DEFAULT 1,
-    human_approved    INTEGER NOT NULL DEFAULT 0,
-    source            TEXT NOT NULL DEFAULT 'interview',
-    status            TEXT NOT NULL DEFAULT 'draft',
-    created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+    id                  TEXT PRIMARY KEY,
+    feature_id          TEXT NOT NULL REFERENCES product_features(id),
+    title               TEXT NOT NULL,
+    description         TEXT NOT NULL,
+    acceptance_criteria TEXT,
+    version             INTEGER NOT NULL DEFAULT 1,
+    base_version        INTEGER NOT NULL DEFAULT 1,  -- parent feature version this was derived from
+    human_approved      INTEGER NOT NULL DEFAULT 0,
+    source              TEXT NOT NULL DEFAULT 'interview',
+    status              TEXT NOT NULL DEFAULT 'draft',
+    created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS requirement_versions (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    requirement_id      TEXT NOT NULL REFERENCES requirements(id),
+    version             INTEGER NOT NULL,
+    title               TEXT NOT NULL,
+    description         TEXT NOT NULL,
+    acceptance_criteria TEXT,
+    created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(requirement_id, version)
 );
 ```
 
 **Relationship:** One feature has many requirements. Each requirement belongs to exactly one feature.
-
-<!-- TRAVIS: Should requirements have their own version history table like features do? I'd say yes for consistency. -->
 
 ---
 
@@ -231,19 +269,19 @@ CREATE TABLE IF NOT EXISTS requirements (
 **Role:** Writes human-readable test criteria. This person does not write code. Does not understand programming. Thinks in terms of what to verify, not how to verify it.
 
 **Who is this person?**
-Think of a meticulous QA lead who has never written a line of code but knows the product inside and out. They write test criteria like:
+A meticulous QA lead who has never written a line of code but knows the product inside and out:
 
 > "Verify that the system renders exactly N Host Cluster containers where N matches the input data. For each CLUSTER_TYPES, confirm the container displays the cluster name and node count."
 
-Note: they said `CLUSTER_TYPES` — not "kubernetes, docker, nomad." They reference the iterator. They trust the iterator is defined elsewhere and complete.
+They said `CLUSTER_TYPES` — not "kubernetes, docker, nomad." They reference the iterator.
 
 **Characteristics of this author:**
 - **Succinct.** Every word earns its place. No filler.
-- **Iterator-native.** Whenever a test applies across a set, they reference the iterator name, never the expanded list. This keeps test criteria stable when the list changes.
+- **Iterator-native.** References the iterator name, never the expanded list. Test criteria stay stable when the list changes.
 - **Imperative mood.** "Verify that...", "Confirm that...", "Ensure that..."
-- **Observable outcomes only.** They describe what you can see/measure, not internal implementation. "The response arrives in under 100ms" not "the cache is hit."
+- **Observable outcomes only.** What you can see/measure, not internal implementation. "The response arrives in under 100ms" not "the cache is hit."
 - **No code, no pseudocode, no technical implementation.** "Send a request" not "curl -X POST."
-- **Thinks in completeness.** For every test, they ask: "Does this cover all the cases?" and the answer is always an iterator.
+- **Thinks in completeness.** For every test: "Does this cover all the cases?" — the answer is always an iterator.
 
 **Crawl mode:**
 - Given a requirement UUID, read it
@@ -252,22 +290,17 @@ Note: they said `CLUSTER_TYPES` — not "kubernetes, docker, nomad." They refere
 - Insert with `human_approved = 0`
 
 **Interact mode (h/ai iterate):**
+- Human can provide a test description at the **feature level** — AI derives requirement-level tests from it
 - Show the parent requirement
-- Ask: "How would you know this requirement is met? What would you check?"
-- Human describes in rough terms
+- Ask: "How would you know this requirement is met?"
 - AI structures into the meticulous tester's voice: succinct, iterator-aware, observable
 - Iterate until approved
 
-**DB:** Uses existing `product_feature_tests` table, but now linked to requirements too:
+**Every requirement MUST have a test.** No exceptions.
 
-```sql
--- Add requirement_id to existing tests table
-ALTER TABLE product_feature_tests ADD COLUMN requirement_id TEXT REFERENCES requirements(id);
-```
-
-A test can be linked to a feature (high-level) or a requirement (granular), or both.
-
-<!-- TRAVIS: Should every requirement MUST have a test? Or is it acceptable for some requirements to be "tested by" a parent feature-level test? My instinct: every requirement gets its own test, but I want your call. -->
+**DB changes:**
+- Add `requirement_id` FK to `product_feature_tests` (NOT NULL for requirement-level tests)
+- Add `base_version` to track which version of the parent requirement this test was derived from
 
 ---
 
@@ -278,16 +311,16 @@ A test can be linked to a feature (high-level) or a requirement (granular), or b
 **Role:** Manages named, reusable value lists that other skills reference instead of hardcoding.
 
 **What is an iterator?**
-An iterator is a named list of values — like a C macro or an enum. It has:
-- A name: `SOFTWARE_ARCHS`, `CLUSTER_TYPES`, `SUPPORTED_REGIONS`
+An iterator is a named list of values — like a C macro or an enum:
+- Name: `SOFTWARE_ARCHS`, `CLUSTER_TYPES`, `SUPPORTED_REGIONS`
 - Values: `["x86", "amd64", "arm64", "mips"]`
-- A scope: which product it belongs to
-- A description: what this list represents and why these specific values
+- Scope: which product it belongs to
+- Description: what this list represents and why these specific values
 
 **Why iterators matter:**
 1. **Single source of truth.** Change the list once, every reference updates.
 2. **Explicit exclusions.** If `armv9` is NOT in `SOFTWARE_ARCHS`, that's a deliberate decision documented once.
-3. **Test completeness.** The test author writes "test against each SOFTWARE_ARCHS" — the list is defined, not implied.
+3. **Test completeness.** "Test against each SOFTWARE_ARCHS" — the list is defined, not implied.
 4. **Requirement precision.** "Support each SUPPORTED_PROTOCOLS" — if the list grows, the requirement automatically covers the new entry.
 
 **Commands:**
@@ -297,14 +330,13 @@ An iterator is a named list of values — like a C macro or an enum. It has:
 /pm-iterator myriplay show SOFTWARE_ARCHS
 /pm-iterator myriplay add SOFTWARE_ARCHS riscv64
 /pm-iterator myriplay remove SOFTWARE_ARCHS mips
-/pm-iterator myriplay rename SOFTWARE_ARCHS BUILD_TARGETS
 ```
 
-**DB table:** `iterators` (new)
+**DB tables:**
 
 ```sql
 CREATE TABLE IF NOT EXISTS iterators (
-    id          TEXT PRIMARY KEY,              -- UUID
+    id          TEXT PRIMARY KEY,
     product_id  INTEGER NOT NULL REFERENCES our_products(id),
     name        TEXT NOT NULL,                 -- UPPER_SNAKE_CASE
     description TEXT NOT NULL,
@@ -317,18 +349,71 @@ CREATE TABLE IF NOT EXISTS iterator_values (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     iterator_id TEXT NOT NULL REFERENCES iterators(id),
     value       TEXT NOT NULL,
-    position    INTEGER NOT NULL,              -- ordering
+    position    INTEGER NOT NULL,
     UNIQUE(iterator_id, value)
 );
 ```
 
-**Resolution:** When publishing or displaying, `SOFTWARE_ARCHS` resolves to its current values. In the DB, text fields store the iterator name as-is (e.g., "test against each SOFTWARE_ARCHS"). The publish skill expands them if needed.
-
-<!-- TRAVIS: Should iterators expand in published markdown, or stay as names with a glossary at the top? I'm thinking: keep names in the body, add an "Iterators" appendix that lists all expansions. Your call. -->
+**Display rules:** Iterator names are stored as-is in text fields (e.g., "test against each SOFTWARE_ARCHS"). They are NEVER auto-expanded inline — the reader sees the exact name. A glossary at the top of any output lists all referenced iterators with their current values.
 
 ---
 
-### 7. Preflight Skill — Dependency Guardian
+### 7. Auditor Skill — Dependency Chain Integrity
+
+**File:** `skills/pm-auditor/SKILL.md`
+
+**Role:** Detects when upstream changes invalidate downstream entities. The cascade tracker.
+
+**The problem:** Epic Av3 has features A1, A2, A3 derived from it. Requirements and tests are built on those features. Someone updates Epic A to v4. Now every downstream entity needs re-confirmation — but nobody knows what changed or what's affected.
+
+**How it works — the `base_version` system:**
+
+Every entity records which version of its parent it was derived from:
+- Feature records `base_version` = the epic version it was written against
+- Requirement records `base_version` = the feature version it was written against
+- Test records `base_version` = the requirement version it was written against
+
+When a parent's `version` > child's `base_version`, that child is **stale**.
+
+**Example cascade:**
+```
+Epic A (v4)                          ← updated
+  └─ Feature A1 (v1, base_version: 3) ← STALE (epic is v4, feature based on v3)
+       └─ Req R1 (v2, base_version: 1)  ← OK (feature still v1)
+            └─ Test T1 (v1, base_version: 2) ← OK (req still v2)
+  └─ Feature A2 (v1, base_version: 4) ← OK (based on current epic)
+```
+
+**Commands:**
+```
+/pm-auditor myriplay                    # Full audit
+/pm-auditor myriplay epic <uuid>        # Audit one epic's tree
+/pm-auditor myriplay stale              # Show only stale entities
+```
+
+**Output:**
+```
+Dependency Audit: Myriplay
+──────────────────────────────
+Stale entities: 4
+
+[STALE] Feature "Topology rendering" (v1, based on Epic v3 → Epic now v4)
+  └─ [CASCADE] Req "Render HC containers" (v2) — parent is stale
+       └─ [CASCADE] Test "Verify HC count" (v1) — grandparent is stale
+  └─ [CASCADE] Req "Compact layout threshold" (v1) — parent is stale
+
+Actions:
+  1. Review Feature "Topology rendering" against Epic v4 changes
+  2. After updating feature, re-confirm 2 requirements and 1 test
+```
+
+**Staleness propagates:** If a feature is stale, all its requirements and tests are implicitly stale too (cascade), even if their own `base_version` matches their direct parent. The auditor shows the full cascade.
+
+**After human review in ViteTool:** When someone updates a stale entity, they bump its version and set `base_version` to the current parent version. This clears the staleness.
+
+---
+
+### 8. Preflight Skill — Dependency Guardian
 
 **File:** `skills/pm-preflight/SKILL.md`
 
@@ -339,17 +424,14 @@ CREATE TABLE IF NOT EXISTS iterator_values (
 2. `.claude/db/` directory exists
 3. Database has all required tables (runs schema migrations if needed)
 4. Schema version matches expected version
-5. Required iterators exist for the product (if any are referenced)
 
-**Hard stop on failure.** If sqlite3 is missing, print install instructions and STOP. No fallbacks. No markdown workarounds.
+**Hard stop on failure.** If sqlite3 is missing, print install instructions and STOP. No fallbacks. No markdown workarounds. No alternative formats.
 
-**Schema migration:** Preflight also handles adding new tables (iterators, requirements, meta_features) to existing databases without data loss. It's the only skill that runs DDL.
-
-<!-- TRAVIS: Should preflight also check for ANTHROPIC_API_KEY if crawl mode will need Claude API? Or keep that in the PM skill? -->
+**Schema migration:** Preflight handles adding new tables to existing databases without data loss. It's the only skill that runs DDL.
 
 ---
 
-### 8. Publish Skill — Markdown Generator
+### 9. Publish Skill — Markdown Generator
 
 **File:** `skills/pm-publish/SKILL.md`
 
@@ -364,103 +446,167 @@ CREATE TABLE IF NOT EXISTS iterator_values (
 ```
 
 **Output types:**
-- **features** — current publish format (tag sections, features with tests)
-- **requirements** — feature > requirement > test hierarchy
-- **full** — complete product spec: meta-features > features > requirements > tests
+- **features** — tag-based sections, features with tests
+- **requirements** — epic → feature → requirement → test hierarchy
+- **full** — complete product spec: everything
 
-**Iterator handling in output:**
-- Body text keeps iterator references as-is: "test against each SOFTWARE_ARCHS"
-- Appendix at bottom expands all referenced iterators:
+**Publishes ALL items** regardless of `human_approved` status. Approval state is visible in ViteTool, not in published markdown.
 
-```markdown
----
-
-## Iterators
-
-| Name | Description | Values |
-|------|-------------|--------|
-| SOFTWARE_ARCHS | Target build architectures | x86, amd64, arm64, mips |
-| CLUSTER_TYPES | Supported cluster types | kubernetes, docker, nomad |
-```
+**Iterator handling:**
+- Body text keeps iterator references as-is — never auto-expanded
+- Glossary at the **top** of the document lists all referenced iterators with current values
 
 **Rules:**
-- Only publishes `human_approved = 1` items
 - Database is source of truth — never reads from existing markdown
 - Overwrites target file completely on each publish
 
-<!-- TRAVIS: Should publish support a "draft" mode that includes unapproved items marked with a visual indicator? Could be useful for review cycles. -->
-
 ---
 
-### 9. Status Skill — Coverage Dashboard
+### 10. Status Skill — Coverage Dashboard
 
 **File:** `skills/pm-status/SKILL.md`
 
 **Role:** Reports on completeness and health of the product database.
 
-**Command:**
+**Commands:**
 ```
 /pm-status myriplay
-/pm-status myriplay meta-features
 /pm-status myriplay coverage
+/pm-status myriplay stale
 ```
 
 **Dashboard output:**
 ```
 Product: Myriplay
 ──────────────────────────────
-Meta-Features:    4 total (3 approved, 1 pending)
+Epics:            4 total (3 approved, 1 pending)
 Features:        23 total (18 approved, 5 pending)
-  Without meta-feature: 2 (orphaned)
+  Orphaned:       0 (all belong to an epic)
 Requirements:    45 total (30 approved, 15 pending)
-  Without tests: 8
-Iterators:        6 defined, 4 referenced
+  Without tests:  8
+Iterators:        6 defined, 4 referenced, 0 unreferenced
 Tests:           37 total
 
 Coverage:
-  Features → Requirements:  78% (18/23 have requirements)
-  Requirements → Tests:     82% (37/45 have tests)
-  End-to-end:               64% (features with full req+test chain)
+  Epics → Features:         100% (4/4 have features)
+  Features → Requirements:   78% (18/23 have requirements)
+  Requirements → Tests:      82% (37/45 have tests)
+  End-to-end:                64% (features with full req+test chain)
+
+Staleness:
+  Stale features:     2 (parent epic updated)
+  Cascade affected:   5 reqs, 3 tests
 
 Missing:
   [!] Feature "WebSocket streaming" has 0 requirements
   [!] Requirement "Compact layout threshold" has no test
-  [!] Iterator SUPPORTED_PROTOCOLS defined but never referenced
+```
+
+---
+
+### 11. ViteTool — Human Review Web UI
+
+**Standalone app.** Not a Claude Code skill — a Python + Vite + SQLite web application that the PM skill can launch and that reads/writes the same `.claude/db/marketing.sqlite`.
+
+**Purpose:** Make the human's review job as fast as possible.
+
+**Core capabilities:**
+- **Browse** — tree view: Epics → Features → Requirements → Tests
+- **Direct edit** — click any entity to edit inline
+- **Approve/Disapprove** — single click +/- per entity (epic, feature, requirement, test)
+- **AI feedback** — text box per entity to send feedback back to Claude (writes to a `feedback` column or table)
+- **Staleness view** — highlight stale entities, show what upstream change caused it
+- **Cascade impact** — click an epic/feature to see all downstream entities affected if it changes
+- **Iterator glossary** — always visible, expandable, showing all iterators and their values
+- **Bulk actions** — approve all requirements under a feature, mark all tests as stale, etc.
+
+**Tech stack:**
+- Backend: Python (FastAPI or Flask), direct SQLite access
+- Frontend: Vite + vanilla JS (or lightweight framework)
+- No authentication needed — local tool
+- PM skill can launch it: `python vitetool/serve.py --db .claude/db/marketing.sqlite`
+
+**Iterator display:** Iterator names in entity text are rendered as-is. Hovering shows the expanded values (tooltip/alt text). Full glossary always accessible.
+
+---
+
+## Dependency Tracking System — `base_version`
+
+Every entity in the hierarchy records which version of its parent it was derived from:
+
+```
+Entity          | Parent        | Tracks
+----------------|---------------|---------------------------
+Feature         | Epic          | epic_id + base_version
+Requirement     | Feature       | feature_id + base_version
+Test            | Requirement   | requirement_id + base_version
+```
+
+**Staleness rule:** An entity is stale when `parent.version > child.base_version`.
+
+**Cascade rule:** If an entity is stale, all its descendants are implicitly stale too.
+
+**Resolution:** Human reviews the stale entity (in ViteTool or via interact mode), updates it if needed, bumps its version, and sets `base_version` to the current parent version.
+
+**Schema columns added to all entity tables:**
+```sql
+version         INTEGER NOT NULL DEFAULT 1,    -- this entity's version
+base_version    INTEGER NOT NULL DEFAULT 1,    -- parent's version when this was created/confirmed
 ```
 
 ---
 
 ## Database Schema Changes Summary
 
-New tables needed:
-1. `meta_features` — epic-level features
-2. `meta_feature_versions` — version history for meta-features
-3. `requirements` — derived from features
-4. `requirement_versions` — version history for requirements
-5. `iterators` — named value lists
-6. `iterator_values` — values within iterators
+**New tables:**
+1. `epics` — epic-level features (replaces meta_features concept)
+2. `epic_versions` — version history for epics
+3. `epic_tags` — tag associations for epics
+4. `requirements` — derived from features
+5. `requirement_versions` — version history for requirements
+6. `iterators` — named value lists
+7. `iterator_values` — values within iterators
 
-Modified tables:
-1. `product_features` — add `meta_feature_id` FK (nullable)
-2. `product_feature_tests` — add `requirement_id` FK (nullable)
+**Modified tables:**
+1. `product_features` — add `epic_id` (NOT NULL), `base_version`
+2. `product_feature_tests` — add `requirement_id`, `base_version`
 
 ---
 
 ## Skill File Size Target
 
-Each SKILL.md should be under **150 lines**. If it's longer, it's doing too much. The old feature-tracker was 440 lines — that's exactly what we're avoiding.
+Each SKILL.md should be under **150 lines**. If it's longer, it's doing too much.
 
 ---
 
-## Open Questions
+## Complete Skill Inventory
 
-<!-- Mark these with your decision and I'll incorporate -->
+| # | Skill | File | Purpose |
+|---|-------|------|---------|
+| 1 | PM | `skills/pm/SKILL.md` | Orchestrator — parses intent, dispatches, tracks coverage |
+| 2 | Epic | `skills/pm-epic/SKILL.md` | Big-picture capabilities |
+| 3 | Feature | `skills/pm-feature/SKILL.md` | Breaks epics into deliverables |
+| 4 | Requirement | `skills/pm-requirement/SKILL.md` | Atomic pass/fail criteria from features |
+| 5 | Test | `skills/pm-test/SKILL.md` | Human-readable test criteria, iterator-native |
+| 6 | Iterator | `skills/pm-iterator/SKILL.md` | Named reusable value lists |
+| 7 | Auditor | `skills/pm-auditor/SKILL.md` | Dependency chain integrity, staleness detection |
+| 8 | Preflight | `skills/pm-preflight/SKILL.md` | Environment validation, schema migrations |
+| 9 | Publish | `skills/pm-publish/SKILL.md` | Markdown generation from DB |
+| 10 | Status | `skills/pm-status/SKILL.md` | Coverage dashboard |
+| 11 | ViteTool | `vitetool/` | Web UI for human review (standalone app) |
 
-1. **Review workflow** — Should PM orchestrate batch review of unapproved items? Or separate skill?
-2. **Meta-feature versioning** — Full version history table, or simple version counter?
-3. **Requirement versioning** — Same question.
-4. **Test-to-requirement linking** — Must every requirement have a test? Or optional?
-5. **Iterator expansion** — Expand in body text, or keep as names with appendix?
-6. **Draft publish mode** — Include unapproved items with visual markers?
-7. **API key check** — Preflight or PM responsibility?
-8. **Standalone features** — Allow features without a parent meta-feature?
+---
+
+## Decisions Log
+
+| # | Question | Decision |
+|---|----------|----------|
+| 1 | Review workflow | ViteTool handles review. PM coordinates but never sets human_approved. |
+| 2 | Epic versioning | Full version history + base_version dependency tracking. |
+| 3 | Requirement versioning | Same — full history + base_version. |
+| 4 | Test-to-requirement linking | Every requirement MUST have a test. AI can derive from feature-level descriptions. |
+| 5 | Iterator expansion | Never expand inline. Glossary at top. ViteTool uses hover/alt text. |
+| 6 | Draft publish mode | No draft mode. Publish publishes everything. ViteTool manages approval state. |
+| 7 | API key check | Not needed — we're inside Claude Code. |
+| 8 | Standalone features | Not allowed. Every feature must belong to an epic. |
+| 9 | Naming | meta-feature → **epic**. More accepted industry term. |
