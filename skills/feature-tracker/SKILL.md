@@ -30,6 +30,39 @@ Maintain detailed product feature specifications in SQLite. Features are authore
 /feature-tracker <product> init                       # Initialize product
 ```
 
+## Preflight Check (REQUIRED — run before ANY action)
+
+Before doing anything else, run this check. **If it fails, STOP. Do not fall back to markdown files, flat files, or any workaround. Fix the dependency first.**
+
+```bash
+# 1. Check sqlite3 is available
+which sqlite3 || python3 -c "import sqlite3; print('python3-sqlite3')"
+
+# 2. Check DB directory exists
+ls .claude/db/ 2>/dev/null || mkdir -p .claude/db
+
+# 3. Check DB is initialized (has tables)
+sqlite3 .claude/db/marketing.sqlite ".tables" 2>/dev/null | grep -q product_features
+```
+
+**If sqlite3 is not installed:**
+```
+STOP: sqlite3 is not available on this system.
+
+Install it:
+  macOS:    brew install sqlite3
+  Ubuntu:   sudo apt-get install sqlite3
+  Alpine:   apk add sqlite
+  Python:   sqlite3 module is built-in — use python3 instead of sqlite3 CLI
+
+Cannot proceed without SQLite. This skill MUST NOT write directly to markdown
+or any other format as a workaround. The database is the source of truth.
+```
+
+Present this message to the user and stop. Do not attempt alternative approaches.
+
+**If DB exists but tables are missing**, run [schema.sql](schema.sql) and the competitive-intel schema first.
+
 ## Database
 
 **Path:** `.claude/db/marketing.sqlite` (shared with competitive-intel)
@@ -37,6 +70,8 @@ Maintain detailed product feature specifications in SQLite. Features are authore
 Schema is in [schema.sql](schema.sql). Queries are in [queries.sql](queries.sql). Reuses `our_products` and `tags` tables from competitive-intel.
 
 Always run `PRAGMA foreign_keys=ON;` before writes.
+
+**NEVER write feature data directly to markdown, JSON, or any other file.** The database is the only place feature data is stored. Markdown is only generated via the `publish` command from database contents.
 
 ## Iteration Patterns
 
@@ -437,3 +472,4 @@ When tags are provided as argument, save them to `publish_tag_order` for next ti
 10. **Tests are required** — prompt during add, flag missing in status dashboard.
 11. **human_approved** — `add` (interview) → `1`. `scan-docs`/`scan-code` → `0`. Only `review` or `edit` flips 0 → 1.
 12. **source tracking** — every feature records origin: `interview`, `docs:<path>`, or `code:<path>`.
+13. **NEVER bypass SQLite** — if sqlite3 is unavailable, STOP and tell the user to install it. Do not write to markdown, JSON, CSV, or any alternative. No workarounds. No fallbacks. The database is the only data store.

@@ -39,3 +39,4 @@ Thumbs.db
 .warden/.env
 .warden.bak/
 .warden/warden-cellserver
+temp/
