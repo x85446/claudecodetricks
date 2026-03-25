@@ -87,6 +87,21 @@ PM interviews a human. Human leads the conversation.
 
 PM dispatches to the appropriate skill which runs its own h/ai or ai/h iteration loop. PM tracks what's been covered and what's missing.
 
+### Mode 3: Voice
+
+Same as Interact, but the human speaks instead of types. Voice is the natural way to describe features — faster, more fluid, captures nuance that gets lost when typing shorthand.
+
+```
+/pm myriplay voice
+/pm myriplay voice new feature
+```
+
+PM activates voice capture, human speaks freely, speech is transcribed, then PM processes the transcript the same way it would typed input. The human can also speak feedback during iteration loops ("yeah that's good", "no, change the second requirement to...").
+
+Voice works in two places:
+1. **Claude Code terminal** — via VoiceMode (existing infrastructure). PM tells VoiceMode to listen, gets transcript back, processes it.
+2. **ViteTool** — browser-based voice input via Web Speech API. Click a mic icon on any entity to speak feedback, edits, or new content. No server-side STT needed — the browser handles it.
+
 ---
 
 ## Skill Inventory
@@ -514,7 +529,7 @@ Missing:
 - **Browse** — tree view: Epics → Features → Requirements → Tests
 - **Direct edit** — click any entity to edit inline
 - **Approve/Disapprove** — single click +/- per entity (epic, feature, requirement, test)
-- **AI feedback** — text box per entity to send feedback back to Claude (writes to a `feedback` column or table)
+- **AI feedback** — text box or voice input per entity to send feedback back to Claude (writes to a `feedback` column or table). Mic icon next to every feedback field — click to speak, transcript fills the field.
 - **Staleness view** — highlight stale entities, show what upstream change caused it
 - **Cascade impact** — click an epic/feature to see all downstream entities affected if it changes
 - **Iterator glossary** — always visible. Iterator names in entity text are clickable — alt text/tooltip shows current values, clicking opens an inline editor to add/remove values. Changes propagate globally to all entities referencing that iterator.
@@ -523,6 +538,7 @@ Missing:
 **Tech stack:**
 - Backend: Python (FastAPI or Flask), direct SQLite access
 - Frontend: Vite + vanilla JS (or lightweight framework)
+- Voice input: Web Speech API (browser-native, no server-side STT)
 - No authentication needed — local tool
 - PM skill can launch it: `python vitetool/serve.py --db .claude/db/marketing.sqlite`
 
