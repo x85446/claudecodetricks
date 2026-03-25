@@ -1,21 +1,6 @@
 # PM — Product Manager Skill System
 
-> Design document for the feature-tracker rewrite. v2 — incorporates Travis's feedback.
-
----
-
-## Why Rewrite
-
-The current feature-tracker is one monolithic SKILL.md (~440 lines). Problems:
-
-1. **Claude loses context** mid-execution on long workflows (scan + populate + publish)
-2. **Scan workflows skip tests and requirements** — only features get populated
-3. **No requirements concept** exists at all
-4. **No iterator/macro system** — repeated lists get copy-pasted and drift
-5. **No orchestration** — the skill tries to do everything itself
-6. **sqlite3 dependency** not enforced — Claude falls back to writing markdown directly
-7. **No dependency tracking** — upstream changes silently invalidate downstream work
-8. **No human review UI** — approvals happen in chat, which is slow and error-prone
+> Design document for the PM skill system.
 
 ---
 
