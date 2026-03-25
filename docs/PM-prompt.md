@@ -627,3 +627,4 @@ Each SKILL.md should be under **150 lines**. If it's longer, it's doing too much
 | 7 | API key check | Not needed — we're inside Claude Code. |
 | 8 | Standalone features | Not allowed. Every feature must belong to an epic. |
 | 9 | Naming | meta-feature → **epic**. More accepted industry term. |
+| 10 | Voice input | Mode 3 for CLI (via VoiceMode), Web Speech API in ViteTool. Speak instead of type anywhere. |
