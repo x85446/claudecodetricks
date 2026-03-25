@@ -62,6 +62,16 @@ install_skill() {
     fi
 }
 
+# PM skills list
+PM_SKILLS="pm pm-epic pm-feature pm-requirement pm-test pm-iterator pm-auditor pm-preflight pm-publish pm-status"
+
+install_pm_skills() {
+    local dest=$1
+    for s in $PM_SKILLS; do
+        install_skill "$s" "$dest"
+    done
+}
+
 do_install() {
     local skill=$1
     case "$skill" in
@@ -71,6 +81,10 @@ do_install() {
         feature-tracker)
             install_skill feature-tracker "$IMARKETING"
             install_skill feature-tracker "$IMYRIPLAY"
+            ;;
+        pm|pm-*)
+            install_pm_skills "$IMARKETING"
+            install_pm_skills "$IMYRIPLAY"
             ;;
         tax-organizer)
             install_skill tax-organizer "$TAXES"
