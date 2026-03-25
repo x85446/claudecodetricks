@@ -1,0 +1,3 @@
+name: personaldb
+type: sqlite
+filename: /Users/travis/workspace/x85446/financeSheets/personaldb/db/personaldb.sqlite

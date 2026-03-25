@@ -1,0 +1,22 @@
+  type: metrics_view
+  model: model
+  timeseries: date
+  measures:
+    - name: total_spent
+      expression: "SUM(ABS(price))"
+      format_preset: currency
+    - name: txn_count
+      expression: "COUNT(*)"
+  dimensions:
+    - name: year
+      column: year
+    - name: category
+      column: category
+    - name: sub_category
+      column: sub_category
+    - name: company
+      column: company
+    - name: site
+      column: site
+    - name: item
+      column: item

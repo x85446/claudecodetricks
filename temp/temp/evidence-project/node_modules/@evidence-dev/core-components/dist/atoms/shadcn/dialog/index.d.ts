@@ -1,0 +1,11 @@
+export const Root: typeof DialogPrimitive.Root;
+import Title from './dialog-title.svelte';
+import Portal from './dialog-portal.svelte';
+import Footer from './dialog-footer.svelte';
+import Header from './dialog-header.svelte';
+export const Trigger: typeof DialogPrimitive.Trigger;
+import Overlay from './dialog-overlay.svelte';
+import Content from './dialog-content.svelte';
+import Description from './dialog-description.svelte';
+import { Dialog as DialogPrimitive } from 'bits-ui';
+export { Title, Portal, Footer, Header, Overlay, Content, Description, Root as Dialog, Title as DialogTitle, Portal as DialogPortal, Footer as DialogFooter, Header as DialogHeader, Trigger as DialogTrigger, Overlay as DialogOverlay, Content as DialogContent, Description as DialogDescription };

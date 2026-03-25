@@ -1,0 +1,16 @@
+  SELECT
+      year,
+      TRY_CAST(date AS DATE) AS date,
+      site,
+      item,
+      price,
+      CASE WHEN company = '-' THEN 'Personal' ELSE company END AS company,
+      category,
+      sub_category,
+      sub_sub,
+      is_plumbing
+  FROM sqlite_scan('/Users/travis/workspace/x85446/financeSheets/personaldb/db/personaldb.sqlite', 'transactions')
+  WHERE is_plumbing = 0
+    AND date IS NOT NULL
+    AND date != ''
+    AND date LIKE '____-__-__'
