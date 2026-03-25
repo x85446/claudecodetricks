@@ -517,8 +517,8 @@ Missing:
 - **AI feedback** — text box per entity to send feedback back to Claude (writes to a `feedback` column or table)
 - **Staleness view** — highlight stale entities, show what upstream change caused it
 - **Cascade impact** — click an epic/feature to see all downstream entities affected if it changes
-- **Iterator glossary** — always visible, expandable, showing all iterators and their values
-- **Bulk actions** — approve all requirements under a feature, mark all tests as stale, etc.
+- **Iterator glossary** — always visible. Iterator names in entity text are clickable — alt text/tooltip shows current values, clicking opens an inline editor to add/remove values. Changes propagate globally to all entities referencing that iterator.
+- **Bulk actions** — approve a parent entity and checkmarks cascade to all children. Then override individual ones as needed. Same for disapproval and staleness marking.
 
 **Tech stack:**
 - Backend: Python (FastAPI or Flask), direct SQLite access
@@ -546,9 +546,10 @@ Test            | Requirement   | requirement_id + base_version
 
 **Cascade rule:** If an entity is stale, all its descendants are implicitly stale too.
 
-**Resolution:** Human reviews the stale entity (in ViteTool or via interact mode), updates it if needed, bumps its version, and sets `base_version` to the current parent version.
+**Resolution is automatic.** The human never manually bumps versions or cascades. Any edit — whether direct in ViteTool or via AI feedback in interact mode — auto-increments the entity's `version` and snapshots to the version history table. When saving, `base_version` is set to the current parent version, clearing staleness. The human just edits content; the system handles the bookkeeping.
 
 **Schema columns added to all entity tables:**
+
 ```sql
 version         INTEGER NOT NULL DEFAULT 1,    -- this entity's version
 base_version    INTEGER NOT NULL DEFAULT 1,    -- parent's version when this was created/confirmed
