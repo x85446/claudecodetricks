@@ -513,9 +513,11 @@ Missing:
 
 **Launch:** `/pm webtool` or directly:
 ```bash
-python3 ~/workspace/x85446/claudecodetricks/webtool/serve.py --project "$(pwd)"
+python3 .claude/webtool/serve.py --project "$(pwd)"
 # Opens http://localhost:8420
 ```
+
+**Deployed by installer** to `.claude/webtool/` in each project. Never reference the claudecodetricks backup repo from skills — skills must be self-contained at the deploy target.
 
 **Dependencies:** `pip3 install fastapi uvicorn`
 

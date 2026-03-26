@@ -65,11 +65,30 @@ install_skill() {
 # PM skills list
 PM_SKILLS="pm pm-epic pm-feature pm-requirement pm-test pm-iterator pm-auditor pm-preflight pm-publish pm-status pm-webtool"
 
+WEBTOOL_SRC=~/workspace/x85446/claudecodetricks/webtool
+
+install_webtool() {
+    local project_root=$1
+    local dest="$project_root/.claude/webtool"
+    mkdir -p "$dest/static"
+    if cp "$WEBTOOL_SRC/serve.py" "$dest/" 2>/dev/null && \
+       cp "$WEBTOOL_SRC/requirements.txt" "$dest/" 2>/dev/null && \
+       cp "$WEBTOOL_SRC/static/"* "$dest/static/" 2>/dev/null; then
+        ok "webtool" "$dest"
+    else
+        fail "webtool" "copy failed"
+    fi
+}
+
 install_pm_skills() {
     local dest=$1
+    # dest is like ~/workspace/izuma/myriplay/.claude/skills
+    # project root is two dirs up from .claude/skills
+    local project_root=$(dirname "$(dirname "$dest")")
     for s in $PM_SKILLS; do
         install_skill "$s" "$dest"
     done
+    install_webtool "$project_root"
 }
 
 do_install() {

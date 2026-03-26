@@ -17,19 +17,25 @@ Launch a web-based review tool for browsing, editing, and approving PM database 
 
 ## Steps
 
-1. **Check dependencies.** Verify fastapi and uvicorn are installed:
+1. **Locate the webtool.** Look for `serve.py` in this order:
+   ```
+   .claude/webtool/serve.py          (project-local install)
+   ```
+   If not found, the installer hasn't run. Tell the user:
+   ```
+   WebTool not installed. Run the skill installer to deploy it:
+     ~/workspace/x85446/claudecodetricks/skills/skillinstall.sh pm
+   ```
+
+2. **Check dependencies.** Verify the server can run:
    ```bash
    python3 -c "import fastapi; import uvicorn" 2>/dev/null || python3 -m pip install fastapi uvicorn
    ```
-
-2. **Locate the webtool.** The serve.py file is at:
-   ```
-   ~/workspace/x85446/claudecodetricks/webtool/serve.py
-   ```
+   If Python is unavailable, try Node.js — the webtool includes a `serve-node.js` fallback. (TODO: not yet implemented)
 
 3. **Launch the server.** Run in the background:
    ```bash
-   python3 ~/workspace/x85446/claudecodetricks/webtool/serve.py --project "$(pwd)" &
+   python3 .claude/webtool/serve.py --project "$(pwd)" &
    ```
    This starts on port 8420 and auto-opens the browser.
 
@@ -55,3 +61,4 @@ Launch a web-based review tool for browsing, editing, and approving PM database 
 1. WebTool is the ONLY place that sets `human_approved = 1`.
 2. The PM skill and sub-skills never set `human_approved` directly.
 3. Server reads/writes the same `.claude/db/marketing.sqlite` as all PM skills.
+4. **Never reference `~/workspace/x85446/claudecodetricks/` from skills.** The webtool is deployed to `.claude/webtool/` in each project by the installer.
