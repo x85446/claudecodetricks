@@ -20,17 +20,14 @@ Launch a web-based review tool for browsing, editing, and approving PM database 
 1. **Locate the webtool.** Look for `.claude/webtool/serve.py` in the current project.
    If not found, tell the user to run the installer.
 
-2. **Install dependencies.** Run this — it's idempotent and fast if already installed:
+2. **Install dependencies.** Ensure pip exists, then install:
    ```bash
-   python3 -m pip install -q fastapi uvicorn 2>/dev/null || pip3 install -q fastapi uvicorn 2>/dev/null || pip install -q fastapi uvicorn
+   # Get pip if missing
+   python3 -m pip --version 2>/dev/null || python3 -m ensurepip --upgrade 2>/dev/null || sudo apt-get install -y python3-pip
+   # Install FastAPI + uvicorn
+   python3 -m pip install -q fastapi uvicorn
    ```
-   If all pip variants fail, tell the user:
-   ```
-   pip is not available. Install it first:
-     macOS:   python3 -m ensurepip --upgrade
-     Ubuntu:  sudo apt-get install python3-pip
-     Or:      curl -sS https://bootstrap.pypa.io/get-pip.py | python3
-   ```
+   Do NOT build Node.js fallbacks or alternative servers. Just install the dependencies.
 
 3. **Launch the server.** Run in the background:
    ```bash
