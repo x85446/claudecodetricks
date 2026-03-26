@@ -63,7 +63,7 @@ install_skill() {
 }
 
 # PM skills list
-PM_SKILLS="pm pm-epic pm-feature pm-requirement pm-test pm-iterator pm-auditor pm-preflight pm-publish pm-status"
+PM_SKILLS="pm pm-epic pm-feature pm-requirement pm-test pm-iterator pm-auditor pm-preflight pm-publish pm-status pm-webtool"
 
 install_pm_skills() {
     local dest=$1
