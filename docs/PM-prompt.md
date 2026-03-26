@@ -4,7 +4,7 @@
 
 ---
 
-## Architecture: PM + Focused Skills + ViteTool
+## Architecture: PM + Focused Skills + WebTool
 
 ```
     Natural language → /pm myriplay scan this code and write the epics and features
@@ -30,12 +30,12 @@
                       preflight  publish   status
                                     |
                               +-----+-----+
-                              | ViteTool  |  (web UI — Python + Vite + SQLite)
+                              | WebTool  |  (web UI — Python + Vite + SQLite)
                               +-----------+
 ```
 
 Each box is a separate SKILL.md — small, focused, and independently testable.
-ViteTool is a standalone web app that reads/writes the same database.
+WebTool is a standalone web app that reads/writes the same database.
 
 ---
 
@@ -58,7 +58,7 @@ PM dispatches work:
 5. Calls **iterator** skill whenever repeated value lists are detected
 6. Calls **auditor** skill to verify dependency chain integrity
 
-All results land in DB with `human_approved = 0`. Human reviews in ViteTool.
+All results land in DB with `human_approved = 0`. Human reviews in WebTool.
 
 ### Mode 2: Interact
 
@@ -85,7 +85,7 @@ PM activates voice capture, human speaks freely, speech is transcribed, then PM 
 
 Voice works in two places:
 1. **Claude Code terminal** — via VoiceMode (existing infrastructure). PM tells VoiceMode to listen, gets transcript back, processes it.
-2. **ViteTool** — browser-based voice input via Web Speech API. Click a mic icon on any entity to speak feedback, edits, or new content. No server-side STT needed — the browser handles it.
+2. **WebTool** — browser-based voice input via Web Speech API. Click a mic icon on any entity to speak feedback, edits, or new content. No server-side STT needed — the browser handles it.
 
 ---
 
@@ -108,7 +108,7 @@ Voice works in two places:
 **Does NOT do:**
 - Write epics, features, requirements, or tests
 - Make content decisions
-- Set `human_approved` on anything — only ViteTool or explicit human action does that
+- Set `human_approved` on anything — only WebTool or explicit human action does that
 - Talk to the database directly (except for coverage queries)
 
 ---
@@ -409,7 +409,7 @@ Actions:
 
 **Staleness propagates:** If a feature is stale, all its requirements and tests are implicitly stale too (cascade), even if their own `base_version` matches their direct parent. The auditor shows the full cascade.
 
-**After human review in ViteTool:** When someone updates a stale entity, they bump its version and set `base_version` to the current parent version. This clears the staleness.
+**After human review in WebTool:** When someone updates a stale entity, they bump its version and set `base_version` to the current parent version. This clears the staleness.
 
 ---
 
@@ -450,7 +450,7 @@ Actions:
 - **requirements** — epic → feature → requirement → test hierarchy
 - **full** — complete product spec: everything
 
-**Publishes ALL items** regardless of `human_approved` status. Approval state is visible in ViteTool, not in published markdown.
+**Publishes ALL items** regardless of `human_approved` status. Approval state is visible in WebTool, not in published markdown.
 
 **Iterator handling:**
 - Body text keeps iterator references as-is — never auto-expanded
@@ -504,7 +504,7 @@ Missing:
 
 ---
 
-### 11. ViteTool — Human Review Web UI
+### 11. WebTool — Human Review Web UI
 
 **Standalone app.** Not a Claude Code skill — a Python + Vite + SQLite web application that the PM skill can launch and that reads/writes the same `.claude/db/marketing.sqlite`.
 
@@ -525,7 +525,7 @@ Missing:
 - Frontend: Vite + vanilla JS (or lightweight framework)
 - Voice input: Web Speech API (browser-native, no server-side STT)
 - No authentication needed — local tool
-- PM skill can launch it: `python vitetool/serve.py --db .claude/db/marketing.sqlite`
+- PM skill can launch it: `python webtool/serve.py --db .claude/db/marketing.sqlite`
 
 **Iterator display:** Iterator names in entity text are rendered as-is. Hovering shows the expanded values (tooltip/alt text). Full glossary always accessible.
 
@@ -547,7 +547,7 @@ Test            | Requirement   | requirement_id + base_version
 
 **Cascade rule:** If an entity is stale, all its descendants are implicitly stale too.
 
-**Resolution is automatic.** The human never manually bumps versions or cascades. Any edit — whether direct in ViteTool or via AI feedback in interact mode — auto-increments the entity's `version` and snapshots to the version history table. When saving, `base_version` is set to the current parent version, clearing staleness. The human just edits content; the system handles the bookkeeping.
+**Resolution is automatic.** The human never manually bumps versions or cascades. Any edit — whether direct in WebTool or via AI feedback in interact mode — auto-increments the entity's `version` and snapshots to the version history table. When saving, `base_version` is set to the current parent version, clearing staleness. The human just edits content; the system handles the bookkeeping.
 
 **Schema columns added to all entity tables:**
 
@@ -595,7 +595,7 @@ Each SKILL.md should be under **150 lines**. If it's longer, it's doing too much
 | 8 | Preflight | `skills/pm-preflight/SKILL.md` | Environment validation, schema migrations |
 | 9 | Publish | `skills/pm-publish/SKILL.md` | Markdown generation from DB |
 | 10 | Status | `skills/pm-status/SKILL.md` | Coverage dashboard |
-| 11 | ViteTool | `vitetool/` | Web UI for human review (standalone app) |
+| 11 | WebTool | `webtool/` | Web UI for human review (standalone app) |
 
 ---
 
@@ -603,13 +603,13 @@ Each SKILL.md should be under **150 lines**. If it's longer, it's doing too much
 
 | # | Question | Decision |
 |---|----------|----------|
-| 1 | Review workflow | ViteTool handles review. PM coordinates but never sets human_approved. |
+| 1 | Review workflow | WebTool handles review. PM coordinates but never sets human_approved. |
 | 2 | Epic versioning | Full version history + base_version dependency tracking. |
 | 3 | Requirement versioning | Same — full history + base_version. |
 | 4 | Test-to-requirement linking | Every requirement MUST have a test. AI can derive from feature-level descriptions. |
-| 5 | Iterator expansion | Never expand inline. Glossary at top. ViteTool uses hover/alt text. |
-| 6 | Draft publish mode | No draft mode. Publish publishes everything. ViteTool manages approval state. |
+| 5 | Iterator expansion | Never expand inline. Glossary at top. WebTool uses hover/alt text. |
+| 6 | Draft publish mode | No draft mode. Publish publishes everything. WebTool manages approval state. |
 | 7 | API key check | Not needed — we're inside Claude Code. |
 | 8 | Standalone features | Not allowed. Every feature must belong to an epic. |
 | 9 | Naming | meta-feature → **epic**. More accepted industry term. |
-| 10 | Voice input | Mode 3 for CLI (via VoiceMode), Web Speech API in ViteTool. Speak instead of type anywhere. |
+| 10 | Voice input | Mode 3 for CLI (via VoiceMode), Web Speech API in WebTool. Speak instead of type anywhere. |

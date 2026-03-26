@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Review Tool</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <h1 class="logo">PM Review</h1>
+      <div class="product-selector">
+        <label for="product-select">Product:</label>
+        <select id="product-select">
+          <option value="">Select a product...</option>
+        </select>
+      </div>
+    </div>
+    <div class="top-bar-right">
+      <button id="iterator-glossary-btn" class="btn btn-secondary">Iterator Glossary</button>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <div id="loading" class="loading hidden">Loading...</div>
+    <div id="empty-state" class="empty-state">
+      <p>Select a product to begin reviewing.</p>
+    </div>
+    <div id="tree-container" class="tree-container hidden"></div>
+  </main>
+
+  <div id="iterator-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Iterator Glossary</h2>
+        <button id="iterator-modal-close" class="btn-close">&times;</button>
+      </div>
+      <div id="iterator-modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

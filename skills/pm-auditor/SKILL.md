@@ -85,7 +85,7 @@ Audit a single epic's tree — show all descendants and their staleness status:
 
 ## Resolution
 
-Resolution is automatic. When a human edits a stale entity (via ViteTool or interact mode):
+Resolution is automatic. When a human edits a stale entity (via WebTool or interact mode):
 - Entity `version` auto-increments
 - `base_version` is set to current parent `version`
 - Staleness clears

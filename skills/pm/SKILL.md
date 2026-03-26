@@ -85,7 +85,7 @@ Coverage Gaps:
   [!] 2 features stale (parent epic updated)
 
 Next Steps:
-  - Review unapproved items in ViteTool
+  - Review unapproved items in WebTool
   - Run /pm myriplay audit for full staleness report
 ```
 
@@ -121,7 +121,7 @@ WHERE pf.product_id = :pid AND t.id IS NULL;
 ## Rules
 
 1. **Never write to DB directly.** Delegate to sub-skills.
-2. **Never set `human_approved`.** Only ViteTool or explicit human action does that.
+2. **Never set `human_approved`.** Only WebTool or explicit human action does that.
 3. **Always run preflight first.**
 4. **Always report coverage gaps** after completing work.
 5. **Work top-down.** Epics before features before requirements before tests.
