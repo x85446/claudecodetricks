@@ -17,21 +17,20 @@ Launch a web-based review tool for browsing, editing, and approving PM database 
 
 ## Steps
 
-1. **Locate the webtool.** Look for `serve.py` in this order:
-   ```
-   .claude/webtool/serve.py          (project-local install)
-   ```
-   If not found, the installer hasn't run. Tell the user:
-   ```
-   WebTool not installed. Run the skill installer to deploy it:
-     ~/workspace/x85446/claudecodetricks/skills/skillinstall.sh pm
-   ```
+1. **Locate the webtool.** Look for `.claude/webtool/serve.py` in the current project.
+   If not found, tell the user to run the installer.
 
-2. **Check dependencies.** Verify the server can run:
+2. **Install dependencies.** Run this — it's idempotent and fast if already installed:
    ```bash
-   python3 -c "import fastapi; import uvicorn" 2>/dev/null || python3 -m pip install fastapi uvicorn
+   python3 -m pip install -q fastapi uvicorn 2>/dev/null || pip3 install -q fastapi uvicorn 2>/dev/null || pip install -q fastapi uvicorn
    ```
-   If Python is unavailable, try Node.js — the webtool includes a `serve-node.js` fallback. (TODO: not yet implemented)
+   If all pip variants fail, tell the user:
+   ```
+   pip is not available. Install it first:
+     macOS:   python3 -m ensurepip --upgrade
+     Ubuntu:  sudo apt-get install python3-pip
+     Or:      curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+   ```
 
 3. **Launch the server.** Run in the background:
    ```bash
