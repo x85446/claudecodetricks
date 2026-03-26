@@ -619,3 +619,5 @@ Each SKILL.md should be under **150 lines**. If it's longer, it's doing too much
 | 8 | Standalone features | Not allowed. Every feature must belong to an epic. |
 | 9 | Naming | meta-feature → **epic**. More accepted industry term. |
 | 10 | Voice input | Mode 3 for CLI (via VoiceMode), Web Speech API in WebTool. Speak instead of type anywhere. |
+| 11 | Product auto-detect | Product code is optional when only one product exists in the DB. No need to type "myriplay" every time. |
+| 12 | WebTool invocation | `/pm webtool` launches the web review UI. Recognized as a mode keyword by PM orchestrator. |
