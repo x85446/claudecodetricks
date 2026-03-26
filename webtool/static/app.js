@@ -112,6 +112,31 @@
     }
   }
 
+  // ── Expand / Collapse All ─────────────────────────────────────────────
+  function expandAll() {
+    treeContainer.querySelectorAll('.tree-node').forEach(function (node) {
+      var children = node.querySelector('.node-children');
+      var toggle = node.querySelector('.node-toggle');
+      if (children) { children.classList.remove('hidden'); }
+      if (toggle && !toggle.classList.contains('leaf')) { toggle.classList.add('open'); }
+    });
+  }
+
+  function collapseAll() {
+    treeContainer.querySelectorAll('.tree-node').forEach(function (node) {
+      var children = node.querySelector('.node-children');
+      var toggle = node.querySelector('.node-toggle');
+      if (children) { children.classList.add('hidden'); }
+      if (toggle) { toggle.classList.remove('open'); }
+    });
+  }
+
+  // Wire up expand/collapse buttons (added to top bar in index.html)
+  var expandBtn = document.getElementById('expand-all');
+  var collapseBtn = document.getElementById('collapse-all');
+  if (expandBtn) expandBtn.addEventListener('click', expandAll);
+  if (collapseBtn) collapseBtn.addEventListener('click', collapseAll);
+
   // ── Tree rendering ─────────────────────────────────────────────────────
   function renderTree() {
     treeContainer.innerHTML = '';
@@ -145,10 +170,17 @@
     toggle.textContent = '\u25B6';
     header.appendChild(toggle);
 
-    // Name
+    // Type label
+    var typeLabel = document.createElement('span');
+    typeLabel.className = 'badge badge-type badge-type-' + level;
+    typeLabel.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+    header.appendChild(typeLabel);
+
+    // Name — features use short_desc, requirements and tests use title, epics use name
+    var displayName = node.name || node.short_desc || node.title || '(untitled)';
     var name = document.createElement('span');
     name.className = 'node-name';
-    name.textContent = node.name || node.title || '(untitled)';
+    name.textContent = displayName;
     name.addEventListener('click', function (e) {
       e.stopPropagation();
       toggleEditPanel(wrapper, node, level);

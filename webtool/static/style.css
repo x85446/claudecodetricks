@@ -364,6 +364,36 @@ main {
   flex-shrink: 0;
 }
 
+.badge-type {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-right: 6px;
+}
+
+.badge-type-epic {
+  background: rgba(155, 89, 182, 0.25);
+  color: #c39bd3;
+}
+
+.badge-type-feature {
+  background: rgba(52, 152, 219, 0.25);
+  color: #7fb3e0;
+}
+
+.badge-type-requirement {
+  background: rgba(230, 126, 34, 0.25);
+  color: #e0a06f;
+}
+
+.badge-type-test {
+  background: rgba(46, 204, 113, 0.25);
+  color: #7dcea0;
+}
+
 .badge-version {
   background: var(--accent-blue);
   color: var(--accent-blue-light);
