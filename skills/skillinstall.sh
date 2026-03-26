@@ -82,9 +82,17 @@ do_install() {
             install_skill feature-tracker "$IMARKETING"
             install_skill feature-tracker "$IMYRIPLAY"
             ;;
-        pm|pm-*)
+        pm)
             install_pm_skills "$IMARKETING"
             install_pm_skills "$IMYRIPLAY"
+            ;;
+        pm-*)
+            # Skip during install_all (pm handles the batch).
+            # But if called directly, install this one skill.
+            if [ -n "$DIRECT_INSTALL" ]; then
+                install_skill "$skill" "$IMARKETING"
+                install_skill "$skill" "$IMYRIPLAY"
+            fi
             ;;
         tax-organizer)
             install_skill tax-organizer "$TAXES"
@@ -113,7 +121,7 @@ install_all() {
 
 if [ -n "$1" ]; then
     header "Installing: $1"
-    do_install "$1"
+    DIRECT_INSTALL=1 do_install "$1"
 else
     header "Installing all skills:"
     install_all
