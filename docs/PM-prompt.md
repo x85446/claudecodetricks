@@ -7,9 +7,10 @@
 ## Architecture: PM + Focused Skills + WebTool
 
 ```
-    Natural language → /pm myriplay scan this code and write the epics and features
-                       /pm myriplay interview me about a new feature
-                       /pm myriplay I need a new feature, when X happens we want Y
+    Natural language → /pm scan this code and write the epics and features
+                       /pm interview me about a new feature
+                       /pm I need a new feature, when X happens we want Y
+                       /pm webtool
                                     |
                               +-----+-----+
                               |    PM     |  (orchestrator)
@@ -37,6 +38,8 @@
 Each box is a separate SKILL.md — small, focused, and independently testable.
 WebTool is a standalone web app that reads/writes the same database.
 
+**Product auto-detection:** When only one product exists in the database, the product code is optional. `/pm status` works the same as `/pm myriplay status`.
+
 ---
 
 ## Modes
@@ -46,8 +49,8 @@ WebTool is a standalone web app that reads/writes the same database.
 PM is pointed at code, documents, or websites. AI does the heavy lifting.
 
 ```
-/pm myriplay scan this codebase and write the epics and features
-/pm myriplay crawl ./src/ ./docs/architecture.md https://docs.example.com/api
+/pm scan this codebase and write the epics and features
+/pm crawl ./src/ ./docs/architecture.md https://docs.example.com/api
 ```
 
 PM dispatches work:
@@ -65,9 +68,9 @@ All results land in DB with `human_approved = 0`. Human reviews in WebTool.
 PM interviews a human. Human leads the conversation.
 
 ```
-/pm myriplay interview me about a new feature
-/pm myriplay I need a new feature. When x happens we want .....
-/pm myriplay I need to add requirements to feature <uuid>
+/pm interview me about a new feature
+/pm I need a new feature. When x happens we want .....
+/pm I need to add requirements to feature <uuid>
 ```
 
 PM dispatches to the appropriate skill which runs its own h/ai or ai/h iteration loop. PM tracks what's been covered and what's missing.
@@ -77,8 +80,8 @@ PM dispatches to the appropriate skill which runs its own h/ai or ai/h iteration
 Same as Interact, but the human speaks instead of types. Voice is the natural way to describe features — faster, more fluid, captures nuance that gets lost when typing shorthand.
 
 ```
-/pm myriplay voice
-/pm myriplay voice new feature
+/pm voice
+/pm voice new feature
 ```
 
 PM activates voice capture, human speaks freely, speech is transcribed, then PM processes the transcript the same way it would typed input. The human can also speak feedback during iteration loops ("yeah that's good", "no, change the second requirement to...").
@@ -506,28 +509,31 @@ Missing:
 
 ### 11. WebTool — Human Review Web UI
 
-**Standalone app.** Not a Claude Code skill — a Python + Vite + SQLite web application that the PM skill can launch and that reads/writes the same `.claude/db/marketing.sqlite`.
+**Implemented.** FastAPI + vanilla JS single-page app at `webtool/`. Reads/writes `.claude/db/marketing.sqlite`. Has a companion skill `skills/pm-webtool/SKILL.md`.
 
-**Purpose:** Make the human's review job as fast as possible.
+**Launch:** `/pm webtool` or directly:
+```bash
+python3 ~/workspace/x85446/claudecodetricks/webtool/serve.py --project "$(pwd)"
+# Opens http://localhost:8420
+```
 
-**Core capabilities:**
-- **Browse** — tree view: Epics → Features → Requirements → Tests
-- **Direct edit** — click any entity to edit inline
-- **Approve/Disapprove** — single click +/- per entity (epic, feature, requirement, test)
-- **AI feedback** — text box or voice input per entity to send feedback back to Claude (writes to a `feedback` column or table). Mic icon next to every feedback field — click to speak, transcript fills the field.
-- **Staleness view** — highlight stale entities, show what upstream change caused it
-- **Cascade impact** — click an epic/feature to see all downstream entities affected if it changes
-- **Iterator glossary** — always visible. Iterator names in entity text are clickable — alt text/tooltip shows current values, clicking opens an inline editor to add/remove values. Changes propagate globally to all entities referencing that iterator.
-- **Bulk actions** — approve a parent entity and checkmarks cascade to all children. Then override individual ones as needed. Same for disapproval and staleness marking.
+**Dependencies:** `pip3 install fastapi uvicorn`
 
-**Tech stack:**
-- Backend: Python (FastAPI or Flask), direct SQLite access
-- Frontend: Vite + vanilla JS (or lightweight framework)
-- Voice input: Web Speech API (browser-native, no server-side STT)
-- No authentication needed — local tool
-- PM skill can launch it: `python webtool/serve.py --db .claude/db/marketing.sqlite`
+**Core capabilities (built):**
+- **Browse** — collapsible tree view: Epics → Features → Requirements → Tests
+- **Direct edit** — click any entity name to open inline edit panel, version auto-bumps on save
+- **Approve/Disapprove** — single click toggle per entity (green checkmark / red X)
+- **Bulk approve** — approve an epic or feature and all descendants cascade
+- **AI feedback** — text area + mic icon per entity, stored in `feedback` table
+- **Staleness view** — yellow/orange left border on stale nodes, tooltip shows "Based on v3, now v4"
+- **Iterator glossary** — modal with all iterators, add/remove values inline, iterator names highlighted in entity text with value tooltips
+- **Voice input** — Web Speech API mic icon on feedback fields, click to record
 
-**Iterator display:** Iterator names in entity text are rendered as-is. Hovering shows the expanded values (tooltip/alt text). Full glossary always accessible.
+**Tech stack (actual):**
+- Backend: Python FastAPI, direct SQLite, 18 API endpoints (`webtool/serve.py`, 657 lines)
+- Frontend: vanilla JS SPA, dark theme (`webtool/static/`, ~1500 lines total)
+- Voice: Web Speech API (browser-native, no server-side STT)
+- Port: 8420, auto-opens browser, no authentication
 
 ---
 
@@ -595,7 +601,7 @@ Each SKILL.md should be under **150 lines**. If it's longer, it's doing too much
 | 8 | Preflight | `skills/pm-preflight/SKILL.md` | Environment validation, schema migrations |
 | 9 | Publish | `skills/pm-publish/SKILL.md` | Markdown generation from DB |
 | 10 | Status | `skills/pm-status/SKILL.md` | Coverage dashboard |
-| 11 | WebTool | `webtool/` | Web UI for human review (standalone app) |
+| 11 | WebTool | `skills/pm-webtool/SKILL.md` + `webtool/` | Web UI for human review (FastAPI + vanilla JS) |
 
 ---
 

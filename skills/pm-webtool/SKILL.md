@@ -1,18 +1,18 @@
 ---
 name: pm-webtool
 description: Launch the PM WebTool for reviewing and approving epics, features, requirements, and tests. Use when someone asks to review items, open the web UI, approve features, or launch the webtool.
-argument-hint: [product]
+argument-hint: (no arguments needed)
 ---
 
 # PM WebTool — Human Review Web UI
 
-Launch a web-based review tool for browsing, editing, and approving PM database items.
+Launch a web-based review tool for browsing, editing, and approving PM database items. Product is auto-detected from the database.
 
 ## Invocation
 
 ```
-/pm-webtool myriplay
 /pm webtool
+/pm-webtool
 ```
 
 ## Steps

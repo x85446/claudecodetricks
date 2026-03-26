@@ -16,22 +16,29 @@ Orchestrator skill. Parses intent, dispatches to focused sub-skills, tracks cove
 
 ## Invocation
 
-Natural language after the product code:
+Product code is optional when only one product exists in the database. Natural language:
 
 ```
-/pm myriplay scan this codebase and write the epics and features
-/pm myriplay crawl ./src/ ./docs/api.md https://docs.example.com
-/pm myriplay interview me about a new feature
-/pm myriplay I need a new feature. When X happens we want Y
-/pm myriplay voice new feature
-/pm myriplay status
-/pm myriplay audit
+/pm scan this codebase and write the epics and features
+/pm crawl ./src/ ./docs/api.md https://docs.example.com
+/pm interview me about a new feature
+/pm I need a new feature. When X happens we want Y
+/pm voice new feature
+/pm status
+/pm audit
+/pm webtool
+/pm publish
 ```
 
 ## Steps
 
 1. **Run preflight.** Invoke `/pm-preflight`. If it fails, STOP.
-2. **Parse intent.** Extract the product code (first argument) and detect mode from remaining text:
+2. **Detect product.** If the user provided a product code, use it. Otherwise auto-detect:
+   ```sql
+   SELECT code FROM our_products;
+   ```
+   If exactly one product exists, use it. If multiple, ask the user which one.
+3. **Parse intent.** Detect mode from the user's text:
 
 | Keywords | Mode |
 |----------|------|
@@ -41,9 +48,10 @@ Natural language after the product code:
 | status, dashboard, coverage | Status → invoke `/pm-status` and stop |
 | audit, stale, check | Audit → invoke `/pm-auditor` and stop |
 | publish | Publish → invoke `/pm-publish` and stop |
+| webtool, web, review, approve | WebTool → invoke `/pm-webtool` and stop |
 
-3. **Dispatch pipeline.** Based on mode, run the appropriate pipeline below.
-4. **Report results.** Show the summary and coverage gaps (see Output Format).
+4. **Dispatch pipeline.** Based on mode, run the appropriate pipeline below.
+5. **Report results.** Show the summary and coverage gaps (see Output Format).
 
 ## Crawl Pipeline
 
