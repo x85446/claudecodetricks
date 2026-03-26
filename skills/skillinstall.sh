@@ -73,6 +73,8 @@ install_webtool() {
     mkdir -p "$dest/static"
     if cp "$WEBTOOL_SRC/serve.py" "$dest/" 2>/dev/null && \
        cp "$WEBTOOL_SRC/requirements.txt" "$dest/" 2>/dev/null && \
+       cp "$WEBTOOL_SRC/package.json" "$dest/" 2>/dev/null && \
+       cp "$WEBTOOL_SRC/vite.config.js" "$dest/" 2>/dev/null && \
        cp "$WEBTOOL_SRC/static/"* "$dest/static/" 2>/dev/null; then
         ok "webtool" "$dest"
     else

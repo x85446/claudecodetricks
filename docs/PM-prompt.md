@@ -513,8 +513,10 @@ Missing:
 
 **Launch:** `/pm webtool` or directly:
 ```bash
-python3 .claude/webtool/serve.py --project "$(pwd)"
-# Opens http://localhost:5179
+# API server (port 5180)
+python3 .claude/webtool/serve.py --project "$(pwd)" --no-browser &
+# Vite dev server with live reload (port 5179, proxies API to 5180)
+cd .claude/webtool && npx vite
 ```
 
 **Deployed by installer** to `.claude/webtool/` in each project. Never reference the claudecodetricks backup repo from skills — skills must be self-contained at the deploy target.
