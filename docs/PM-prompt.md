@@ -514,7 +514,7 @@ Missing:
 **Launch:** `/pm webtool` or directly:
 ```bash
 python3 .claude/webtool/serve.py --project "$(pwd)"
-# Opens http://localhost:8420
+# Opens http://localhost:5179
 ```
 
 **Deployed by installer** to `.claude/webtool/` in each project. Never reference the claudecodetricks backup repo from skills — skills must be self-contained at the deploy target.
@@ -535,7 +535,7 @@ python3 .claude/webtool/serve.py --project "$(pwd)"
 - Backend: Python FastAPI, direct SQLite, 18 API endpoints (`webtool/serve.py`, 657 lines)
 - Frontend: vanilla JS SPA, dark theme (`webtool/static/`, ~1500 lines total)
 - Voice: Web Speech API (browser-native, no server-side STT)
-- Port: 8420, auto-opens browser, no authentication
+- Port: 5179, auto-opens browser, no authentication
 
 ---
 

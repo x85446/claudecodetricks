@@ -626,7 +626,7 @@ def main():
         "--project", required=True,
         help="Path to the project root (database at {project}/.claude/db/marketing.sqlite)",
     )
-    parser.add_argument("--port", type=int, default=8420, help="Port to serve on (default: 8420)")
+    parser.add_argument("--port", type=int, default=5179, help="Port to serve on (default: 5179)")
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
     parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
     args = parser.parse_args()

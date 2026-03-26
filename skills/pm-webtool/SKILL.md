@@ -33,11 +33,11 @@ Launch a web-based review tool for browsing, editing, and approving PM database 
    ```bash
    python3 .claude/webtool/serve.py --project "$(pwd)" &
    ```
-   This starts on port 8420 and auto-opens the browser.
+   This starts on port 5179 and auto-opens the browser.
 
 4. **Confirm launch.** Tell the user:
    ```
-   WebTool running at http://localhost:8420
+   WebTool running at http://localhost:5179
    Database: .claude/db/marketing.sqlite
    Press Ctrl+C in the terminal to stop.
    ```

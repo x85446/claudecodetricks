@@ -101,6 +101,10 @@
       iterators = await api('GET', '/api/' + encodeURIComponent(code) + '/iterators');
       iteratorMap = {};
       iterators.forEach(function (it) {
+        // API returns values as [{value: "x86", position: 1}, ...] — flatten to strings
+        if (it.values && it.values.length && typeof it.values[0] === 'object') {
+          it.values = it.values.map(function (v) { return v.value; });
+        }
         iteratorMap[it.name] = it;
       });
     } catch (err) {
@@ -111,8 +115,10 @@
   // ── Tree rendering ─────────────────────────────────────────────────────
   function renderTree() {
     treeContainer.innerHTML = '';
-    if (!treeData || !Array.isArray(treeData)) return;
-    treeData.forEach(function (epic) {
+    if (!treeData) return;
+    var epics = treeData.epics || treeData;
+    if (!Array.isArray(epics)) return;
+    epics.forEach(function (epic) {
       treeContainer.appendChild(buildNode(epic, 'epic'));
     });
   }
