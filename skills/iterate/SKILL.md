@@ -1,6 +1,6 @@
 ---
 name: iterate
-description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
+description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: <paragraph describing the work to do AND how to validate success>
 disable-model-invocation: true
 ---
@@ -67,6 +67,31 @@ On entry, **before doing anything else**:
 4. If `running: false` → take the lock (set timestamp), continue.
 
 On every exit path (success, giveup, normal end-of-turn): set `running: false` and write before returning control.
+
+## Team dispatch (parallel execution on teamed plans)
+
+Most plans are flat — no `## Teams` section — and execute exactly as described below in "Execute the steps": one agent, one step at a time, in order. **Nothing in this section changes that path.** Team dispatch only activates when the plan file has `teamed: true` and a non-empty `## Teams` table (written by `/iterate-planner`'s teamify operation — see its SKILL.md for the table schema: Team / Steps / Focus / Depends on / Agent).
+
+When a plan IS teamed, on each `/iterate` entry (fresh dispatch or a `/loop` resumption tick):
+
+1. **Compute readiness.** A team is *ready* if every team named in its `Depends on` column has `status: done` (tracked as an annotation you maintain on the Teams table row, e.g. `| code | 1,2,4 | ... | — | backend-expert | status: done |`). Teams with no unmet dependencies and no prior dispatch are ready immediately.
+2. **Unassigned steps** (step numbers not listed under any team) belong to the coordinator — that's you, the top-level `/iterate` turn. Execute them yourself, serially, following the normal "Execute the steps" procedure, at whatever point their step numbers fall relative to team dependencies (before dispatching teams that depend on them, interleaved otherwise).
+3. **Dispatch every currently-ready, not-yet-dispatched team in ONE Agent tool call** — one `tool_use` block per team, launched together so they run concurrently. Each is `run_in_background: true` (the default) — do not block this turn waiting on them; the already-scheduled `/loop 1m /iterate` tick is what checks back in.
+4. **Each team's Agent prompt must be fully self-contained** (a fresh subagent has no memory of this conversation or this plan file beyond what you put in the prompt). Include, verbatim:
+   - The plan's Goal.
+   - This team's Steps + Validations (the exact Na/Nb pairs it owns — nothing from other teams).
+   - The plan's global Constraints.
+   - Its scoped log file path: `./.claude/iterate/plans/<name>.teams/<team>.log.md` — **the team writes ONLY to this file, never to the main plan file.** This is what makes concurrent dispatch safe: N subagents never touch the same file, so there's no write race for the coordinator to worry about.
+   - A condensed restatement of `/iterate`'s own non-negotiable execution rules (see "Rules" below) — never ask a question, Nb is the contract and Na is a hint, pick the most reasonable default and log it, validation must exercise the system not just read code, 5-cycle cap per failing check, pre-existing breakage isn't a blocker, "more of the same shape" is never a stop reason.
+   - The instruction to end its log file with exactly one terminal line when finished: `TEAM DONE: <one-line summary>` or `TEAM BLOCKED: <specific reason + what's needed>`.
+   - Name the Agent call `<plan-name>-<team-name>` (e.g. `owl-database`).
+5. **Log the dispatch** in the main plan file's Status/Log: `dispatched teams: <names> (background, in progress)`. Update heartbeat, end the turn.
+6. **On a later tick, check on outstanding teams** (dispatched but not yet merged): read each one's scoped log file.
+   - No terminal line yet → still working. Leave it. Do **not** re-dispatch — this file-based check is the per-team analogue of the concurrency lock. Exception: if the log file's mtime is stale (no update for 20+ minutes) with no terminal line, treat it as dead, log "team `<name>` had no heartbeat for 20m+, treating as dead, re-dispatching", and dispatch it again.
+   - `TEAM DONE` / `TEAM BLOCKED` present → **merge**: copy the team's log content into the main plan file under a `### Team: <name>` heading in Decisions log / Status-Log, check off that team's step numbers in the main `## Steps` checklist, and annotate the Teams table row `status: done` or `status: blocked (<reason>)`. This merge is the ONLY thing that writes team content into the shared plan file, and only the coordinator does it — never a team subagent.
+7. **Newly-ready teams** (all their dependencies just flipped to `status: done`) get dispatched on this same tick, right after merging — don't wait for an extra loop cycle.
+8. **Full-plan validation** (the "Validate" step below) only runs once every team AND every unassigned step is `status: done`. Some teams done, others still in flight is a normal **end-of-turn, not complete** state — log it and let `/loop` continue; this is not a status-check menu, it's the existing "normal end-of-turn" allowance applied per-team.
+9. **One blocked team does not block independent teams** — exactly like the existing "one blocked outcome does NOT block other outcomes" rule, just scoped to teams instead of goal-outcomes. Only report a hard stop when EVERY team (and every unassigned step) is either done or blocked, with at least one blocked — aggregate the blockers from each `TEAM BLOCKED` line into the single stuck-report (see "Report and either complete or stop" below).
 
 ## Steps
 
@@ -144,6 +169,8 @@ If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Va
 
 ### 3. Execute the steps
 
+**If the plan is teamed** (`teamed: true`, non-empty `## Teams`), go to "Team dispatch" above first — it handles dispatching ready teams and merging finished ones. Everything below in this section is what the coordinator uses for the plan's unassigned steps (if any), and is exactly what runs for the common case of a flat, un-teamed plan.
+
 **Contract semantics:** for each numbered pair, the Step (Na) is *one suggested approach*; the Validation (Nb) is *the contract*. Treat Na as a starting hint, not a literal recipe. If Na's specific mechanism fails (tool absent, command syntax changed, auth rejected, host unreachable, etc.), **try other approaches that achieve the same Nb**. Examples:
 
 - Step says "ranger issues token, explorer adds ranger remote" → if `incus remote add` rejects the token, try generating with `--public`, try `incus config trust add` with a pre-signed cert, try resetting trust on either side. Any path that ends with Nb's "incus remote list has a ranger / tls row" is acceptable.
@@ -172,6 +199,8 @@ Walk through `Steps` in order. For each step:
 
 ### 4. Validate
 
+**On a teamed plan**, don't run this step until every team is `status: done` (or `blocked`, aggregated per rule 9 in "Team dispatch") and every unassigned step is complete — each team already ran its own owned validations under this same interactive-testing mandate before writing `TEAM DONE`, so this step is the final full-plan sweep across everything once all teams have reported in, not a duplicate of team-internal checks.
+
 After all steps are done (or appear done), execute every validation check from `Validation`. Each check must be a concrete, runnable assertion (a command + expected output, a file's existence, a count, etc.).
 
 **Interactive testing mandate — non-negotiable.** Validation means EXERCISING the system, not READING the code:
@@ -193,14 +222,14 @@ If any check fails:
 **On full success (every validation check green):**
 - Set `running: false` in `active.md`.
 - Invoke `/loop` (no args) to cancel the auto-resume loop.
-- Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`. If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it.
-- Report a 3-5 line summary: goal, what was done, validation results, time taken.
+- Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`. If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it. If the plan was teamed, also move `./.claude/iterate/plans/<name>.teams/` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.teams/` (the per-team logs are already merged into the archived plan file — this just keeps the raw team logs around for audit, don't leave the working `.teams/` dir behind).
+- Report a 3-5 line summary: goal, what was done, validation results, time taken. On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
 - **Suggest `/oracle harvest`** to the user — one line at end of report: "If anything in this run is worth remembering for next time, run `/oracle harvest`." Don't auto-invoke; oracle harvesting is opt-in.
 
 **On stuck (5-cycle cap hit AND every other outcome also stuck — genuinely no forward motion possible):**
 - Set `running: false`. Update `active.md`: mark which steps completed, which validation checks pass, which fail and why. Save a "Next attempt" hint at the top.
 - Invoke `/loop` (no args) to cancel the loop. (Without this, /loop would fire forever and re-hit the same giveup.)
-- Stop. Report ONE blocker reason — the specific check that failed 5 times AND why no other outcome could absorb attention — plus what specific operator action would unblock. **Do NOT write a menu of "things the user could do next." Do NOT list "(a) ... (b) ..." options. Do NOT frame remaining work as choices.** One blocker, one ask, done.
+- Stop. Report ONE blocker reason — the specific check that failed 5 times AND why no other outcome could absorb attention — plus what specific operator action would unblock. **Do NOT write a menu of "things the user could do next." Do NOT list "(a) ... (b) ..." options. Do NOT frame remaining work as choices.** One blocker, one ask, done. On a teamed plan where multiple teams are blocked, aggregate: report the done/blocked status of every team in one line each, then the single most-actionable next operator step (usually whichever blocker, once fixed, unblocks the most dependent teams).
 - Do **not** archive — leave `active.md` in place so the user can read what happened and re-invoke fresh after fixing the blocker.
 
 Acceptable stuck-report shape:
@@ -249,6 +278,10 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 15. **Pre-existing failures are NOT blockers — flag and continue.** If validation catches a broken pod / app / state that pre-dates this run (check pod `creationTimestamp`, last-restart age, Application `lastTransitionTime`, prior Decisions log entries), record it once in Status/Log as `pre-existing: <name> broken since <date> — not caused by this work` and TREAT THE CHECK AS GREEN for blocking purposes. Don't count it toward the 5-cycle cap. Don't stop on it. The user can address pre-existing breakage separately; THIS run keeps going.
 16. **One blocked outcome does NOT block other outcomes.** Multi-outcome plans (e.g., "do X on cluster A, then B, then C, then retire D") have independently-progressable outcomes. If outcome 1 is stuck at a hard blocker, MOVE TO outcome 2 immediately. Work outcomes in parallel where ordering allows. Only report "stuck" when EVERY outcome is independently stuck on a hard blocker. Acceptable transition: "Outcome 1: blocked on X (operator needed); proceeding to outcome 2." Then keep going.
 17. **"Straightforward more work" / "more of the same shape" is NEVER a stop reason.** If the remaining work is "6 more MRs of the same shape as the one that just succeeded," DO THOSE 6 MRS. Don't ask if the user wants you to continue. Don't summarize what's left as if presenting options. Repetitive work is exactly what `/iterate` is FOR — that's why you're called the iterator. The only acceptable stops are: full success, all-outcomes-stuck-on-hard-blocker, or 5-cycle giveup on a specific failing check.
+18. **Un-teamed plans are unaffected by any of this.** Team dispatch only activates when `teamed: true` and `## Teams` is non-empty. A flat plan runs exactly as it always has — single agent, serial steps, no scoped log files, no dispatch logic. Don't go looking for teams to dispatch when there's no Teams table.
+19. **A team subagent never writes to the main plan file.** It writes only to its own `./.claude/iterate/plans/<name>.teams/<team>.log.md`. Only the coordinator (the top-level `/iterate` turn) merges team logs into the shared plan file, and only after seeing a `TEAM DONE`/`TEAM BLOCKED` terminal line. This is the entire safety mechanism against concurrent-write races between teams — don't shortcut it by having a team edit the plan file directly, even "just this once."
+20. **Never dispatch a team whose dependencies aren't `status: done`.** Check the Teams table's `Depends on` column before every dispatch, every tick. A team becomes eligible the moment its dependencies clear — dispatch it that same tick, don't wait for an extra loop cycle.
+21. **A `TEAM BLOCKED` team is a per-team giveup, not a whole-plan giveup.** Apply rule 16 (one blocked outcome doesn't block others) at the team level: keep dispatching and progressing every team that isn't itself blocked. Only reach the whole-plan "stuck" report (rule 14/16's stuck path) when every team is done-or-blocked and at least one is blocked.
 
 ## Example trigger
 
@@ -262,3 +295,18 @@ What the skill does:
 - If something fails partway (auth error, network blip, VM move stuck): retries, picks alternatives, logs, doesn't ping the user
 - If everything passes: archives state, reports "✓ cluster joined, 7 vms migrated, polaris2 & polaris3 empty (verified via incus list). Done."
 - If stuck after 5 cycles on validation: stops, leaves state file, reports what's done + what's blocking + last error
+
+## Example trigger — teamed plan
+
+Plan `owl` is `phase: planned`, `teamed: true`, with Teams: `deploy` (steps 2,4; no deps; agent backend-expert) and `link-tree` (steps 3,5; depends on `deploy`; agent documentation-expert). User types `/iterate owl`.
+
+What the skill does:
+- Transitions `owl` to `phase: executing`, takes the lock, sets up `/loop 1m /iterate`.
+- Team dispatch: `deploy` has no unmet dependencies → ready. `link-tree` depends on `deploy`, which isn't done yet → not ready.
+- Dispatches one Agent for `deploy` (steps 2,4 + Goal + Constraints + its scoped log path `./.claude/iterate/plans/owl.teams/deploy.log.md`, background). Logs "dispatched teams: deploy (background, in progress)". Ends the turn.
+- Next `/loop` tick: reads `deploy.log.md` — no terminal line yet, still working. Leaves it, ends turn again.
+- A later tick: `deploy.log.md` ends with `TEAM DONE: metrics-service deployed and smoke-tested, curl https://metrics.gravhl.com/health returns 200`. Merges that into `owl.md`'s Status/Log under `### Team: deploy`, checks off steps 2 and 4, marks the `deploy` row `status: done`.
+- Same tick: `link-tree`'s dependency (`deploy`) just cleared → now ready. Dispatches `link-tree` immediately (steps 3,5 + same Goal/Constraints + its own scoped log path). Ends turn.
+- A later tick: `link-tree.log.md` ends with `TEAM DONE: link tree updated, verified live in browser`. Merges it, checks off steps 3 and 5, marks `link-tree` `status: done`.
+- All teams done, no unassigned steps → runs full-plan Validation once more across everything. All green.
+- Archives `owl.md` and `owl.teams/`, invokes `/loop` (no args) to cancel, reports: "✓ owl done — 2 teams (deploy, link-tree ran sequentially due to dependency), 4 steps, all validations green."

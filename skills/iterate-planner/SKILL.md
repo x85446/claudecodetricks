@@ -1,6 +1,6 @@
 ---
 name: iterate-planner
-description: The planning half of the iterate stack. Formalizes a task into structured pair-format (1a task / 1b validation) BEFORE autonomous execution, and consults the project oracle (./.claude/data/oracle.md) to bake known checklists, testing requirements, gotchas, deployment rituals, and naming conventions into the plan (a no-op when no oracle exists). Triggers on "/iterate-planner", "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle", and on managing saved plans ("list plans", "display our plans", "add to <name>", "delete <name>", "from <name> remove <x>"). Plans are saved, animal-named, and persistent under ./.claude/iterate/plans/. The user reviews, optionally refines in natural conversation, then runs /iterate (or /iterate <name>) to execute.
+description: The planning half of the iterate stack. Formalizes a task into structured pair-format (1a task / 1b validation) BEFORE autonomous execution, and consults the project oracle (./.claude/data/oracle.md) to bake known checklists, testing requirements, gotchas, deployment rituals, and naming conventions into the plan (a no-op when no oracle exists). Triggers on "/iterate-planner", "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle", and on managing saved plans ("list plans", "display our plans", "add to <name>", "delete <name>", "from <name> remove <x>"). Also triggers on teamify requests ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams") which group the current plan's steps into named teams for parallel execution at /iterate time. Plans are saved, animal-named, and persistent under ./.claude/iterate/plans/. The user reviews, optionally refines in natural conversation, then runs /iterate (or /iterate <name>) to execute.
 argument-hint: <optional context, e.g. "restate the plan from above" or "plan: 1. do X, 2. validate Y">
 disable-model-invocation: true
 ---
@@ -36,6 +36,32 @@ A single pointer file `./.claude/iterate/current` holds the name of the **curren
 
 **Legacy migration (do silently on first touch):** if `./.claude/iterate/active.md` exists and `plans/` does not, move it to `plans/<name>.md` (assign an animal name, add a `name:` field near the top), write `current`, and delete `active.md`. Create `./.claude/iterate/plans/` if it doesn't exist.
 
+## Teams (optional grouping for parallel execution)
+
+A plan can be **teamed**: its Steps partitioned into named groups so `/iterate` dispatches one subagent per independent team to run concurrently instead of one agent working the whole Steps list serially. Teaming is **opt-in and explicit** — most plans stay flat, and flat plans behave exactly as they always have.
+
+**Trigger phrases** (route to the teamify operation, #5 below): "team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", "team-stack this" — optionally naming a plan ("teamify <name>").
+
+**Schema** — a plan file with teams has a `teamed: true` field alongside `phase`/`running`/`name`, and a `## Teams` section (placed after `## Constraints`):
+
+```markdown
+## Teams
+| Team | Steps | Focus | Depends on | Agent |
+|---|---|---|---|---|
+| code | 1,2,4 | Backend service changes | — | backend-expert |
+| database | 3,5 | Schema migration + data backfill | — | backend-expert |
+| docs | 6 | Update README | code | documentation-expert |
+```
+
+- **Team** — short kebab-case name, inferred from the plan's actual content (no fixed vocabulary — could be `code`/`database`/`infra`/`docs`/`frontend`/`tests`/whatever the plan naturally divides into).
+- **Steps** — the step numbers from the existing flat `## Steps`/`## Validation` lists that belong to this team. The flat lists themselves are untouched — Teams is purely additive metadata layered on top.
+- **Focus** — one line, what makes these steps a coherent unit.
+- **Depends on** — other team name(s) that must be `status: done` before this team can start, or `—` for none. Infer from real ordering constraints (e.g. a migration must land before code that reads the new column), not from step number order alone.
+- **Agent** — suggested Agent-tool `subagent_type` for `/iterate` to dispatch this team to (`backend-expert`, `frontend-engineer`, `documentation-expert`, `operations-engineer`, `quality-engineer`, `architecture-expert`, or `general-purpose` as the default when nothing fits better).
+- **Unassigned steps** (steps not listed under any team) are executed directly by the `/iterate` coordinator itself, serially, same as an un-teamed plan — never forced into a bad-fit team.
+
+Only `/iterate-planner` writes/edits the Teams table. `/iterate` reads it but never restructures it.
+
 ### Creating vs. adding — bias hard toward the current plan
 
 Creating a NEW plan must be **explicit**. The DEFAULT for any planning request is to **add to / refine the current plan**. Only create a new plan when:
@@ -61,13 +87,33 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 4. **add-to-named** — `add to "<name>" that <thing>`, "to `<name>` add `<thing>`": open `plans/<name>.md`, append the new Step + an inferred Validation, set `current` = `<name>`, re-print that plan. Then **stop**.
 
-5. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a fresh animal name, set it current, write and print it (proceed through the Steps below).
+5. **teamify** — `$1` matches a teamify trigger phrase ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", optionally "teamify `<name>`"): resolve the target plan (named, else current), run the Teamify procedure (see "Teamify procedure" below) over its full Steps list, write the `## Teams` table and set `teamed: true`, re-print the plan including the Teams table. Then **stop**. This is the only operation that does a full from-scratch reclustering — never run it implicitly as part of any other op.
 
-6. **default (the common case)** — anything else describing work:
-   - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file).
+6. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a fresh animal name, set it current, write and print it (proceed through the Steps below).
+
+7. **default (the common case)** — anything else describing work:
+   - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file). If the current plan has `teamed: true`, also run the cheap single-step Team classification (see "Auto-classify on add" below) on each newly added step — this is O(1) per step, never a full re-teamify.
    - no plans exist → create the first plan (assign an animal name, set current).
 
-For ops 3–6, run the oracle merge (Step 4) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations.
+For ops 3–7, run the oracle merge (Step 4) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations.
+
+### Teamify procedure (op 5 — full reclustering)
+
+1. Read the target plan's Goal + full Steps + Validation lists.
+2. Identify the smallest number of coherent, thematically-independent groups the steps naturally fall into (by domain: code vs database vs infra vs docs vs tests, or whatever divisions the actual content supports — don't force a fixed taxonomy, and don't split a genuinely single-threaded plan just to produce more than one team).
+3. For each group: name it (short kebab-case), write a one-line Focus, list its step numbers, infer real ordering dependencies on other teams (data must exist before code reads it, infra must exist before code deploys to it — not just numeric step order), and suggest an `Agent` (subagent_type) that best matches the Focus.
+4. Steps that don't cleanly fit any group stay unassigned (omit from the table) rather than forcing a bad fit.
+5. If the plan has no genuine independent divisions (e.g. every step is a strictly sequential dependency chain on the last), don't write a Teams section at all — report "no independent divisions found — steps are sequential, staying flat" and leave `teamed` unset. This is a valid, expected outcome, not a failure.
+6. Write `## Teams` into the plan file, set `teamed: true` (only when a Teams section was actually written), re-print the full plan.
+7. In the presented output, add one line explaining the grouping rationale and which teams can run in parallel (those with no `Depends on` entries pointing at an unfinished team).
+
+### Auto-classify on add (part of op 7 — cheap, O(1) per step, never a full reorg)
+
+When the current plan already has `teamed: true` and a new step is appended:
+
+1. Compare the new step's content against each existing team's Focus. If it clearly matches exactly one team, append its number to that team's Steps list in the `## Teams` table — nothing else about the table changes (don't touch Depends on / Agent / other teams).
+2. If it doesn't clearly match any existing team, leave it unassigned (simply don't add it to the Teams table) — the coordinator will execute it directly at `/iterate` time. Never force a bad fit, and never trigger a full teamify pass just to place one step.
+3. This is a single classification judgment, not a re-analysis of the whole plan — it must stay cheap so rapid-fire `/iterate-planner add ...` calls don't slow down.
 
 ## When to use
 
@@ -160,6 +206,7 @@ CWD: <pwd>
 phase: planned
 running: false
 planner: iterate-planner    # marker so /iterate knows oracle was consulted
+teamed: false               # set true only after a teamify pass writes ## Teams
 
 ## Goal
 <one sentence>
@@ -179,6 +226,9 @@ planner: iterate-planner    # marker so /iterate knows oracle was consulted
 - <oracle gotcha if applicable>
 - Naming: <oracle convention if applicable>
 - Context: <oracle architecture note if applicable>
+
+## Teams
+<!-- Only present when teamed: true. See "Teams" section above for schema. Omit entirely on flat plans. -->
 
 ## Oracle context applied
 <!-- Audit trail: which oracle rules were folded in. Lets the user see what changed. -->
@@ -233,9 +283,43 @@ Want changes, or type `/iterate` (or `/iterate <name>`) to execute?
 
 If the project had no oracle, omit the "Oracle rules applied" section and add a one-liner: `(No oracle found for this project — planned without project context. Use /oracle remember to start one.)`
 
+If the plan is teamed (`teamed: true`), insert the Teams table between Constraints and Oracle rules applied:
+
+```
+**Teams** (run in parallel at /iterate time where independent):
+| Team | Steps | Focus | Depends on | Agent |
+|---|---|---|---|---|
+| code | 1,2,4 | Backend service changes | — | backend-expert |
+| database | 3,5 | Schema migration + data backfill | — | backend-expert |
+| docs | 6 | Update README | code | documentation-expert |
+```
+
 ### 7. Handle refinements
 
 If the user responds with changes in natural conversation, update the current plan file in place AND re-run the oracle merge (in case the refinement brought new oracle-relevant scope). Re-print the full plan. Keep `phase: planned`. Don't archive — overwrite. Refinements target the **current** plan unless the user names a different one — never spin up a second plan for a refinement.
+
+### 8. Rapid-fire terse mode
+
+The user often queues several `/iterate-planner add <thing>` calls back-to-back without reading each result — dictating a stream of additions and hitting enter repeatedly. Printing the full plan (goal + every paired step + oracle audit + footer prompt) on every single one of those is slow to produce and clutters the conversation by the time they catch up.
+
+Detect this from the conversation itself — no extra state needed: if the **immediately preceding turn** in this conversation was also an `/iterate-planner` add-type invocation (ops 4 or 7) targeting the **same current plan**, treat this as mid-streak and respond with exactly one line instead of the full reprint:
+
+```
++ <animal> step <N> added (team: <name>)
+```
+
+or, if unassigned/unteamed:
+
+```
++ <animal> step <N> added
+```
+
+Print the **full** plan (with the complete footer, including "Want changes, or type `/iterate` to execute?") on:
+- the first invocation of a streak (previous turn wasn't `/iterate-planner`, or targeted a different plan),
+- any invocation that isn't a plain add (list, delete, remove-from, add-to-named, teamify, new plan — those already have their own defined output),
+- or when the user's message signals they're done queuing ("that's everything", "ok go", "show me the plan", "that's it for now") — even mid-streak.
+
+When genuinely unsure whether the streak has ended, print the full plan — a slightly-too-early full reprint costs nothing; silently staying terse when the user expected to see their plan does.
 
 ## Rules (hard)
 
@@ -263,6 +347,10 @@ If the user responds with changes in natural conversation, update the current pl
 13. **Rollback in a plan is never terminal.** If a step needs rollback on failure, the validation MUST also include "then retry, up to N times, until success." Never write "rolled back per chart" or "failures roll back and stop." Recovery is `/iterate`'s job — your plan describes the desired end state (every chart migrated, everything green), not the give-up condition.
 14. **Commit to the full goal, not a one-item pilot — unless the user explicitly asked for a pilot.** If the user said "port everything" or "do the whole sweep," plan to do the whole sweep. Don't downgrade to "let's try one and check in." That downgrade IS the status-check failure mode dressed up as caution.
 15. **Scope validations to "caused by this work," not "all global state."** Broad checks like `kubectl get pod -A | grep -v Running | wc -l == 0` catch pre-existing failures and will read as "blocked" when they shouldn't. Prefer scoped checks: "pods in the changed namespaces are Running", "Applications touched by this run are Synced", or "no NEW non-Running pods compared to baseline captured at run start." If the goal genuinely IS cluster-wide health, say so explicitly in the Goal section so the executor knows pre-existing failures are in-scope.
+16. **Teamify only on explicit request.** Never invent the first Teams table unassisted — a plan stays flat unless the user says a teamify trigger phrase. Most plans should stay flat; teaming is for plans with genuinely independent tracks of work.
+17. **Auto-classify on add is a single judgment call, never a re-run of teamify.** Once `teamed: true`, slot each newly appended step into the best-fit existing team in one cheap decision, or leave it unassigned. Don't re-cluster the whole plan on every add — that's what makes rapid-fire adds stay fast.
+18. **Never invalidate team membership except through teamify or remove-from.** Refining Steps/Validation/Constraints text must not silently drop a step's team assignment. If `remove-from` deletes a step that belonged to a team, remove its number from that team's row too (renumbering the rest) — don't leave a stale reference to a step that no longer exists.
+19. **Rapid-fire streaks get a one-line reply, not a full reprint.** See "Rapid-fire terse mode" above — this exists because the user queues several adds in a row without reading each one; a full plan dump on every single one is slow and clutters the conversation. Always show the full plan on the first invocation of a streak and whenever there's genuine doubt about whether the streak ended.
 
 ## Example
 
@@ -317,3 +405,55 @@ Want changes, or type `/iterate` to execute?
 User responds: "drop step 1; the migration was already done last week."
 
 You delete step 1, renumber, re-run oracle merge (no new scope), re-print (`plan amended owl`). Wait for `/iterate` or next refinement.
+
+## Example — teamify + rapid-fire adds
+
+Plan `owl` (from above) now has 3 steps: 1a migration (already dropped in this thread), 2a build/deploy metrics-service, 3a update GUI link tree. User types:
+
+```
+/iterate-planner team this
+```
+
+You run the Teamify procedure: step 1 (deploy) and step 3 (link tree) are both "ship the service", but step 3 depends on step 2 existing first and is a distinct UI/docs concern — two teams. Write and print:
+
+```
+plan amended owl
+
+**Teams** (run in parallel at /iterate time where independent):
+| Team | Steps | Focus | Depends on | Agent |
+|---|---|---|---|---|
+| deploy | 2 | Build and deploy the metrics-service container | — | backend-expert |
+| link-tree | 3 | Wire the new service into the mgmt.gravhl.com GUI link tree | deploy | documentation-expert |
+
+Grouped into 2 teams — link-tree depends on deploy finishing first, so they run sequentially, not in parallel, at /iterate time.
+
+Want changes, or type `/iterate` to execute?
+```
+
+Later, the user fires off three quick adds without waiting between them:
+
+```
+/iterate-planner add: run a smoke test hitting the metrics endpoint after deploy
+```
+```
+/iterate-planner add: update the on-call runbook with the new service's alert thresholds
+```
+```
+/iterate-planner add: notify #platform-eng in slack once it's live
+```
+
+First call: previous turn wasn't `/iterate-planner` → full reprint. New step 4 ("smoke test") clearly matches `deploy`'s focus → auto-classified into `deploy`'s Steps (now `2,4`), no other table changes, no full re-teamify.
+
+Second call: previous turn WAS an `/iterate-planner` add targeting `owl` → terse mode. New step 5 ("runbook") matches `link-tree`'s focus (docs/GUI-adjacent) → classified into `link-tree` (now `3,5`). Output is exactly:
+
+```
++ owl step 5 added (team: link-tree)
+```
+
+Third call: same streak continues → terse mode again. New step 6 ("slack notify") doesn't clearly fit either team's Focus → left unassigned. Output:
+
+```
++ owl step 6 added
+```
+
+The user's next message is "ok show me the plan" — full reprint, showing all 6 steps, both teams, and step 6 sitting unassigned (the `/iterate` coordinator will run it directly).
