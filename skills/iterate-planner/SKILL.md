@@ -40,6 +40,8 @@ A single pointer file `./.claude/iterate/current` holds the name of the **curren
 
 A plan can be **teamed**: its Steps partitioned into named groups so `/iterate` dispatches one subagent per independent team to run concurrently instead of one agent working the whole Steps list serially. Teaming is **opt-in and explicit** — most plans stay flat, and flat plans behave exactly as they always have.
 
+Team count and categories are **discovered per plan, up to roughly 10 teams** — there's no fixed pair, no preset taxonomy (not a "UI vs other" or "code vs everything else" template), and no bias toward the fewest possible groups. A small plan might yield one team; a large, multi-subsystem plan might yield seven or eight. Let the content decide each time.
+
 **Trigger phrases** (route to the teamify operation, #5 below): "team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", "team-stack this" — optionally naming a plan ("teamify <name>").
 
 **Schema** — a plan file with teams has a `teamed: true` field alongside `phase`/`running`/`name`, and a `## Teams` section (placed after `## Constraints`):
@@ -100,7 +102,7 @@ For ops 3–7, run the oracle merge (Step 4) on whatever plan you end up writing
 ### Teamify procedure (op 5 — full reclustering)
 
 1. Read the target plan's Goal + full Steps + Validation lists.
-2. Identify the smallest number of coherent, thematically-independent groups the steps naturally fall into (by domain: code vs database vs infra vs docs vs tests, or whatever divisions the actual content supports — don't force a fixed taxonomy, and don't split a genuinely single-threaded plan just to produce more than one team).
+2. Identify **as many** coherent, thematically-independent groups as the plan's content actually supports — up to roughly 10 teams. There is no target count and no fixed taxonomy (not "code vs UI vs other", not any preset pair or category set): let the plan's actual content decide. A 4-step plan might yield one team or four; a 30-step plan touching six different subsystems might yield six. Don't default toward fewer teams for its own sake, and don't force extra splits the content doesn't support either — the number of teams is discovered per plan, not chosen from a habit.
 3. For each group: name it (short kebab-case), write a one-line Focus, list its step numbers, infer real ordering dependencies on other teams (data must exist before code reads it, infra must exist before code deploys to it — not just numeric step order), and suggest an `Agent` (subagent_type) that best matches the Focus.
 4. Steps that don't cleanly fit any group stay unassigned (omit from the table) rather than forcing a bad fit.
 5. If the plan has no genuine independent divisions (e.g. every step is a strictly sequential dependency chain on the last), don't write a Teams section at all — report "no independent divisions found — steps are sequential, staying flat" and leave `teamed` unset. This is a valid, expected outcome, not a failure.
@@ -351,6 +353,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 17. **Auto-classify on add is a single judgment call, never a re-run of teamify.** Once `teamed: true`, slot each newly appended step into the best-fit existing team in one cheap decision, or leave it unassigned. Don't re-cluster the whole plan on every add — that's what makes rapid-fire adds stay fast.
 18. **Never invalidate team membership except through teamify or remove-from.** Refining Steps/Validation/Constraints text must not silently drop a step's team assignment. If `remove-from` deletes a step that belonged to a team, remove its number from that team's row too (renumbering the rest) — don't leave a stale reference to a step that no longer exists.
 19. **Rapid-fire streaks get a one-line reply, not a full reprint.** See "Rapid-fire terse mode" above — this exists because the user queues several adds in a row without reading each one; a full plan dump on every single one is slow and clutters the conversation. Always show the full plan on the first invocation of a streak and whenever there's genuine doubt about whether the streak ended.
+20. **No fixed team count or taxonomy.** Teamify discovers however many teams the plan's content actually supports, up to roughly 10 — never default to a binary split ("UI vs other", "code vs everything else") and never bias toward the fewest possible groups just because fewer is simpler to write. A plan with one coherent track stays a single team (or flat); a plan spanning many subsystems can and should get many teams. Let each plan's actual content set the count.
 
 ## Example
 
