@@ -1,0 +1,319 @@
+---
+name: iterate-planner
+description: The planning half of the iterate stack. Formalizes a task into structured pair-format (1a task / 1b validation) BEFORE autonomous execution, and consults the project oracle (./.claude/data/oracle.md) to bake known checklists, testing requirements, gotchas, deployment rituals, and naming conventions into the plan (a no-op when no oracle exists). Triggers on "/iterate-planner", "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle", and on managing saved plans ("list plans", "display our plans", "add to <name>", "delete <name>", "from <name> remove <x>"). Plans are saved, animal-named, and persistent under ./.claude/iterate/plans/. The user reviews, optionally refines in natural conversation, then runs /iterate (or /iterate <name>) to execute.
+argument-hint: <optional context, e.g. "restate the plan from above" or "plan: 1. do X, 2. validate Y">
+disable-model-invocation: true
+---
+
+# /iterate-planner — Build the plan (oracle-aware), don't execute
+
+The planning skill for the iterate stack:
+
+| Skill | Role |
+|---|---|
+| `/iterate-planner` | **Plan** — formalize the task into the 1a/1b schema, baking in project lessons from the oracle |
+| `/iterate` | **Execute** the plan autonomously until validation passes |
+
+**This skill plans, it does not execute.** It writes a structured, animal-named plan under `./.claude/iterate/plans/<name>.md` with `phase: planned`, prints it back in paired 1a/1b format, and waits for either natural-language refinements or the user typing `/iterate` (or `/iterate <name>`) to kick off execution. It also manages saved plans (list / add-to / delete / remove-from) — see "Named plans" below.
+
+Before writing, it always reads `./.claude/data/oracle.md` (and the global `~/.claude/skills/oracle/known.md`) and folds any in-scope project knowledge into the plan. When no oracle exists, that step is a silent no-op — the skill still runs and produces a plain plan.
+
+It does **not** execute. It does **not** set up `/loop`. It does **not** take the running lock.
+
+## Named plans (save / retrieve / list / manage)
+
+Plans are **saved, named, and persistent**. Each plan is one file:
+
+    ./.claude/iterate/plans/<name>.md
+
+`<name>` is a random common animal (dog, cat, fox, owl, elk, wren, mole, hare, lynx, crow, seal, toad, newt, ibis, …) assigned automatically when a plan is first created — one word, lowercase, not already present in `plans/`. Pick one at random for variety. The plan's `Started:` field records the date it began (keep it forever; never reset on refinement).
+
+A single pointer file `./.claude/iterate/current` holds the name of the **current** plan — the one you add to by default. Resolve the current plan like this:
+
+- `current` names an existing plan → that's the current plan.
+- `current` missing/stale but exactly one plan exists in `plans/` → that plan is current (write its name into `current`).
+- `current` missing and multiple plans exist → there is no current plan until one is named or chosen.
+
+**Legacy migration (do silently on first touch):** if `./.claude/iterate/active.md` exists and `plans/` does not, move it to `plans/<name>.md` (assign an animal name, add a `name:` field near the top), write `current`, and delete `active.md`. Create `./.claude/iterate/plans/` if it doesn't exist.
+
+### Creating vs. adding — bias hard toward the current plan
+
+Creating a NEW plan must be **explicit**. The DEFAULT for any planning request is to **add to / refine the current plan**. Only create a new plan when:
+
+- there are zero plans yet (the first plan — no name keyword needed), OR
+- the user explicitly says "new plan", "create a new plan", "start a new/separate/fresh plan", or otherwise clearly frames the work as a distinct new effort.
+
+If a current plan exists and the user just describes more work, **add it to the current plan** — do not spin up a second plan. When in doubt, add to current.
+
+### Operation router — parse `$1` in this order
+
+1. **list** — `$1` asks to see plans ("list plans", "display our plans", "show plans", "what plans do we have", or bare "list"): print every plan in `plans/`, one line each:
+
+   ```
+   <name>: started <YYYY-MM-DD> — <goal>        (current)
+   ```
+
+   Mark the current plan with `(current)`. Sort by `Started:` ascending. If no plans exist, say so. Then **stop** — this is a read-only op.
+
+2. **delete `<name>`** — "delete `<name>`", "remove plan `<name>`", "drop `<name>`": delete `plans/<name>.md`. If it was the current plan, repoint `current` to the sole remaining plan (if exactly one) else clear it. If the plan is `phase: executing`, refuse and tell the user to let it finish or stop the loop first. Confirm in one line. Then **stop**.
+
+3. **remove-from** — "from `<name>` remove `<thing>`", "remove `<thing>` from `<name>`", "from `<name>` drop step N": open `plans/<name>.md`, remove the matching Step + its paired Validation (renumber the rest 1:1), re-print that plan. Then **stop**.
+
+4. **add-to-named** — `add to "<name>" that <thing>`, "to `<name>` add `<thing>`": open `plans/<name>.md`, append the new Step + an inferred Validation, set `current` = `<name>`, re-print that plan. Then **stop**.
+
+5. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a fresh animal name, set it current, write and print it (proceed through the Steps below).
+
+6. **default (the common case)** — anything else describing work:
+   - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file).
+   - no plans exist → create the first plan (assign an animal name, set current).
+
+For ops 3–6, run the oracle merge (Step 4) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations.
+
+## When to use
+
+- The user is in a conversation where a plan has been discussed and wants it formalized into a saved iterate plan.
+- The user types `/iterate-planner` with brief instructions (often just "restate the plan" or "plan it with these tweaks").
+- The user wants a chance to review and refine before committing to autonomous execution.
+- The user wants to manage saved plans (list, add to, delete, remove from).
+
+## Steps
+
+### 1. Read the oracle
+
+1. Check for `./.claude/data/oracle.md` and `~/.claude/skills/oracle/known.md`. If both absent: note "no oracle — planning without project context" and skip to Step 2 with empty oracle data. This is a silent no-op, not a refusal.
+2. Parse the oracle index/sections (Post-action checklists, Testing requirements, Gotchas, Deployment rituals, Naming conventions, Architecture notes / buzzword 5W+H entries). Treat any section as optional — only use what's present.
+
+### 2. Identify the plan source
+
+- If `$1` contains substantive instructions (numbered steps, validation criteria): use `$1` as the source.
+- If `$1` is brief or refers to recent context (e.g. "restate the plan", "with these changes: …"): read the recent conversation. The plan should already be present in some form — your job is to formalize it.
+
+### 3. Check the target plan file
+
+Resolve the target plan per the operation router (usually the current plan, or a new animal-named file for a new plan):
+
+- If the target plan exists with `phase: executing`: **STOP**. Report "that plan is executing; let it finish or use `/iterate` to resume it before re-planning." Do not modify the file.
+- If the target plan exists with `phase: planned`: treat as a **refinement** — preserve `name`, `Started`, `CWD`, `Goal` (unless the user is changing it), update the Plan/Constraints sections AND re-apply the oracle merge.
+- If creating a new plan: assign a fresh animal name, write fresh, set `current` to it.
+
+### 4. Merge oracle into the plan (buzzword-scoped lookup)
+
+Oracle is a **buzzword glossary** (5W+H per registered term), not a categorical rule bin. Merge logic:
+
+1. **Build the buzzword index** from both oracle stores:
+   - Project: `./.claude/data/oracle.md` index section
+   - Global: `~/.claude/skills/oracle/known.md` index section
+2. **Scan the user's plan** (Goal + Steps + the recent conversation context that informed it) for buzzword matches against the index. Match case-insensitive substring. Match plural / verb forms.
+3. **For each matched buzzword**, read its 5W+H entry from the right store (project wins on conflict).
+4. **Fold the entry's fields into the plan** as follows:
+
+   | Oracle field | Plan placement |
+   |---|---|
+   | **How** (commands, rituals, procedural steps) | Add as **new Steps + Validations** at the right position in the plan (often appended at end; insert mid-plan if ordering is explicit like "X before Y"). Each How-step gets a paired interactive Nb. |
+   | **Where** (paths, repos, related skills) | Add as Constraints with `Context:` prefix — e.g., "Context: GUI link tree lives at `mgmt/web-ui/links.yaml`." |
+   | **When** (when to use / when not to) | If "when not to" applies, add as a Constraint. If "when to use" matches the plan's scope, that's the justification for folding the entry in. |
+   | **Why** (problem it solves) | Note in the Oracle context audit trail — informs ordering but doesn't add Steps. |
+   | **Who** | Note in the Oracle context audit trail. If a step requires a specific operator (e.g., "Only Travis can rotate the OpenBao root token"), surface as a Constraint. |
+   | **What** | Note in the Oracle context audit trail; informs interpretation but doesn't add Steps directly. |
+
+5. **Don't fold in buzzwords whose scope clearly doesn't apply.** If the plan mentions "incusmagic" in passing but the work is unrelated to incus operations, log "skipped: incusmagic mentioned but out of scope" in the audit trail and move on.
+
+#### Example
+
+User plan: "add a new metrics service to mgmt.gravhl.com".
+
+Oracle has an entry for **mgmt.gravhl.com new-service workflow** with:
+- How: (1) deploy normally, (2) edit `mgmt/web-ui/links.yaml`, (3) commit + push, (4) load mgmt.gravhl.com in browser and click the new link
+- Where: link tree at `~/workspace/gravhl/backend/mgmt/web-ui/links.yaml`
+- Why: link tree is hand-maintained; skipping = invisible service
+
+Iterate-planner folds in:
+
+```
+Na. Edit ~/workspace/gravhl/backend/mgmt/web-ui/links.yaml — add a "metrics" entry under the appropriate category.
+Nb. The file diff shows the new entry; `yq '.links[].name' links.yaml | grep metrics` returns a hit.
+
+Mb. Load https://mgmt.gravhl.com in a browser, click the new "metrics" link, confirm it routes to the metrics service AND the page renders without console errors.
+Nb. (interactive — operator's eyes on the live click-through)
+```
+
+And in Constraints:
+- Context: mgmt link tree is hand-maintained at `~/workspace/gravhl/backend/mgmt/web-ui/links.yaml`. No auto-discovery.
+
+And in the Oracle context audit trail:
+- Buzzword matched: "mgmt.gravhl.com" → loaded entry "mgmt.gravhl.com new-service workflow" from global → added 2 Steps, 1 Constraint.
+
+#### When oracle has no matching entries
+
+The plan is written without oracle augmentation. Note in the audit trail: "Oracle scanned, 0 matches. Buzzwords in plan: [list]. Use `/oracle add <buzzword>` to register one."
+
+### 5. Write the plan file
+
+Schema, written to `./.claude/iterate/plans/<name>.md`:
+
+```markdown
+# Iterate Task — <short title>
+
+name: <animal>
+Started: <UTC timestamp> (planned)
+CWD: <pwd>
+phase: planned
+running: false
+planner: iterate-planner    # marker so /iterate knows oracle was consulted
+
+## Goal
+<one sentence>
+
+## Steps
+1. <task>
+2. <task>
+...
+
+## Validation
+1. <how to verify step 1 — concrete, runnable assertion, including interactive checks where required>
+2. <how to verify step 2>
+...
+
+## Constraints
+- <user constraint>
+- <oracle gotcha if applicable>
+- Naming: <oracle convention if applicable>
+- Context: <oracle architecture note if applicable>
+
+## Oracle context applied
+<!-- Audit trail: which oracle rules were folded in. Lets the user see what changed. -->
+- Post-action: <entry> → added as Step N
+- Testing: <entry> → strengthened validation N
+- Gotcha: <entry> → added as Constraint
+- ...
+
+## Decisions log
+(empty until execution)
+
+## Status / Log
+(empty until execution)
+```
+
+Storage uses two parallel numbered lists (Steps + Validation, indexed 1:1). The `planner:` field tells `/iterate` "oracle was already consulted — don't re-read it" (see iterate's behavior).
+
+### 6. Present the plan
+
+Always lead with a one-line **save confirmation** so the user knows it persisted:
+- created a brand-new plan → `plan written to <animal>`
+- appended to / refined an existing plan → `plan amended <animal>`
+
+Then print the plan in paired 1a/1b format, AND show which oracle rules were applied:
+
+```
+plan written to owl
+
+**Plan ready** — owl — ./.claude/iterate/plans/owl.md (phase: planned, oracle-aware)
+
+**Goal:** <goal>
+
+1a. <step 1>
+1b. <validation 1>
+
+2a. <step 2>
+2b. <validation 2>
+
+...
+
+**Constraints:** <list, if any>
+
+**Oracle rules applied:**
+- Post-action: <entry> → added step <N>
+- Testing: <entry> → strengthened validation <N>
+- Gotcha: <entry> → added constraint
+
+(Oracle rules NOT applied because out of scope: <N entries skipped>.)
+
+Want changes, or type `/iterate` (or `/iterate <name>`) to execute?
+```
+
+If the project had no oracle, omit the "Oracle rules applied" section and add a one-liner: `(No oracle found for this project — planned without project context. Use /oracle remember to start one.)`
+
+### 7. Handle refinements
+
+If the user responds with changes in natural conversation, update the current plan file in place AND re-run the oracle merge (in case the refinement brought new oracle-relevant scope). Re-print the full plan. Keep `phase: planned`. Don't archive — overwrite. Refinements target the **current** plan unless the user names a different one — never spin up a second plan for a refinement.
+
+## Rules (hard)
+
+1. **Never execute the plan.** Only `/iterate` does that. Your responsibility ends at writing + presenting.
+2. **Never set up `/loop` or take the `running:` lock.** Those happen at `/iterate` execution time.
+2a. **Creating a new plan is explicit-only.** Default every planning request to the current plan; only create a new animal-named plan when the user says "new plan" (or there are zero plans). When unsure, add to current. See "Named plans" above.
+3. **Apply oracle rules selectively, not blindly.** Only fold in rules that are plausibly in scope for the user's plan. Log skipped rules in the audit trail so the user can override.
+4. **Be transparent about what oracle changed.** The "Oracle rules applied" section is mandatory when the oracle contributed anything. The user must be able to see what got bolted on.
+5. **Pair every step (Na) with a validation (Nb).** If the user didn't specify a validation, infer the most reasonable one (a runnable command + expected output) — and if a Testing requirement from oracle applies, use it for the inferred validation. Note "(validation inferred)" so they can override.
+6. **Don't be cute about validations — interactive testing mandate.** Each Nb must be a concrete, observable check (a command + expected output, a file existing, a count, a service responding), and it must EXERCISE the system, not just READ the code. If a change touches:
+   - a **UI** → the validation must include actually loading the page in a browser and clicking through the changed flow (not "the JSX looks correct").
+   - an **API endpoint** → a real `curl` / request hitting the running service with realistic input (not "the handler signature looks right").
+   - a **CLI command** → actually running the command end-to-end (not "the flag parsing looks right").
+   - a **migration / script** → executing it against a real (test or local) target (not "the SQL parses").
+   "Static code review passes" / "tests pass" alone is NOT validation when the change ships behavior. Strengthen validations to require interactive testing where the oracle says so.
+7. **Don't write to the oracle from here.** This skill READS the oracle. Only the `/oracle` skill writes to it. If the user shares a new lesson while refining the plan, suggest `/oracle remember <fact>` separately.
+8. **No oracle is fine.** Don't refuse to run on projects without an oracle — just plan without the extra context and say so in the footer.
+9. **NEVER write "STOP", "abort", "give up", "halt", or "manual intervention required" into any step or validation.** The whole point of `/iterate` is autonomous recovery — it exhausts alternatives, it doesn't bail at the first sign of trouble. Validations describe the desired post-condition only. Recovery from a failed validation is `/iterate`'s job at execution time, not yours.
+10. **If a step's natural form is "check X, and if missing, halt" — rewrite it as a productive step that creates/repairs X.** Examples:
+    - Bad: "1a. Verify bridge exists. 1b. `incus network list` shows it; STOP if absent."
+    - Good: "1a. Ensure IZUMA bridge exists on ranger; create it from the existing template if missing. 1b. `incus network list` shows IZUMA bridge AND ranger can ping 172.29.28.1."
+    The plan should describe what we want to be TRUE at the end of the step. If after rewriting a step still requires the user to act (physical hardware change, billing decision), say so in Constraints — not as a stop-mid-flight instruction. `/iterate` surfaces it during execution as a giveup with context, and the user re-invokes after handling it.
+11. **NEVER produce a status check, blocker report, or "either/or" decision menu in place of a plan.** When invoked, your ONLY output is: the save line + paired 1a/1b plan + oracle audit trail + "Want changes, or type `/iterate` to execute?" prompt. If you catch yourself writing "Honest blocker", "To proceed", "Either ... Or ...", "this is your status check", or asking the user to pick between conservative-vs-aggressive paths — **STOP and rewrite as a plan**. Pick the most aggressive path consistent with the user's stated intent and commit to it. The user invoked you to plan; they did NOT ask for a decision menu.
+12. **Risk acceptance is standing.** If the user has said (now or earlier in this conversation) "this isn't production", "accept the risk", "do it everywhere", "switching it out is fine", "proceed", or equivalent — treat that as a permanent setting for the planning scope. Do NOT re-prompt for risk acceptance per-step. Do NOT surface risk as a reason to ask the user to choose between two paths. Plan as if the risk is accepted.
+13. **Rollback in a plan is never terminal.** If a step needs rollback on failure, the validation MUST also include "then retry, up to N times, until success." Never write "rolled back per chart" or "failures roll back and stop." Recovery is `/iterate`'s job — your plan describes the desired end state (every chart migrated, everything green), not the give-up condition.
+14. **Commit to the full goal, not a one-item pilot — unless the user explicitly asked for a pilot.** If the user said "port everything" or "do the whole sweep," plan to do the whole sweep. Don't downgrade to "let's try one and check in." That downgrade IS the status-check failure mode dressed up as caution.
+15. **Scope validations to "caused by this work," not "all global state."** Broad checks like `kubectl get pod -A | grep -v Running | wc -l == 0` catch pre-existing failures and will read as "blocked" when they shouldn't. Prefer scoped checks: "pods in the changed namespaces are Running", "Applications touched by this run are Synced", or "no NEW non-Running pods compared to baseline captured at run start." If the goal genuinely IS cluster-wide health, say so explicitly in the Goal section so the executor knows pre-existing failures are in-scope.
+
+## Example
+
+User in conversation about adding a new "metrics" service to mgmt.gravhl.com. Oracle has:
+
+```
+## Post-action checklists
+- When adding a new service to mgmt.gravhl.com: update the GUI link tree.
+
+## Testing requirements
+- All UI changes require interactive browser testing.
+
+## Deployment rituals
+- Database migrations run BEFORE the new app version starts.
+```
+
+User types:
+
+```
+/iterate-planner restate the plan
+```
+
+You print:
+
+```
+plan written to owl
+
+**Plan ready** — owl — ./.claude/iterate/plans/owl.md (phase: planned, oracle-aware)
+
+**Goal:** Deploy a new "metrics" service behind mgmt.gravhl.com with link-tree integration.
+
+1a. Run the metrics-service schema migration on the prod DB.
+1b. `psql -c "\dt metrics.*"` shows the new tables.
+
+2a. Build and deploy the metrics-service container.
+2b. `curl https://metrics.gravhl.com/health` returns 200 AND the service appears in the container orchestrator's running list.
+
+3a. Update the GUI link tree at mgmt.gravhl.com to include "metrics" → https://metrics.gravhl.com.
+3b. Load mgmt.gravhl.com in a browser, click the metrics link, confirm it routes to the live metrics service AND the page renders without console errors. (Oracle: UI changes require interactive browser testing.)
+
+**Constraints:**
+- (none from user)
+
+**Oracle rules applied:**
+- Deployment ritual: "Database migrations run BEFORE new app version" → ordered as Step 1.
+- Post-action: "Adding a service to mgmt.gravhl.com → update link tree" → added as Step 3.
+- Testing: "UI changes require interactive browser testing" → strengthened validation 3b.
+
+Want changes, or type `/iterate` to execute?
+```
+
+User responds: "drop step 1; the migration was already done last week."
+
+You delete step 1, renumber, re-run oracle merge (no new scope), re-print (`plan amended owl`). Wait for `/iterate` or next refinement.
