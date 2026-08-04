@@ -48,11 +48,11 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 
 ```markdown
 ## Teams
-| Team | Steps | Focus | Depends on | Agent |
-|---|---|---|---|---|
-| code | 1,2,4 | Backend service changes | — | backend-expert |
-| database | 3,5 | Schema migration + data backfill | — | backend-expert |
-| docs | 6 | Update README | code | documentation-expert |
+| Team | Steps | Focus | Depends on | Agent | Status |
+|---|---|---|---|---|---|
+| code | 1,2,4 | Backend service changes | — | backend-expert | pending |
+| database | 3,5 | Schema migration + data backfill | — | backend-expert | pending |
+| docs | 6 | Update README | code | documentation-expert | pending |
 ```
 
 - **Team** — short kebab-case name, inferred from the plan's actual content (no fixed vocabulary — could be `code`/`database`/`infra`/`docs`/`frontend`/`tests`/whatever the plan naturally divides into).
@@ -60,9 +60,10 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 - **Focus** — one line, what makes these steps a coherent unit.
 - **Depends on** — other team name(s) that must be `status: done` before this team can start, or `—` for none. Infer from real ordering constraints (e.g. a migration must land before code that reads the new column), not from step number order alone.
 - **Agent** — suggested Agent-tool `subagent_type` for `/iterate` to dispatch this team to (`backend-expert`, `frontend-engineer`, `documentation-expert`, `operations-engineer`, `quality-engineer`, `architecture-expert`, or `general-purpose` as the default when nothing fits better).
+- **Status** — always written as `pending` by teamify/auto-classify. This is the one cell `/iterate` updates as it runs (`pending` → `done` / `blocked (<reason>)`) — see below.
 - **Unassigned steps** (steps not listed under any team) are executed directly by the `/iterate` coordinator itself, serially, same as an un-teamed plan — never forced into a bad-fit team.
 
-Only `/iterate-planner` writes/edits the Teams table. `/iterate` reads it but never restructures it.
+**Table ownership is split, not exclusive:** `/iterate-planner` owns the table's *structure* — which teams exist, their Steps/Focus/Depends on/Agent, adding/renaming/removing teams. It always writes fresh rows with `Status: pending`. `/iterate` owns only the **Status** cell per row once execution starts — it updates that one value as teams progress and never adds/removes a team, never changes Steps/Focus/Depends on/Agent. Neither side ever touches the other's part of the table.
 
 ### Creating vs. adding — bias hard toward the current plan
 
@@ -289,11 +290,11 @@ If the plan is teamed (`teamed: true`), insert the Teams table between Constrain
 
 ```
 **Teams** (run in parallel at /iterate time where independent):
-| Team | Steps | Focus | Depends on | Agent |
-|---|---|---|---|---|
-| code | 1,2,4 | Backend service changes | — | backend-expert |
-| database | 3,5 | Schema migration + data backfill | — | backend-expert |
-| docs | 6 | Update README | code | documentation-expert |
+| Team | Steps | Focus | Depends on | Agent | Status |
+|---|---|---|---|---|---|
+| code | 1,2,4 | Backend service changes | — | backend-expert | pending |
+| database | 3,5 | Schema migration + data backfill | — | backend-expert | pending |
+| docs | 6 | Update README | code | documentation-expert | pending |
 ```
 
 ### 7. Handle refinements
@@ -423,10 +424,10 @@ You run the Teamify procedure: step 1 (deploy) and step 3 (link tree) are both "
 plan amended owl
 
 **Teams** (run in parallel at /iterate time where independent):
-| Team | Steps | Focus | Depends on | Agent |
-|---|---|---|---|---|
-| deploy | 2 | Build and deploy the metrics-service container | — | backend-expert |
-| link-tree | 3 | Wire the new service into the mgmt.gravhl.com GUI link tree | deploy | documentation-expert |
+| Team | Steps | Focus | Depends on | Agent | Status |
+|---|---|---|---|---|---|
+| deploy | 2 | Build and deploy the metrics-service container | — | backend-expert | pending |
+| link-tree | 3 | Wire the new service into the mgmt.gravhl.com GUI link tree | deploy | documentation-expert | pending |
 
 Grouped into 2 teams — link-tree depends on deploy finishing first, so they run sequentially, not in parallel, at /iterate time.
 
