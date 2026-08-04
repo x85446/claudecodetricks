@@ -14,6 +14,32 @@ Guides the creation and optimization of Claude Code skills using official best p
 
 For the complete technical reference on all frontmatter fields, advanced patterns, and troubleshooting, see [reference.md](reference.md).
 
+## Skill Naming & Families
+
+Skills are organized into **families** by naming convention. This is how related skills stay legible in a flat directory. Apply it to every new skill and every audit.
+
+**Core fact:** for personal/project skills the **directory name IS the `/command`**. Frontmatter `name:` is only a display label and must be lowercase-hyphen with **no leading hyphen** — so for orphan skills the dir and `name:` intentionally differ.
+
+**The four roles:**
+
+| Role | Pattern | Example | `disable-model-invocation` | Notes |
+|---|---|---|---|---|
+| **Meta** (orchestrator) | plain name | `importer`, `categorize`, `organizer` | unset (auto-invocable) | Owns a pipeline/family; coordinates children via the Skill tool. |
+| **Child** | `<meta>-<child>` | `categorize-venue`, `importer-audit` | **unset — leave it OFF** | Worker owned by a meta. MUST stay model-invocable or its meta can't delegate to it via the Skill tool. Add `context: fork` if it must run isolated. Control triggering with a narrow description, not a flag. |
+| **Sub-family** | `<meta>-<meta>-<child>` | `importer-audit-schema` | **unset — leave it OFF** | Use only when a child is itself a meta with its own workers. Prefix chains left→right, most-general first. Cap at 3 tiers — deeper means it should become its own top-level meta. |
+| **Orphan** | `-<child>` (leading hyphen) | `-renamer` → `/-renamer` | usually unset | "Hasn't found a home / baggage." A standalone or not-yet-classified worker. Dir leads with `-`; `name:` stays hyphen-free (`name: renamer`). Set `true` ONLY if nothing delegates to it and it's user-only (destructive/expensive). |
+
+**Rules:**
+
+1. **A family prefix requires an existing meta of that exact dir name.** `categorize-*` is only valid if a `categorize` meta exists.
+2. **Do NOT set `disable-model-invocation: true` on a child (or any skill a meta delegates to).** That flag blocks the **Skill tool entirely** — not just auto-triggering — so a meta calling `Skill(categorize-linker)` fails with *"cannot be used with Skill tool due to disable-model-invocation."* There is no flag for "delegatable but won't auto-fire," because Skill-tool delegation *is* model invocation. Keep the flag OFF and control unwanted triggering with a **narrow, distinct description**. Reserve `disable-model-invocation: true` for user-only standalones that no meta delegates to (typically destructive/expensive, meant to be typed by the user).
+3. **Orphans keep a normal (hyphen-free) `name:` field.** Accept the dir≠name mismatch — that mismatch is the *signal* the skill is unhomed. When an orphan is adopted, rename `-renamer` → `<meta>-renamer` (see rule 6).
+4. **Grouping is naming-only.** Discovery is a flat scan of each `.claude/skills/` root; prefixes do NOT nest folders and a child folder inside a meta folder is NOT discovered.
+5. **Descriptions carry routing.** Meta description = whole-goal triggers; child description = narrow sub-task with distinct terms so it won't collide with its meta.
+6. **Renames use `git mv`** (preserve history) and rewire every `/command` reference — skill bodies, `CLAUDE.md`, `oracle.md` — in one commit. Leave historical logs (e.g. `.claude/iterate/archive/`) untouched.
+
+**Decide the role for any skill:** Does it orchestrate others? → **meta** (plain name). Is it owned by/triggered as a stage of a meta? → **child** (`<meta>-<child>`, `disable-model-invocation` left OFF so the meta can delegate). Is that child big enough to own its own workers? → **sub-family** (`<meta>-<meta>-<child>`). None of the above / undecided? → **orphan** (`-<child>`) until it finds a home.
+
 ## Quick Start: What Is a Skill?
 
 A skill is a reusable set of instructions that tells Claude Code how to handle a specific task. Skills live in `.claude/skills/[skill-name]/SKILL.md` inside your project. When you type `/skill-name` or describe what you need in natural language, Claude loads the skill's instructions and follows them.
@@ -41,6 +67,7 @@ Ask questions using AskUserQuestion, one round at a time. Each round covers one 
 
 - What does this skill do? What problem does it solve or what workflow does it automate?
 - What should we call it? (Suggest a name based on their answer -- lowercase, hyphens, max 64 chars)
+- **Which family/role?** Apply "Skill Naming & Families" above: is this a **meta** (plain name), a **child** of an existing meta (`<meta>-<child>`), a **sub-family** (`<meta>-<meta>-<child>`), or an **orphan** with no home yet (`-<child>`)? If it's a child, confirm the parent meta exists. Default to **orphan** (`-<name>`) when the home is unclear — don't invent a meta prefix that doesn't exist.
 
 **Round 2: Trigger**
 *Why this matters: The `description` field is how Claude decides whether to load your skill. Bad trigger words mean Claude never uses it. Too broad means Claude fires it when you don't want it.*
@@ -112,9 +139,9 @@ Once discovery is complete, build the skill following these steps:
 
 Set these fields based on what you learned in discovery:
 
-- `name` -- Matches the directory name. Lowercase, hyphens, max 64 chars.
-- `description` -- Written as: "Use when someone asks to [action], [action], or [action]." Include natural keywords from the trigger phrases.
-- `disable-model-invocation: true` -- Set if the skill has side effects (file generation, API calls, costs money). Prevents Claude from auto-invoking.
+- `name` -- Matches the directory name. Lowercase, hyphens, max 64 chars. **Exception:** orphan skills whose directory leads with a hyphen (`-renamer`) keep a hyphen-free `name:` (`renamer`) — YAML names can't lead with `-`, and the dir≠name mismatch is the intended "unhomed" signal. Family skills use the full prefixed dir name (`categorize-venue`) as both dir and `name`.
+- `description` -- Written as: "Use when someone asks to [action], [action], or [action]." Include natural keywords from the trigger phrases. For **children**, keep it narrowly scoped with distinct terms so it won't collide with its meta.
+- `disable-model-invocation: true` -- Set ONLY for user-only standalones that no meta delegates to (destructive/expensive skills meant to be typed by the user). **Never set it on a child/worker a meta delegates to** — it blocks the Skill tool and the meta's `Skill(child)` call will fail. Control child triggering with a narrow description instead. Metas leave this unset.
 - `argument-hint` -- Set if the skill accepts arguments. Shows in the `/` menu autocomplete.
 - `context: fork` + `agent` -- Set if the skill is self-contained and doesn't need conversation history.
 - `model` -- Set if a specific model capability is needed.
@@ -264,10 +291,12 @@ Use this checklist to audit any existing skill. Read the skill file first before
 
 ### Frontmatter Audit
 
-- [ ] `name` matches the directory name
+- [ ] `name` matches the directory name — **except orphans** (`-name` dir keeps `name: name`, no leading hyphen)
+- [ ] **Naming role is correct** (see "Skill Naming & Families"): meta = plain name; child = `<meta>-<child>` and the parent meta exists; sub-family = `<meta>-<meta>-<child>` (≤3 tiers); orphan = `-<child>` when unhomed
+- [ ] **`disable-model-invocation: true` is NOT set on any child/worker a meta delegates to** (it would break `Skill(child)` delegation) — reserve it for user-only standalones
 - [ ] `description` uses natural keywords someone would actually say when they need this skill
 - [ ] `description` is specific enough to avoid false triggers but broad enough to catch real requests
-- [ ] `disable-model-invocation: true` is set if the skill has side effects (generates files, calls APIs, sends messages, costs money)
+- [ ] `disable-model-invocation: true` is set if the skill has side effects (generates files, calls APIs, sends messages, costs money) AND no meta delegates to it (if a meta delegates to it, leave the flag OFF — see the child rule above)
 - [ ] `argument-hint` is set if the skill accepts arguments via `/name`
 - [ ] `allowed-tools` is set if the skill should NOT have access to all tools
 - [ ] `context: fork` is used if the skill is self-contained and produces verbose output
@@ -311,6 +340,7 @@ After running the audit, check [reference.md](reference.md) for advanced feature
 Adapt these to fit your project:
 
 - Skills live in `.claude/skills/[skill-name]/SKILL.md`
+- **Name by family** (see "Skill Naming & Families"): meta = plain name, child = `<meta>-<child>`, 3-tier = `<meta>-<meta>-<child>`, orphan/unhomed = `-<child>`. Leave `disable-model-invocation` OFF on children (metas must be able to delegate to them); renames use `git mv`.
 - Output files go in a predictable location (e.g., `output/[skill-name]/`)
 - API keys go in environment variables, never hardcoded in skill files
 - Document all active skills in your project's CLAUDE.md

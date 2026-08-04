@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.travis.crd-keepalive</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/crd-fixup.sh</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <!-- Don't SIGTERM our backgrounded remoting_me2me_host child when the
+         script exits. Without this, launchd tears down the whole process
+         group and the host we just launched dies immediately. -->
+    <key>AbandonProcessGroup</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/var/log/crd-keepalive.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/crd-keepalive.log</string>
+</dict>
+</plist>

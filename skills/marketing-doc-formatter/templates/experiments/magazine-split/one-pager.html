@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Izuma Device Management</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Raleway:wght@400;500;600&display=swap');
+@page { size: letter; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Raleway","Arial",sans-serif; font-size: 8.75pt; line-height: 1.3; color: #2D2D2D; }
+.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3684F5; padding-bottom: 5px; margin-bottom: 6px; }
+.header img { height: 26px; }
+.header span { font-family: "Poppins",sans-serif; font-size: 10pt; color: #205388; font-weight: 500; }
+h1 { font-family: "Poppins",sans-serif; font-size: 18pt; color: #205388; font-weight: 700; margin: 0 0 2px 0; }
+.subtitle { font-size: 11pt; color: #3684F5; font-weight: 500; margin-bottom: 4px; font-style: italic; }
+.pull-quote { border-top: 3px solid #FF9C2B; border-bottom: 1px solid #FF9C2B; padding: 6px 0; margin: 6px 0; font-family: "Poppins",sans-serif; font-size: 12pt; color: #205388; font-weight: 500; line-height: 1.3; text-align: center; }
+.intro { margin-bottom: 6px; }
+.intro::first-letter { font-family: "Poppins",sans-serif; font-size: 22pt; font-weight: 700; color: #205388; float: left; line-height: 0.9; padding: 3px 6px 0 0; }
+.small-caps { font-family: "Poppins",sans-serif; font-size: 8pt; color: #205388; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin: 6px 0 3px 0; border-bottom: 1px solid #E0E0E0; padding-bottom: 2px; }
+.three-col { display: flex; gap: 10px; margin-bottom: 4px; }
+.three-col .col { flex: 1; }
+.three-col h3 { font-family: "Poppins",sans-serif; font-size: 9pt; color: #3684F5; font-weight: 600; margin: 0 0 2px 0; }
+.three-col p { margin: 0; font-size: 8.25pt; line-height: 1.3; }
+.two-col { display: flex; gap: 12px; }
+.two-col .col { flex: 1; }
+table { width: 100%; border-collapse: collapse; margin: 3px 0; font-size: 8pt; }
+thead th { background-color: #205388; color: #FFF; font-family: "Poppins",sans-serif; font-weight: 600; padding: 4px 6px; text-align: left; border-bottom: 3px solid #FF9C2B; }
+tbody tr:nth-child(even) { background-color: #F0F4FA; }
+tbody td { padding: 3px 6px; border-bottom: 1px solid #E0E0E0; vertical-align: top; }
+tbody td:first-child { font-weight: 600; color: #205388; }
+.accent-box { background: #FFF8F0; border-left: 4px solid #FF9C2B; padding: 5px 9px; margin: 4px 0 3px 0; font-size: 8pt; }
+.accent-box strong { color: #205388; }
+.footer { display: flex; justify-content: space-between; padding-top: 2px; margin-top: 3px; font-size: 7.5pt; color: #888; }
+</style></head><body>
+
+<div class="header">
+<img src="/Users/travis/Library/CloudStorage/OneDrive-izumanet/Marketing/Logo-Branding/izuma-logo-horizontal.svg" alt="Izuma Networks">
+<span>Izuma Networks</span>
+</div>
+
+<h1>Izuma Device Management</h1>
+<div class="subtitle">Chip-to-Cloud IoT at Scale</div>
+
+<div class="pull-quote">Compress years of IoT infrastructure work into a single day.</div>
+
+<div class="intro">Building custom IoT device management takes months to years and diverts engineering from product differentiation. Izuma Device Management compresses that timeline from years to a day — a proven platform with over a decade of evolution (originally Arm Pelion / mbed Cloud) handling secure connectivity, firmware updates, and fleet operations from ultra-constrained MCUs to full edge servers. <strong>SOC 2 certified.</strong> Deployed by some of the world's largest companies.</div>
+
+<div class="small-caps">Core Capabilities</div>
+
+<div class="three-col">
+<div class="col"><h3>Secure Connectivity</h3><p>LwM2M/CoAP + DTLS. X.509 mTLS. TPM 2.0, TrustZone, PARSEC. Protocol translation for BLE, Zigbee, BACnet, Modbus.</p></div>
+<div class="col"><h3>Firmware Updates</h3><p>One-shot, continuous, mesh campaigns. Delta updates. Encrypted/signed. Resume after disconnect.</p></div>
+<div class="col"><h3>Fleet &amp; Edge</h3><p>Directory scales to millions. True Kubernetes. SD-WAN. Device Sentry incidents. Remote log and terminal access.</p></div>
+</div>
+
+<div class="two-col">
+<div class="col">
+<div class="small-caps">Device Spectrum</div>
+<table>
+<thead><tr><th>Device Class</th><th>Stack</th></tr></thead>
+<tbody>
+<tr><td>Constrained MCUs</td><td>Izuma Connect (Lite)</td></tr>
+<tr><td>Mainstream MCUs</td><td>Izuma Connect</td></tr>
+<tr><td>Rich nodes (Linux)</td><td>Izuma Connect</td></tr>
+<tr><td>Gateways</td><td>Izuma Edge</td></tr>
+<tr><td>Edge servers (k8s)</td><td>Izuma Edge</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<div class="small-caps">Deployment</div>
+<table>
+<thead><tr><th>Model</th><th>Infrastructure</th></tr></thead>
+<tbody>
+<tr><td>Fully Managed</td><td>SaaS on AWS (NoOps)</td></tr>
+<tr><td>Any Cloud</td><td>AWS, Azure, GKE</td></tr>
+<tr><td>Bare Metal</td><td>On-premises</td></tr>
+</tbody></table>
+</div>
+</div>
+
+<div class="small-caps">Why Not Build It Yourself?</div>
+<table>
+<thead><tr><th>Consideration</th><th>Build In-House</th><th>Izuma Device Management</th></tr></thead>
+<tbody>
+<tr><td>Time to production</td><td>Months to years</td><td>Days</td></tr>
+<tr><td>Security architecture</td><td>Design from scratch</td><td>Chip-to-cloud, SOC 2 certified</td></tr>
+<tr><td>Protocol support</td><td>Implement each protocol</td><td>LwM2M, CoAP, BLE, Zigbee, Modbus built in</td></tr>
+<tr><td>Firmware &amp; edge</td><td>Build pipeline + k8s integration</td><td>Delta/mesh, native k8s, SD-WAN</td></tr>
+<tr><td>Factory provisioning</td><td>Custom tooling required</td><td>Factory Flow — works offline</td></tr>
+<tr><td>Ongoing maintenance</td><td>Permanent engineering team</td><td>Managed service option (NoOps)</td></tr>
+</tbody></table>
+
+<div class="accent-box">
+<strong>Key Differentiators:</strong> No vendor lock-in · Single pane of glass across MCUs to edge servers · Factory Flow offline provisioning · SoftBank-backed · Free tier: 200 firmware updates/month
+</div>
+
+<div class="footer"><span>Izuma Networks Inc.</span><span>izumanetworks.com</span></div>
+</body></html>

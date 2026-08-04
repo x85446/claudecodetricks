@@ -1,0 +1,99 @@
+[[mappings]]
+
+
+
+[[mappings]]
+
+
+
+skill = "refresh-forge-auth"
+projects = ["gravhl/backend"]
+
+[[mappings]]
+
+
+
+[[mappings]]
+
+
+
+[[mappings]]
+
+
+
+skill = "competitive-intel"
+projects = ["izuma/marketing"]
+
+[[mappings]]
+
+
+
+skill = "marketing-doc-formatter"
+projects = ["izuma/marketing"]
+
+[[mappings]]
+
+
+
+skill = "marketing-template-studio"
+projects = ["izuma/marketing"]
+
+[[mappings]]
+
+
+
+skill = "product-discovery"
+projects = ["izuma/marketing"]
+
+[[mappings]]
+
+
+
+skill = "feature-tracker"
+projects = [
+    "izuma/marketing",
+    "izuma/myriplay",
+]
+
+[[mappings]]
+
+
+
+skill = "dev-makefiles"
+projects = [
+    "x85446/financeSheets",
+    "x85446/kilroy",
+    "x85446/warden",
+]
+
+[[mappings]]
+
+
+
+skill = "docs-organizer"
+projects = [
+    "gravhl/backend/cloud-setup",
+    "gravhl/backend/gravhl-code-factory",
+    "gravhl/backend/mgmt/api-health-dashboard",
+    "izuma/marketing",
+    "izuma/myriplay",
+    "x85446/financeSheets",
+    "x85446/warden",
+]
+
+[[mappings]]
+
+
+
+skill = "monitor"
+projects = [
+    "gravhl/backend/cloud-setup",
+    "gravhl/backend/gravhl-code-factory",
+    "gravhl/backend/mgmt/api-health-dashboard",
+    "izuma/izcrOS",
+    "izuma/marketing",
+    "izuma/myriplay",
+    "izuma/snap-pelion-edge",
+    "x85446/financeSheets",
+    "x85446/warden",
+]

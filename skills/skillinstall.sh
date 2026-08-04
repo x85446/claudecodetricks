@@ -6,6 +6,7 @@
 set -e
 
 SKILLHOME=~/workspace/x85446/claudecodetricks/skills
+THIRDPARTY=~/workspace/x85446/claudecodetricks/3rd-party-Skills
 
 # ── Colors ──────────────────────────────────────────────────────
 GREEN='\033[0;32m'
@@ -21,6 +22,31 @@ IMARKETING=~/workspace/izuma/marketing/.claude/skills
 IMYRIPLAY=~/workspace/izuma/myriplay/.claude/skills
 TAXES="$HOME/Library/CloudStorage/GoogleDrive-travis.mccollum@gmail.com/My Drive/TRAVIS_Taxes/.claude/skills"
 CCTRICKS=~/workspace/x85446/claudecodetricks/temp/.claude/skills
+WARDEN=~/workspace/x85446/warden/.claude/skills
+FINANCE=~/workspace/x85446/financeSheets/.claude/skills
+PERSONALDB=~/workspace/x85446/financeSheets/personaldb/.claude/skills
+GRAVHL=~/workspace/gravhl/backend/.claude/skills
+GRAVHL_CLOUD=~/workspace/gravhl/backend/cloud-setup/.claude/skills
+GRAVHL_API_HEALTH=~/workspace/gravhl/backend/mgmt/api-health-dashboard/.claude/skills
+MKTOOL=~/workspace/x85446/marketing-tool/.claude/skills
+HOUSES=~/workspace/x85446/houses/.claude/skills
+USERGLOBAL="$HOME/.claude/skills"   # user-global skills, available in every session
+
+# ── All targets (for global skills) ────────────────────────────
+# Add new repos here — any skill using install_to_all picks them up automatically.
+ALL_TARGETS=(
+    "$IMARKETING"
+    "$IMYRIPLAY"
+    "$TAXES"
+    "$CCTRICKS"
+    "$WARDEN"
+    "$FINANCE"
+    "$PERSONALDB"
+    "$GRAVHL"
+    "$GRAVHL_CLOUD"
+    "$GRAVHL_API_HEALTH"
+    "$MKTOOL"
+)
 
 installed=0
 skipped=0
@@ -56,6 +82,23 @@ install_skill() {
     local name=$1 dest=$2
     mkdir -p "$dest/$name"
     if cp -r "$SKILLHOME/$name/"* "$dest/$name/" 2>/dev/null; then
+        ok "$name" "$dest"
+    else
+        fail "$name" "copy failed"
+    fi
+}
+
+install_to_all() {
+    local name=$1
+    for dest in "${ALL_TARGETS[@]}"; do
+        install_skill "$name" "$dest"
+    done
+}
+
+install_3p_skill() {
+    local name=$1 dest=$2
+    mkdir -p "$dest/$name"
+    if cp -r "$THIRDPARTY/$name/"* "$dest/$name/" 2>/dev/null; then
         ok "$name" "$dest"
     else
         fail "$name" "copy failed"
@@ -99,6 +142,21 @@ do_install() {
         competitive-intel)
             install_skill competitive-intel "$IMARKETING"
             ;;
+        marketing-doc-formatter)
+            install_skill marketing-doc-formatter "$IMARKETING"
+            ;;
+        marketing-template-studio)
+            install_skill marketing-template-studio "$IMARKETING"
+            ;;
+        grant-scout)
+            install_skill grant-scout "$IMARKETING"
+            ;;
+        darpa-equipment-references)
+            install_skill darpa-equipment-references "$IMARKETING"
+            ;;
+        product-discovery)
+            install_skill product-discovery "$IMARKETING"
+            ;;
         feature-tracker)
             install_skill feature-tracker "$IMARKETING"
             install_skill feature-tracker "$IMYRIPLAY"
@@ -123,6 +181,77 @@ do_install() {
             ;;
         categorize)
             install_skill categorize "$CCTRICKS"
+            ;;
+        categorizer)
+            install_skill categorizer "$PERSONALDB"
+            ;;
+        auditor)
+            install_skill auditor "$PERSONALDB"
+            ;;
+        importer-fix)
+            install_skill importer-fix "$PERSONALDB"
+            ;;
+        auditor-sourcetable-inspector)
+            install_skill auditor-sourcetable-inspector "$PERSONALDB"
+            ;;
+        categorize-linker)
+            install_skill categorize-linker "$PERSONALDB"
+            ;;
+        importer)
+            install_skill importer "$PERSONALDB"
+            ;;
+        downloader)
+            install_skill downloader "$PERSONALDB"
+            ;;
+        downloader-orderdocs)
+            install_skill downloader-orderdocs "$PERSONALDB"
+            ;;
+        -pdfify)
+            install_skill -pdfify "$PERSONALDB"
+            ;;
+        venue-classifier)
+            install_skill venue-classifier "$PERSONALDB"
+            ;;
+        dev-makefiles)
+            install_skill dev-makefiles "$WARDEN"
+            install_skill dev-makefiles "$FINANCE"
+            install_skill dev-makefiles "$PERSONALDB"
+            ;;
+        hours-maker)
+            install_skill hours-maker "$FINANCE"
+            ;;
+        hours-researcher)
+            install_skill hours-researcher "$FINANCE"
+            ;;
+        docs-organizer)
+            install_to_all docs-organizer
+            ;;
+        monitor)
+            install_to_all monitor
+            ;;
+        pptx)
+            install_3p_skill pptx "$GRAVHL"
+            ;;
+        window-schedule)
+            install_skill window-schedule "$HOUSES"
+            ;;
+        iterate-planner)
+            install_skill iterate-planner "$USERGLOBAL"
+            ;;
+        iterate)
+            install_skill iterate "$USERGLOBAL"
+            ;;
+        source2pdf)
+            install_skill source2pdf "$USERGLOBAL"
+            ;;
+        pdf2name)
+            install_skill pdf2name "$USERGLOBAL"
+            ;;
+        safedelete)
+            install_skill safedelete "$USERGLOBAL"
+            ;;
+        fix-chrome-remote-desktop)
+            install_skill fix-chrome-remote-desktop "$USERGLOBAL"
             ;;
         *)
             skip "$skill"

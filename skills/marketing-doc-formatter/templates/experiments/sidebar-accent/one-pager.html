@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Izuma Device Management</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Raleway:wght@400;500;600&display=swap');
+@page { size: letter; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Raleway","Arial",sans-serif; font-size: 8.75pt; line-height: 1.25; color: #2D2D2D; }
+.page { position: relative; padding-left: 12px; }
+.page::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #205388; }
+.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3684F5; padding-bottom: 6px; margin-bottom: 6px; }
+.header img { height: 30px; }
+h1 { font-family: "Poppins",sans-serif; font-size: 17pt; color: #205388; font-weight: 700; margin: 0 0 1px 0; }
+.subtitle { font-size: 10.5pt; color: #3684F5; font-weight: 500; margin-bottom: 5px; }
+.stats { display: flex; gap: 8px; margin: 4px 0; }
+.stat { flex: 1; text-align: center; background: #F0F4FA; border-top: 2px solid #FF9C2B; padding: 2px 3px; }
+.stat .num { font-family: "Poppins",sans-serif; font-size: 10pt; color: #205388; font-weight: 700; }
+.stat .label { font-size: 6.5pt; color: #666; text-transform: uppercase; letter-spacing: 0.4px; }
+h2 { font-family: "Poppins",sans-serif; font-size: 10.5pt; color: #3684F5; font-weight: 600; margin: 6px 0 3px 0; }
+h3 { font-family: "Poppins",sans-serif; font-size: 9pt; color: #205388; font-weight: 600; margin: 3px 0 1px 0; }
+p { margin: 0 0 3px 0; }
+hr { border: none; border-top: 2px solid #3684F5; margin: 5px 0; }
+.two-col { display: flex; gap: 14px; }
+.two-col .col { flex: 1; }
+table { width: 100%; border-collapse: collapse; margin: 3px 0; font-size: 8pt; }
+thead th { background-color: #205388; color: #FFF; font-family: "Poppins",sans-serif; font-weight: 600; padding: 4px 6px; text-align: left; border-bottom: 3px solid #FF9C2B; }
+tbody tr:nth-child(even) { background-color: #F0F4FA; }
+tbody td { padding: 3px 6px; border-bottom: 1px solid #E0E0E0; vertical-align: top; }
+tbody td:first-child { font-weight: 600; color: #205388; }
+.accent-box { background: #FFF8F0; border-left: 4px solid #FF9C2B; padding: 5px 9px; margin: 4px 0 3px 0; font-size: 8.5pt; }
+.accent-box strong { color: #205388; }
+.footer { display: flex; justify-content: space-between; padding-top: 2px; margin-top: 3px; font-size: 7.5pt; color: #888; }
+</style></head><body>
+
+<div class="page">
+<div class="header">
+<img src="/Users/travis/Library/CloudStorage/OneDrive-izumanet/Marketing/Logo-Branding/izuma-logo-horizontal.svg" alt="Izuma Networks">
+<span style="font-family:Poppins;font-size:11pt;color:#205388;font-weight:500">Izuma Networks</span>
+</div>
+
+<h1>Izuma Device Management</h1>
+<div class="subtitle">Chip-to-Cloud IoT at Scale</div>
+
+<div class="stats">
+<div class="stat"><div class="num">10+ yrs</div><div class="label">Platform Heritage</div></div>
+<div class="stat"><div class="num">SOC 2</div><div class="label">Certified</div></div>
+<div class="stat"><div class="num">Millions</div><div class="label">Device Scale</div></div>
+<div class="stat"><div class="num">6</div><div class="label">Device Classes</div></div>
+</div>
+
+<p>Building custom IoT device management infrastructure takes months to years. Izuma Device Management compresses that timeline from years to a day — a proven platform (originally Arm Pelion / mbed Cloud) handling secure connectivity, firmware updates, and fleet operations from ultra-constrained MCUs to full edge servers.</p>
+
+<hr>
+
+<div class="two-col">
+<div class="col">
+<h2>Core Capabilities</h2>
+<h3>Secure Device Connectivity</h3>
+<p>LwM2M/CoAP with DTLS. X.509 mTLS. TPM 2.0, TrustZone, PARSEC. Protocol translation for BLE, Zigbee, Z-Wave, BACnet, Modbus.</p>
+<h3>Firmware Updates (FOTA)</h3>
+<p>One-shot, continuous, mesh campaigns. Delta updates. Encrypted/signed images. Resume after disconnect.</p>
+<h3>Fleet Management</h3>
+<p>Directory scales from dozens to millions. Filter, group, suspend, bulk-operate. Custom attributes.</p>
+<h3>Edge Computing &amp; Monitoring</h3>
+<p>True Kubernetes. Offline containers. SD-WAN. Device Sentry incidents. Remote log/terminal.</p>
+</div>
+<div class="col">
+<h2>Device Spectrum</h2>
+<table>
+<thead><tr><th>Device Class</th><th>Stack</th></tr></thead>
+<tbody>
+<tr><td>Constrained MCUs</td><td>Izuma Connect (Lite)</td></tr>
+<tr><td>Mainstream MCUs</td><td>Izuma Connect</td></tr>
+<tr><td>Rich nodes (Linux)</td><td>Izuma Connect</td></tr>
+<tr><td>Gateways</td><td>Izuma Edge</td></tr>
+<tr><td>Edge servers (k8s)</td><td>Izuma Edge</td></tr>
+</tbody></table>
+<h2>Deployment</h2>
+<table>
+<thead><tr><th>Model</th><th>Infrastructure</th></tr></thead>
+<tbody>
+<tr><td>Fully Managed</td><td>SaaS on AWS (NoOps)</td></tr>
+<tr><td>Any Cloud</td><td>AWS, Azure, GKE</td></tr>
+<tr><td>Bare Metal</td><td>On-premises</td></tr>
+</tbody></table>
+</div>
+</div>
+
+<hr>
+
+<h2>Why Not Build It Yourself?</h2>
+<table>
+<thead><tr><th>Consideration</th><th>Build In-House</th><th>Izuma Device Management</th></tr></thead>
+<tbody>
+<tr><td>Time to production</td><td>Months to years</td><td>Days</td></tr>
+<tr><td>Security architecture</td><td>Design from scratch</td><td>Chip-to-cloud, SOC 2</td></tr>
+<tr><td>Protocol support</td><td>Implement each</td><td>LwM2M, CoAP, BLE, Zigbee, Modbus built in</td></tr>
+<tr><td>Firmware &amp; edge</td><td>Build pipeline + k8s integration</td><td>Delta/mesh, native k8s, SD-WAN</td></tr>
+<tr><td>Factory provisioning</td><td>Custom tooling</td><td>Factory Flow — works offline</td></tr>
+<tr><td>Ongoing maintenance</td><td>Permanent team</td><td>Managed service (NoOps)</td></tr>
+</tbody></table>
+
+<div class="accent-box">
+<strong>Key Differentiators:</strong> No vendor lock-in · Single pane of glass across MCUs to edge servers · Factory Flow offline provisioning · Free tier available
+</div>
+
+<div class="footer"><span>Izuma Networks Inc.</span><span>izumanetworks.com</span></div>
+</div>
+</body></html>

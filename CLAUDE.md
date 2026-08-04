@@ -23,6 +23,54 @@ make clean
 make help
 ```
 
+### Skills TUI (Rust)
+
+`skills-tui/` is a Rust TUI for managing skill→project mappings (parallel to
+`skills/skillinstall.sh`; the script is the source of truth until the TUI is
+verified, then the script can be deleted).
+
+```bash
+# Build + launch the TUI
+make tui
+
+# Release build only
+make tui-build
+
+# Non-TUI dump of discovered skills + projects (smoke test)
+make tui-list
+```
+
+**Building on macOS** — the Linux Warden container is arm64 Linux; this repo
+also builds natively on macOS (e.g. `cypressMini` over SSH):
+
+```bash
+# From Warden / Linux side: build + run on the Mac in one shot
+ssh cypressMini 'cd workspace/x85446/claudecodetricks && make tui'
+
+# Smoke-test only (non-TUI)
+ssh cypressMini 'cd workspace/x85446/claudecodetricks && make tui-list'
+```
+
+When working from this Linux container, sync local changes to the Mac before
+running there (the container has no `rsync`):
+
+```bash
+cd /home/travis/workspace/x85446/claudecodetricks && \
+  tar czf - --exclude=skills-tui/target skills-tui Makefile .gitignore | \
+  ssh cypressMini 'cd workspace/x85446/claudecodetricks && tar xzf -'
+```
+
+**Status badges** (right pane, per skill+project):
+- ` [ ] ` gray — not mapped
+- ` [✓] ` red — mapped, not yet synced (destination missing)
+- ` [✓] ` green — in sync
+- ` [↑] ` yellow — source newer, push needed
+- ` [↓] ` magenta — destination newer, pull needed
+
+**Mapping config** lives at `skills/skill-mappings.toml` (TOML, written by the
+TUI on `Space` toggle). It is *separate from* `skillinstall.sh` and not yet
+read by the shell script.
+
 ### Testing Commands
 ```bash
 # Run all tests (unit + hook tests)

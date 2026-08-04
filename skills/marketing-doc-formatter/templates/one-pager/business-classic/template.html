@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{TITLE}} — One-Pager</title>
+<style>
+/*
+  ONE-PAGER TEMPLATE
+  - Margins come from wkhtmltopdf CLI only (12mm top/bottom, 15mm left/right)
+  - Body font starts at 10pt; iterative fit loop may reduce to 9pt floor
+  - No @page margin in CSS, no position:fixed footer, no min-height:100vh
+  - Replace {{LOGO_ABS_PATH}}, {{TITLE}}, {{SUBTITLE}}, {{INTRO}}, and content blocks.
+*/
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Raleway:wght@400;500;600&display=swap');
+
+@page { size: letter; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+    font-family: "Raleway", "Arial", "Helvetica", sans-serif;
+    font-size: 10pt;       /* ADJUSTABLE IN ITERATIVE FIT LOOP: 10pt ceiling, 9pt floor */
+    line-height: 1.4;
+    color: #2D2D2D;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #3684F5;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+.header img { height: 32px; }
+.header .company-name {
+    font-family: "Poppins", "Futura", "Arial", sans-serif;
+    font-size: 11pt;
+    color: #205388;
+    font-weight: 500;
+}
+
+h1 {
+    font-family: "Poppins", "Futura", "Arial", sans-serif;
+    font-size: 17pt;
+    color: #205388;
+    font-weight: 700;
+    margin: 0 0 2px 0;
+}
+
+.subtitle {
+    font-size: 11pt;
+    color: #3684F5;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+h2 {
+    font-family: "Poppins", "Futura", "Arial", sans-serif;
+    font-size: 11pt;
+    color: #3684F5;
+    font-weight: 600;
+    margin: 8px 0 4px 0;
+    border-bottom: 1px solid #E0E0E0;
+    padding-bottom: 2px;
+}
+
+h3 {
+    font-family: "Poppins", "Futura", "Arial", sans-serif;
+    font-size: 9.5pt;
+    color: #205388;
+    font-weight: 600;
+    margin: 5px 0 2px 0;
+}
+
+p { margin: 0 0 4px 0; }
+hr { border: none; border-top: 2px solid #3684F5; margin: 7px 0; }
+
+.two-col { display: flex; gap: 16px; }
+.two-col .col { flex: 1; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4px 0;
+    font-size: 8.5pt;
+}
+thead th {
+    background-color: #205388;
+    color: #FFFFFF;
+    font-family: "Poppins", "Futura", "Arial", sans-serif;
+    font-weight: 600;
+    padding: 5px 7px;
+    text-align: left;
+    border-bottom: 3px solid #FF9C2B;
+}
+tbody tr:nth-child(even) { background-color: #F0F4FA; }
+tbody tr:nth-child(odd) { background-color: #FFFFFF; }
+tbody td {
+    padding: 4px 7px;
+    border-bottom: 1px solid #E0E0E0;
+    vertical-align: top;
+}
+tbody td:first-child { font-weight: 600; color: #205388; }
+
+.accent-box {
+    background: #FFF8F0;
+    border-left: 4px solid #FF9C2B;
+    padding: 7px 11px;
+    margin: 8px 0 5px 0;
+    font-size: 9pt;
+}
+.accent-box strong { color: #205388; }
+
+ul { padding-left: 18px; margin: 3px 0; }
+li { margin-bottom: 2px; }
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #E0E0E0;
+    padding-top: 4px;
+    margin-top: 8px;
+    font-size: 8pt;
+    color: #888;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <img src="{{LOGO_ABS_PATH}}" alt="Izuma Networks">
+    <span class="company-name">Izuma Networks</span>
+</div>
+
+<h1>{{TITLE}}</h1>
+<div class="subtitle">{{SUBTITLE}}</div>
+
+<p>{{INTRO_PARAGRAPH}}</p>
+
+<hr>
+
+<div class="two-col">
+<div class="col">
+
+<h2>{{LEFT_COL_HEADING}}</h2>
+
+<!-- Capability sections: 3-5 recommended. Each with h3 + single paragraph. -->
+<h3>{{CAPABILITY_1_TITLE}}</h3>
+<p>{{CAPABILITY_1_DESCRIPTION}}</p>
+
+<h3>{{CAPABILITY_2_TITLE}}</h3>
+<p>{{CAPABILITY_2_DESCRIPTION}}</p>
+
+<h3>{{CAPABILITY_3_TITLE}}</h3>
+<p>{{CAPABILITY_3_DESCRIPTION}}</p>
+
+<h3>{{CAPABILITY_4_TITLE}}</h3>
+<p>{{CAPABILITY_4_DESCRIPTION}}</p>
+
+</div>
+<div class="col">
+
+<h2>{{RIGHT_COL_HEADING_1}}</h2>
+<!-- Small 2-column table (2-5 rows recommended) -->
+<table>
+<thead><tr><th>{{COL_A}}</th><th>{{COL_B}}</th></tr></thead>
+<tbody>
+<!-- rows -->
+</tbody>
+</table>
+
+<h2>{{RIGHT_COL_HEADING_2}}</h2>
+<!-- Small 2-column table -->
+<table>
+<thead><tr><th>{{COL_A}}</th><th>{{COL_B}}</th></tr></thead>
+<tbody>
+<!-- rows -->
+</tbody>
+</table>
+
+</div>
+</div>
+
+<hr>
+
+<h2>{{COMPARISON_HEADING}}</h2>
+<!-- 3-column comparison table (5-7 rows recommended) -->
+<table>
+<thead><tr><th>{{COL_A}}</th><th>{{COL_B}}</th><th>{{COL_C}}</th></tr></thead>
+<tbody>
+<!-- rows -->
+</tbody>
+</table>
+
+<div class="accent-box">
+<strong>Key Differentiators:</strong> {{DIFFERENTIATORS_INLINE}}
+</div>
+
+<div class="footer">
+    <span>Izuma Networks Inc.</span>
+    <span>izumanetworks.com</span>
+</div>
+
+</body>
+</html>

@@ -40,3 +40,6 @@ Thumbs.db
 .warden.bak/
 .warden/warden-cellserver
 temp/
+
+# Rust (skills-tui)
+skills-tui/target/

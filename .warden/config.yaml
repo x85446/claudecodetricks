@@ -4,20 +4,43 @@ cell_mode: mirror-softlink
 provider: docker
 providers:
     docker:
-        base_image: debian:bookworm
+        base_image: debian:bookworm-slim
         workdir: /home/travis/workspace/x85446/claudecodetricks
         build:
             packages:
                 - curl
                 - coreutils
+                - xvfb
+                - xclip
+                - ca-certificates
+                - curl
                 - emacs-nox
                 - git
+                - curl
+                - ca-certificates
                 - gnupg
+                - pulseaudio-utils
                 - curl
                 - ca-certificates
                 - openssh-client
                 - openssh-client
+                - bash
+                - ca-certificates
+                - coreutils
+                - curl
+                - git
+                - jq
+                - make
+                - procps
+                - sudo
+                - unzip
             commands:
+                - ENV PATH=/usr/local/go/bin:$PATH
+                - ARCH=$(dpkg --print-architecture) && curl -fsSL https://go.dev/dl/go1.25.3.linux-${ARCH}.tar.gz | tar -C /usr/local -xzf -
+                - apt-get update && apt-get install -y --no-install-recommends python3 && rm -rf /var/lib/apt/lists/*
+                - apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /var/lib/apt/lists/*
+                - apt-get update && apt-get install -y --no-install-recommends lsof && rm -rf /var/lib/apt/lists/*
+                - apt-get update && apt-get install -y --no-install-recommends pulseaudio-utils && rm -rf /var/lib/apt/lists/*
                 - |
                   cat > /usr/local/bin/pbpaste << 'CLIPSCRIPT'
                   #!/bin/bash
@@ -51,9 +74,45 @@ providers:
                   }
                   CLIPSCRIPT
                   chmod +x /usr/local/bin/pbcopy
-                - echo "# Emacs as default editor" >> ~/.bashrc
-                - echo "export EDITOR=emacs" >> ~/.bashrc
-                - echo "export VISUAL=emacs" >> ~/.bashrc
+                - |
+                  ARCH=$(uname -m)
+                  case "$ARCH" in
+                    x86_64)  DOCKER_ARCH="x86_64" ;;
+                    aarch64) DOCKER_ARCH="aarch64" ;;
+                    armv7l)  DOCKER_ARCH="armhf" ;;
+                    *)       echo "Unsupported arch: $ARCH"; exit 1 ;;
+                  esac
+                  DOCKER_VERSION="27.4.1"
+                  curl -fsSL "https://download.docker.com/linux/static/stable/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz" | tar xz -C /tmp
+                  mv /tmp/docker/docker /usr/local/bin/
+                  rm -rf /tmp/docker
+                  chmod +x /usr/local/bin/docker
+                - |
+                  ARCH=$(uname -m)
+                  case "$ARCH" in
+                    x86_64)  BUILDX_ARCH="linux-amd64" ;;
+                    aarch64) BUILDX_ARCH="linux-arm64" ;;
+                    armv7l)  BUILDX_ARCH="linux-arm-v7" ;;
+                    *)       echo "Unsupported arch for buildx: $ARCH"; exit 1 ;;
+                  esac
+                  BUILDX_VERSION="0.19.3"
+                  mkdir -p /usr/local/lib/docker/cli-plugins
+                  curl -fsSL "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.${BUILDX_ARCH}" -o /usr/local/lib/docker/cli-plugins/docker-buildx
+                  chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+                - |
+                  ARCH=$(uname -m)
+                  case "$ARCH" in
+                    x86_64)  COMPOSE_ARCH="x86_64" ;;
+                    aarch64) COMPOSE_ARCH="aarch64" ;;
+                    *)       echo "Skipping compose for arch: $ARCH" ;;
+                  esac
+                  if [ -n "$COMPOSE_ARCH" ]; then
+                    COMPOSE_VERSION="v2.32.4"
+                    curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${COMPOSE_ARCH}" -o /usr/local/bin/docker-compose
+                    chmod +x /usr/local/bin/docker-compose
+                  fi
+                - groupadd -g 999 docker 2>/dev/null || true
+                - usermod -aG docker warden 2>/dev/null || true
                 - |
                   if command -v apt-get &>/dev/null; then
                     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
@@ -64,9 +123,6 @@ providers:
                   fi
                 - npm install -g npm@latest
                 - npm install -g yarn pnpm
-                - echo "# Node.js 20 LTS" >> ~/.bashrc
-                - echo "export NPM_CONFIG_PREFIX=/root/.npm-global" >> ~/.bashrc
-                - echo "export PATH=/root/.npm-global/bin:\$PATH" >> ~/.bashrc
                 - |
                   cat >> /etc/bash.bashrc << 'PROMPTRC'
                   # Warden cell prompt - badge style
@@ -87,8 +143,28 @@ providers:
                   esac
                   export PS1="\[\033[94m\][☻ \[\033[38;5;208m\]${WARDEN_AI_AGENT}\[\033[94m\]]\[\033[0m\] \[\033[96m\]\u@\h\[\033[0m\]:\[\033[1m\]\w\[\033[0m\]\\$ "
                   PROMPTRC
+            post_user_commands:
+                - echo "# Start warden-cellserver daemon if not running" >> ~/.bashrc
+                - echo "warden-cellserver daemon start 2>/dev/null" >> ~/.bashrc
+                - echo "# Docker out of Docker (DooD)" >> ~/.bashrc
+                - echo "# Using host Docker daemon via mounted socket" >> ~/.bashrc
+                - 'echo "alias docker-info=''docker info --format \"Host: {{.Name}}\"''" >> ~/.bashrc'
+                - echo "# Emacs as default editor" >> ~/.bashrc
+                - echo "export EDITOR=emacs" >> ~/.bashrc
+                - echo "export VISUAL=emacs" >> ~/.bashrc
+                - echo "# Node.js 20 LTS" >> ~/.bashrc
+                - echo "export NPM_CONFIG_PREFIX=/root/.npm-global" >> ~/.bashrc
+                - echo "export PATH=/root/.npm-global/bin:\$PATH" >> ~/.bashrc
+                - echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> ~/.bashrc
+                - echo "case \"\$WARDEN_AI_AGENT\" in CLAUDE-CODE) WARDEN_AI_AGENT=\"CLAUDE\" ;; CURSOR-CODE) WARDEN_AI_AGENT=\"CURSOR\" ;; esac" >> ~/.bashrc
+                - echo "export PS1=\"\\[\\033[94m\\][☻ \\[\\033[38;5;208m\\]\${WARDEN_AI_AGENT}\\[\\033[94m\\]]\\[\\033[0m\\] \\[\\033[96m\\]\\u@\\h\\[\\033[0m\\]:\\[\\033[1m\\]\\w\\[\\033[0m\\]\\\\\$ \"" >> ~/.bashrc
         clipboard: true
+        chrome: true
 volumes:
+    additional-.claude:
+        enabled: true
+        host: .claude
+        cell: /home/travis/workspace/x85446/claudecodetricks/.claude
     additional-.gitconfig:
         enabled: true
         host: /Users/travis/.gitconfig
@@ -101,22 +177,38 @@ volumes:
         enabled: true
         host: /Users/travis/workspace/x85446/personal-mac-tools/applications/ssh/config.d
         cell: /Users/travis/workspace/x85446/personal-mac-tools/applications/ssh/config.d
+    additional-myriplay:
+        enabled: true
+        host: /Users/travis/workspace/izuma/myriplay
+        cell: /Users/travis/workspace/izuma/myriplay
     additional-temp:
         enabled: true
         host: /Users/travis/workspace/x85446/financeSheets/personaldb
         cell: /Users/travis/workspace/x85446/claudecodetricks/temp/
-    additional-workspace:
+    snippet-claude-code-claude-auth:
+        enabled: false
+        host: /Users/travis/.claude.json
+        cell: /home/travis/.claude.json
+    snippet-claude-code-claude-global:
         enabled: true
-        host: /Users/travis/workspace/x85446/claudecodetricks(sysdef) travis@cypressMini ~/workspace/x85446/financeSheets/personaldb/db  ->  ls personaldb.sqlite (sysdef) travis@cypressMini ~/workspace/x85446/financeSheets/personaldb/db  ->  pwd /Users/travis/workspace/x85446/financeSheets/personaldb/db
-        cell: /workspace
-    claude-global:
-        enabled: true
-        host: ${HOME}/.claude
+        host: /Users/travis/.claude
         cell: /home/travis/.claude
-    claude-project:
+    snippet-claude-code-claude-project:
         enabled: true
         host: .claude
-        cell: /home/travis/workspace/x85446/claudecodetricks/.claude
+        cell: /Users/travis/workspace/x85446/claudecodetricks/.claude
+    snippet-docker-out-of-docker-0:
+        enabled: true
+        host: /var/run/docker.sock
+        cell: /var/run/docker.sock
+    snippet-gh-gh-config:
+        enabled: true
+        host: /Users/travis/.config/gh
+        cell: /home/travis/.config/gh
+    snippet-glab-glab-config:
+        enabled: true
+        host: /Users/travis/Library/Application Support/glab-cli
+        cell: /home/travis/.config/glab-cli
     snippet-gpg-keys-gnupg-dir:
         enabled: true
         host: /Users/travis/.gnupg
@@ -132,17 +224,30 @@ ai:
     install_method: native
     yolo_mode: true
 environment:
+    DISPLAY: :99
+    DOCKER_HOST: unix:///var/run/docker.sock
+    KOKORO_URL: http://host.docker.internal:8880
     NODE_VERSION: "20"
     NPM_CONFIG_PREFIX: /root/.npm-global
     PATH: /root/.npm-global/bin:$PATH
+    PULSE_SERVER: tcp:host.docker.internal:4713
     WARDEN_CLIPBOARD_HOST: host.docker.internal
     WARDEN_CLIPBOARD_PORT: "8377"
+    WARDEN_GRPC_HOST: host.docker.internal
+    WARDEN_GRPC_PORT: "8378"
 snippets:
+    - chrome-sharing
     - clipboard
+    - docker-out-of-docker
     - emacs-nox
+    - gh
     - git-config
+    - glab
     - gpg-keys
+    - kokoro-tts
     - nodejs-20
     - ssh-agent
     - ssh-keys
+    - base
+    - claude-code
     - warden-prompt
