@@ -164,7 +164,7 @@ Oracle is a **buzzword glossary** (5W+H per registered term), not a categorical 
 
    | Oracle field | Plan placement |
    |---|---|
-   | **How** (commands, rituals, procedural steps) | Add as **new Steps + Validations** at the right position in the plan (often appended at end; insert mid-plan if ordering is explicit like "X before Y"). Each How-step gets a paired interactive Nb. |
+   | **How** (commands, rituals, procedural steps) | Add as **new Steps + Validations** at the right position in the plan (often appended at end; insert mid-plan if ordering is explicit like "X before Y"). Each How-step gets a paired interactive Nb. If the How includes a **known duration** for an operation this plan performs (e.g., "compiling X normally completes in under 60s"), *also* add it as a Constraint with a `Timing:` prefix on the step that runs it (`Timing: app-build compile normally completes in <60s`) — this becomes the real expectation `/iterate` uses instead of guessing (see `/iterate`'s "Know the baseline, don't guess it"), not just a Step/Validation. |
    | **Where** (paths, repos, related skills) | Add as Constraints with `Context:` prefix — e.g., "Context: GUI link tree lives at `mgmt/web-ui/links.yaml`." |
    | **When** (when to use / when not to) | If "when not to" applies, add as a Constraint. If "when to use" matches the plan's scope, that's the justification for folding the entry in. |
    | **Why** (problem it solves) | Note in the Oracle context audit trail — informs ordering but doesn't add Steps. |
@@ -235,6 +235,7 @@ teamed: false               # set true only after a teamify pass writes ## Teams
 - <oracle gotcha if applicable>
 - Naming: <oracle convention if applicable>
 - Context: <oracle architecture note if applicable>
+- Timing: <known duration for a specific operation, if the oracle has one>
 
 ## Teams
 <!-- Only present when teamed: true. See "Teams" section above for schema. Omit entirely on flat plans. -->
