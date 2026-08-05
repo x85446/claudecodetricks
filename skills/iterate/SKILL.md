@@ -199,6 +199,8 @@ If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Va
 
 Log every alternative attempt in **Status / Log**. Log the chosen mechanism in **Decisions log**. The user reviews the log to understand what actually happened versus what was suggested.
 
+**Same streaming discipline as team dispatch applies here.** For any single operation likely to run more than ~1 minute (a build, a migration, a long test run), prefer running it in the background with output streamed rather than a blind blocking call, and log real progress into Status/Log as it happens rather than one entry after it finally returns — see "Know the baseline, don't guess it" under Team dispatch above, which applies to flat plans too: if a Constraint carries a known duration for the exact operation running, use that as the real expectation, and treat a genuine unexplained deviation from it as worth investigating immediately, not something to wait out.
+
 Walk through `Steps` in order. For each step:
 
 1. Figure out *how* to do it from current context. Read files, run commands, ssh wherever needed.
