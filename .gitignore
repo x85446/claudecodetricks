@@ -1,6 +1,8 @@
 # Binaries
 /plugins/*/hooks/*
 !/plugins/*/hooks/.gitkeep
+/bin/*
+!/bin/.gitkeep
 
 # Go
 *.exe

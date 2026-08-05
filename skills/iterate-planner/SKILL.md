@@ -70,6 +70,8 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 
 **Table ownership is split, not exclusive:** `/iterate-planner` owns the table's *structure* — which teams exist, their Steps/Focus/Depends on/Agent, adding/renaming/removing teams. It always writes fresh rows with `Status: pending`. `/iterate` owns only the **Status** cell per row once execution starts — it updates that one value as teams progress and never adds/removes a team, never changes Steps/Focus/Depends on/Agent. Neither side ever touches the other's part of the table.
 
+**`iterate-run`** is the real installed CLI binary (`~/go/bin/iterate-run`, built from `claudecodetricks`) that `/iterate` uses at execution time to wrap long-running commands with real heartbeat/progress tracking instead of guessed timers — see `/iterate`'s "Team dispatch" and "Know the baseline, don't guess it" for how it's used. `/iterate-planner` doesn't invoke it directly, but references its version (see op 0 above) and can point to `iterate-run status` when a plan mentions wanting live visibility into a run.
+
 ### Creating vs. adding — bias hard toward the current plan
 
 Creating a NEW plan must be **explicit**. The DEFAULT for any planning request is to **add to / refine the current plan**. Only create a new plan when:
@@ -80,6 +82,8 @@ Creating a NEW plan must be **explicit**. The DEFAULT for any planning request i
 If a current plan exists and the user just describes more work, **add it to the current plan** — do not spin up a second plan. When in doubt, add to current.
 
 ### Operation router — parse `$1` in this order
+
+0. **version** — `$1` is exactly "version" (or "what version", "iterate version"): run `iterate-run version` and print its output verbatim as the answer — this is a real installed binary (see "iterate-run" below), not something to answer from memory, and it works the same from any project directory since it's on PATH. If the command isn't found, report "iterate-run isn't installed — run `make install` in claudecodetricks" rather than guessing a version. Then **stop** — this is a read-only op, no plan involved.
 
 1. **list** — `$1` asks to see plans ("list plans", "display our plans", "show plans", "what plans do we have", or bare "list"): print every plan in `plans/`, one line each:
 
