@@ -28,6 +28,7 @@ Each plan has a top-level `phase:` field:
 
 Resolve in this order:
 
+0. **`$1` is exactly "version"** (or "what version", "iterate version"): run `iterate-run version` and print its output verbatim — real installed binary, not a memory recall, works from any directory. If not found, report "iterate-run isn't installed — run `make install` in claudecodetricks." Then **stop**, no plan involved.
 1. **A plan is already `phase: executing`** (scan `plans/`): resume THAT plan from its "Status / Log", honoring the concurrency lock. This takes precedence over everything below — it's what makes the `/loop` re-fires (which pass no `$1`) continue the live run instead of prompting. If several are somehow executing, pick the one named by `current`, else the most-recently-heartbeated.
 2. **`$1` names an existing plan** (`$1` exactly matches a `plans/<name>.md`, e.g. `/iterate dog`): set `current` = that plan; if `phase: planned` → transition to `phase: executing`, set up the auto-resume loop, begin; if already executing → resume it.
 3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** animal-named plan with `phase: executing`, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
@@ -199,7 +200,7 @@ If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Va
 
 Log every alternative attempt in **Status / Log**. Log the chosen mechanism in **Decisions log**. The user reviews the log to understand what actually happened versus what was suggested.
 
-**Same streaming discipline as team dispatch applies here.** For any single operation likely to run more than ~1 minute (a build, a migration, a long test run), prefer running it in the background with output streamed rather than a blind blocking call, and log real progress into Status/Log as it happens rather than one entry after it finally returns — see "Know the baseline, don't guess it" under Team dispatch above, which applies to flat plans too: if a Constraint carries a known duration for the exact operation running, use that as the real expectation, and treat a genuine unexplained deviation from it as worth investigating immediately, not something to wait out.
+**Same streaming discipline as team dispatch applies here.** For any single operation likely to run more than ~1 minute (a build, a migration, a long test run), run it through `iterate-run run --plan <plan> --unit <step-id> -- <command...>` (no `--team`, since this is the coordinator's own unassigned step) instead of a blind blocking call, and log its `ALERT`/`DONE`/`FAILED` output into Status/Log as it happens rather than one entry after it finally returns — see "Know the baseline, don't guess it" under Team dispatch above, which applies to flat plans too: if a Constraint carries a known duration for the exact operation running, use that as the real expectation, and treat a genuine unexplained deviation from it as worth investigating immediately, not something to wait out.
 
 Walk through `Steps` in order. For each step:
 
