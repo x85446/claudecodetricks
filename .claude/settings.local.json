@@ -60,5 +60,29 @@
     ],
     "deny": [],
     "ask": []
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c --arg ts \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" --arg evt PRE '. + {_event:$evt,_ts:$ts}' >> /private/tmp/claude-503/-Users-travis-workspace-x85446-claudecodetricks/89ad4727-2a07-47af-bf29-7cc16f2a45fb/scratchpad/hook-fire-test.jsonl 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c --arg ts \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" --arg evt POST '. + {_event:$evt,_ts:$ts}' >> /private/tmp/claude-503/-Users-travis-workspace-x85446-claudecodetricks/89ad4727-2a07-47af-bf29-7cc16f2a45fb/scratchpad/hook-fire-test.jsonl 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
   }
 }
