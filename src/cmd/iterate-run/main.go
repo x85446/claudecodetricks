@@ -27,6 +27,10 @@ func main() {
 		runCmd(os.Args[2:])
 	case "status":
 		statusCmd(os.Args[2:])
+	case "hook":
+		hookCmd(os.Args[2:])
+	case "timeline", "graph":
+		timelineCmd(os.Args[2:])
 	case "version", "--version", "-v":
 		fmt.Printf("iterate-run %s (commit %s, built %s)\n", Version, Commit, BuildTime)
 	default:
@@ -36,12 +40,57 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `iterate-run — heartbeat/progress wrapper + status view for the iterate stack
+	fmt.Fprintln(os.Stderr, `iterate-run — heartbeat/progress wrapper + status/timeline view for the iterate stack
 
 Usage:
   iterate-run run --plan <name> [--team <name>] --unit <name> -- <command> [args...]
   iterate-run status
+  iterate-run hook pre|post          (wired into PreToolUse/PostToolUse in settings.json, not run by hand)
+  iterate-run timeline               (prints a text summary + writes .claude/iterate/timeline.html)
   iterate-run version`)
+}
+
+func hookCmd(args []string) {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "iterate-run: hook requires pre or post")
+		os.Exit(2)
+	}
+	phase := args[0]
+	if phase != "pre" && phase != "post" {
+		fmt.Fprintln(os.Stderr, "iterate-run: hook phase must be pre or post")
+		os.Exit(2)
+	}
+	// Never fail loudly here: a hook that exits non-zero or hangs can
+	// interfere with the real tool call it's observing. Observability
+	// must be strictly best-effort.
+	iterrun.HandleHook(phase, os.Stdin)
+}
+
+func timelineCmd(_ []string) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		os.Exit(1)
+	}
+	events, err := iterrun.ReadEvents(cwd)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		os.Exit(1)
+	}
+	labels, err := iterrun.ReadLabels(cwd)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		os.Exit(1)
+	}
+	rows := iterrun.BuildRows(events, labels)
+	iterrun.PrintTimelineSummary(os.Stdout, rows)
+
+	path, err := iterrun.WriteTimelineHTML(cwd, rows)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: could not write HTML timeline: %v\n", err)
+		return
+	}
+	fmt.Printf("\nHTML timeline written to %s\n", path)
 }
 
 func runCmd(args []string) {

@@ -46,12 +46,12 @@ type Options struct {
 // activityState is shared between the output-reading goroutine and the
 // heartbeat ticker under a mutex — the only cross-goroutine state here.
 type activityState struct {
-	mu           sync.Mutex
-	newOutput    bool
-	lastMessage  string
-	done         *int
-	total        *int
-	pct          *float64
+	mu          sync.Mutex
+	newOutput   bool
+	lastMessage string
+	done        *int
+	total       *int
+	pct         *float64
 }
 
 func (a *activityState) noteRawLine(line string) {
