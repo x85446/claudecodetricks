@@ -46,6 +46,7 @@ func HandleHook(phase string, r io.Reader) {
 		return
 	}
 
+	RegisterProject(in.CWD)
 	summary := summarize(in.ToolName, in.ToolInput)
 	plan, team := resolvePlanTeam(in.CWD, in.AgentID)
 

@@ -342,13 +342,15 @@ func PrintTimelineSummary(w io.Writer, rows []Row) {
 	}
 }
 
-// WriteTimelineHTML renders a self-contained Gantt-style timeline: one row
-// per agent, busy spans as bars, gaps left visibly blank (and colored when
-// severe) so downtime is something you SEE, not something you reconstruct
-// from timestamps by hand.
-func WriteTimelineHTML(cwd string, rows []Row) (string, error) {
+// RenderTimelineHTML builds a self-contained Gantt-style timeline page: one
+// row per agent, busy spans as bars, gaps left visibly blank (and colored
+// when severe) so downtime is something you SEE, not something you
+// reconstruct from timestamps by hand. Pure string building — no file I/O —
+// so it's equally usable for iterate-run timeline's file output and the
+// dashboard server's inline HTTP responses.
+func RenderTimelineHTML(rows []Row) string {
 	if len(rows) == 0 {
-		return "", fmt.Errorf("no events to render")
+		return `<!doctype html><html><head><meta charset="utf-8"><title>iterate-run timeline</title></head><body style="font-family:-apple-system,sans-serif;background:#111;color:#888;padding:24px">no activity recorded yet</body></html>`
 	}
 
 	var minT, maxT time.Time
@@ -419,11 +421,22 @@ h1{font-size:16px;font-weight:600;margin:0 0 4px}
 	b.WriteString(`<div class="legend"><span style="background:#3b82f6"></span>tool active &nbsp; <span style="background:#7f1d1d"></span>downtime 5m+ (unmarked gaps under 5m are normal think-time between calls)</div>
 </body></html>`)
 
+	return b.String()
+}
+
+// WriteTimelineHTML renders and writes the timeline to
+// <cwd>/.claude/iterate/timeline.html — the file-output counterpart to
+// RenderTimelineHTML, kept separate since a live dashboard shouldn't write
+// to disk on every request.
+func WriteTimelineHTML(cwd string, rows []Row) (string, error) {
+	if len(rows) == 0 {
+		return "", fmt.Errorf("no events to render")
+	}
 	path := filepath.Join(cwd, ".claude", "iterate", "timeline.html")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(RenderTimelineHTML(rows)), 0o644); err != nil {
 		return "", err
 	}
 	return path, nil
