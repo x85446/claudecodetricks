@@ -18,7 +18,8 @@ type PlanSummary struct {
 	Phase      string
 	Teamed     bool
 	Started    string
-	Goal       string
+	Goal       string // truncated to ~220 chars — for the dashboard card list
+	GoalFull   string // untruncated — for the plan detail page
 	HasTeams   bool
 	TeamsTotal int
 	TeamsDone  int
@@ -110,19 +111,30 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		}
 	}
 
-	ps.Goal = strings.Join(goalLines, " ")
+	ps.GoalFull = strings.Join(goalLines, " ")
+	ps.Goal = ps.GoalFull
 	if len(ps.Goal) > 220 {
 		ps.Goal = ps.Goal[:220] + "…"
 	}
 	return ps, nil
 }
 
-// parseTeamRow pulls (team name, status) out of one Teams-table row,
+// GetPlanSummary reads and parses one specific plan file directly, for
+// callers that already know its name and don't need the whole directory
+// listing (the plan detail page, mainly).
+func GetPlanSummary(homeDir, name string) (PlanSummary, error) {
+	path := filepath.Join(homeDir, ".claude", "iterate", "plans", name+".md")
+	return parsePlanFile(path, homeDir)
+}
+
+// parseTeamRowCells splits one Teams-table row into its trimmed cells,
 // rejecting the header row ("| Team | ... |") and the separator row
-// ("|---|...|") rather than trying to special-case their exact text.
-func parseTeamRow(line string) (team, status string, ok bool) {
+// ("|---|...|") rather than trying to special-case their exact text. The
+// schema is Team | Steps | Focus | Depends on | Agent | Status, so
+// cells[0] is always the team name and cells[len-1] is always the status.
+func parseTeamRowCells(line string) ([]string, bool) {
 	if !strings.HasPrefix(strings.TrimSpace(line), "|") {
-		return "", "", false
+		return nil, false
 	}
 	fields := strings.Split(line, "|")
 	var cells []string
@@ -136,12 +148,20 @@ func parseTeamRow(line string) (team, status string, ok bool) {
 		cells = cells[:len(cells)-1]
 	}
 	if len(cells) < 2 {
-		return "", "", false
+		return nil, false
 	}
-	team = cells[0]
-	status = cells[len(cells)-1]
+	team := cells[0]
 	if team == "" || team == "Team" || strings.HasPrefix(team, "---") || strings.HasPrefix(team, ":--") {
+		return nil, false
+	}
+	return cells, true
+}
+
+// parseTeamRow pulls just (team name, status) out of a Teams-table row.
+func parseTeamRow(line string) (team, status string, ok bool) {
+	cells, ok := parseTeamRowCells(line)
+	if !ok {
 		return "", "", false
 	}
-	return team, status, true
+	return cells[0], cells[len(cells)-1], true
 }

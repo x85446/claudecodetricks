@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -35,12 +36,28 @@ type gap struct {
 
 func (g gap) dur() time.Duration { return g.end.Sub(g.start) }
 
-// Row is one agent's (or the coordinator's) full activity picture.
+// StepDetail is one numbered Steps/Validation pair from the plan file,
+// attached to whichever team's Teams-table row claims that step number —
+// the "1a/1b" pairing shown in chat, now shown on click in the dashboard.
+type StepDetail struct {
+	Num        int
+	Step       string
+	Validation string
+}
+
+// Row is one agent's (or the coordinator's) full activity picture. Status
+// and Steps are only ever populated for filesystem-derived rows, straight
+// from the plan's own Teams table — Status is "done", "in-progress",
+// "pending", or a "blocked(...)" reason; both are empty for hook-only rows
+// (there's no Teams row to read them from) and for a plain, unteamed
+// plan's coordinator row.
 type Row struct {
-	key   string // agent_id, or "" for coordinator
-	label string
-	spans []span
-	gaps  []gap
+	key    string // agent_id, or "" for coordinator
+	label  string
+	status string
+	steps  []StepDetail
+	spans  []span
+	gaps   []gap
 }
 
 // computeGaps finds the idle stretches between consecutive (already sorted)
@@ -282,6 +299,26 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 		}
 	}
 
+	// Enrich with each team's status and Steps/Validation detail from the
+	// plan's own Teams table, and pick up any team that hasn't started at
+	// all yet — no log file, no registry entry, so byTeam wouldn't
+	// otherwise know it exists. A queued team being invisible is exactly
+	// the wrong failure mode for a view meant to show the whole picture,
+	// not just the parts that happened.
+	teams, steps, validations := readPlanTeamsAndSteps(homeDir, plan)
+	for team, meta := range teams {
+		r := get(team)
+		r.status = meta.status
+		for _, n := range meta.stepNums {
+			sd := StepDetail{Num: n, Step: steps[n], Validation: validations[n]}
+			if sd.Step == "" && sd.Validation == "" {
+				continue // step number in the table but not found in either list — skip rather than show a blank pair
+			}
+			r.steps = append(r.steps, sd)
+		}
+		sort.Slice(r.steps, func(i, j int) bool { return r.steps[i].Num < r.steps[j].Num })
+	}
+
 	var rows []Row
 	for _, r := range byTeam {
 		sort.Slice(r.spans, func(i, j int) bool { return r.spans[i].start.Before(r.spans[j].start) })
@@ -295,6 +332,80 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 		return rows[i].spans[0].start.Before(rows[j].spans[0].start)
 	})
 	return rows, nil
+}
+
+type teamMeta struct {
+	status   string
+	stepNums []int
+}
+
+var reNumberedItem = regexp.MustCompile(`^(\d+)\.\s+(.*)$`)
+
+// readPlanTeamsAndSteps reads the plan file once and returns everything
+// the dashboard needs from it beyond raw activity: each team's status and
+// step-number list from the Teams table, plus the Steps and Validation
+// sections themselves keyed by number — the "Na./Nb." pairing shown in
+// chat, now available for the dashboard to show the same way on click.
+// Returns nils (not an error) if the plan file can't be read.
+func readPlanTeamsAndSteps(homeDir, plan string) (teams map[string]teamMeta, steps, validations map[int]string) {
+	data, err := os.ReadFile(filepath.Join(homeDir, ".claude", "iterate", "plans", plan+".md"))
+	if err != nil {
+		return nil, nil, nil
+	}
+	teams = map[string]teamMeta{}
+	steps = map[int]string{}
+	validations = map[int]string{}
+	section := ""
+	for line := range strings.SplitSeq(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "## ") {
+			switch trimmed {
+			case "## Steps":
+				section = "steps"
+			case "## Validation":
+				section = "validation"
+			case "## Teams":
+				section = "teams"
+			default:
+				section = ""
+			}
+			continue
+		}
+		switch section {
+		case "steps":
+			if m := reNumberedItem.FindStringSubmatch(trimmed); m != nil {
+				if n, err := strconv.Atoi(m[1]); err == nil {
+					steps[n] = m[2]
+				}
+			}
+		case "validation":
+			if m := reNumberedItem.FindStringSubmatch(trimmed); m != nil {
+				if n, err := strconv.Atoi(m[1]); err == nil {
+					validations[n] = m[2]
+				}
+			}
+		case "teams":
+			if cells, ok := parseTeamRowCells(line); ok {
+				stepsCol := ""
+				if len(cells) >= 2 {
+					stepsCol = cells[1]
+				}
+				teams[cells[0]] = teamMeta{status: cells[len(cells)-1], stepNums: parseIntList(stepsCol)}
+			}
+		}
+	}
+	return teams, steps, validations
+}
+
+func parseIntList(s string) []int {
+	var nums []int
+	for part := range strings.SplitSeq(s, ",") {
+		part = strings.TrimSpace(part)
+		if n, err := strconv.Atoi(part); err == nil {
+			nums = append(nums, n)
+		}
+	}
+	return nums
 }
 
 func lastNonEmptyLine(s string) string {
@@ -348,9 +459,22 @@ func PrintTimelineSummary(w io.Writer, rows []Row) {
 // reconstruct from timestamps by hand. Pure string building — no file I/O —
 // so it's equally usable for iterate-run timeline's file output and the
 // dashboard server's inline HTTP responses.
-func RenderTimelineHTML(rows []Row) string {
+func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
+	planName := plan.Name
+	title := "iterate-run timeline"
+	if planName != "" {
+		title = planName + " — iterate-run timeline"
+	}
+	backLink := ""
+	if homeURL != "" {
+		backLink = `<a class="back" href="` + html.EscapeString(homeURL) + `">&larr; Dashboard</a>`
+	}
+	header := backLink + `<div class="eyebrow">iterate plan</div><h1>` + html.EscapeString(planName) + `</h1>`
+	if plan.GoalFull != "" {
+		header += `<p class="goal">` + html.EscapeString(plan.GoalFull) + `</p>`
+	}
 	if len(rows) == 0 {
-		return `<!doctype html><html><head><meta charset="utf-8"><title>iterate-run timeline</title></head><body style="font-family:-apple-system,sans-serif;background:#111;color:#888;padding:24px">no activity recorded yet</body></html>`
+		return timelineHead(title) + header + `<p class="empty">no activity recorded yet</p></div>`
 	}
 
 	var minT, maxT time.Time
@@ -372,39 +496,92 @@ func RenderTimelineHTML(rows []Row) string {
 		return 100 * float64(t.Sub(minT)) / float64(total)
 	}
 
+	// Sort rows for display: anything with real spans first (chronological
+	// by first activity), queued/not-yet-started teams last regardless of
+	// what their zero-value key sort would otherwise do.
+	display := make([]Row, len(rows))
+	copy(display, rows)
+	sort.SliceStable(display, func(i, j int) bool {
+		iq, jq := len(display[i].spans) == 0, len(display[j].spans) == 0
+		if iq != jq {
+			return !iq
+		}
+		return false
+	})
+
+	var done, running, queued, severeGaps int
+	var gapCallouts []struct {
+		label string
+		g     gap
+	}
+	for _, r := range rows {
+		switch {
+		case strings.HasPrefix(r.status, "done") || strings.HasPrefix(r.status, "blocked"):
+			done++
+		case r.status == "in-progress":
+			running++
+		case len(r.spans) == 0:
+			queued++
+		}
+		for _, g := range r.gaps {
+			if g.dur() >= SevereGap {
+				severeGaps++
+				gapCallouts = append(gapCallouts, struct {
+					label string
+					g     gap
+				}{r.label, g})
+			}
+		}
+	}
+	sort.Slice(gapCallouts, func(i, j int) bool { return gapCallouts[i].g.dur() > gapCallouts[j].g.dur() })
+
 	var b strings.Builder
-	b.WriteString(`<!doctype html><html><head><meta charset="utf-8"><title>iterate-run timeline</title><style>
-body{font-family:-apple-system,sans-serif;background:#111;color:#eee;padding:24px;margin:0}
-h1{font-size:16px;font-weight:600;margin:0 0 4px}
-.sub{color:#888;font-size:12px;margin-bottom:20px}
-.row{display:flex;align-items:center;margin-bottom:10px}
-.label{width:200px;flex:0 0 auto;font-size:12px;color:#ccc;padding-right:12px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.track{position:relative;flex:1 1 auto;height:22px;background:#1c1c1c;border-radius:3px}
-.bar{position:absolute;top:0;height:100%;background:#3b82f6;border-radius:2px}
-.bar:hover{background:#60a5fa}
-.gapmark{position:absolute;top:0;height:100%;background:repeating-linear-gradient(45deg,#7f1d1d,#7f1d1d 4px,#450a0a 4px,#450a0a 8px);border-radius:2px}
-.legend{margin-top:20px;font-size:11px;color:#888}
-.legend span{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:middle;border-radius:2px}
-</style></head><body>
-`)
-	fmt.Fprintf(&b, "<h1>iterate-run timeline</h1><div class=\"sub\">%s &rarr; %s (%s total)</div>\n",
+	b.WriteString(timelineHead(title))
+	b.WriteString(header)
+	fmt.Fprintf(&b, `<div class="sub">%s &rarr; %s (%s so far)</div>`+"\n",
 		minT.Local().Format("2006-01-02 15:04:05"), maxT.Local().Format("15:04:05"), total.Round(time.Second))
 
-	for _, r := range rows {
+	b.WriteString(`<div class="stats">`)
+	fmt.Fprintf(&b, `<div class="stat s-good"><div class="n">%d</div><div class="l">done</div></div>`, done)
+	fmt.Fprintf(&b, `<div class="stat s-warn"><div class="n">%d</div><div class="l">running</div></div>`, running)
+	fmt.Fprintf(&b, `<div class="stat"><div class="n">%d</div><div class="l">queued</div></div>`, queued)
+	fmt.Fprintf(&b, `<div class="stat s-bad"><div class="n">%d</div><div class="l">severe gap%s</div></div>`, severeGaps, plural(severeGaps))
+	b.WriteString(`</div>`)
+
+	b.WriteString(`<h2>Activity by team</h2><div class="gantt">`)
+	for _, r := range display {
+		pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
 		var busy time.Duration
 		for _, s := range r.spans {
 			busy += s.end.Sub(s.start)
 		}
-		fmt.Fprintf(&b, "<div class=\"row\"><div class=\"label\" title=\"%s\">%s (%s busy)</div><div class=\"track\">\n",
-			html.EscapeString(r.label), html.EscapeString(r.label), busy.Round(time.Second))
+
+		// A team with parsed Steps/Validation detail gets a clickable,
+		// expandable row (native <details>, no JS needed) — everyone else
+		// (the coordinator, a hook-only row with no Teams entry) gets the
+		// plain row, since there's nothing to expand into.
+		hasSteps := len(r.steps) > 0
+		rowOpen, rowClose := `<div class="row">`, `</div>`
+		teamLabel := html.EscapeString(r.label)
+		if hasSteps {
+			rowOpen, rowClose = `<details class="row-d"><summary class="row">`, `</summary>`
+			teamLabel += `<span class="chev">&rsaquo;</span>`
+		}
+
+		fmt.Fprintf(&b, `%s<div class="label-col"><span class="pill %s" title="%s"></span><span class="team">%s</span></div><div class="track">`,
+			rowOpen, pillClass, html.EscapeString(pillLabel), teamLabel)
 		for _, s := range r.spans {
 			left := pct(s.start)
 			width := pct(s.end) - left
 			if width < 0.15 {
 				width = 0.15 // keep even instant calls visible
 			}
-			fmt.Fprintf(&b, "<div class=\"bar\" style=\"left:%.3f%%;width:%.3f%%\" title=\"%s: %s\"></div>\n",
-				left, width, html.EscapeString(s.tool), html.EscapeString(s.summary))
+			cls := "bar"
+			if s.end.Equal(maxT) && r.status == "in-progress" {
+				cls = "bar bar-open"
+			}
+			fmt.Fprintf(&b, `<div class="%s" style="left:%.3f%%;width:%.3f%%" title="%s: %s"></div>`,
+				cls, left, width, html.EscapeString(s.tool), html.EscapeString(s.summary))
 		}
 		for _, g := range r.gaps {
 			if g.dur() < SevereGap {
@@ -412,23 +589,163 @@ h1{font-size:16px;font-weight:600;margin:0 0 4px}
 			}
 			left := pct(g.start)
 			width := pct(g.end) - left
-			fmt.Fprintf(&b, "<div class=\"gapmark\" style=\"left:%.3f%%;width:%.3f%%\" title=\"downtime: %s\"></div>\n",
+			fmt.Fprintf(&b, `<div class="gapmark" style="left:%.3f%%;width:%.3f%%" title="downtime: %s"></div>`,
 				left, width, g.dur().Round(time.Second))
 		}
-		b.WriteString("</div></div>\n")
+		b.WriteString(`</div>`)
+		if len(r.spans) > 0 {
+			fmt.Fprintf(&b, `<div class="busy">%s</div>`, busy.Round(time.Second))
+		} else {
+			b.WriteString(`<div class="busy">—</div>`)
+		}
+		b.WriteString(rowClose + "\n")
+
+		if hasSteps {
+			b.WriteString(`<div class="steps-detail">`)
+			for _, sd := range r.steps {
+				if sd.Step != "" {
+					fmt.Fprintf(&b, `<div class="step-pair"><span class="stepnum">%da.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Step))
+				}
+				if sd.Validation != "" {
+					fmt.Fprintf(&b, `<div class="step-pair val"><span class="stepnum">%db.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Validation))
+				}
+			}
+			b.WriteString(`</div></details>` + "\n")
+		}
+	}
+	fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
+		minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
+	b.WriteString(`</div>`)
+
+	b.WriteString(`<div class="legend"><span><span class="sw" style="background:var(--busy)"></span>confirmed activity</span><span><span class="sw sw-open"></span>still running</span><span><span class="sw" style="background:var(--danger)"></span>severe gap (5m+)</span><span>unmarked gaps under 5m are normal think-time</span></div>`)
+
+	if len(gapCallouts) > 0 {
+		b.WriteString(`<h2>Where the time actually went</h2><div class="gaplist">`)
+		for _, gc := range gapCallouts {
+			fmt.Fprintf(&b, `<div class="gap-item"><span class="dur">%s</span><span class="ctx">%s, %s &rarr; %s</span></div>`,
+				gc.g.dur().Round(time.Second), html.EscapeString(gc.label),
+				gc.g.start.Local().Format("15:04:05"), gc.g.end.Local().Format("15:04:05"))
+		}
+		b.WriteString(`</div>`)
 	}
 
-	b.WriteString(`<div class="legend"><span style="background:#3b82f6"></span>tool active &nbsp; <span style="background:#7f1d1d"></span>downtime 5m+ (unmarked gaps under 5m are normal think-time between calls)</div>
-</body></html>`)
+	b.WriteString(`<footer>Built from what's already on disk — each team's own log file plus any iterate-run-wrapped unit's registry timestamps, merged with hook-derived tool-call data wherever it's been captured.</footer>`)
+	b.WriteString(`</div></body></html>`)
 
 	return b.String()
+}
+
+func plural(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
+}
+
+func statusPill(status string, hasActivity bool) (class, label string) {
+	switch {
+	case strings.HasPrefix(status, "done"):
+		return "p-done", "done"
+	case strings.HasPrefix(status, "blocked"):
+		return "p-blocked", status
+	case status == "in-progress":
+		return "p-running", "running"
+	case status == "":
+		if hasActivity {
+			return "p-running", "running"
+		}
+		return "p-queued", "queued"
+	default:
+		return "p-queued", status
+	}
+}
+
+func timelineHead(title string) string {
+	return `<!doctype html><html><head><meta charset="utf-8"><title>` + html.EscapeString(title) + `</title><style>
+:root{
+  --bg:#f7f4ef; --surface:#fff; --surface-2:#fbf9f5; --border:#e4ddd0;
+  --text:#1c1a17; --text-dim:#6b6459; --text-faint:#a29b8d;
+  --busy:#0891b2; --busy-dim:#cceff5;
+  --good:#059669; --good-bg:#e3f6ee;
+  --warn:#b45309; --warn-bg:#fbecd5;
+  --queued:#a29b8d; --queued-bg:#f0ece2;
+  --danger:#dc2626; --danger-a:#f3b8b8; --danger-b:#fbe1e1;
+  --accent:#0e7490;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1215; --surface:#171b1f; --surface-2:#1d2227; --border:#262c31;
+  --text:#e8e6e1; --text-dim:#8b9198; --text-faint:#565d64;
+  --busy:#2dd4bf; --busy-dim:#144e49;
+  --good:#34d399; --good-bg:#0d2b21;
+  --warn:#f59e0b; --warn-bg:#3a2705;
+  --queued:#565d64; --queued-bg:#1d2227;
+  --danger:#ef4444; --danger-a:#5a1414; --danger-b:#2c0a0a;
+  --accent:#22d3ee;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:28px 20px 50px;line-height:1.45}
+.wrap,body>div{max-width:900px;margin:0 auto}
+.mono,.n,.dur,.busy,.axis,.pmeta{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-size:24px;font-weight:700;margin:2px 0 8px;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin:26px 0 12px}
+.sub{color:var(--text-dim);font-size:12px;margin-bottom:18px}
+.back{display:inline-block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-bottom:10px}
+.back:hover{text-decoration:underline}
+.goal{color:var(--text-dim);font-size:13.5px;max-width:64ch;margin:0 0 18px}
+.empty{color:var(--text-faint);font-style:italic}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.stat{background:var(--surface);padding:12px 16px}
+.stat .n{font-size:20px;font-weight:700}
+.stat .l{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.s-good .n{color:var(--good)}
+.s-warn .n{color:var(--warn)}
+.s-bad .n{color:var(--danger)}
+.gantt{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:6px}
+.row{display:flex;align-items:center;gap:14px;padding:9px 10px}
+.row-d,.row-d>.row{border-top:1px solid var(--border)}
+.row-d:first-child,.row-d:first-child>.row{border-top:none}
+.row+.row{border-top:1px solid var(--border)}
+summary.row{cursor:pointer;list-style:none}
+summary.row::-webkit-details-marker{display:none}
+summary.row:hover{background:var(--surface-2)}
+.label-col{width:172px;flex:0 0 auto;display:flex;align-items:center;gap:8px;overflow:hidden}
+.team{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.chev{color:var(--text-faint);font-size:14px;transition:transform .15s}
+details[open]>summary .chev{transform:rotate(90deg)}
+.pill{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.p-done{background:var(--good)}
+.p-running{background:var(--warn);box-shadow:0 0 0 3px var(--warn-bg)}
+.p-queued{background:var(--queued)}
+.p-blocked{background:var(--danger)}
+.track{position:relative;flex:1 1 auto;height:20px;background:var(--surface-2);border-radius:4px}
+.bar{position:absolute;top:0;height:100%;background:var(--busy);border-radius:3px}
+.bar:hover{background:var(--good);z-index:2}
+.bar-open{background:repeating-linear-gradient(115deg,var(--busy),var(--busy) 7px,var(--busy-dim) 7px,var(--busy-dim) 14px)}
+.gapmark{position:absolute;top:-3px;height:calc(100% + 6px);background:repeating-linear-gradient(45deg,var(--danger-a),var(--danger-a) 4px,var(--danger-b) 4px,var(--danger-b) 8px);border-radius:3px;border:1px solid var(--danger)}
+.busy{width:60px;flex:0 0 auto;text-align:right;font-size:12px;color:var(--text-dim)}
+.axis{display:flex;justify-content:space-between;padding:8px 10px 2px;font-size:10.5px;color:var(--text-faint)}
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:12px;color:var(--text-dim)}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--busy)}
+.legend .sw-open{background:repeating-linear-gradient(115deg,var(--busy),var(--busy) 3px,var(--busy-dim) 3px,var(--busy-dim) 6px)}
+.steps-detail{padding:6px 14px 14px 46px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px}
+.step-pair{display:flex;gap:8px;font-size:12.5px;color:var(--text)}
+.step-pair.val{color:var(--text-dim)}
+.step-pair .stepnum{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600;min-width:28px}
+.gaplist{display:flex;flex-direction:column;gap:8px}
+.gap-item{display:flex;gap:10px;align-items:baseline;font-size:13px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:6px}
+.gap-item .dur{font-weight:700;color:var(--danger)}
+.gap-item .ctx{color:var(--text-dim);font-size:12px}
+footer{margin-top:32px;font-size:11.5px;color:var(--text-faint);border-top:1px solid var(--border);padding-top:14px}
+</style></head><body><div>
+`
 }
 
 // WriteTimelineHTML renders and writes the timeline to
 // <cwd>/.claude/iterate/timeline.html — the file-output counterpart to
 // RenderTimelineHTML, kept separate since a live dashboard shouldn't write
 // to disk on every request.
-func WriteTimelineHTML(cwd string, rows []Row) (string, error) {
+func WriteTimelineHTML(cwd string, rows []Row, plan PlanSummary) (string, error) {
 	if len(rows) == 0 {
 		return "", fmt.Errorf("no events to render")
 	}
@@ -436,7 +753,7 @@ func WriteTimelineHTML(cwd string, rows []Row) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(path, []byte(RenderTimelineHTML(rows)), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(RenderTimelineHTML(rows, plan, "")), 0o644); err != nil {
 		return "", err
 	}
 	return path, nil

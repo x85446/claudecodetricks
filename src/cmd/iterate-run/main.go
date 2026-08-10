@@ -145,7 +145,13 @@ func timelineCmd(args []string) {
 
 	iterrun.PrintTimelineSummary(os.Stdout, rows)
 
-	path, err := iterrun.WriteTimelineHTML(cwd, rows)
+	planSummary := iterrun.PlanSummary{Name: plan}
+	if plan != "" {
+		if ps, err := iterrun.GetPlanSummary(home, plan); err == nil {
+			planSummary = ps
+		}
+	}
+	path, err := iterrun.WriteTimelineHTML(cwd, rows, planSummary)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "iterate-run: could not write HTML timeline: %v\n", err)
 		return
