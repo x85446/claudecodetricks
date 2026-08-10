@@ -10,13 +10,16 @@ import (
 // observes each Agent-tool dispatch complete (its PostToolUse response
 // carries the new subagent's agentId; its PreToolUse carried our own
 // description, e.g. "badger-app" for a team dispatch named that way).
-func LabelsPath(cwd string) string {
-	return filepath.Join(cwd, ".claude", "iterate", "registry", "agent-labels.json")
+// Global (see StoreDir) for the same reason events.jsonl is: a dispatched
+// team's agent_id needs to resolve the same way no matter which directory
+// it actually ran in.
+func LabelsPath() string {
+	return filepath.Join(StoreDir(), "agent-labels.json")
 }
 
 // ReadLabels returns the current agent_id -> label map, empty if none yet.
-func ReadLabels(cwd string) (map[string]string, error) {
-	data, err := os.ReadFile(LabelsPath(cwd))
+func ReadLabels() (map[string]string, error) {
+	data, err := os.ReadFile(LabelsPath())
 	if err != nil {
 		if os.IsNotExist(err) {
 			return map[string]string{}, nil
@@ -36,12 +39,12 @@ func ReadLabels(cwd string) (map[string]string, error) {
 // here since collisions require two Agent-tool dispatches completing in the
 // same instant, and losing one label just means that agent's timeline row
 // falls back to its raw agent_id instead of a team name, not lost data.
-func SetLabel(cwd, agentID, label string) error {
-	path := LabelsPath(cwd)
+func SetLabel(agentID, label string) error {
+	path := LabelsPath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	m, err := ReadLabels(cwd)
+	m, err := ReadLabels()
 	if err != nil {
 		return err
 	}

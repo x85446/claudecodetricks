@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -45,6 +47,7 @@ func HandleHook(phase string, r io.Reader) {
 	}
 
 	summary := summarize(in.ToolName, in.ToolInput)
+	plan, team := resolvePlanTeam(in.CWD, in.AgentID)
 
 	e := Event{
 		TS:        time.Now().UTC(),
@@ -55,6 +58,8 @@ func HandleHook(phase string, r io.Reader) {
 		ToolName:  in.ToolName,
 		ToolUseID: in.ToolUseID,
 		Summary:   summary,
+		Plan:      plan,
+		Team:      team,
 	}
 
 	if phase == "post" {
@@ -64,15 +69,57 @@ func HandleHook(phase string, r io.Reader) {
 		}
 	}
 
-	_ = AppendEvent(in.CWD, e)
+	_ = AppendEvent(e)
 
 	// Resolve agent_id -> team label the moment a dispatch confirms it,
 	// so subsequent events from that agent_id render under a real name.
 	if phase == "post" && in.ToolName == "Agent" {
 		if agentID, label, ok := resolveDispatchLabel(in.ToolInput, in.ToolResp); ok {
-			_ = SetLabel(in.CWD, agentID, label)
+			_ = SetLabel(agentID, label)
 		}
 	}
+}
+
+// resolvePlanTeam figures out which plan (and, for a team member, which
+// team) this event belongs to. Two paths, tried in order:
+//
+//  1. cwd carries a .claude/iterate/current pointer — true for the
+//     coordinator, which always runs from the plan's own project, and for
+//     any team that happens to still be working there. plan comes from the
+//     pointer file directly; team is empty (this is coordinator-level work).
+//  2. agentID is already labeled — true for a team working in a directory
+//     with no relation to the plan's project at all (confirmed live: a team
+//     can and does clone an entirely separate workspace). The label is
+//     always "<plan>-<team>" per /iterate's own dispatch convention, and
+//     plan names are always a single word, so splitting on the first
+//     hyphen is unambiguous.
+//
+// Neither may resolve yet (a label lags its own dispatch's first events) —
+// that just means this one event goes untagged, not an error.
+func resolvePlanTeam(cwd, agentID string) (plan, team string) {
+	if cwd != "" {
+		if data, err := os.ReadFile(filepath.Join(cwd, ".claude", "iterate", "current")); err == nil {
+			if p := strings.TrimSpace(string(data)); p != "" {
+				return p, ""
+			}
+		}
+	}
+	if agentID == "" {
+		return "", ""
+	}
+	labels, err := ReadLabels()
+	if err != nil {
+		return "", ""
+	}
+	label, ok := labels[agentID]
+	if !ok {
+		return "", ""
+	}
+	p, t, found := strings.Cut(label, "-")
+	if !found {
+		return label, ""
+	}
+	return p, t
 }
 
 // summarize extracts a short, tool-appropriate description from tool_input.

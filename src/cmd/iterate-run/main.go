@@ -90,12 +90,17 @@ func timelineCmd(args []string) {
 		i++
 	}
 
+	events, eventsErr := iterrun.ReadEvents()
+	labels, labelsErr := iterrun.ReadLabels()
+
 	var rows []iterrun.Row
 	if plan != "" {
 		// Filesystem mode: build the graph from team logs + iterate-run
 		// registry entries already on disk — works for a run already in
-		// progress, unlike the hook path below (which only sees activity
-		// from the moment hooks are wired in).
+		// progress, unlike hook data (which only sees activity from the
+		// moment hooks are wired in). Merge in whatever hook-derived
+		// activity has accumulated for this plan, if any — same command
+		// automatically gets richer once hooks have been live a while.
 		if home == "" {
 			home = cwd
 		}
@@ -104,15 +109,16 @@ func timelineCmd(args []string) {
 			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
 			os.Exit(1)
 		}
+		if eventsErr == nil && labelsErr == nil {
+			rows = iterrun.MergeRows(rows, iterrun.BuildRowsFromHookEvents(events, labels, plan))
+		}
 	} else {
-		events, err := iterrun.ReadEvents(cwd)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		if eventsErr != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", eventsErr)
 			os.Exit(1)
 		}
-		labels, err := iterrun.ReadLabels(cwd)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		if labelsErr != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", labelsErr)
 			os.Exit(1)
 		}
 		rows = iterrun.BuildRows(events, labels)

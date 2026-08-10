@@ -105,6 +105,93 @@ func BuildRows(events []Event, labels map[string]string) []Row {
 	return rows
 }
 
+// BuildRowsFromHookEvents is BuildRows scoped to one plan and keyed by team
+// name instead of raw agent_id, so its output merges cleanly with
+// BuildRowsFromFilesystem's rows (MergeRows) under the same key per team.
+// Events without a resolved Plan (labeling hadn't caught up yet, or this
+// call happened outside any plan) are excluded — not every tool call on
+// this machine belongs to the timeline being asked for.
+func BuildRowsFromHookEvents(events []Event, labels map[string]string, plan string) []Row {
+	filtered := events[:0:0]
+	for _, e := range events {
+		if e.Plan == plan {
+			filtered = append(filtered, e)
+		}
+	}
+
+	byKey := map[string][]Event{}
+	for _, e := range filtered {
+		byKey[e.Team] = append(byKey[e.Team], e)
+	}
+
+	var rows []Row
+	for key, evs := range byKey {
+		pre := map[string]Event{}
+		var spans []span
+		for _, e := range evs {
+			if e.Hook == "pre" {
+				pre[e.ToolUseID] = e
+				continue
+			}
+			if p, ok := pre[e.ToolUseID]; ok {
+				spans = append(spans, span{start: p.TS, end: e.TS, tool: e.ToolName, summary: e.Summary})
+				delete(pre, e.ToolUseID)
+			}
+		}
+		sort.Slice(spans, func(i, j int) bool { return spans[i].start.Before(spans[j].start) })
+
+		label := key
+		if key == "" {
+			label = "coordinator"
+		} else if l, ok := labels[plan+"-"+key]; ok {
+			label = l
+		}
+
+		rows = append(rows, Row{key: key, label: label, spans: spans, gaps: computeGaps(spans)})
+	}
+	return rows
+}
+
+// MergeRows unions two row sets by key (team name, "" for coordinator),
+// concatenating spans and recomputing gaps over the combined, re-sorted
+// list — this is what lets `timeline --plan X` show BOTH the coarse
+// team-log/registry spans (always available) and fine-grained hook-derived
+// spans (only once hooks are wired and have had time to accumulate) in one
+// row per team, rather than forcing a choice between them.
+func MergeRows(a, b []Row) []Row {
+	byKey := map[string]*Row{}
+	order := func(rs []Row) {
+		for i := range rs {
+			r := rs[i]
+			if existing, ok := byKey[r.key]; ok {
+				existing.spans = append(existing.spans, r.spans...)
+				if existing.label == "" || existing.label == existing.key {
+					existing.label = r.label
+				}
+				continue
+			}
+			cp := r
+			byKey[r.key] = &cp
+		}
+	}
+	order(a)
+	order(b)
+
+	var rows []Row
+	for _, r := range byKey {
+		sort.Slice(r.spans, func(i, j int) bool { return r.spans[i].start.Before(r.spans[j].start) })
+		r.gaps = computeGaps(r.spans)
+		rows = append(rows, *r)
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if len(rows[i].spans) == 0 || len(rows[j].spans) == 0 {
+			return rows[i].label < rows[j].label
+		}
+		return rows[i].spans[0].start.Before(rows[j].spans[0].start)
+	})
+	return rows
+}
+
 var teamTerminalLine = regexp.MustCompile(`^TEAM (DONE|BLOCKED):`)
 
 // BuildRowsFromFilesystem builds one row per team of a plan directly from

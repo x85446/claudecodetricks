@@ -24,16 +24,41 @@ type Event struct {
 	Summary    string    `json:"summary,omitempty"`
 	DurationMs *int      `json:"duration_ms,omitempty"`
 	Success    *bool     `json:"success,omitempty"`
+	// Plan and Team are resolved best-effort at hook time — Plan from the
+	// event's own cwd (via .claude/iterate/current, when the call happens
+	// inside the plan's own project) or from the agent's <plan>-<team>
+	// dispatch label (when it doesn't — confirmed live: a team can and does
+	// work in a directory with no relation to the plan's own project, so
+	// cwd alone can't be trusted). Team is only ever derived from the label.
+	// Both are empty until label resolution catches up, which can lag the
+	// very first events from a freshly dispatched subagent.
+	Plan string `json:"plan,omitempty"`
+	Team string `json:"team,omitempty"`
+}
+
+// StoreDir is the one global, cwd-independent directory every iterate-run
+// hook invocation reads and writes — deliberately NOT under any project's
+// own .claude/, because a dispatched team can work in a directory with no
+// relation to the plan's project at all (confirmed live: win-media and
+// win-provision run entirely inside a separate checkout). Centralizing here
+// is what lets `timeline --plan <name>` find every team's activity in one
+// place regardless of where each team actually worked.
+func StoreDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, ".claude", "iterate-run")
 }
 
 // EventsPath is the shared append-only log every hook invocation writes to.
-func EventsPath(cwd string) string {
-	return filepath.Join(cwd, ".claude", "iterate", "events.jsonl")
+func EventsPath() string {
+	return filepath.Join(StoreDir(), "events.jsonl")
 }
 
 // AppendEvent appends one event as a compact JSON line.
-func AppendEvent(cwd string, e Event) error {
-	path := EventsPath(cwd)
+func AppendEvent(e Event) error {
+	path := EventsPath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
@@ -53,8 +78,8 @@ func AppendEvent(cwd string, e Event) error {
 
 // ReadEvents reads every event in the log. Malformed lines are skipped, not
 // fatal — a timeline shouldn't die because one write was torn by a crash.
-func ReadEvents(cwd string) ([]Event, error) {
-	path := EventsPath(cwd)
+func ReadEvents() ([]Event, error) {
+	path := EventsPath()
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
