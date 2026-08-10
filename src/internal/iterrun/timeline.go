@@ -61,6 +61,31 @@ type Row struct {
 	gaps   []gap
 }
 
+// sortRowsForDisplay is the one row ordering used everywhere rows get
+// displayed: active rows (anything with at least one span) first, sorted
+// by when they first started; queued rows (nothing recorded yet) last,
+// sorted alphabetically. This has to be a total, transitively consistent
+// order — three separate call sites each had their own subtly different
+// comparator that fell through to comparing labels whenever EITHER side
+// was queued, even when comparing an active row against a queued one.
+// That's not a valid strict weak ordering, and Go's sort has no defined
+// behavior for an invalid one: the actual output depended on the input's
+// starting order, which came from ranging over a map — randomized on
+// every call — so the displayed order visibly reshuffled on every single
+// page refresh even though nothing about the underlying data had changed.
+func sortRowsForDisplay(rows []Row) {
+	sort.SliceStable(rows, func(i, j int) bool {
+		iq, jq := len(rows[i].spans) == 0, len(rows[j].spans) == 0
+		if iq != jq {
+			return !iq // active before queued
+		}
+		if !iq {
+			return rows[i].spans[0].start.Before(rows[j].spans[0].start)
+		}
+		return rows[i].label < rows[j].label
+	})
+}
+
 // computeGaps finds the idle stretches between consecutive (already sorted)
 // spans that clear the NotableGap threshold — shared by every row source,
 // hook-derived or filesystem-derived alike.
@@ -201,12 +226,7 @@ func MergeRows(a, b []Row) []Row {
 		r.gaps = computeGaps(r.spans)
 		rows = append(rows, *r)
 	}
-	sort.Slice(rows, func(i, j int) bool {
-		if len(rows[i].spans) == 0 || len(rows[j].spans) == 0 {
-			return rows[i].label < rows[j].label
-		}
-		return rows[i].spans[0].start.Before(rows[j].spans[0].start)
-	})
+	sortRowsForDisplay(rows)
 	return rows
 }
 
@@ -328,12 +348,7 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 		r.gaps = computeGaps(r.spans)
 		rows = append(rows, *r)
 	}
-	sort.Slice(rows, func(i, j int) bool {
-		if len(rows[i].spans) == 0 || len(rows[j].spans) == 0 {
-			return rows[i].label < rows[j].label
-		}
-		return rows[i].spans[0].start.Before(rows[j].spans[0].start)
-	})
+	sortRowsForDisplay(rows)
 	return rows, nil
 }
 
@@ -555,18 +570,9 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		return 100 * float64(t.Sub(minT)) / float64(total)
 	}
 
-	// Sort rows for display: anything with real spans first (chronological
-	// by first activity), queued/not-yet-started teams last regardless of
-	// what their zero-value key sort would otherwise do.
 	display := make([]Row, len(rows))
 	copy(display, rows)
-	sort.SliceStable(display, func(i, j int) bool {
-		iq, jq := len(display[i].spans) == 0, len(display[j].spans) == 0
-		if iq != jq {
-			return !iq
-		}
-		return false
-	})
+	sortRowsForDisplay(display)
 
 	var done, running, queued, severeGaps int
 	var gapCallouts []struct {
