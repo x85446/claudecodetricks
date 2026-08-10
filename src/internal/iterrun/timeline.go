@@ -43,6 +43,14 @@ type StepDetail struct {
 	Num        int
 	Step       string
 	Validation string
+	// VStatus and VNote come from the team's own ##ITERATE-VALIDATION##
+	// marker for this step, if it wrote one — "met", "partial", "not-met",
+	// or "" if the team hasn't reported on this validation at all. This is
+	// the team's own real-time assessment, not something reconstructed
+	// after the fact — a team can be in-progress overall with several of
+	// its own validations already reported met.
+	VStatus string
+	VNote   string
 }
 
 // Row is one agent's (or the coordinator's) full activity picture. Status
