@@ -55,6 +55,7 @@ type Row struct {
 	key    string // agent_id, or "" for coordinator
 	label  string
 	status string
+	depth  int // position in the Depends-on chain — 0 for a team with no dependency, for display indentation only
 	steps  []StepDetail
 	spans  []span
 	gaps   []gap
@@ -306,9 +307,11 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 	// the wrong failure mode for a view meant to show the whole picture,
 	// not just the parts that happened.
 	teams, steps, validations := readPlanTeamsAndSteps(homeDir, plan)
+	depths := teamDepths(teams)
 	for team, meta := range teams {
 		r := get(team)
 		r.status = meta.status
+		r.depth = depths[team]
 		for _, n := range meta.stepNums {
 			sd := StepDetail{Num: n, Step: steps[n], Validation: validations[n]}
 			if sd.Step == "" && sd.Validation == "" {
@@ -335,8 +338,9 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 }
 
 type teamMeta struct {
-	status   string
-	stepNums []int
+	status    string
+	stepNums  []int
+	dependsOn []string
 }
 
 var reNumberedItem = regexp.MustCompile(`^(\d+)\.\s+(.*)$`)
@@ -386,11 +390,14 @@ func readPlanTeamsAndSteps(homeDir, plan string) (teams map[string]teamMeta, ste
 			}
 		case "teams":
 			if cells, ok := parseTeamRowCells(line); ok {
-				stepsCol := ""
+				var stepsCol, dependsCol string
 				if len(cells) >= 2 {
 					stepsCol = cells[1]
 				}
-				teams[cells[0]] = teamMeta{status: cells[len(cells)-1], stepNums: parseIntList(stepsCol)}
+				if len(cells) >= 4 {
+					dependsCol = cells[3]
+				}
+				teams[cells[0]] = teamMeta{status: cells[len(cells)-1], stepNums: parseIntList(stepsCol), dependsOn: parseTeamList(dependsCol)}
 			}
 		}
 	}
@@ -406,6 +413,58 @@ func parseIntList(s string) []int {
 		}
 	}
 	return nums
+}
+
+// parseTeamList parses a Depends-on cell ("engine, storage, proforma" or
+// "—" for none) into team names.
+func parseTeamList(s string) []string {
+	var names []string
+	for part := range strings.SplitSeq(s, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" || part == "—" || part == "-" {
+			continue
+		}
+		names = append(names, part)
+	}
+	return names
+}
+
+// teamDepths computes each team's depth in the dependency graph — 0 for a
+// team with no dependencies, otherwise one more than the deepest of its
+// dependencies. Used purely for display indentation (see RenderTimelineHTML)
+// so the two independent chains in a plan like finch — engine's Rust track
+// and win-media's Windows track — read as visually distinct hierarchies
+// instead of one flat list that hides which teams could actually run in
+// parallel and which were waiting on another.
+func teamDepths(teams map[string]teamMeta) map[string]int {
+	depth := map[string]int{}
+	var resolve func(name string, seen map[string]bool) int
+	resolve = func(name string, seen map[string]bool) int {
+		if d, ok := depth[name]; ok {
+			return d
+		}
+		if seen[name] {
+			return 0 // dependency cycle — shouldn't happen, never hang on it
+		}
+		seen[name] = true
+		meta, ok := teams[name]
+		if !ok || len(meta.dependsOn) == 0 {
+			depth[name] = 0
+			return 0
+		}
+		max := 0
+		for _, dep := range meta.dependsOn {
+			if d := resolve(dep, seen); d+1 > max {
+				max = d + 1
+			}
+		}
+		depth[name] = max
+		return max
+	}
+	for name := range teams {
+		resolve(name, map[string]bool{})
+	}
+	return depth
 }
 
 func lastNonEmptyLine(s string) string {
@@ -548,70 +607,29 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	fmt.Fprintf(&b, `<div class="stat s-bad"><div class="n">%d</div><div class="l">severe gap%s</div></div>`, severeGaps, plural(severeGaps))
 	b.WriteString(`</div>`)
 
-	b.WriteString(`<h2>Activity by team</h2><div class="gantt">`)
-	for _, r := range display {
-		pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
-		var busy time.Duration
-		for _, s := range r.spans {
-			busy += s.end.Sub(s.start)
-		}
-
-		// A team with parsed Steps/Validation detail gets a clickable,
-		// expandable row (native <details>, no JS needed) — everyone else
-		// (the coordinator, a hook-only row with no Teams entry) gets the
-		// plain row, since there's nothing to expand into.
-		hasSteps := len(r.steps) > 0
-		rowOpen, rowClose := `<div class="row">`, `</div>`
-		teamLabel := html.EscapeString(r.label)
-		if hasSteps {
-			rowOpen, rowClose = `<details class="row-d"><summary class="row">`, `</summary>`
-			teamLabel += `<span class="chev">&rsaquo;</span>`
-		}
-
-		fmt.Fprintf(&b, `%s<div class="label-col"><span class="pill %s" title="%s"></span><span class="team">%s</span></div><div class="track">`,
-			rowOpen, pillClass, html.EscapeString(pillLabel), teamLabel)
-		for _, s := range r.spans {
-			left := pct(s.start)
-			width := pct(s.end) - left
-			if width < 0.15 {
-				width = 0.15 // keep even instant calls visible
-			}
-			cls := "bar"
-			if s.end.Equal(maxT) && r.status == "in-progress" {
-				cls = "bar bar-open"
-			}
-			fmt.Fprintf(&b, `<div class="%s" style="left:%.3f%%;width:%.3f%%" title="%s: %s"></div>`,
-				cls, left, width, html.EscapeString(s.tool), html.EscapeString(s.summary))
-		}
-		for _, g := range r.gaps {
-			if g.dur() < SevereGap {
-				continue // only the severe tier gets a visible downtime marker; short gaps are normal think-time
-			}
-			left := pct(g.start)
-			width := pct(g.end) - left
-			fmt.Fprintf(&b, `<div class="gapmark" style="left:%.3f%%;width:%.3f%%" title="downtime: %s"></div>`,
-				left, width, g.dur().Round(time.Second))
-		}
-		b.WriteString(`</div>`)
-		if len(r.spans) > 0 {
-			fmt.Fprintf(&b, `<div class="busy">%s</div>`, busy.Round(time.Second))
+	// The coordinator isn't a team — it's the orchestrator dispatching and
+	// merging everyone else — so it gets its own section above the team
+	// list rather than sorting in among them wherever its timestamps land.
+	var coordRow *Row
+	var teamRows []Row
+	for i := range display {
+		if display[i].key == "" {
+			r := display[i]
+			coordRow = &r
 		} else {
-			b.WriteString(`<div class="busy">—</div>`)
+			teamRows = append(teamRows, display[i])
 		}
-		b.WriteString(rowClose + "\n")
+	}
 
-		if hasSteps {
-			b.WriteString(`<div class="steps-detail">`)
-			for _, sd := range r.steps {
-				if sd.Step != "" {
-					fmt.Fprintf(&b, `<div class="step-pair"><span class="stepnum">%da.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Step))
-				}
-				if sd.Validation != "" {
-					fmt.Fprintf(&b, `<div class="step-pair val"><span class="stepnum">%db.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Validation))
-				}
-			}
-			b.WriteString(`</div></details>` + "\n")
-		}
+	if coordRow != nil {
+		b.WriteString(`<h2>Coordinator</h2><div class="gantt">`)
+		writeGanttRow(&b, *coordRow, maxT, pct)
+		b.WriteString(`</div>`)
+	}
+
+	b.WriteString(`<h2>Activity by team</h2><div class="gantt">`)
+	for _, r := range teamRows {
+		writeGanttRow(&b, r, maxT, pct)
 	}
 	fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
 		minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
@@ -633,6 +651,79 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	b.WriteString(`</div></body></html>`)
 
 	return b.String()
+}
+
+// writeGanttRow renders one team (or the coordinator's) row: the status
+// pill and label — indented by dependency depth, so a two-independent-
+// track plan like finch (engine's Rust chain vs. win-media's Windows
+// chain) reads as two visual hierarchies instead of one flat list — the
+// activity track with its bars and severe-gap markers, and, if the plan's
+// Teams table gave this team any Steps/Validation detail, an expandable
+// "Na./Nb." panel underneath (native <details>, no JS).
+func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time) float64) {
+	pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
+	var busy time.Duration
+	for _, s := range r.spans {
+		busy += s.end.Sub(s.start)
+	}
+
+	hasSteps := len(r.steps) > 0
+	rowOpen, rowClose := `<div class="row">`, `</div>`
+	teamLabel := html.EscapeString(r.label)
+	if hasSteps {
+		rowOpen, rowClose = `<details class="row-d"><summary class="row">`, `</summary>`
+		teamLabel += `<span class="chev">&rsaquo;</span>`
+	}
+
+	pillStyle := ""
+	if r.depth > 0 {
+		pillStyle = fmt.Sprintf(` style="margin-left:%dpx"`, r.depth*14)
+	}
+
+	fmt.Fprintf(b, `%s<div class="label-col"><span class="pill %s" title="%s"%s></span><span class="team">%s</span></div><div class="track">`,
+		rowOpen, pillClass, html.EscapeString(pillLabel), pillStyle, teamLabel)
+	for _, s := range r.spans {
+		left := pct(s.start)
+		width := pct(s.end) - left
+		if width < 0.15 {
+			width = 0.15 // keep even instant calls visible
+		}
+		cls := "bar"
+		if s.end.Equal(maxT) && r.status == "in-progress" {
+			cls = "bar bar-open"
+		}
+		fmt.Fprintf(b, `<div class="%s" style="left:%.3f%%;width:%.3f%%" title="%s: %s"></div>`,
+			cls, left, width, html.EscapeString(s.tool), html.EscapeString(s.summary))
+	}
+	for _, g := range r.gaps {
+		if g.dur() < SevereGap {
+			continue // only the severe tier gets a visible downtime marker; short gaps are normal think-time
+		}
+		left := pct(g.start)
+		width := pct(g.end) - left
+		fmt.Fprintf(b, `<div class="gapmark" style="left:%.3f%%;width:%.3f%%" title="downtime: %s"></div>`,
+			left, width, g.dur().Round(time.Second))
+	}
+	b.WriteString(`</div>`)
+	if len(r.spans) > 0 {
+		fmt.Fprintf(b, `<div class="busy">%s</div>`, busy.Round(time.Second))
+	} else {
+		b.WriteString(`<div class="busy">—</div>`)
+	}
+	b.WriteString(rowClose + "\n")
+
+	if hasSteps {
+		b.WriteString(`<div class="steps-detail">`)
+		for _, sd := range r.steps {
+			if sd.Step != "" {
+				fmt.Fprintf(b, `<div class="step-pair"><span class="stepnum">%da.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Step))
+			}
+			if sd.Validation != "" {
+				fmt.Fprintf(b, `<div class="step-pair val"><span class="stepnum">%db.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Validation))
+			}
+		}
+		b.WriteString(`</div></details>` + "\n")
+	}
 }
 
 func plural(n int) string {
@@ -692,7 +783,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .sub{color:var(--text-dim);font-size:12px;margin-bottom:18px}
 .back{display:inline-block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-bottom:10px}
 .back:hover{text-decoration:underline}
-.goal{color:var(--text-dim);font-size:13.5px;max-width:64ch;margin:0 0 18px}
+.goal{color:var(--text-dim);font-size:13.5px;margin:0 0 18px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
 .empty{color:var(--text-faint);font-style:italic}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .stat{background:var(--surface);padding:12px 16px}
