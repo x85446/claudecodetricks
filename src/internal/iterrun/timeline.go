@@ -1,6 +1,7 @@
 package iterrun
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"io"
@@ -240,6 +241,49 @@ func MergeRows(a, b []Row) []Row {
 
 var teamTerminalLine = regexp.MustCompile(`^TEAM (DONE|BLOCKED):`)
 
+const validationMarker = "##ITERATE-VALIDATION##"
+
+type validationMark struct {
+	status string
+	note   string
+}
+
+// readValidationMarkers scans one team's log file for
+// ##ITERATE-VALIDATION## {"step":N,"status":"...","note":"..."} lines — the
+// team's own real-time per-validation report, per /iterate's SKILL.md.
+// Later markers for the same step number win (a team correcting or
+// updating an earlier assessment), consistent with everything else here
+// treating the log as an append-only stream of ground truth. Malformed
+// lines and a missing file are silently skipped, not an error — a team
+// that hasn't adopted the convention yet just shows no per-validation
+// status, same as before this existed.
+func readValidationMarkers(logPath string) map[int]validationMark {
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		return nil
+	}
+	marks := map[int]validationMark{}
+	for line := range strings.SplitSeq(string(data), "\n") {
+		_, after, found := strings.Cut(line, validationMarker)
+		if !found {
+			continue
+		}
+		var m struct {
+			Step   int    `json:"step"`
+			Status string `json:"status"`
+			Note   string `json:"note"`
+		}
+		if json.Unmarshal([]byte(strings.TrimSpace(after)), &m) != nil {
+			continue
+		}
+		if m.Status != "met" && m.Status != "partial" && m.Status != "not-met" {
+			continue
+		}
+		marks[m.Step] = validationMark{status: m.Status, note: m.Note}
+	}
+	return marks
+}
+
 // BuildRowsFromFilesystem builds one row per team of a plan directly from
 // what's already on disk — no hook wiring required, and it works for a run
 // already in progress, which hook-derived events never can (they only start
@@ -340,10 +384,14 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 		r := get(team)
 		r.status = meta.status
 		r.depth = depths[team]
+		marks := readValidationMarkers(filepath.Join(teamsDir, team+".log.md"))
 		for _, n := range meta.stepNums {
 			sd := StepDetail{Num: n, Step: steps[n], Validation: validations[n]}
 			if sd.Step == "" && sd.Validation == "" {
 				continue // step number in the table but not found in either list — skip rather than show a blank pair
+			}
+			if m, ok := marks[n]; ok {
+				sd.VStatus, sd.VNote = m.status, m.note
 			}
 			r.steps = append(r.steps, sd)
 		}
@@ -741,11 +789,35 @@ func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time
 				fmt.Fprintf(b, `<div class="step-pair"><span class="stepnum">%da.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Step))
 			}
 			if sd.Validation != "" {
-				fmt.Fprintf(b, `<div class="step-pair val"><span class="stepnum">%db.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Validation))
+				fmt.Fprintf(b, `<div class="step-pair val"><span class="stepnum">%db.</span><span>%s%s</span></div>`,
+					sd.Num, html.EscapeString(sd.Validation), validationGlyph(sd.VStatus, sd.VNote))
 			}
 		}
 		b.WriteString(`</div></details>` + "\n")
 	}
+}
+
+// validationGlyph renders the team's own ##ITERATE-VALIDATION## report for
+// this Nb, if it wrote one — nothing at all when it hasn't, since "not yet
+// reported" and "reported not-met" are different facts and only one of
+// them is worth a red mark.
+func validationGlyph(status, note string) string {
+	var cls, symbol, label string
+	switch status {
+	case "met":
+		cls, symbol, label = "v-met", "&#10003;", "met"
+	case "partial":
+		cls, symbol, label = "v-partial", "&#8776;", "partial"
+	case "not-met":
+		cls, symbol, label = "v-not-met", "&#10007;", "not met"
+	default:
+		return ""
+	}
+	title := label
+	if note != "" {
+		title += ": " + note
+	}
+	return fmt.Sprintf(` <span class="vmark %s" title="%s">%s</span>`, cls, html.EscapeString(title), symbol)
 }
 
 func plural(n int) string {
@@ -848,6 +920,10 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .step-pair{display:flex;gap:8px;font-size:12.5px;color:var(--text)}
 .step-pair.val{color:var(--text-dim)}
 .step-pair .stepnum{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600;min-width:28px}
+.vmark{display:inline-block;font-weight:700;margin-left:2px}
+.vmark.v-met{color:var(--good)}
+.vmark.v-partial{color:var(--warn)}
+.vmark.v-not-met{color:var(--danger)}
 .gaplist{display:flex;flex-direction:column;gap:8px}
 .gap-item{display:flex;gap:10px;align-items:baseline;font-size:13px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:6px}
 .gap-item .dur{font-weight:700;color:var(--danger)}
