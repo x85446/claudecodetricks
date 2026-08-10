@@ -704,6 +704,14 @@ func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time
 		fmt.Fprintf(b, `<div class="gapmark" style="left:%.3f%%;width:%.3f%%" title="downtime: %s"></div>`,
 			left, width, g.dur().Round(time.Second))
 	}
+	if len(r.spans) == 0 && (strings.HasPrefix(r.status, "done") || strings.HasPrefix(r.status, "blocked")) {
+		// Done with an empty track is a real, recurring shape here — a step
+		// can be marked done in the Teams table while its actual work ran
+		// inside another team's reused agent (confirmed live: cli's work
+		// landed in engine's log). Say so instead of leaving a blank bar
+		// that looks identical to "something's wrong."
+		b.WriteString(`<div class="track-note">done — activity recorded under another team</div>`)
+	}
 	b.WriteString(`</div>`)
 	if len(r.spans) > 0 {
 		fmt.Fprintf(b, `<div class="busy">%s</div>`, busy.Round(time.Second))
@@ -815,6 +823,7 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .bar-open{background:repeating-linear-gradient(115deg,var(--busy),var(--busy) 7px,var(--busy-dim) 7px,var(--busy-dim) 14px)}
 .gapmark{position:absolute;top:-3px;height:calc(100% + 6px);background:repeating-linear-gradient(45deg,var(--danger-a),var(--danger-a) 4px,var(--danger-b) 4px,var(--danger-b) 8px);border-radius:3px;border:1px solid var(--danger)}
 .busy{width:60px;flex:0 0 auto;text-align:right;font-size:12px;color:var(--text-dim)}
+.track-note{position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;padding-left:8px;font-size:11px;font-style:italic;color:var(--text-faint)}
 .axis{display:flex;justify-content:space-between;padding:8px 10px 2px;font-size:10.5px;color:var(--text-faint)}
 .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:12px;color:var(--text-dim)}
 .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--busy)}
