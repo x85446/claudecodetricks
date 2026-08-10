@@ -530,7 +530,7 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	}
 	header := backLink + `<div class="eyebrow">iterate plan</div><h1>` + html.EscapeString(planName) + `</h1>`
 	if plan.GoalFull != "" {
-		header += `<p class="goal">` + html.EscapeString(plan.GoalFull) + `</p>`
+		header += `<div class="goal"><div class="goal-label">Goal</div><p>` + html.EscapeString(plan.GoalFull) + `</p></div>`
 	}
 	if len(rows) == 0 {
 		return timelineHead(title) + header + `<p class="empty">no activity recorded yet</p></div>`
@@ -769,7 +769,7 @@ func timelineHead(title string) string {
   --warn:#b45309; --warn-bg:#fbecd5;
   --queued:#a29b8d; --queued-bg:#f0ece2;
   --danger:#dc2626; --danger-a:#f3b8b8; --danger-b:#fbe1e1;
-  --accent:#0e7490;
+  --accent:#0e7490; --accent-bg:#e5f4f7;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0f1215; --surface:#171b1f; --surface-2:#1d2227; --border:#262c31;
@@ -779,7 +779,7 @@ func timelineHead(title string) string {
   --warn:#f59e0b; --warn-bg:#3a2705;
   --queued:#565d64; --queued-bg:#1d2227;
   --danger:#ef4444; --danger-a:#5a1414; --danger-b:#2c0a0a;
-  --accent:#22d3ee;
+  --accent:#22d3ee; --accent-bg:#0f2e33;
 }}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:28px 20px 50px;line-height:1.45}
@@ -791,7 +791,9 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .sub{color:var(--text-dim);font-size:12px;margin-bottom:18px}
 .back{display:inline-block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-bottom:10px}
 .back:hover{text-decoration:underline}
-.goal{color:var(--text-dim);font-size:13.5px;margin:0 0 18px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.goal{margin:0 0 18px;padding:14px 16px;background:var(--accent-bg);border:1px solid var(--border);border-radius:8px}
+.goal-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:5px}
+.goal p{color:var(--text-dim);font-size:13.5px;margin:0}
 .empty{color:var(--text-faint);font-style:italic}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .stat{background:var(--surface);padding:12px 16px}
