@@ -37,7 +37,7 @@ func TestBuildRowsGapDetection(t *testing.T) {
 		t.Fatalf("expected 2 rows (coordinator + team-x), got %d", len(rows))
 	}
 
-	var coord, teamX *row
+	var coord, teamX *Row
 	for i := range rows {
 		switch rows[i].key {
 		case "":

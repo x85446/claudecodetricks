@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -34,24 +35,38 @@ type gap struct {
 
 func (g gap) dur() time.Duration { return g.end.Sub(g.start) }
 
-// row is one agent's (or the coordinator's) full activity picture.
-type row struct {
+// Row is one agent's (or the coordinator's) full activity picture.
+type Row struct {
 	key   string // agent_id, or "" for coordinator
 	label string
 	spans []span
 	gaps  []gap
 }
 
+// computeGaps finds the idle stretches between consecutive (already sorted)
+// spans that clear the NotableGap threshold — shared by every row source,
+// hook-derived or filesystem-derived alike.
+func computeGaps(spans []span) []gap {
+	var gaps []gap
+	for i := 1; i < len(spans); i++ {
+		g := gap{start: spans[i-1].end, end: spans[i].start}
+		if g.dur() >= NotableGap {
+			gaps = append(gaps, g)
+		}
+	}
+	return gaps
+}
+
 // BuildRows groups events into per-agent rows, pairs pre/post events into
 // spans by tool_use_id, and computes the gaps between consecutive spans —
 // the gaps are the actual point of this whole thing.
-func BuildRows(events []Event, labels map[string]string) []row {
+func BuildRows(events []Event, labels map[string]string) []Row {
 	byKey := map[string][]Event{}
 	for _, e := range events {
 		byKey[e.AgentID] = append(byKey[e.AgentID], e)
 	}
 
-	var rows []row
+	var rows []Row
 	for key, evs := range byKey {
 		pre := map[string]Event{}
 		var spans []span
@@ -66,14 +81,7 @@ func BuildRows(events []Event, labels map[string]string) []row {
 			}
 		}
 		sort.Slice(spans, func(i, j int) bool { return spans[i].start.Before(spans[j].start) })
-
-		var gaps []gap
-		for i := 1; i < len(spans); i++ {
-			g := gap{start: spans[i-1].end, end: spans[i].start}
-			if g.dur() >= NotableGap {
-				gaps = append(gaps, g)
-			}
-		}
+		gaps := computeGaps(spans)
 
 		label := key
 		if key == "" {
@@ -82,7 +90,7 @@ func BuildRows(events []Event, labels map[string]string) []row {
 			label = l
 		}
 
-		rows = append(rows, row{key: key, label: label, spans: spans, gaps: gaps})
+		rows = append(rows, Row{key: key, label: label, spans: spans, gaps: gaps})
 	}
 
 	sort.Slice(rows, func(i, j int) bool {
@@ -97,10 +105,132 @@ func BuildRows(events []Event, labels map[string]string) []row {
 	return rows
 }
 
+var teamTerminalLine = regexp.MustCompile(`^TEAM (DONE|BLOCKED):`)
+
+// BuildRowsFromFilesystem builds one row per team of a plan directly from
+// what's already on disk — no hook wiring required, and it works for a run
+// already in progress, which hook-derived events never can (they only start
+// accumulating from the moment they're wired in). Two sources per team,
+// merged into the same row:
+//
+//   - The team's own log file at <homeDir>/.claude/iterate/plans/<plan>.teams/
+//     <team>.log.md: one coarse span from the file's birth time (when the
+//     team started) to its last-modified time (its last known write —
+//     NOT stretched to "now", since anything after the last write is
+//     genuinely unknown, not confirmed activity).
+//   - Any `iterate-run run` registry entries tagged with this plan, found by
+//     scanning scanDirs (a team can — and did, in practice — work in a
+//     directory far from the plan's own project, e.g. a team cloning a
+//     side workspace) — these carry exact Started/Finished timestamps.
+//
+// homeDir is where the plan file and team logs live; scanDirs additionally
+// searches for registry entries (homeDir is always scanned too).
+func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, error) {
+	byTeam := map[string]*Row{}
+	get := func(team string) *Row {
+		if r, ok := byTeam[team]; ok {
+			return r
+		}
+		label := team
+		if team == "" {
+			label = "coordinator"
+		}
+		r := &Row{key: team, label: label}
+		byTeam[team] = r
+		return r
+	}
+
+	teamsDir := filepath.Join(homeDir, ".claude", "iterate", "plans", plan+".teams")
+	logFiles, _ := filepath.Glob(filepath.Join(teamsDir, "*.log.md"))
+	for _, lf := range logFiles {
+		team := strings.TrimSuffix(filepath.Base(lf), ".log.md")
+		fi, err := os.Stat(lf)
+		if err != nil {
+			continue
+		}
+		start, ok := birthTime(fi)
+		if !ok {
+			start = fi.ModTime()
+		}
+		end := fi.ModTime()
+		if end.Before(start) {
+			end = start
+		}
+		summary := "still running as of last write"
+		if data, err := os.ReadFile(lf); err == nil {
+			if m := teamTerminalLine.FindString(string(data)); m != "" {
+				summary = m
+			} else if last := lastNonEmptyLine(string(data)); last != "" {
+				summary = truncateSummary(last)
+			}
+		}
+		r := get(team)
+		r.spans = append(r.spans, span{start: start, end: end, tool: "team-log", summary: summary})
+	}
+
+	seenDirs := map[string]bool{}
+	dirs := append([]string{homeDir}, scanDirs...)
+	for _, d := range dirs {
+		abs, err := filepath.Abs(d)
+		if err != nil || seenDirs[abs] {
+			continue
+		}
+		seenDirs[abs] = true
+		entries, err := ScanRegistry(RegistryDir(abs))
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.Plan != plan {
+				continue
+			}
+			end := time.Now()
+			if e.Finished != nil {
+				end = *e.Finished
+			} else if !e.LastHeartbeat.IsZero() {
+				end = e.LastHeartbeat
+			}
+			r := get(e.Team)
+			r.spans = append(r.spans, span{start: e.Started, end: end, tool: "iterate-run:" + e.Unit, summary: e.Status + " " + e.LastMessage})
+		}
+	}
+
+	var rows []Row
+	for _, r := range byTeam {
+		sort.Slice(r.spans, func(i, j int) bool { return r.spans[i].start.Before(r.spans[j].start) })
+		r.gaps = computeGaps(r.spans)
+		rows = append(rows, *r)
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if len(rows[i].spans) == 0 || len(rows[j].spans) == 0 {
+			return rows[i].label < rows[j].label
+		}
+		return rows[i].spans[0].start.Before(rows[j].spans[0].start)
+	})
+	return rows, nil
+}
+
+func lastNonEmptyLine(s string) string {
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		if strings.TrimSpace(lines[i]) != "" {
+			return strings.TrimSpace(lines[i])
+		}
+	}
+	return ""
+}
+
+func truncateSummary(s string) string {
+	if len(s) > 120 {
+		return s[:120] + "…"
+	}
+	return s
+}
+
 // PrintTimelineSummary writes a plain-text per-agent summary: busy time,
 // call count, and every notable gap with its duration — the quick terminal
 // answer to "where did the time go," no browser required.
-func PrintTimelineSummary(w io.Writer, rows []row) {
+func PrintTimelineSummary(w io.Writer, rows []Row) {
 	if len(rows) == 0 {
 		fmt.Fprintln(w, "no events recorded yet")
 		return
@@ -112,7 +242,7 @@ func PrintTimelineSummary(w io.Writer, rows []row) {
 		}
 		fmt.Fprintf(w, "%s — %d tool calls, %s busy", r.label, len(r.spans), busy.Round(time.Second))
 		if len(r.spans) > 0 {
-			fmt.Fprintf(w, ", active %s to %s", r.spans[0].start.Format("15:04:05"), r.spans[len(r.spans)-1].end.Format("15:04:05"))
+			fmt.Fprintf(w, ", active %s to %s", r.spans[0].start.Local().Format("15:04:05"), r.spans[len(r.spans)-1].end.Local().Format("15:04:05"))
 		}
 		fmt.Fprintln(w)
 		for _, g := range r.gaps {
@@ -120,7 +250,7 @@ func PrintTimelineSummary(w io.Writer, rows []row) {
 			if g.dur() >= SevereGap {
 				marker = "  SEVERE GAP"
 			}
-			fmt.Fprintf(w, "%s: %s (%s -> %s)\n", marker, g.dur().Round(time.Second), g.start.Format("15:04:05"), g.end.Format("15:04:05"))
+			fmt.Fprintf(w, "%s: %s (%s -> %s)\n", marker, g.dur().Round(time.Second), g.start.Local().Format("15:04:05"), g.end.Local().Format("15:04:05"))
 		}
 	}
 }
@@ -129,7 +259,7 @@ func PrintTimelineSummary(w io.Writer, rows []row) {
 // per agent, busy spans as bars, gaps left visibly blank (and colored when
 // severe) so downtime is something you SEE, not something you reconstruct
 // from timestamps by hand.
-func WriteTimelineHTML(cwd string, rows []row) (string, error) {
+func WriteTimelineHTML(cwd string, rows []Row) (string, error) {
 	if len(rows) == 0 {
 		return "", fmt.Errorf("no events to render")
 	}
@@ -169,7 +299,7 @@ h1{font-size:16px;font-weight:600;margin:0 0 4px}
 </style></head><body>
 `)
 	fmt.Fprintf(&b, "<h1>iterate-run timeline</h1><div class=\"sub\">%s &rarr; %s (%s total)</div>\n",
-		minT.Format("2006-01-02 15:04:05"), maxT.Format("15:04:05"), total.Round(time.Second))
+		minT.Local().Format("2006-01-02 15:04:05"), maxT.Local().Format("15:04:05"), total.Round(time.Second))
 
 	for _, r := range rows {
 		var busy time.Duration

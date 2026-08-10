@@ -66,23 +66,58 @@ func hookCmd(args []string) {
 	iterrun.HandleHook(phase, os.Stdin)
 }
 
-func timelineCmd(_ []string) {
+func timelineCmd(args []string) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
 		os.Exit(1)
 	}
-	events, err := iterrun.ReadEvents(cwd)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
-		os.Exit(1)
+
+	var plan, home string
+	var scanDirs []string
+	i := 0
+	for i < len(args) {
+		switch args[i] {
+		case "--plan":
+			i++
+			plan = args[i]
+		case "--home":
+			i++
+			home = args[i]
+		default:
+			scanDirs = append(scanDirs, args[i])
+		}
+		i++
 	}
-	labels, err := iterrun.ReadLabels(cwd)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
-		os.Exit(1)
+
+	var rows []iterrun.Row
+	if plan != "" {
+		// Filesystem mode: build the graph from team logs + iterate-run
+		// registry entries already on disk — works for a run already in
+		// progress, unlike the hook path below (which only sees activity
+		// from the moment hooks are wired in).
+		if home == "" {
+			home = cwd
+		}
+		rows, err = iterrun.BuildRowsFromFilesystem(plan, home, scanDirs)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		events, err := iterrun.ReadEvents(cwd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+		labels, err := iterrun.ReadLabels(cwd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+		rows = iterrun.BuildRows(events, labels)
 	}
-	rows := iterrun.BuildRows(events, labels)
+
 	iterrun.PrintTimelineSummary(os.Stdout, rows)
 
 	path, err := iterrun.WriteTimelineHTML(cwd, rows)
