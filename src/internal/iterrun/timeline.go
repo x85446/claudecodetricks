@@ -723,10 +723,7 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	// anchored to the plan's own declared start instead, so it answers
 	// "how long has THIS run been going" on its own.
 	if started, ok := plan.StartedAt(); ok {
-		runDur := maxT.Sub(started)
-		if runDur < 0 {
-			runDur = 0
-		}
+		runDur := max(maxT.Sub(started), 0)
 		fmt.Fprintf(&b, `<div class="runbox"><span class="runbox-label">Running for</span><span class="runbox-dur">%s</span><span class="runbox-since">since %s</span></div>`+"\n",
 			runDur.Round(time.Second), started.Local().Format("2006-01-02 15:04:05"))
 	}
@@ -943,7 +940,11 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
 .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
 h1{font-size:24px;font-weight:700;margin:2px 0 8px;text-wrap:balance;letter-spacing:-.01em}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin:26px 0 12px}
-.sub{color:var(--text-dim);font-size:12px;margin-bottom:18px}
+.sub{color:var(--text-dim);font-size:12px;margin-bottom:10px}
+.runbox{display:flex;align-items:baseline;gap:8px;margin:0 0 18px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px}
+.runbox-label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);font-weight:600}
+.runbox-dur{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-size:16px;font-weight:700;color:var(--accent)}
+.runbox-since{font-size:11.5px;color:var(--text-faint)}
 .back{display:inline-block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-bottom:10px}
 .back:hover{text-decoration:underline}
 .goal{margin:0 0 18px;padding:14px 16px;background:var(--accent-bg);border:1px solid var(--border);border-radius:8px}

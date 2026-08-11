@@ -1,6 +1,8 @@
 package iterrun
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -157,5 +159,87 @@ func TestBuildRowsFromHookEventsScopesCoordinatorByProject(t *testing.T) {
 	}
 	if len(teamX.spans) != 1 {
 		t.Fatalf("team-x spans = %d, want 1", len(teamX.spans))
+	}
+}
+
+func TestParsePlanStarted(t *testing.T) {
+	cases := []struct {
+		in      string
+		wantOK  bool
+		wantYMD string // "2006-01-02" of the parsed instant, in local time
+	}{
+		{"2026-08-10 05:39:52", true, "2026-08-10"},
+		{"2026-08-10", true, "2026-08-10"},
+		{"2026-08-10 (planned)", true, "2026-08-10"},
+		{"", false, ""},
+		{"whenever we get to it", false, ""},
+	}
+	for _, c := range cases {
+		got, ok := parsePlanStarted(c.in)
+		if ok != c.wantOK {
+			t.Errorf("parsePlanStarted(%q) ok = %v, want %v", c.in, ok, c.wantOK)
+			continue
+		}
+		if ok && got.Format("2006-01-02") != c.wantYMD {
+			t.Errorf("parsePlanStarted(%q) = %s, want date %s", c.in, got, c.wantYMD)
+		}
+	}
+}
+
+// TestBuildRowsFromFilesystemExcludesStaleRegistryEntries reproduces the
+// second bug reported live, alongside the coordinator one: plan codenames
+// get reused within the SAME project over time too, not just across
+// projects. An old, completed "badger" plan (team "dup-detect", started
+// 2026-08-05) left its iterate-run registry entries on disk; five days
+// later a brand new, unrelated "badger" plan (team "repo-ci") reused the
+// name. Without this fix, the dashboard showed a "144h49m so far" total
+// and five ghost team rows that don't even appear in the current plan's
+// own Teams table, entirely inherited from the old run.
+func TestBuildRowsFromFilesystemExcludesStaleRegistryEntries(t *testing.T) {
+	home := t.TempDir()
+	plansDir := filepath.Join(home, ".claude", "iterate", "plans")
+	if err := os.MkdirAll(plansDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	planMD := "# Plan\n\nname: badger\nStarted: 2026-08-10 (planned)\nphase: executing\n\n" +
+		"## Teams\n\n| Team | Steps | Focus | Depends on | Agent | Status |\n" +
+		"|---|---|---|---|---|---|\n| repo-ci | 1 | ci | — | agent | in-progress |\n"
+	if err := os.WriteFile(filepath.Join(plansDir, "badger.md"), []byte(planMD), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	regDir := RegistryDir(home)
+	staleFinished := time.Date(2026, 8, 5, 10, 52, 2, 0, time.UTC)
+	stale := &Entry{Plan: "badger", Team: "dup-detect", Unit: "step0-baseline",
+		Started: time.Date(2026, 8, 5, 10, 51, 58, 0, time.UTC), Finished: &staleFinished}
+	freshFinished := time.Date(2026, 8, 11, 0, 13, 0, 0, time.UTC)
+	fresh := &Entry{Plan: "badger", Team: "repo-ci", Unit: "current-work",
+		Started: time.Date(2026, 8, 11, 0, 8, 0, 0, time.UTC), Finished: &freshFinished}
+	if err := stale.Write(regDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := fresh.Write(regDir); err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := BuildRowsFromFilesystem("badger", home, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var dupDetect, repoCI *Row
+	for i := range rows {
+		switch rows[i].key {
+		case "dup-detect":
+			dupDetect = &rows[i]
+		case "repo-ci":
+			repoCI = &rows[i]
+		}
+	}
+	if dupDetect != nil {
+		t.Errorf("dup-detect row present with %d span(s) — a registry entry from an earlier, unrelated \"badger\" run (started 2026-08-05, before this plan's declared 2026-08-10 start) leaked into this run's picture", len(dupDetect.spans))
+	}
+	if repoCI == nil || len(repoCI.spans) != 1 {
+		t.Fatalf("repo-ci row missing or wrong span count, got %+v", repoCI)
 	}
 }
