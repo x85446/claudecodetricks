@@ -220,6 +220,29 @@ func TestParsePlanStarted(t *testing.T) {
 	}
 }
 
+// TestParsePlanStartedRespectsUTCSuffix reproduces a real bug found live
+// while verifying the "running for" fix on a genuinely-executing plan: the
+// old regex captured only the digit groups and silently discarded a
+// trailing "Z" — exactly what /iterate's and /iterate-planner's own
+// `date -u +%Y-%m-%dT%H:%M:%SZ` produces — then fed those bare digits to
+// time.ParseInLocation(..., time.Local), reinterpreting a UTC clock
+// reading as already-local wall-clock time. That doesn't just mislabel the
+// displayed timestamp, it silently shifts the parsed INSTANT by the
+// machine's UTC offset. A "Z"-suffixed value must parse to the exact same
+// instant as the equivalent explicit UTC time, not to that value's digits
+// read as local.
+func TestParsePlanStartedRespectsUTCSuffix(t *testing.T) {
+	got, ok := parsePlanStarted("2026-08-11T13:59:24Z (planned)")
+	if !ok {
+		t.Fatal("parsePlanStarted returned ok=false for a valid Z-suffixed timestamp")
+	}
+	want := time.Date(2026, 8, 11, 13, 59, 24, 0, time.UTC)
+	if !got.Equal(want) {
+		t.Errorf("parsePlanStarted(%q) = %s, want the exact instant %s (13:59:24 UTC, not 13:59:24 local)",
+			"2026-08-11T13:59:24Z (planned)", got, want)
+	}
+}
+
 // TestBuildRowsFromFilesystemExcludesStaleRegistryEntries reproduces the
 // second bug reported live, alongside the coordinator one: plan codenames
 // get reused within the SAME project over time too, not just across

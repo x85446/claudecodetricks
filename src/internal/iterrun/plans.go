@@ -82,17 +82,29 @@ var (
 	reExecuting        = regexp.MustCompile(`^Executing:\s*(.+)$`)
 	reTeamed           = regexp.MustCompile(`^teamed:\s*true\s*$`)
 	reStatus           = regexp.MustCompile(`^status:\s*(.+)$`)
-	reLeadingTimestamp = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?`)
+	reLeadingTimestamp = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2})(Z)?)?`)
 )
 
-// parsePlanStarted best-effort parses a plan's freeform Started: value
-// ("2026-08-10 05:39:52", "2026-08-10", "2026-08-10 (planned)", ...) into
-// the instant it names, in local time — used as the boundary between this
-// plan instance and any stale tracking data left over from an earlier,
-// unrelated run that happened to reuse the same single-word codename.
-// Trailing freeform text (like "(planned)") is ignored; ok is false if no
-// leading date could be found at all, which callers treat as "unknown,
-// don't filter" rather than guessing.
+// parsePlanStarted best-effort parses a plan's freeform Started:/Executing:
+// value into the instant it names. Two formats are in real use and must
+// parse to the SAME instant they actually name, not just the same digits:
+//   - space-separated, no zone ("2026-08-10 05:39:52", "2026-08-10",
+//     "2026-08-10 (planned)") — written by hand or by older code, and
+//     genuinely local wall-clock time.
+//   - ISO 8601 UTC ("2026-08-11T13:59:24Z") — what /iterate and
+//     /iterate-planner actually write (`date -u +%Y-%m-%dT%H:%M:%SZ`).
+//
+// A trailing "Z" is the signal to parse as UTC instead of local — confirmed
+// live as a real, silent bug: the old version matched only the digit
+// groups, discarded "Z" as ignorable trailing text same as "(planned)",
+// and fed the bare digits to time.ParseInLocation(..., time.Local) —
+// reinterpreting a UTC clock reading as already-local wall-clock time.
+// That doesn't just mislabel the displayed "since" timestamp, it silently
+// shifts the parsed INSTANT by the local UTC offset (5h understated on a
+// UTC-5 machine, confirmed by hand-tracing the exact figure a live "Running
+// for 2h36m40s" bug reproduced). Trailing freeform text (like "(planned)")
+// is otherwise ignored; ok is false if no leading date could be found at
+// all, which callers treat as "unknown, don't filter" rather than guessing.
 func parsePlanStarted(s string) (time.Time, bool) {
 	m := reLeadingTimestamp.FindStringSubmatch(strings.TrimSpace(s))
 	if m == nil {
@@ -102,7 +114,11 @@ func parsePlanStarted(s string) (time.Time, bool) {
 	if m[2] != "" {
 		layout, value = "2006-01-02 15:04:05", m[1]+" "+m[2]
 	}
-	t, err := time.ParseInLocation(layout, value, time.Local)
+	loc := time.Local
+	if m[3] == "Z" {
+		loc = time.UTC
+	}
+	t, err := time.ParseInLocation(layout, value, loc)
 	if err != nil {
 		return time.Time{}, false
 	}
