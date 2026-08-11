@@ -265,6 +265,14 @@ deps-update:
 # ==================================================================================== #
 
 ## install: Install hooks to Claude Code directory, and tools onto PATH
+# codesign --force --sign - after each cp is required on macOS: cp -f onto
+# an existing file leaves the copy's ad-hoc signature invalid on some
+# macOS/filesystem combinations (confirmed live — the resulting binary
+# still runs fine from the build directory, but launched from its
+# installed path it's SIGKILLed on every invocation with
+# "Taskgated Invalid Signature", CODESIGNING/1, no error message at all).
+# Re-signing after the copy fixes it. No-op (skipped) where codesign isn't
+# on PATH, i.e. Linux.
 install: build
 	$(Q)echo -e "$(COLOR_BLUE)→ Installing hooks...$(COLOR_RESET)"
 	$(Q)mkdir -p $(INSTALL_DIR)
@@ -275,12 +283,18 @@ install: build
 	$(Q)chmod +x $(INSTALL_DIR)/voice-announcer
 	$(Q)chmod +x $(INSTALL_DIR)/session-logger
 	$(Q)chmod +x $(INSTALL_DIR)/git-committer
+	$(Q)if command -v codesign >/dev/null 2>&1; then \
+		codesign --force --sign - $(INSTALL_DIR)/voice-announcer $(INSTALL_DIR)/session-logger $(INSTALL_DIR)/git-committer; \
+	fi
 	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks installed to $(INSTALL_DIR)$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)  Note: Update ~/.claude/settings.json to enable hooks$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_BLUE)→ Installing tools...$(COLOR_RESET)"
 	$(Q)mkdir -p $(TOOLS_INSTALL_DIR)
 	$(Q)cp -f $(ITERATE_RUN_BIN) $(TOOLS_INSTALL_DIR)/
 	$(Q)chmod +x $(TOOLS_INSTALL_DIR)/iterate-run
+	$(Q)if command -v codesign >/dev/null 2>&1; then \
+		codesign --force --sign - $(TOOLS_INSTALL_DIR)/iterate-run; \
+	fi
 	$(Q)echo -e "$(COLOR_GREEN)✓ iterate-run installed to $(TOOLS_INSTALL_DIR)$(COLOR_RESET)"
 
 ## uninstall: Remove installed hooks and tools

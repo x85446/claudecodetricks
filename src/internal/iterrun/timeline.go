@@ -851,13 +851,25 @@ func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time
 	if hasSteps {
 		b.WriteString(`<div class="steps-detail">`)
 		for _, sd := range r.steps {
+			// Each step's Na/Nb pair is its own group, set off from the
+			// next step's pair by a light divider — the visual grouping
+			// IS the "12a and 12b belong together, and 12 as a whole is
+			// done" signal, so it has to read as one unit at a glance
+			// instead of just more lines in a flat stack.
+			b.WriteString(`<div class="step-group">`)
 			if sd.Step != "" {
-				fmt.Fprintf(b, `<div class="step-pair"><span class="stepnum">%da.</span><span>%s</span></div>`, sd.Num, html.EscapeString(sd.Step))
+				fmt.Fprintf(b, `<div class="step-pair"><span class="stepnum">%da.</span><span class="step-text">%s</span></div>`, sd.Num, html.EscapeString(sd.Step))
 			}
 			if sd.Validation != "" {
-				fmt.Fprintf(b, `<div class="step-pair val"><span class="stepnum">%db.</span><span>%s%s</span></div>`,
+				// The met/partial/not-met glyph is a separate flex item
+				// pinned to the row's right edge, not appended inline
+				// after the validation text — buried at the tail of
+				// wrapped prose, it read as punctuation rather than a
+				// status mark.
+				fmt.Fprintf(b, `<div class="step-pair val"><span class="stepnum">%db.</span><span class="step-text">%s</span>%s</div>`,
 					sd.Num, html.EscapeString(sd.Validation), validationGlyph(sd.VStatus, sd.VNote))
 			}
+			b.WriteString(`</div>`)
 		}
 		b.WriteString(`</div></details>` + "\n")
 	}
@@ -883,7 +895,7 @@ func validationGlyph(status, note string) string {
 	if note != "" {
 		title += ": " + note
 	}
-	return fmt.Sprintf(` <span class="vmark %s" title="%s">%s</span>`, cls, html.EscapeString(title), symbol)
+	return fmt.Sprintf(`<span class="vmark %s" title="%s">%s</span>`, cls, html.EscapeString(title), symbol)
 }
 
 func plural(n int) string {
@@ -986,11 +998,16 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:12px;color:var(--text-dim)}
 .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--busy)}
 .legend .sw-open{background:repeating-linear-gradient(115deg,var(--busy),var(--busy) 3px,var(--busy-dim) 3px,var(--busy-dim) 6px)}
-.steps-detail{padding:6px 14px 14px 46px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px}
-.step-pair{display:flex;gap:8px;font-size:12.5px;color:var(--text)}
+.steps-detail{padding:6px 14px 14px 46px;background:var(--surface-2);display:flex;flex-direction:column}
+.step-group{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.step-group:first-child{padding-top:0}
+.step-group:last-child{padding-bottom:0}
+.step-group+.step-group{border-top:1px solid var(--border)}
+.step-pair{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text)}
 .step-pair.val{color:var(--text-dim)}
 .step-pair .stepnum{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600;min-width:28px}
-.vmark{display:inline-block;font-weight:700;margin-left:2px}
+.step-pair .step-text{flex:1 1 auto}
+.vmark{flex:0 0 auto;display:inline-block;font-weight:700}
 .vmark.v-met{color:var(--good)}
 .vmark.v-partial{color:var(--warn)}
 .vmark.v-not-met{color:var(--danger)}
