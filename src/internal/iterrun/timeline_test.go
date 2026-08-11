@@ -404,3 +404,30 @@ func TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent(t *testing.T) {
 		t.Errorf("gui-windows.status = %q, want anything but done — it has no terminal line", guiWindows.status)
 	}
 }
+
+// TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning reproduces the
+// bug reported live: the coordinator row (and any orphan dispatch before
+// its terminal line arrives) never gets a status field set at all, but the
+// old stats loop only had three buckets — done/blocked, in-progress, and
+// no-spans-at-all — so a status-less row WITH activity fell through all
+// three, uncounted anywhere. A plan with real ongoing coordinator work
+// could read as fully accounted for (e.g. "N done, 0 running") in the top
+// summary while its own coordinator section showed hours of live activity.
+func TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning(t *testing.T) {
+	base := time.Date(2026, 8, 11, 12, 0, 0, 0, time.UTC)
+	rows := []Row{
+		{key: "", label: "coordinator", spans: []span{{start: base, end: base.Add(time.Minute)}}}, // status intentionally "" — the coordinator never gets one
+		{key: "repo-ci", label: "repo-ci", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}}},
+	}
+	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
+
+	if !strings.Contains(out, `<div class="n">1</div><div class="l">done</div>`) {
+		t.Errorf("expected exactly 1 done in stats; output:\n%s", out)
+	}
+	if !strings.Contains(out, `<div class="n">1</div><div class="l">running</div>`) {
+		t.Errorf("expected the status-less-but-active coordinator to count as 1 running, not fall through uncounted; output:\n%s", out)
+	}
+	if strings.Contains(out, `<div class="n">0</div><div class="l">running</div>`) {
+		t.Errorf("running count is 0 — the coordinator's own activity isn't being counted")
+	}
+}

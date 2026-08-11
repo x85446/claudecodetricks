@@ -805,12 +805,21 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		g     gap
 	}
 	for _, r := range rows {
-		switch {
-		case strings.HasPrefix(r.status, "done") || strings.HasPrefix(r.status, "blocked"):
+		// Reuse statusPill's own classification instead of a second,
+		// separately-maintained switch — the old duplicate had only three
+		// cases and silently counted a row toward NONE of done/running/
+		// queued whenever status=="" and it had activity, which is exactly
+		// the coordinator's own permanent state (it never gets a status
+		// field at all) plus any orphan dispatch before its terminal line
+		// arrives. That made a plan with real work still in flight read as
+		// fully accounted-for at the top even while its own coordinator
+		// section showed hours of live activity.
+		switch pillClass, _ := statusPill(r.status, len(r.spans) > 0); pillClass {
+		case "p-done", "p-blocked":
 			done++
-		case r.status == "in-progress":
+		case "p-running":
 			running++
-		case len(r.spans) == 0:
+		case "p-queued":
 			queued++
 		}
 		for _, g := range r.gaps {

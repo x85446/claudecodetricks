@@ -17,6 +17,8 @@ type PlanSummary struct {
 	Name       string
 	ProjectDir string
 	Phase      string
+	Status     string // freeform "status:" frontmatter line — "blocked-on-operator: <reason>" is the one standardized value the dashboard specifically surfaces; anything else is just carried through unused
+	NextAttempt string // the "> **Next attempt ...**" blockquote banner at the top of the file, if present — the coordinator's own exact instructions for clearing a blocked-on-operator state
 	Teamed     bool
 	Started    string
 	Goal       string // truncated to ~220 chars — for the dashboard card list
@@ -35,6 +37,17 @@ func (p PlanSummary) IsCompleted() bool {
 	return p.HasTeams && p.TeamsTotal > 0 && p.TeamsDone == p.TeamsTotal
 }
 
+// Blocked reports whether this plan is stuck on something only a human can
+// clear — the standardized "status: blocked-on-operator: <reason>" a
+// coordinator writes once every step it can act on is done and the one
+// remaining thing (billing, an external approval, physical access) is
+// outside any agent's reach. Takes priority over phase/IsCompleted for
+// display: a plan can look 100% done by its Teams table and still be
+// sitting here waiting on you.
+func (p PlanSummary) Blocked() bool {
+	return strings.HasPrefix(p.Status, "blocked-on-operator")
+}
+
 // StartedAt is this plan's own declared Started: value, parsed into the
 // instant it names (see parsePlanStarted). Returns the zero time and
 // ok=false if it can't be determined — callers treat that as "unknown,
@@ -48,6 +61,7 @@ var (
 	rePhase            = regexp.MustCompile(`^phase:\s*(.+)$`)
 	reStarted          = regexp.MustCompile(`^Started:\s*(.+)$`)
 	reTeamed           = regexp.MustCompile(`^teamed:\s*true\s*$`)
+	reStatus           = regexp.MustCompile(`^status:\s*(.+)$`)
 	reLeadingTimestamp = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?`)
 )
 
@@ -107,9 +121,29 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 	inGoal, inTeams := false, false
 	var goalLines []string
+	// The "Next attempt" banner is a blockquote ("> ...") near the top of
+	// the file — the coordinator's own exact instructions for clearing a
+	// blocked-on-operator state. Collected as one contiguous run of ">"
+	// lines starting from wherever "Next attempt" first appears; a plan
+	// with no such banner just never sets inNextAttempt and this stays
+	// empty.
+	inNextAttempt := false
+	var nextAttemptLines []string
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		trimmed := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmed, ">") {
+			if !inNextAttempt && strings.Contains(trimmed, "Next attempt") {
+				inNextAttempt = true
+			}
+			if inNextAttempt {
+				nextAttemptLines = append(nextAttemptLines, strings.TrimSpace(strings.TrimPrefix(trimmed, ">")))
+			}
+			continue
+		}
+		inNextAttempt = false // blockquote block ended (a non-">" line, including a blank one)
 
 		if m := reName.FindStringSubmatch(line); m != nil {
 			ps.Name = strings.TrimSpace(m[1])
@@ -120,11 +154,13 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		if m := reStarted.FindStringSubmatch(line); m != nil {
 			ps.Started = strings.TrimSpace(m[1])
 		}
+		if m := reStatus.FindStringSubmatch(line); m != nil {
+			ps.Status = strings.TrimSpace(m[1])
+		}
 		if reTeamed.MatchString(line) {
 			ps.Teamed = true
 		}
 
-		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "## ") {
 			inGoal = trimmed == "## Goal"
 			inTeams = trimmed == "## Teams"
