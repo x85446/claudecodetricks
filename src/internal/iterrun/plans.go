@@ -14,18 +14,18 @@ import (
 // one plan, parsed straight from its markdown file — never a separate
 // database, so it can never drift from what a human reading the file sees.
 type PlanSummary struct {
-	Name       string
-	ProjectDir string
-	Phase      string
-	Status     string // freeform "status:" frontmatter line — "blocked-on-operator: <reason>" is the one standardized value the dashboard specifically surfaces; anything else is just carried through unused
+	Name        string
+	ProjectDir  string
+	Phase       string
+	Status      string // freeform "status:" frontmatter line — "blocked-on-operator: <reason>" is the one standardized value the dashboard specifically surfaces; anything else is just carried through unused
 	NextAttempt string // the "> **Next attempt ...**" blockquote banner at the top of the file, if present — the coordinator's own exact instructions for clearing a blocked-on-operator state
-	Teamed     bool
-	Started    string
-	Goal       string // truncated to ~220 chars — for the dashboard card list
-	GoalFull   string // untruncated — for the plan detail page
-	HasTeams   bool
-	TeamsTotal int
-	TeamsDone  int
+	Teamed      bool
+	Started     string
+	Goal        string // truncated to ~160 chars — for the dashboard card list
+	GoalFull    string // untruncated — for the plan detail page
+	HasTeams    bool
+	TeamsTotal  int
+	TeamsDone   int
 }
 
 // IsCompleted reports whether every team in this plan's Teams table has
@@ -183,9 +183,10 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 
 	ps.GoalFull = strings.Join(goalLines, " ")
 	ps.Goal = ps.GoalFull
-	if len(ps.Goal) > 220 {
-		ps.Goal = ps.Goal[:220] + "…"
+	if len(ps.Goal) > 160 {
+		ps.Goal = ps.Goal[:160] + "…"
 	}
+	ps.NextAttempt = strings.TrimSpace(strings.Join(nextAttemptLines, " "))
 	return ps, nil
 }
 

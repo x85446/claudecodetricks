@@ -773,6 +773,13 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		backLink = `<a class="back" href="` + html.EscapeString(homeURL) + `">&larr; Dashboard</a>`
 	}
 	header := backLink + `<div class="eyebrow">iterate plan</div><h1>` + html.EscapeString(planName) + `</h1>`
+	if plan.Blocked() && plan.NextAttempt != "" {
+		// The most urgent thing on the page, so it goes first — a plan can
+		// have every team done and still be sitting here waiting on one
+		// thing only a human can do (confirmed live: GitHub Actions billing
+		// on the account, which no agent may touch).
+		header += `<div class="blocked-banner"><div class="blocked-label">Needs you</div><p>` + html.EscapeString(plan.NextAttempt) + `</p></div>`
+	}
 	if plan.GoalFull != "" {
 		header += `<div class="goal"><div class="goal-label">Goal</div><p>` + html.EscapeString(plan.GoalFull) + `</p></div>`
 	}
@@ -1132,6 +1139,9 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .goal{margin:0 0 18px;padding:14px 16px;background:var(--accent-bg);border:1px solid var(--border);border-radius:8px}
 .goal-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:5px}
 .goal p{color:var(--text-dim);font-size:13.5px;margin:0}
+.blocked-banner{margin:0 0 18px;padding:14px 16px;background:var(--danger-b);border:1px solid var(--danger);border-radius:8px}
+.blocked-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);font-weight:700;margin-bottom:5px}
+.blocked-banner p{color:var(--text);font-size:13.5px;margin:0}
 .empty{color:var(--text-faint);font-style:italic}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .stat{background:var(--surface);padding:12px 16px}

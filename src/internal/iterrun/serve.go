@@ -90,12 +90,27 @@ func writeProjectSection(b *strings.Builder, dir, short string, plans []PlanSumm
 	}
 	b.WriteString(`<div class="plans">`)
 	for _, p := range plans {
+		// Order matters: IsCompleted() (team-verified) beats a bare
+		// declared phase, but an honestly-labeled phase beats silently
+		// defaulting to "planned" — confirmed live: five plans declaring
+		// "phase: complete" with zero team rows actually done (never-
+		// executed, likely superseded/archived, not verified-finished)
+		// were showing as "planned" simply because only "executing" was
+		// ever specially recognized; everything else fell through to the
+		// default, indistinguishable from a plan nothing had touched yet.
+		// Blocked always wins last: a plan can be 100% done by its Teams
+		// table and still be sitting here waiting on a human.
 		badge, badgeClass := "planned", "b-planned"
-		if p.Phase == "executing" {
+		switch {
+		case p.Phase == "executing":
 			badge, badgeClass = "executing", "b-executing"
-		}
-		if p.IsCompleted() {
+		case p.IsCompleted():
 			badge, badgeClass = "completed", "b-done"
+		case p.Phase != "" && p.Phase != "planned":
+			badge, badgeClass = p.Phase, "b-archived"
+		}
+		if p.Blocked() {
+			badge, badgeClass = "needs you", "b-blocked"
 		}
 		teamsInfo := ""
 		if p.HasTeams {
@@ -146,6 +161,8 @@ func dashboardHead(title string) string {
   --warn:#b45309; --warn-bg:#fbecd5;
   --queued:#a29b8d; --queued-bg:#f0ece2;
   --accent:#0e7490; --accent-bg:#dff3f6;
+  --danger:#dc2626; --danger-bg:#fbe1e1;
+  --archived:#6d5aa8; --archived-bg:#ece8f7;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0f1215; --surface:#171b1f; --surface-2:#1d2227; --border:#262c31;
@@ -154,6 +171,8 @@ func dashboardHead(title string) string {
   --warn:#f59e0b; --warn-bg:#3a2705;
   --queued:#565d64; --queued-bg:#1d2227;
   --accent:#22d3ee; --accent-bg:#123b42;
+  --danger:#ef4444; --danger-bg:#2c0a0a;
+  --archived:#a78bda; --archived-bg:#241f38;
 }}
 *{box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding:28px 20px 50px;margin:0}
@@ -174,12 +193,14 @@ h2{font-size:13px;color:var(--text-dim);margin:0;font-weight:600;text-transform:
 .plans{display:flex;flex-direction:column;gap:8px}
 .plan-card{display:grid;grid-template-columns:92px 90px 1fr 230px;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:12.5px}
 .plan-card:hover{border-color:var(--accent)}
-.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px;border-radius:4px;text-align:center;font-weight:600}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px;border-radius:4px;text-align:center;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .b-planned{background:var(--queued-bg);color:var(--queued)}
 .b-executing{background:var(--warn-bg);color:var(--warn)}
 .b-done{background:var(--good-bg);color:var(--good)}
-.pname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pgoal{color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.b-blocked{background:var(--danger-bg);color:var(--danger)}
+.b-archived{background:var(--archived-bg);color:var(--archived)}
+.pname{min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pgoal{min-width:0;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pmeta{color:var(--text-faint);text-align:right;font-size:11px;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 </style></head><body><div>
 `
