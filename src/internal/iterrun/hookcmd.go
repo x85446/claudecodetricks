@@ -61,6 +61,7 @@ func HandleHook(phase string, r io.Reader) {
 		Summary:   summary,
 		Plan:      plan,
 		Team:      team,
+		CWD:       in.CWD,
 	}
 
 	if phase == "post" {

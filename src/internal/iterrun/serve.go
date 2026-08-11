@@ -123,7 +123,7 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 	}
 	if events, err := ReadEvents(); err == nil {
 		labels, _ := ReadLabels()
-		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, name))
+		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, name, proj))
 	}
 
 	plan, err := GetPlanSummary(proj, name)

@@ -85,3 +85,77 @@ func TestBuildRowsGapDetection(t *testing.T) {
 		t.Errorf("summary output missing resolved label badger-app:\n%s", out)
 	}
 }
+
+// TestBuildRowsFromHookEventsScopesCoordinatorByProject reproduces the bug
+// reported live: plan codenames (finch, lynx, badger, ...) are drawn from a
+// small shared pool and get reused across unrelated projects. Two different
+// projects independently name a plan "lynx" hours apart; without CWD
+// scoping, project B's freshly-started coordinator inherited project A's
+// long-finished coordinator activity, showing a multi-hour "severe gap"
+// and a bogus multi-hour total elapsed time for a run that had barely
+// started.
+func TestBuildRowsFromHookEventsScopesCoordinatorByProject(t *testing.T) {
+	base := time.Date(2026, 8, 10, 19, 0, 0, 0, time.UTC)
+	mk := func(offsetSec int, hook, agentID, team, cwd, toolUseID string) Event {
+		return Event{
+			TS: base.Add(time.Duration(offsetSec) * time.Second), Hook: hook,
+			AgentID: agentID, Team: team, ToolName: "Bash", ToolUseID: toolUseID,
+			Plan: "lynx", CWD: cwd,
+		}
+	}
+
+	const projectA = "/Users/travis/workspace/x85446/financeSheets/personaldb"
+	const projectB = "/Users/travis/workspace/x85446/newcorder"
+
+	events := []Event{
+		// project A's coordinator: an old, unrelated "lynx" plan, done hours
+		// before project B's "lynx" plan even existed.
+		mk(0, "pre", "", "", projectA, "a1"),
+		mk(2, "post", "", "", projectA, "a1"),
+		mk(20, "pre", "", "", projectA, "a2"),
+		mk(22, "post", "", "", projectA, "a2"),
+
+		// project B's coordinator: the plan actually being viewed, started
+		// hours later — should read as freshly started, not as having a
+		// multi-hour gap inherited from project A.
+		mk(17000, "pre", "", "", projectB, "b1"),
+		mk(17002, "post", "", "", projectB, "b1"),
+
+		// project B's own team member: a legitimate cross-directory dispatch
+		// (teams can and do work outside the plan's own project) — must NOT
+		// be excluded just because its CWD isn't projectB. Its Team comes
+		// pre-resolved (as it would from a real dispatch label), same as
+		// hookcmd.go's resolvePlanTeam already does before writing the event.
+		mk(17000, "pre", "some-agent-id", "team-x", "/some/other/checkout", "t1"),
+		mk(17005, "post", "some-agent-id", "team-x", "/some/other/checkout", "t1"),
+	}
+
+	rows := BuildRowsFromHookEvents(events, nil, "lynx", projectB)
+
+	var coord, teamX *Row
+	for i := range rows {
+		switch rows[i].key {
+		case "":
+			coord = &rows[i]
+		case "team-x":
+			teamX = &rows[i]
+		}
+	}
+	if coord == nil {
+		t.Fatalf("missing coordinator row")
+	}
+	if len(coord.spans) != 1 {
+		t.Fatalf("coordinator spans = %d, want 1 (project A's events must be excluded), got spans: %+v", len(coord.spans), coord.spans)
+	}
+	if !coord.spans[0].start.Equal(base.Add(17000 * time.Second)) {
+		t.Errorf("coordinator span start = %s, want project B's own event at %s (project A leaked in)",
+			coord.spans[0].start, base.Add(17000*time.Second))
+	}
+
+	if teamX == nil {
+		t.Fatalf("missing team-x row — a legitimate cross-directory team dispatch must not be excluded")
+	}
+	if len(teamX.spans) != 1 {
+		t.Fatalf("team-x spans = %d, want 1", len(teamX.spans))
+	}
+}

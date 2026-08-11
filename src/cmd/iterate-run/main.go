@@ -129,7 +129,7 @@ func timelineCmd(args []string) {
 			os.Exit(1)
 		}
 		if eventsErr == nil && labelsErr == nil {
-			rows = iterrun.MergeRows(rows, iterrun.BuildRowsFromHookEvents(events, labels, plan))
+			rows = iterrun.MergeRows(rows, iterrun.BuildRowsFromHookEvents(events, labels, plan, home))
 		}
 	} else {
 		if eventsErr != nil {

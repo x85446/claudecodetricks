@@ -162,13 +162,25 @@ func BuildRows(events []Event, labels map[string]string) []Row {
 // BuildRowsFromFilesystem's rows (MergeRows) under the same key per team.
 // Events without a resolved Plan (labeling hadn't caught up yet, or this
 // call happened outside any plan) are excluded — not every tool call on
-// this machine belongs to the timeline being asked for.
-func BuildRowsFromHookEvents(events []Event, labels map[string]string, plan string) []Row {
+// this machine belongs to the timeline being asked for. projectDir is this
+// plan's own project (BuildRowsFromFilesystem's homeDir) — coordinator
+// events (AgentID "") are additionally required to have run from there,
+// since plan-name codenames are drawn from a small shared pool and DO get
+// reused across unrelated projects; an event with no CWD recorded (written
+// before that field existed) is untrusted rather than guessed, and
+// excluded. Team-member events keep their own identity via AgentID/label
+// and skip this check — a team can legitimately work in an unrelated
+// directory.
+func BuildRowsFromHookEvents(events []Event, labels map[string]string, plan, projectDir string) []Row {
 	filtered := events[:0:0]
 	for _, e := range events {
-		if e.Plan == plan {
-			filtered = append(filtered, e)
+		if e.Plan != plan {
+			continue
 		}
+		if e.AgentID == "" && !samePath(e.CWD, projectDir) {
+			continue
+		}
+		filtered = append(filtered, e)
 	}
 
 	byKey := map[string][]Event{}
@@ -202,6 +214,21 @@ func BuildRowsFromHookEvents(events []Event, labels map[string]string, plan stri
 		rows = append(rows, Row{key: key, label: label, spans: spans, gaps: computeGaps(spans)})
 	}
 	return rows
+}
+
+// samePath reports whether a and b resolve to the same directory. Either
+// side being empty (an event with no recorded CWD, or no project given) is
+// never a match — an unknown location is not the same as "anywhere."
+func samePath(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	aa, errA := filepath.Abs(a)
+	bb, errB := filepath.Abs(b)
+	if errA != nil || errB != nil {
+		return false
+	}
+	return filepath.Clean(aa) == filepath.Clean(bb)
 }
 
 // MergeRows unions two row sets by key (team name, "" for coordinator),

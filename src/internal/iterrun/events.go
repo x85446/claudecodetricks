@@ -34,6 +34,19 @@ type Event struct {
 	// very first events from a freshly dispatched subagent.
 	Plan string `json:"plan,omitempty"`
 	Team string `json:"team,omitempty"`
+
+	// CWD is the hook's own reported working directory at call time. Plan
+	// names are single-word codenames drawn from a small shared pool
+	// (finch, lynx, badger, ...) and DO collide across unrelated projects —
+	// the coordinator's row has no identity beyond "plan name" (its
+	// AgentID is always ""), so without this, a same-named plan in a
+	// different project silently merges its coordinator timeline into
+	// this one's. The coordinator always runs from the plan's own project
+	// (resolvePlanTeam relies on the same invariant), so this is enough to
+	// scope coordinator rows correctly. Team-member events don't need it —
+	// a team can legitimately work in an unrelated directory, and their
+	// identity comes from AgentID/label instead, which is never reused.
+	CWD string `json:"cwd,omitempty"`
 }
 
 // StoreDir is the one global, cwd-independent directory every iterate-run
