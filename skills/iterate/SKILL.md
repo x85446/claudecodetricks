@@ -15,14 +15,14 @@ Plans are **saved, animal-named, and persistent**. Each plan is one file:
 
     ./.claude/iterate/plans/<name>.md        (project-local, relative to cwd)
 
-`<name>` is a random common animal (dog, cat, fox, owl, elk, wren, …). `./.claude/iterate/current` points at the **current** plan. **The plan file** below always means the plan being executed (resolved from `$1`'s name, or `current`, or the sole executing/only plan). Older wording in this doc may say `active.md` — read it as the resolved plan file.
+`<name>` is a common animal (dog, cat, fox, owl, elk, wren, …), assigned via `iterate-run name next` — see /iterate-planner's "Named plans" for why (one machine-wide, alphabetically-ordered registry, so two unrelated projects never both land on the same codename). If `iterate-run` isn't installed, fall back to any common animal not already present in this project's own `plans/` and note that the global registry was unavailable. `./.claude/iterate/current` points at the **current** plan. **The plan file** below always means the plan being executed (resolved from `$1`'s name, or `current`, or the sole executing/only plan). Older wording in this doc may say `active.md` — read it as the resolved plan file.
 
 Each plan has a top-level `phase:` field:
 
 - `phase: planned` — written by `/iterate-planner`, waiting for execution to start.
 - `phase: executing` — execution is in flight (or has been; check `running:` for whether a run is currently live).
 
-**Legacy migration (do silently on first touch):** if `./.claude/iterate/active.md` exists and `plans/` does not, move it to `plans/<name>.md` (assign an animal name, add a `name:` field), write `current`, delete `active.md`. Create `./.claude/iterate/plans/` if it doesn't exist.
+**Legacy migration (do silently on first touch):** if `./.claude/iterate/active.md` exists and `plans/` does not, move it to `plans/<name>.md` (assign a name via `iterate-run name next`, add a `name:` field), write `current`, delete `active.md`. Create `./.claude/iterate/plans/` if it doesn't exist.
 
 ### Entry decisions on `/iterate`
 
@@ -31,7 +31,7 @@ Resolve in this order:
 0. **`$1` is exactly "version"** (or "what version", "iterate version"): run `iterate-run version` and print its output verbatim — real installed binary, not a memory recall, works from any directory. If not found, report "iterate-run isn't installed — run `make install` in claudecodetricks." Then **stop**, no plan involved.
 1. **A plan is already `phase: executing`** (scan `plans/`): resume THAT plan from its "Status / Log", honoring the concurrency lock. This takes precedence over everything below — it's what makes the `/loop` re-fires (which pass no `$1`) continue the live run instead of prompting. If several are somehow executing, pick the one named by `current`, else the most-recently-heartbeated.
 2. **`$1` names an existing plan** (`$1` exactly matches a `plans/<name>.md`, e.g. `/iterate dog`): set `current` = that plan; if `phase: planned` → transition to `phase: executing`, set up the auto-resume loop, begin; if already executing → resume it.
-3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** animal-named plan with `phase: executing`, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
+3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** plan, named via `iterate-run name next`, with `phase: executing`, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
 4. **`$1` empty, exactly one plan exists** with `phase: planned`: transition it to `phase: executing`, set `current`, set up the loop, begin.
 5. **`$1` empty, multiple planned plans exist**: ask the user which one via a **number picker** (AskUserQuestion) — one option per plan, labeled `<name>` with description `started <date> — <goal>`. Then execute the chosen plan (transition to executing, set current, loop, begin). This is the ONLY place `/iterate` asks a question, and it only happens on a human-typed no-arg `/iterate` with no executing plan.
 6. **Neither `$1` nor any plan exists**: report "no plans yet — supply instructions or run /iterate-planner first" and stop. (Reporting is not the same as asking.)
@@ -150,7 +150,7 @@ If neither oracle store exists, skip silently.
 
 ### 2. Write the state file
 
-Write `./.claude/iterate/plans/<name>.md` (assign a fresh random animal name for a direct fresh-task run; keep the existing name when transitioning a planned plan) with this schema:
+Write `./.claude/iterate/plans/<name>.md` (name from `iterate-run name next` for a direct fresh-task run; keep the existing name when transitioning a planned plan) with this schema:
 
 ```markdown
 # Iterate Task — <short title>

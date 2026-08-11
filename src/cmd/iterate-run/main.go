@@ -35,6 +35,8 @@ func main() {
 		serveCmd(os.Args[2:])
 	case "purge":
 		purgeCmd(os.Args[2:])
+	case "name":
+		nameCmd(os.Args[2:])
 	case "version", "--version", "-v":
 		fmt.Printf("iterate-run %s (commit %s, built %s)\n", Version, Commit, BuildTime)
 	default:
@@ -53,7 +55,26 @@ Usage:
   iterate-run timeline [--plan <name>] [--home <dir>] [scan-dir...]
   iterate-run serve [--port N]       (dashboard at http://localhost:N, default 8420)
   iterate-run purge --plan <name> | --all-completed [--yes] [--force]
+  iterate-run name next               (claims the next global, alphabetically-ordered plan codename)
   iterate-run version`)
+}
+
+// nameCmd claims the next plan codename from the global, machine-wide,
+// alphabetically-ordered registry and prints it bare to stdout — the
+// caller (/iterate-planner, /iterate) captures it directly as the new
+// plan's name. Registering the codename IS the point of this call: run it
+// once per new plan, not speculatively.
+func nameCmd(args []string) {
+	if len(args) != 1 || args[0] != "next" {
+		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next")
+		os.Exit(2)
+	}
+	name, err := iterrun.NextPlanName()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(name)
 }
 
 // registerCWD best-effort-registers the current directory as a known

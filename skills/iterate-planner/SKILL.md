@@ -26,7 +26,7 @@ Plans are **saved, named, and persistent**. Each plan is one file:
 
     ./.claude/iterate/plans/<name>.md
 
-`<name>` is a random common animal (dog, cat, fox, owl, elk, wren, mole, hare, lynx, crow, seal, toad, newt, ibis, …) assigned automatically when a plan is first created — one word, lowercase, not already present in `plans/`. Pick one at random for variety. The plan's `Started:` field records the date it began (keep it forever; never reset on refinement).
+`<name>` is a common animal (dog, cat, fox, owl, elk, wren, mole, hare, lynx, crow, seal, toad, newt, ibis, …) assigned automatically when a plan is first created — one word, lowercase. **Get it by running `iterate-run name next`** (a real installed binary — see "iterate-run" below), never by picking one yourself: it draws from one machine-wide registry at `~/.claude/iterate-run/plan-names.json`, walking the alphabet in order (a, b, c, … z, a, b, …) and never reissuing a name already used by *any* project on the machine — plain "not already present in this project's own `plans/`" let two unrelated projects both land on "wren" independently, which silently corrupted both their dashboards (same codename, different runs, merged as one). If `iterate-run` isn't installed, fall back to picking any common animal not already present in this project's `plans/` and tell the user the global registry is unavailable so the name isn't guaranteed unique machine-wide. The plan's `Started:` field records the date it began (keep it forever; never reset on refinement).
 
 A single pointer file `./.claude/iterate/current` holds the name of the **current** plan — the one you add to by default. Resolve the current plan like this:
 
@@ -34,7 +34,7 @@ A single pointer file `./.claude/iterate/current` holds the name of the **curren
 - `current` missing/stale but exactly one plan exists in `plans/` → that plan is current (write its name into `current`).
 - `current` missing and multiple plans exist → there is no current plan until one is named or chosen.
 
-**Legacy migration (do silently on first touch):** if `./.claude/iterate/active.md` exists and `plans/` does not, move it to `plans/<name>.md` (assign an animal name, add a `name:` field near the top), write `current`, and delete `active.md`. Create `./.claude/iterate/plans/` if it doesn't exist.
+**Legacy migration (do silently on first touch):** if `./.claude/iterate/active.md` exists and `plans/` does not, move it to `plans/<name>.md` (assign a name via `iterate-run name next`, add a `name:` field near the top), write `current`, and delete `active.md`. Create `./.claude/iterate/plans/` if it doesn't exist.
 
 ## Teams (optional grouping for parallel execution)
 
@@ -70,7 +70,7 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 
 **Table ownership is split, not exclusive:** `/iterate-planner` owns the table's *structure* — which teams exist, their Steps/Focus/Depends on/Agent, adding/renaming/removing teams. It always writes fresh rows with `Status: pending`. `/iterate` owns only the **Status** cell per row once execution starts — it updates that one value as teams progress and never adds/removes a team, never changes Steps/Focus/Depends on/Agent. Neither side ever touches the other's part of the table.
 
-**`iterate-run`** is the real installed CLI binary (`~/go/bin/iterate-run`, built from `claudecodetricks`) that `/iterate` uses at execution time to wrap long-running commands with real heartbeat/progress tracking instead of guessed timers — see `/iterate`'s "Team dispatch" and "Know the baseline, don't guess it" for how it's used. `/iterate-planner` doesn't invoke it directly, but references its version (see op 0 above) and can point to `iterate-run status` when a plan mentions wanting live visibility into a run.
+**`iterate-run`** is the real installed CLI binary (`~/go/bin/iterate-run`, built from `claudecodetricks`) that `/iterate` uses at execution time to wrap long-running commands with real heartbeat/progress tracking instead of guessed timers — see `/iterate`'s "Team dispatch" and "Know the baseline, don't guess it" for how it's used. `/iterate-planner` invokes it directly for one thing — `iterate-run name next`, to assign every new plan's codename (see "Named plans" above) — and otherwise references its version (see op 0 above) and can point to `iterate-run status` when a plan mentions wanting live visibility into a run.
 
 ### Creating vs. adding — bias hard toward the current plan
 
@@ -101,11 +101,11 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 5. **teamify** — `$1` matches a teamify trigger phrase ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", optionally "teamify `<name>`"): resolve the target plan (named, else current), run the Teamify procedure (see "Teamify procedure" below) over its full Steps list, write the `## Teams` table and set `teamed: true`, re-print the plan including the Teams table. Then **stop**. This is the only operation that does a full from-scratch reclustering — never run it implicitly as part of any other op.
 
-6. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a fresh animal name, set it current, write and print it (proceed through the Steps below).
+6. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below).
 
 7. **default (the common case)** — anything else describing work:
    - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file). If the current plan has `teamed: true`, also run the cheap single-step Team classification (see "Auto-classify on add" below) on each newly added step — this is O(1) per step, never a full re-teamify.
-   - no plans exist → create the first plan (assign an animal name, set current).
+   - no plans exist → create the first plan (name from `iterate-run name next`, set current).
 
 For ops 3–7, run the oracle merge (Step 4) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations.
 
@@ -153,7 +153,7 @@ Resolve the target plan per the operation router (usually the current plan, or a
 
 - If the target plan exists with `phase: executing`: **STOP**. Report "that plan is executing; let it finish or use `/iterate` to resume it before re-planning." Do not modify the file.
 - If the target plan exists with `phase: planned`: treat as a **refinement** — preserve `name`, `Started`, `CWD`, `Goal` (unless the user is changing it), update the Plan/Constraints sections AND re-apply the oracle merge.
-- If creating a new plan: assign a fresh animal name, write fresh, set `current` to it.
+- If creating a new plan: get a name from `iterate-run name next`, write fresh, set `current` to it.
 
 ### 4. Merge oracle into the plan (buzzword-scoped lookup)
 
