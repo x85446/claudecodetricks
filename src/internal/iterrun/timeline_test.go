@@ -243,3 +243,51 @@ func TestBuildRowsFromFilesystemExcludesStaleRegistryEntries(t *testing.T) {
 		t.Fatalf("repo-ci row missing or wrong span count, got %+v", repoCI)
 	}
 }
+
+// TestOrderTeamRowsNestsByDependency reproduces the reported bug: with
+// plain start-time sorting, "windows-port" (which depends on "winvm") was
+// rendering sandwiched between "gui-macos2" and "gui-windows" — two teams
+// it has no relationship to — purely because of when its own activity
+// happened to start. This asserts the real fix: a dependent team appears
+// immediately after its primary dependency, and unrelated/orphan rows
+// (no Depends-on match — e.g. a dispatch name not in the Teams table)
+// stay at the root level instead of interleaving with someone else's chain.
+func TestOrderTeamRowsNestsByDependency(t *testing.T) {
+	base := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
+	mkRow := func(key string, startOffsetMin int, dependsOn ...string) Row {
+		return Row{
+			key: key, label: key, dependsOn: dependsOn,
+			spans: []span{{start: base.Add(time.Duration(startOffsetMin) * time.Minute), end: base.Add(time.Duration(startOffsetMin+1) * time.Minute)}},
+		}
+	}
+
+	rows := []Row{
+		mkRow("gui-macos2", 50),               // orphan — no Teams-table entry, no dependsOn
+		mkRow("windows-port", 10, "winvm"),    // depends on winvm
+		mkRow("winvm", 0),                     // root
+		mkRow("gui-windows", 60),              // orphan
+		mkRow("gui", 40, "core-abi", "winvm"), // depends on two — primary is the FIRST, core-abi
+		mkRow("core-abi", 5),                  // root, starts after winvm
+	}
+
+	ordered := orderTeamRows(rows)
+	pos := map[string]int{}
+	for i, r := range ordered {
+		pos[r.key] = i
+	}
+
+	if pos["windows-port"] != pos["winvm"]+1 {
+		t.Errorf("windows-port at %d, want immediately after winvm (at %d)", pos["windows-port"], pos["winvm"])
+	}
+	if pos["gui"] != pos["core-abi"]+1 {
+		t.Errorf("gui at %d, want immediately after its primary dependency core-abi (at %d), not winvm", pos["gui"], pos["core-abi"])
+	}
+	// winvm started before core-abi, so as siblings at the root, winvm's
+	// whole chain (winvm, windows-port) should come first.
+	if pos["winvm"] > pos["core-abi"] {
+		t.Errorf("winvm (started first) should sort before core-abi at the root level: winvm=%d core-abi=%d", pos["winvm"], pos["core-abi"])
+	}
+	if len(ordered) != len(rows) {
+		t.Fatalf("orderTeamRows dropped rows: got %d, want %d", len(ordered), len(rows))
+	}
+}

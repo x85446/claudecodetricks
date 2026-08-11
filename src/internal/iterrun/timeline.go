@@ -96,6 +96,76 @@ func sortRowsForDisplay(rows []Row) {
 	})
 }
 
+// orderTeamRows arranges rows into a genuine parent/child hierarchy for
+// display: a team appears immediately after its primary dependency (the
+// FIRST name in its own Depends-on list — a team can depend on more than
+// one other team, but display nesting needs exactly one parent, so the
+// first-listed dependency wins), recursively, so a real dependency chain
+// reads as one visual group instead of landing wherever its own activity
+// happened to start chronologically (confirmed live: windows-port, which
+// depends on winvm, was rendering sandwiched between gui-macos2 and
+// gui-windows — two teams it has no relationship to at all — purely
+// because sortRowsForDisplay only ever looked at start time). A team
+// whose named dependency isn't itself a row here (or that has no
+// dependency at all — includes any dispatch name that doesn't match a
+// Teams-table row, e.g. a split-off subagent) is a root. Sibling order at
+// every level is sortRowsForDisplay's existing rule — active-first by
+// start time, then queued alphabetically — just scoped to that level's
+// siblings instead of the whole flat list.
+func orderTeamRows(rows []Row) []Row {
+	byKey := map[string]*Row{}
+	for i := range rows {
+		byKey[rows[i].key] = &rows[i]
+	}
+
+	children := map[string][]string{}
+	var roots []string
+	for _, r := range rows {
+		parent := ""
+		if len(r.dependsOn) > 0 {
+			if _, ok := byKey[r.dependsOn[0]]; ok {
+				parent = r.dependsOn[0]
+			}
+		}
+		if parent == "" {
+			roots = append(roots, r.key)
+		} else {
+			children[parent] = append(children[parent], r.key)
+		}
+	}
+
+	siblingOrder := func(keys []string) []string {
+		sub := make([]Row, len(keys))
+		for i, k := range keys {
+			sub[i] = *byKey[k]
+		}
+		sortRowsForDisplay(sub)
+		ordered := make([]string, len(sub))
+		for i, r := range sub {
+			ordered[i] = r.key
+		}
+		return ordered
+	}
+
+	var out []Row
+	seen := map[string]bool{}
+	var walk func(key string)
+	walk = func(key string) {
+		if seen[key] {
+			return // dependency cycle guard — shouldn't happen, never hang on it
+		}
+		seen[key] = true
+		out = append(out, *byKey[key])
+		for _, c := range siblingOrder(children[key]) {
+			walk(c)
+		}
+	}
+	for _, k := range siblingOrder(roots) {
+		walk(k)
+	}
+	return out
+}
+
 // computeGaps finds the idle stretches between consecutive (already sorted)
 // spans that clear the NotableGap threshold — shared by every row source,
 // hook-derived or filesystem-derived alike.
@@ -750,13 +820,24 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 
 	if coordRow != nil {
 		b.WriteString(`<h2>Coordinator</h2><div class="gantt">`)
-		writeGanttRow(&b, *coordRow, maxT, pct)
+		writeGanttRow(&b, *coordRow, maxT, pct, false)
 		b.WriteString(`</div>`)
 	}
 
+	// The divider line goes ONLY between separate root-level groups, not
+	// between a parent and its own nested children — a dependency chain
+	// (e.g. cli-frame -> selection -> reports) is one visual unit now that
+	// orderTeamRows nests it together, so a line splitting it back apart
+	// would undo the point of the nesting.
 	b.WriteString(`<h2>Activity by team</h2><div class="gantt">`)
+	firstRoot := true
 	for _, r := range teamRows {
-		writeGanttRow(&b, r, maxT, pct)
+		divider := false
+		if r.depth == 0 {
+			divider = !firstRoot
+			firstRoot = false
+		}
+		writeGanttRow(&b, r, maxT, pct, divider)
 	}
 	fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
 		minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
@@ -786,8 +867,12 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 // chain) reads as two visual hierarchies instead of one flat list — the
 // activity track with its bars and severe-gap markers, and, if the plan's
 // Teams table gave this team any Steps/Validation detail, an expandable
-// "Na./Nb." panel underneath (native <details>, no JS).
-func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time) float64) {
+// "Na./Nb." panel underneath (native <details>, no JS). divider draws the
+// light top rule the caller uses to separate one root-level group (a
+// dependency chain, nested together) from the next — never set within a
+// group, only between them; the coordinator's own single-row block always
+// passes false, having no siblings to separate from.
+func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time) float64, divider bool) {
 	pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
 	var busy time.Duration
 	for _, s := range r.spans {
@@ -795,10 +880,14 @@ func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time
 	}
 
 	hasSteps := len(r.steps) > 0
-	rowOpen, rowClose := `<div class="row">`, `</div>`
+	dividerClass := ""
+	if divider {
+		dividerClass = " row-divider"
+	}
+	rowOpen, rowClose := `<div class="row`+dividerClass+`">`, `</div>`
 	teamLabel := html.EscapeString(r.label)
 	if hasSteps {
-		rowOpen, rowClose = `<details class="row-d"><summary class="row">`, `</summary>`
+		rowOpen, rowClose = `<details class="row-d`+dividerClass+`"><summary class="row">`, `</summary>`
 		teamLabel += `<span class="chev">&rsaquo;</span>`
 	}
 
@@ -992,9 +1081,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .s-bad .n{color:var(--danger)}
 .gantt{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:6px}
 .row{display:flex;align-items:center;gap:14px;padding:9px 10px}
-.row-d,.row-d>.row{border-top:1px solid var(--border)}
-.row-d:first-child,.row-d:first-child>.row{border-top:none}
-.row+.row{border-top:1px solid var(--border)}
+.row-divider,.row-divider>.row{border-top:1px solid var(--border)}
 summary.row{cursor:pointer;list-style:none}
 summary.row::-webkit-details-marker{display:none}
 summary.row:hover{background:var(--surface-2)}
