@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Claude Code marketplace providing session hooks for voice announcements, AI-powered logging, and automatic git commits. Written in Go, this repository implements three integrated binaries that enhance Claude Code workflow through the hooks system.
 
+## Skills
+
+This repo is also the canonical backup/source for globally-installed Claude Code skills (deployed via `skills/skillinstall.sh`). Two work together as the iterate stack:
+
+- **`/iterate-planner`** (`skills/iterate-planner/`) — formalizes a task into a saved, oracle-aware plan (paired Step/Validation, optionally teamed for parallel execution). Plans, never executes.
+- **`/iterate`** (`skills/iterate/`) — executes a saved plan autonomously to completion, looping via `/loop` until every validation passes or it hits a genuine blocker. Dispatches one subagent per team on teamed plans.
+
+Both are user-invoked only (`disable-model-invocation: true`) — real side effects (file writes, autonomous execution) mean explicit invocation is deliberate, not natural-language auto-trigger. Plan state lives at `./.claude/iterate/plans/<name>.md` in whichever project they're run from; live status/dashboard for that state is `iterate-run` (`src/cmd/iterate-run/`, this repo's own Go binary — `iterate-run serve` for the web dashboard, `iterate-run status`/`timeline` for the CLI).
+
 ## Build & Development Commands
 
 ### Core Commands

@@ -2,7 +2,6 @@
 name: iterate-planner
 description: The planning half of the iterate stack. Formalizes a task into structured pair-format (1a task / 1b validation) BEFORE autonomous execution, and consults the project oracle (./.claude/data/oracle.md) to bake known checklists, testing requirements, gotchas, deployment rituals, and naming conventions into the plan (a no-op when no oracle exists). Triggers on "/iterate-planner", "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle", and on managing saved plans ("list plans", "display our plans", "add to <name>", "delete <name>", "from <name> remove <x>"). Also triggers on teamify requests ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams") which group the current plan's steps into named teams for parallel execution at /iterate time. Plans are saved, animal-named, and persistent under ./.claude/iterate/plans/. The user reviews, optionally refines in natural conversation, then runs /iterate (or /iterate <name>) to execute.
 argument-hint: <optional context, e.g. "restate the plan from above" or "plan: 1. do X, 2. validate Y">
-disable-model-invocation: true
 ---
 
 # /iterate-planner — Build the plan (oracle-aware), don't execute
@@ -367,108 +366,6 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 19. **Rapid-fire streaks get a one-line reply, not a full reprint.** See "Rapid-fire terse mode" above — this exists because the user queues several adds in a row without reading each one; a full plan dump on every single one is slow and clutters the conversation. Always show the full plan on the first invocation of a streak and whenever there's genuine doubt about whether the streak ended.
 20. **No fixed team count or taxonomy — split on independent context needs, not topic labels.** Two steps stay in the same team whenever they need the same files/system/domain knowledge, even if they sound topically different — splitting those gains nothing and costs two agents paying to load the same context. Two steps only go in different teams when their context needs are genuinely independent — that's the only case parallel dispatch actually saves work. Never default to a binary split ("UI vs other", "code vs everything else") and never bias toward the fewest possible groups just because fewer is simpler to write; also never bias toward the most possible groups if steps genuinely share context. Up to roughly 10 teams, discovered from actual context boundaries in the plan, not chosen from habit.
 
-## Example
+## Examples
 
-User in conversation about adding a new "metrics" service to mgmt.gravhl.com. Oracle has:
-
-```
-## Post-action checklists
-- When adding a new service to mgmt.gravhl.com: update the GUI link tree.
-
-## Testing requirements
-- All UI changes require interactive browser testing.
-
-## Deployment rituals
-- Database migrations run BEFORE the new app version starts.
-```
-
-User types:
-
-```
-/iterate-planner restate the plan
-```
-
-You print:
-
-```
-plan written to owl
-
-**Plan ready** — owl — ./.claude/iterate/plans/owl.md (phase: planned, oracle-aware)
-
-**Goal:** Deploy a new "metrics" service behind mgmt.gravhl.com with link-tree integration.
-
-1a. Run the metrics-service schema migration on the prod DB.
-1b. `psql -c "\dt metrics.*"` shows the new tables.
-
-2a. Build and deploy the metrics-service container.
-2b. `curl https://metrics.gravhl.com/health` returns 200 AND the service appears in the container orchestrator's running list.
-
-3a. Update the GUI link tree at mgmt.gravhl.com to include "metrics" → https://metrics.gravhl.com.
-3b. Load mgmt.gravhl.com in a browser, click the metrics link, confirm it routes to the live metrics service AND the page renders without console errors. (Oracle: UI changes require interactive browser testing.)
-
-**Constraints:**
-- (none from user)
-
-**Oracle rules applied:**
-- Deployment ritual: "Database migrations run BEFORE new app version" → ordered as Step 1.
-- Post-action: "Adding a service to mgmt.gravhl.com → update link tree" → added as Step 3.
-- Testing: "UI changes require interactive browser testing" → strengthened validation 3b.
-
-Want changes, or type `/iterate` to execute?
-```
-
-User responds: "drop step 1; the migration was already done last week."
-
-You delete step 1, renumber, re-run oracle merge (no new scope), re-print (`plan amended owl`). Wait for `/iterate` or next refinement.
-
-## Example — teamify + rapid-fire adds
-
-Plan `owl` (from above) now has 3 steps: 1a migration (already dropped in this thread), 2a build/deploy metrics-service, 3a update GUI link tree. User types:
-
-```
-/iterate-planner team this
-```
-
-You run the Teamify procedure: step 1 (deploy) and step 3 (link tree) are both "ship the service", but step 3 depends on step 2 existing first and is a distinct UI/docs concern — two teams. Write and print:
-
-```
-plan amended owl
-
-**Teams** (run in parallel at /iterate time where independent):
-| Team | Steps | Focus | Depends on | Agent | Status |
-|---|---|---|---|---|---|
-| deploy | 2 | Build and deploy the metrics-service container | — | backend-expert | pending |
-| link-tree | 3 | Wire the new service into the mgmt.gravhl.com GUI link tree | deploy | documentation-expert | pending |
-
-Grouped into 2 teams — link-tree depends on deploy finishing first, so they run sequentially, not in parallel, at /iterate time.
-
-Want changes, or type `/iterate` to execute?
-```
-
-Later, the user fires off three quick adds without waiting between them:
-
-```
-/iterate-planner add: run a smoke test hitting the metrics endpoint after deploy
-```
-```
-/iterate-planner add: update the on-call runbook with the new service's alert thresholds
-```
-```
-/iterate-planner add: notify #platform-eng in slack once it's live
-```
-
-First call: previous turn wasn't `/iterate-planner` → full reprint. New step 4 ("smoke test") clearly matches `deploy`'s focus → auto-classified into `deploy`'s Steps (now `2,4`), no other table changes, no full re-teamify.
-
-Second call: previous turn WAS an `/iterate-planner` add targeting `owl` → terse mode. New step 5 ("runbook") matches `link-tree`'s focus (docs/GUI-adjacent) → classified into `link-tree` (now `3,5`). Output is exactly:
-
-```
-+ owl step 5 added (team: link-tree)
-```
-
-Third call: same streak continues → terse mode again. New step 6 ("slack notify") doesn't clearly fit either team's Focus → left unassigned. Output:
-
-```
-+ owl step 6 added
-```
-
-The user's next message is "ok show me the plan" — full reprint, showing all 6 steps, both teams, and step 6 sitting unassigned (the `/iterate` coordinator will run it directly).
+Two full worked examples (a plain restate-the-plan run with oracle merge, and a teamify + rapid-fire-adds streak) live in [examples.md](examples.md) — load that file when you need to see the exact output shape end to end, e.g. building a similar plan-writing skill from this one as a template, or checking an edge case in the operation router / auto-classify / rapid-fire terse-mode logic against a concrete run.

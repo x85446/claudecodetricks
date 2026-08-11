@@ -2,7 +2,6 @@
 name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: <paragraph describing the work to do AND how to validate success>
-disable-model-invocation: true
 ---
 
 # /iterate — Run a task to completion without interrupting the user
@@ -22,7 +21,7 @@ Each plan has a top-level `phase:` field:
 - `phase: planned` — written by `/iterate-planner`, waiting for execution to start.
 - `phase: executing` — execution is in flight (or has been; check `running:` for whether a run is currently live).
 
-**Legacy migration (do silently on first touch):** if `./.claude/iterate/active.md` exists and `plans/` does not, move it to `plans/<name>.md` (assign a name via `iterate-run name next`, add a `name:` field), write `current`, delete `active.md`. Create `./.claude/iterate/plans/` if it doesn't exist.
+**Legacy migration:** see /iterate-planner's "Named plans" section for the one-time `active.md` → `plans/<name>.md` migration procedure — identical here, do it silently on first touch rather than maintaining two copies of the same steps.
 
 ### Entry decisions on `/iterate`
 
@@ -251,10 +250,13 @@ If any check fails:
 - Report a 3-5 line summary: goal, what was done, validation results, time taken. On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
 - **Suggest `/oracle harvest`** to the user — one line at end of report: "If anything in this run is worth remembering for next time, run `/oracle harvest`." Don't auto-invoke; oracle harvesting is opt-in.
 
-**On stuck (5-cycle cap hit AND every other outcome also stuck — genuinely no forward motion possible):**
-- Set `running: false`. Update `active.md`: mark which steps completed, which validation checks pass, which fail and why. Save a "Next attempt" hint at the top.
+**On stuck (5-cycle cap hit AND every other outcome also stuck — genuinely no forward motion possible), OR every validation is met except one clause that only a human can clear** (billing, an external approval, physical/credential access no agent has — a wall, not a failing check):
+- Set `running: false`. Update `active.md`: mark which steps completed, which validation checks pass, which fail and why.
+- Write the "Next attempt" hint in the ONE standardized shape the dashboard tool actually parses — this was previously freeform prose per-run, which the dashboard couldn't recognize at all (it just kept reading as plain `executing` no matter how done the plan actually was):
+  - At the very top of the file, above the frontmatter, a blockquote banner: `> **Next attempt (one operator action):** <what's blocking, one or two sentences> <the exact command(s) to run once it's cleared>`.
+  - In the frontmatter, `status: blocked-on-operator: <one-line reason>` — that exact `blocked-on-operator` prefix is the literal string the dashboard matches on; don't paraphrase it into "waiting on user" or similar. This is IN ADDITION to `phase:`, not a replacement — leave `phase: executing` as-is.
 - Invoke `/loop` (no args) to cancel the loop. (Without this, /loop would fire forever and re-hit the same giveup.)
-- Stop. Report ONE blocker reason — the specific check that failed 5 times AND why no other outcome could absorb attention — plus what specific operator action would unblock. **Do NOT write a menu of "things the user could do next." Do NOT list "(a) ... (b) ..." options. Do NOT frame remaining work as choices.** One blocker, one ask, done. On a teamed plan where multiple teams are blocked, aggregate: report the done/blocked status of every team in one line each, then the single most-actionable next operator step (usually whichever blocker, once fixed, unblocks the most dependent teams).
+- Stop. Report ONE blocker reason — the specific check that failed 5 times (or the specific operator-only clause) AND why no other outcome could absorb attention — plus what specific operator action would unblock. **Do NOT write a menu of "things the user could do next." Do NOT list "(a) ... (b) ..." options. Do NOT frame remaining work as choices.** One blocker, one ask, done. On a teamed plan where multiple teams are blocked, aggregate: report the done/blocked status of every team in one line each, then the single most-actionable next operator step (usually whichever blocker, once fixed, unblocks the most dependent teams).
 - Do **not** archive — leave `active.md` in place so the user can read what happened and re-invoke fresh after fixing the blocker.
 
 Acceptable stuck-report shape:
