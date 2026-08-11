@@ -162,6 +162,40 @@ func TestBuildRowsFromHookEventsScopesCoordinatorByProject(t *testing.T) {
 	}
 }
 
+// TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag reproduces the
+// bug found live: PreToolUse reliably gets cwd from Claude Code, so
+// resolvePlanTeam reliably tags the pre event with Plan/Team — but a
+// PostToolUse hook payload often doesn't carry cwd at all, so its Plan
+// comes back empty and never gets written. The OLD code filtered pre AND
+// post independently by Plan before ever pairing them, so a post missing
+// that tag got dropped before pairing — its perfectly real, already-
+// completed pre looked permanently open forever. The fix pairs by
+// tool_use_id first and classifies the span using only the pre's tag.
+func TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag(t *testing.T) {
+	base := time.Date(2026, 8, 11, 12, 0, 0, 0, time.UTC)
+	const proj = "/Users/travis/workspace/x85446/financeSheets/personaldb"
+
+	events := []Event{
+		// A coordinator call whose post never got a Plan/CWD tag at all —
+		// this is the exact real-world shape found live.
+		{TS: base, Hook: "pre", ToolName: "Bash", ToolUseID: "toolu_1", Plan: "badger", CWD: proj},
+		{TS: base.Add(5 * time.Second), Hook: "post", ToolName: "Bash", ToolUseID: "toolu_1"},
+
+		// A second call whose post DOES carry the tag — must still work
+		// the same way as before (no regression on the common case).
+		{TS: base.Add(10 * time.Second), Hook: "pre", ToolName: "Bash", ToolUseID: "toolu_2", Plan: "badger", CWD: proj},
+		{TS: base.Add(15 * time.Second), Hook: "post", ToolName: "Bash", ToolUseID: "toolu_2", Plan: "badger", CWD: proj},
+	}
+
+	rows := BuildRowsFromHookEvents(events, nil, "badger", proj, time.Time{})
+	if len(rows) != 1 {
+		t.Fatalf("rows = %d, want 1 (coordinator)", len(rows))
+	}
+	if len(rows[0].spans) != 2 {
+		t.Fatalf("coordinator spans = %d, want 2 — the post missing its Plan tag must still pair with its pre", len(rows[0].spans))
+	}
+}
+
 func TestParsePlanStarted(t *testing.T) {
 	cases := []struct {
 		in      string

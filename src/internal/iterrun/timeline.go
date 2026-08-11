@@ -247,39 +247,46 @@ func BuildRows(events []Event, labels map[string]string) []Row {
 // finished plan's name picked up again months later for unrelated work),
 // and CWD alone can't tell those two runs apart since they share a project.
 func BuildRowsFromHookEvents(events []Event, labels map[string]string, plan, projectDir string, planStarted time.Time) []Row {
-	filtered := events[:0:0]
+	// Pair pre/post by tool_use_id FIRST, globally, before any plan
+	// filtering — then classify the resulting span using ONLY the pre
+	// event's own Plan/Team/CWD, never the post's. PreToolUse reliably
+	// gets cwd from Claude Code, so resolvePlanTeam reliably tags it; a
+	// PostToolUse hook payload often doesn't carry cwd at all (confirmed
+	// live: 26 of 274 posts for one plan's coordinator alone came back
+	// with no plan tag), so filtering pre AND post independently by plan
+	// before pairing silently dropped real completed calls whose post
+	// lost its tag — on the dashboard they looked permanently open,
+	// which is a false "still stuck" signal, not a real one.
+	preByTID := map[string]Event{}
 	for _, e := range events {
-		if e.Plan != plan {
-			continue
+		if e.Hook == "pre" {
+			preByTID[e.ToolUseID] = e
 		}
-		if e.AgentID == "" && !samePath(e.CWD, projectDir) {
-			continue
-		}
-		if !planStarted.IsZero() && e.TS.Before(planStarted) {
-			continue
-		}
-		filtered = append(filtered, e)
 	}
 
-	byKey := map[string][]Event{}
-	for _, e := range filtered {
-		byKey[e.Team] = append(byKey[e.Team], e)
+	byKey := map[string][]span{}
+	for _, e := range events {
+		if e.Hook != "post" {
+			continue
+		}
+		p, ok := preByTID[e.ToolUseID]
+		if !ok {
+			continue // no matching pre recorded at all — nothing to pair
+		}
+		if p.Plan != plan {
+			continue
+		}
+		if p.AgentID == "" && !samePath(p.CWD, projectDir) {
+			continue
+		}
+		if !planStarted.IsZero() && p.TS.Before(planStarted) {
+			continue
+		}
+		byKey[p.Team] = append(byKey[p.Team], span{start: p.TS, end: e.TS, tool: e.ToolName, summary: e.Summary})
 	}
 
 	var rows []Row
-	for key, evs := range byKey {
-		pre := map[string]Event{}
-		var spans []span
-		for _, e := range evs {
-			if e.Hook == "pre" {
-				pre[e.ToolUseID] = e
-				continue
-			}
-			if p, ok := pre[e.ToolUseID]; ok {
-				spans = append(spans, span{start: p.TS, end: e.TS, tool: e.ToolName, summary: e.Summary})
-				delete(pre, e.ToolUseID)
-			}
-		}
+	for key, spans := range byKey {
 		sort.Slice(spans, func(i, j int) bool { return spans[i].start.Before(spans[j].start) })
 
 		label := key
