@@ -110,6 +110,8 @@ func timelineCmd(args []string) {
 	events, eventsErr := iterrun.ReadEvents()
 	labels, labelsErr := iterrun.ReadLabels()
 
+	planSummary := iterrun.PlanSummary{Name: plan}
+
 	var rows []iterrun.Row
 	if plan != "" {
 		// Filesystem mode: build the graph from team logs + iterate-run
@@ -123,13 +125,18 @@ func timelineCmd(args []string) {
 		} else {
 			iterrun.RegisterProject(home)
 		}
+		if ps, err := iterrun.GetPlanSummary(home, plan); err == nil {
+			planSummary = ps
+		}
+		planStarted, _ := planSummary.StartedAt()
+
 		rows, err = iterrun.BuildRowsFromFilesystem(plan, home, scanDirs)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
 			os.Exit(1)
 		}
 		if eventsErr == nil && labelsErr == nil {
-			rows = iterrun.MergeRows(rows, iterrun.BuildRowsFromHookEvents(events, labels, plan, home))
+			rows = iterrun.MergeRows(rows, iterrun.BuildRowsFromHookEvents(events, labels, plan, home, planStarted))
 		}
 	} else {
 		if eventsErr != nil {
@@ -145,12 +152,6 @@ func timelineCmd(args []string) {
 
 	iterrun.PrintTimelineSummary(os.Stdout, rows)
 
-	planSummary := iterrun.PlanSummary{Name: plan}
-	if plan != "" {
-		if ps, err := iterrun.GetPlanSummary(home, plan); err == nil {
-			planSummary = ps
-		}
-	}
 	path, err := iterrun.WriteTimelineHTML(cwd, rows, planSummary)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "iterate-run: could not write HTML timeline: %v\n", err)

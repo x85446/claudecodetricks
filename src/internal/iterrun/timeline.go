@@ -170,14 +170,21 @@ func BuildRows(events []Event, labels map[string]string) []Row {
 // before that field existed) is untrusted rather than guessed, and
 // excluded. Team-member events keep their own identity via AgentID/label
 // and skip this check — a team can legitimately work in an unrelated
-// directory.
-func BuildRowsFromHookEvents(events []Event, labels map[string]string, plan, projectDir string) []Row {
+// directory. planStarted (this plan's own declared Started:, zero if
+// unknown) additionally excludes any event older than that — the same
+// codename pool gets reused within a single project over time too (a
+// finished plan's name picked up again months later for unrelated work),
+// and CWD alone can't tell those two runs apart since they share a project.
+func BuildRowsFromHookEvents(events []Event, labels map[string]string, plan, projectDir string, planStarted time.Time) []Row {
 	filtered := events[:0:0]
 	for _, e := range events {
 		if e.Plan != plan {
 			continue
 		}
 		if e.AgentID == "" && !samePath(e.CWD, projectDir) {
+			continue
+		}
+		if !planStarted.IsZero() && e.TS.Before(planStarted) {
 			continue
 		}
 		filtered = append(filtered, e)
@@ -344,6 +351,13 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 		return r
 	}
 
+	// Read the plan file once, up front — besides Teams/Steps/Validation
+	// detail, this is also where this plan instance's own declared
+	// Started: lives, needed below to keep a registry entry left over from
+	// an earlier, unrelated run that reused this same codename from
+	// silently merging into this run's picture.
+	teams, steps, validations, planStarted := readPlanTeamsAndSteps(homeDir, plan)
+
 	teamsDir := filepath.Join(homeDir, ".claude", "iterate", "plans", plan+".teams")
 	logFiles, _ := filepath.Glob(filepath.Join(teamsDir, "*.log.md"))
 	for _, lf := range logFiles {
@@ -388,6 +402,9 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 			if e.Plan != plan {
 				continue
 			}
+			if !planStarted.IsZero() && e.Started.Before(planStarted) {
+				continue // a stale registry entry from an earlier, unrelated run that reused this same plan codename
+			}
 			end := time.Now()
 			if e.Finished != nil {
 				end = *e.Finished
@@ -400,12 +417,11 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 	}
 
 	// Enrich with each team's status and Steps/Validation detail from the
-	// plan's own Teams table, and pick up any team that hasn't started at
-	// all yet — no log file, no registry entry, so byTeam wouldn't
-	// otherwise know it exists. A queued team being invisible is exactly
-	// the wrong failure mode for a view meant to show the whole picture,
-	// not just the parts that happened.
-	teams, steps, validations := readPlanTeamsAndSteps(homeDir, plan)
+	// plan's own Teams table (already read above), and pick up any team
+	// that hasn't started at all yet — no log file, no registry entry, so
+	// byTeam wouldn't otherwise know it exists. A queued team being
+	// invisible is exactly the wrong failure mode for a view meant to show
+	// the whole picture, not just the parts that happened.
 	depths := teamDepths(teams)
 	for team, meta := range teams {
 		r := get(team)
@@ -445,20 +461,26 @@ var reNumberedItem = regexp.MustCompile(`^(\d+)\.\s+(.*)$`)
 
 // readPlanTeamsAndSteps reads the plan file once and returns everything
 // the dashboard needs from it beyond raw activity: each team's status and
-// step-number list from the Teams table, plus the Steps and Validation
-// sections themselves keyed by number — the "Na./Nb." pairing shown in
-// chat, now available for the dashboard to show the same way on click.
+// step-number list from the Teams table, the Steps and Validation sections
+// themselves keyed by number — the "Na./Nb." pairing shown in chat, now
+// available for the dashboard to show the same way on click — and this
+// plan's own declared Started: time (zero if missing or unparseable).
 // Returns nils (not an error) if the plan file can't be read.
-func readPlanTeamsAndSteps(homeDir, plan string) (teams map[string]teamMeta, steps, validations map[int]string) {
+func readPlanTeamsAndSteps(homeDir, plan string) (teams map[string]teamMeta, steps, validations map[int]string, started time.Time) {
 	data, err := os.ReadFile(filepath.Join(homeDir, ".claude", "iterate", "plans", plan+".md"))
 	if err != nil {
-		return nil, nil, nil
+		return nil, nil, nil, time.Time{}
 	}
 	teams = map[string]teamMeta{}
 	steps = map[int]string{}
 	validations = map[int]string{}
 	section := ""
 	for line := range strings.SplitSeq(string(data), "\n") {
+		if m := reStarted.FindStringSubmatch(line); m != nil {
+			if t, ok := parsePlanStarted(m[1]); ok {
+				started = t
+			}
+		}
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "## ") {
 			switch trimmed {
@@ -499,7 +521,7 @@ func readPlanTeamsAndSteps(homeDir, plan string) (teams map[string]teamMeta, ste
 			}
 		}
 	}
-	return teams, steps, validations
+	return teams, steps, validations, started
 }
 
 func parseIntList(s string) []int {
@@ -686,8 +708,28 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	var b strings.Builder
 	b.WriteString(timelineHead(title))
 	b.WriteString(header)
-	fmt.Fprintf(&b, `<div class="sub">%s &rarr; %s (%s so far)</div>`+"\n",
+	fmt.Fprintf(&b, `<div class="sub">%s &rarr; %s (%s of recorded activity)</div>`+"\n",
 		minT.Local().Format("2006-01-02 15:04:05"), maxT.Local().Format("15:04:05"), total.Round(time.Second))
+
+	// A separate, explicitly-labeled "running for" figure — deliberately
+	// NOT the same number as the activity span above. That span is the
+	// earliest-to-latest timestamp across every row's recorded spans,
+	// which can include a genuinely long-running plan's real early
+	// history; conflating the two read as "the coordinator has been
+	// silently stuck for days" when what actually happened was a plan
+	// that's been going for a while, or (before this plan's own Started:
+	// boundary was enforced elsewhere) stale tracking data from an
+	// earlier, unrelated run that reused the same codename. This box is
+	// anchored to the plan's own declared start instead, so it answers
+	// "how long has THIS run been going" on its own.
+	if started, ok := plan.StartedAt(); ok {
+		runDur := maxT.Sub(started)
+		if runDur < 0 {
+			runDur = 0
+		}
+		fmt.Fprintf(&b, `<div class="runbox"><span class="runbox-label">Running for</span><span class="runbox-dur">%s</span><span class="runbox-since">since %s</span></div>`+"\n",
+			runDur.Round(time.Second), started.Local().Format("2006-01-02 15:04:05"))
+	}
 
 	b.WriteString(`<div class="stats">`)
 	fmt.Fprintf(&b, `<div class="stat s-good"><div class="n">%d</div><div class="l">done</div></div>`, done)

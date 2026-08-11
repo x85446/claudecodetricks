@@ -130,7 +130,7 @@ func TestBuildRowsFromHookEventsScopesCoordinatorByProject(t *testing.T) {
 		mk(17005, "post", "some-agent-id", "team-x", "/some/other/checkout", "t1"),
 	}
 
-	rows := BuildRowsFromHookEvents(events, nil, "lynx", projectB)
+	rows := BuildRowsFromHookEvents(events, nil, "lynx", projectB, time.Time{})
 
 	var coord, teamX *Row
 	for i := range rows {

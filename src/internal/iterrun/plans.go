@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
 // PlanSummary is what the dashboard and purge commands need to know about
@@ -34,12 +35,45 @@ func (p PlanSummary) IsCompleted() bool {
 	return p.HasTeams && p.TeamsTotal > 0 && p.TeamsDone == p.TeamsTotal
 }
 
+// StartedAt is this plan's own declared Started: value, parsed into the
+// instant it names (see parsePlanStarted). Returns the zero time and
+// ok=false if it can't be determined — callers treat that as "unknown,
+// don't filter on it" rather than guessing.
+func (p PlanSummary) StartedAt() (time.Time, bool) {
+	return parsePlanStarted(p.Started)
+}
+
 var (
-	reName    = regexp.MustCompile(`^name:\s*(.+)$`)
-	rePhase   = regexp.MustCompile(`^phase:\s*(.+)$`)
-	reStarted = regexp.MustCompile(`^Started:\s*(.+)$`)
-	reTeamed  = regexp.MustCompile(`^teamed:\s*true\s*$`)
+	reName             = regexp.MustCompile(`^name:\s*(.+)$`)
+	rePhase            = regexp.MustCompile(`^phase:\s*(.+)$`)
+	reStarted          = regexp.MustCompile(`^Started:\s*(.+)$`)
+	reTeamed           = regexp.MustCompile(`^teamed:\s*true\s*$`)
+	reLeadingTimestamp = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?`)
 )
+
+// parsePlanStarted best-effort parses a plan's freeform Started: value
+// ("2026-08-10 05:39:52", "2026-08-10", "2026-08-10 (planned)", ...) into
+// the instant it names, in local time — used as the boundary between this
+// plan instance and any stale tracking data left over from an earlier,
+// unrelated run that happened to reuse the same single-word codename.
+// Trailing freeform text (like "(planned)") is ignored; ok is false if no
+// leading date could be found at all, which callers treat as "unknown,
+// don't filter" rather than guessing.
+func parsePlanStarted(s string) (time.Time, bool) {
+	m := reLeadingTimestamp.FindStringSubmatch(strings.TrimSpace(s))
+	if m == nil {
+		return time.Time{}, false
+	}
+	layout, value := "2006-01-02", m[1]
+	if m[2] != "" {
+		layout, value = "2006-01-02 15:04:05", m[1]+" "+m[2]
+	}
+	t, err := time.ParseInLocation(layout, value, time.Local)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
+}
 
 // ListPlans scans <projectDir>/.claude/iterate/plans/*.md, newest first.
 func ListPlans(projectDir string) ([]PlanSummary, error) {

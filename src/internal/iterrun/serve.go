@@ -121,14 +121,16 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if events, err := ReadEvents(); err == nil {
-		labels, _ := ReadLabels()
-		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, name, proj))
-	}
 
 	plan, err := GetPlanSummary(proj, name)
 	if err != nil {
 		plan = PlanSummary{Name: name, ProjectDir: proj}
+	}
+	planStarted, _ := plan.StartedAt()
+
+	if events, err := ReadEvents(); err == nil {
+		labels, _ := ReadLabels()
+		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, name, proj, planStarted))
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
