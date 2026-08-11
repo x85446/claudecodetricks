@@ -61,13 +61,14 @@ type StepDetail struct {
 // (there's no Teams row to read them from) and for a plain, unteamed
 // plan's coordinator row.
 type Row struct {
-	key    string // agent_id, or "" for coordinator
-	label  string
-	status string
-	depth  int // position in the Depends-on chain — 0 for a team with no dependency, for display indentation only
-	steps  []StepDetail
-	spans  []span
-	gaps   []gap
+	key       string // agent_id, or "" for coordinator
+	label     string
+	status    string
+	depth     int      // position in the Depends-on chain — 0 for a team with no dependency, for display indentation only
+	dependsOn []string // this team's own Depends-on list, straight from the Teams table — nil for a team not found there (a flat plan's team, or a dispatch name that doesn't match any Teams-table row)
+	steps     []StepDetail
+	spans     []span
+	gaps      []gap
 }
 
 // sortRowsForDisplay is the one row ordering used everywhere rows get
@@ -427,6 +428,7 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 		r := get(team)
 		r.status = meta.status
 		r.depth = depths[team]
+		r.dependsOn = meta.dependsOn
 		marks := readValidationMarkers(filepath.Join(teamsDir, team+".log.md"))
 		for _, n := range meta.stepNums {
 			sd := StepDetail{Num: n, Step: steps[n], Validation: validations[n]}
@@ -675,10 +677,6 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		return 100 * float64(t.Sub(minT)) / float64(total)
 	}
 
-	display := make([]Row, len(rows))
-	copy(display, rows)
-	sortRowsForDisplay(display)
-
 	var done, running, queued, severeGaps int
 	var gapCallouts []struct {
 		label string
@@ -740,14 +738,15 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	// list rather than sorting in among them wherever its timestamps land.
 	var coordRow *Row
 	var teamRows []Row
-	for i := range display {
-		if display[i].key == "" {
-			r := display[i]
+	for i := range rows {
+		if rows[i].key == "" {
+			r := rows[i]
 			coordRow = &r
 		} else {
-			teamRows = append(teamRows, display[i])
+			teamRows = append(teamRows, rows[i])
 		}
 	}
+	teamRows = orderTeamRows(teamRows)
 
 	if coordRow != nil {
 		b.WriteString(`<h2>Coordinator</h2><div class="gantt">`)
@@ -849,27 +848,48 @@ func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time
 	b.WriteString(rowClose + "\n")
 
 	if hasSteps {
+		// The "currently being worked" mark is inferred, not self-reported
+		// — teams only file a ##ITERATE-VALIDATION## marker once a step is
+		// actually resolved (met/partial/not-met), so there's no "I just
+		// started this" signal to read. The best available proxy: for a
+		// team whose overall status is in-progress, the first step in
+		// Num order that hasn't reported anything yet is the one it's
+		// presumably on right now. Everything after that is just queued
+		// behind it, not "in progress," so it stays unmarked.
+		working := 0
+		if r.status == "in-progress" {
+			for _, sd := range r.steps {
+				if sd.VStatus == "" {
+					working = sd.Num
+					break
+				}
+			}
+		}
+
 		b.WriteString(`<div class="steps-detail">`)
 		for _, sd := range r.steps {
 			// Each step's Na/Nb pair is its own group, set off from the
 			// next step's pair by a light divider — the visual grouping
 			// IS the "12a and 12b belong together, and 12 as a whole is
 			// done" signal, so it has to read as one unit at a glance
-			// instead of just more lines in a flat stack.
-			b.WriteString(`<div class="step-group">`)
+			// instead of just more lines in a flat stack. The status
+			// glyph sits in its own column at the left of the WHOLE
+			// group, vertically centered against both lines — not
+			// trailing after the Nb text, where it read as punctuation
+			// rather than a status mark.
+			glyph := validationGlyph(sd.VStatus, sd.VNote)
+			if glyph == "" && sd.Num == working {
+				glyph = `<span class="vmark v-working" title="in progress">&#9679;</span>`
+			}
+			fmt.Fprintf(b, `<div class="step-group"><div class="step-glyph">%s</div><div class="step-lines">`, glyph)
 			if sd.Step != "" {
 				fmt.Fprintf(b, `<div class="step-pair"><span class="stepnum">%da.</span><span class="step-text">%s</span></div>`, sd.Num, html.EscapeString(sd.Step))
 			}
 			if sd.Validation != "" {
-				// The met/partial/not-met glyph is a separate flex item
-				// pinned to the row's right edge, not appended inline
-				// after the validation text — buried at the tail of
-				// wrapped prose, it read as punctuation rather than a
-				// status mark.
-				fmt.Fprintf(b, `<div class="step-pair val"><span class="stepnum">%db.</span><span class="step-text">%s</span>%s</div>`,
-					sd.Num, html.EscapeString(sd.Validation), validationGlyph(sd.VStatus, sd.VNote))
+				fmt.Fprintf(b, `<div class="step-pair val"><span class="stepnum">%db.</span><span class="step-text">%s</span></div>`,
+					sd.Num, html.EscapeString(sd.Validation))
 			}
-			b.WriteString(`</div>`)
+			b.WriteString(`</div></div>`)
 		}
 		b.WriteString(`</div></details>` + "\n")
 	}
@@ -999,18 +1019,22 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--busy)}
 .legend .sw-open{background:repeating-linear-gradient(115deg,var(--busy),var(--busy) 3px,var(--busy-dim) 3px,var(--busy-dim) 6px)}
 .steps-detail{padding:6px 14px 14px 46px;background:var(--surface-2);display:flex;flex-direction:column}
-.step-group{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.step-group{display:flex;align-items:center;gap:10px;padding:8px 0}
 .step-group:first-child{padding-top:0}
 .step-group:last-child{padding-bottom:0}
 .step-group+.step-group{border-top:1px solid var(--border)}
+.step-glyph{flex:0 0 18px;display:flex;justify-content:center;align-items:center;font-size:13px}
+.step-lines{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px}
 .step-pair{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text)}
 .step-pair.val{color:var(--text-dim)}
 .step-pair .stepnum{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600;min-width:28px}
 .step-pair .step-text{flex:1 1 auto}
-.vmark{flex:0 0 auto;display:inline-block;font-weight:700}
+.vmark{display:inline-block;font-weight:700}
 .vmark.v-met{color:var(--good)}
 .vmark.v-partial{color:var(--warn)}
 .vmark.v-not-met{color:var(--danger)}
+.vmark.v-working{color:var(--warn);animation:vworking 1.4s ease-in-out infinite}
+@keyframes vworking{0%,100%{opacity:1}50%{opacity:.3}}
 .gaplist{display:flex;flex-direction:column;gap:8px}
 .gap-item{display:flex;gap:10px;align-items:baseline;font-size:13px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:6px}
 .gap-item .dur{font-weight:700;color:var(--danger)}
