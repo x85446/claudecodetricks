@@ -21,7 +21,18 @@ type PlanSummary struct {
 	NextAttempt string // the "> **Next attempt ...**" blockquote banner at the top of the file, if present — the coordinator's own exact instructions for clearing a blocked-on-operator state
 	Teamed      bool
 	Started     string
-	Goal        string // truncated to ~160 chars — for the dashboard card list
+	// Executing is this plan's own declared "Executing:" value — when THIS
+	// execution attempt actually began (set once, at the moment /iterate
+	// transitions the plan from phase: planned to phase: executing; never
+	// touched again by heartbeats or resumes). Deliberately distinct from
+	// Started, which is drafting time and can predate real work by hours
+	// when the plan went through /iterate-planner first — conflating the
+	// two is what made the dashboard's "running for" figure show elapsed
+	// planning time instead of elapsed execution time. Empty for plans
+	// written before this field existed, or a plan still sitting at
+	// phase: planned.
+	Executing string
+	Goal      string // truncated to ~160 chars — for the dashboard card list
 	GoalFull    string // untruncated — for the plan detail page
 	HasTeams    bool
 	TeamsTotal  int
@@ -56,10 +67,19 @@ func (p PlanSummary) StartedAt() (time.Time, bool) {
 	return parsePlanStarted(p.Started)
 }
 
+// ExecutingAt is this plan's own declared Executing: value, parsed the same
+// way as StartedAt. Returns ok=false when absent (plan predates the field,
+// or hasn't started executing yet) — callers fall back to a different
+// signal rather than guessing.
+func (p PlanSummary) ExecutingAt() (time.Time, bool) {
+	return parsePlanStarted(p.Executing)
+}
+
 var (
 	reName             = regexp.MustCompile(`^name:\s*(.+)$`)
 	rePhase            = regexp.MustCompile(`^phase:\s*(.+)$`)
 	reStarted          = regexp.MustCompile(`^Started:\s*(.+)$`)
+	reExecuting        = regexp.MustCompile(`^Executing:\s*(.+)$`)
 	reTeamed           = regexp.MustCompile(`^teamed:\s*true\s*$`)
 	reStatus           = regexp.MustCompile(`^status:\s*(.+)$`)
 	reLeadingTimestamp = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?`)
@@ -153,6 +173,9 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		}
 		if m := reStarted.FindStringSubmatch(line); m != nil {
 			ps.Started = strings.TrimSpace(m[1])
+		}
+		if m := reExecuting.FindStringSubmatch(line); m != nil {
+			ps.Executing = strings.TrimSpace(m[1])
 		}
 		if m := reStatus.FindStringSubmatch(line); m != nil {
 			ps.Status = strings.TrimSpace(m[1])

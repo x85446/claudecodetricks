@@ -853,12 +853,31 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	// which can include a genuinely long-running plan's real early
 	// history; conflating the two read as "the coordinator has been
 	// silently stuck for days" when what actually happened was a plan
-	// that's been going for a while, or (before this plan's own Started:
-	// boundary was enforced elsewhere) stale tracking data from an
-	// earlier, unrelated run that reused the same codename. This box is
-	// anchored to the plan's own declared start instead, so it answers
-	// "how long has THIS run been going" on its own.
-	if started, ok := plan.StartedAt(); ok {
+	// that's been going for a while. So this box anchors to an explicit
+	// "execution began" instant instead of the activity span — but that
+	// instant is Executing:, NOT Started:. Started: is drafting time (set
+	// once by /iterate-planner and, per its own doc, "kept forever, never
+	// reset on refinement") — for any plan that went through the planner
+	// before execution actually began, Started: can predate real work by
+	// hours (confirmed live: a plan drafted at 13:59, then not actually
+	// run until 16:32, showed "running for 2h36m" the instant /iterate
+	// was invoked — that's elapsed planning time, not elapsed execution
+	// time). Executing: is set once, by /iterate itself, at the moment
+	// phase flips from planned to executing, and is never touched again —
+	// exactly the "timestamp the invocation" anchor this box needs. Plans
+	// written before that field existed fall back to the earliest
+	// recorded activity (minT) — real tool-call data already on disk,
+	// still far closer to true execution start than a stale planning
+	// timestamp — and only fall all the way back to Started: when there's
+	// no activity at all yet to measure from.
+	started, ok := plan.ExecutingAt()
+	if !ok && !minT.IsZero() {
+		started, ok = minT, true
+	}
+	if !ok {
+		started, ok = plan.StartedAt()
+	}
+	if ok {
 		runDur := max(maxT.Sub(started), 0)
 		fmt.Fprintf(&b, `<div class="runbox"><span class="runbox-label">Running for</span><span class="runbox-dur">%s</span><span class="runbox-since">since %s</span></div>`+"\n",
 			runDur.Round(time.Second), started.Local().Format("2006-01-02 15:04:05"))
@@ -888,7 +907,7 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 
 	if coordRow != nil {
 		b.WriteString(`<h2>Coordinator</h2><div class="gantt">`)
-		writeGanttRow(&b, *coordRow, maxT, pct, false)
+		writeGanttRow(&b, *coordRow, pct, false)
 		b.WriteString(`</div>`)
 	}
 
@@ -905,7 +924,7 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 			divider = !firstRoot
 			firstRoot = false
 		}
-		writeGanttRow(&b, r, maxT, pct, divider)
+		writeGanttRow(&b, r, pct, divider)
 	}
 	fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
 		minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
@@ -940,7 +959,7 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 // dependency chain, nested together) from the next — never set within a
 // group, only between them; the coordinator's own single-row block always
 // passes false, having no siblings to separate from.
-func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time) float64, divider bool) {
+func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divider bool) {
 	pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
 	var busy time.Duration
 	for _, s := range r.spans {
@@ -966,14 +985,23 @@ func writeGanttRow(b *strings.Builder, r Row, maxT time.Time, pct func(time.Time
 
 	fmt.Fprintf(b, `%s<div class="label-col"><span class="pill %s" title="%s"%s></span><span class="team">%s</span></div><div class="track">`,
 		rowOpen, pillClass, html.EscapeString(pillLabel), pillStyle, teamLabel)
-	for _, s := range r.spans {
+	for i, s := range r.spans {
 		left := pct(s.start)
 		width := pct(s.end) - left
 		if width < 0.15 {
 			width = 0.15 // keep even instant calls visible
 		}
 		cls := "bar"
-		if s.end.Equal(maxT) && r.status == "in-progress" {
+		// "still running" belongs to the LAST span of THIS row, not to
+		// whichever single span across the ENTIRE plan happens to share
+		// the plan-wide maxT timestamp — that old check only ever matched
+		// one row (whoever's tool call finished most recently), so every
+		// other genuinely in-progress team's bar just stopped short and
+		// looked done even while its own status was still "in-progress"
+		// (confirmed live: prd sitting on step 16 with no bar-open stripe
+		// while audio-filters, whose last call happened to land on maxT,
+		// was the only row ever marked still-running).
+		if i == len(r.spans)-1 && r.status == "in-progress" {
 			cls = "bar bar-open"
 		}
 		fmt.Fprintf(b, `<div class="%s" style="left:%.3f%%;width:%.3f%%" title="%s: %s"></div>`,
