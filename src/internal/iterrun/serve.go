@@ -201,7 +201,7 @@ h2{font-size:13px;color:var(--text-dim);margin:0;font-weight:600;text-transform:
 .b-archived{background:var(--archived-bg);color:var(--archived)}
 .pname{min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pgoal{min-width:0;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pmeta{color:var(--text-faint);text-align:right;font-size:11px;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.pmeta{color:var(--text-faint);text-align:right;font-size:11px;min-width:0;white-space:normal;line-height:1.5;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 </style></head><body><div>
 `
 }
