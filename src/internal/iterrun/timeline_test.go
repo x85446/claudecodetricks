@@ -291,3 +291,82 @@ func TestOrderTeamRowsNestsByDependency(t *testing.T) {
 		t.Fatalf("orderTeamRows dropped rows: got %d, want %d", len(ordered), len(rows))
 	}
 }
+
+// TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent reproduces
+// the exact scenario reported live: a Teams-table row ("gui", owning
+// steps 25-26 in this test) fans out into two concurrently-dispatched
+// sub-agents with their own log files ("app-macos", "gui-windows") that
+// don't literally match any Teams-table row name. Without a name match
+// they used to show as ungrouped root rows defaulting to "running" status
+// forever. This asserts both fixes: they nest under "gui" (matched via
+// which step numbers their own ##ITERATE-VALIDATION## markers report
+// against), and a real "done" status is read from their own TEAM DONE
+// terminal line instead of defaulting to running just because they have
+// recorded activity.
+func TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent(t *testing.T) {
+	home := t.TempDir()
+	plansDir := filepath.Join(home, ".claude", "iterate", "plans")
+	teamsDir := filepath.Join(plansDir, "finch.teams")
+	if err := os.MkdirAll(teamsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	planMD := "# Plan\n\nname: finch\nStarted: 2026-08-01\nphase: executing\n\n" +
+		"## Teams\n\n| Team | Steps | Focus | Depends on | Agent | Status |\n" +
+		"|---|---|---|---|---|---|\n| gui | 25,26 | both platforms | — | agent | done |\n"
+	if err := os.WriteFile(filepath.Join(plansDir, "finch.md"), []byte(planMD), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	write := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(teamsDir, name+".log.md"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("app-macos", "starting work\n"+
+		`##ITERATE-VALIDATION## {"step":25,"status":"met","note":"macOS half done"}`+"\n"+
+		"TEAM DONE: macOS half complete\n")
+	write("gui-windows", "starting work\n"+
+		`##ITERATE-VALIDATION## {"step":26,"status":"met","note":"Windows half done"}`+"\n"+
+		"still going, no terminal line yet\n")
+
+	rows, err := BuildRowsFromFilesystem("finch", home, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var appMacos, guiWindows *Row
+	for i := range rows {
+		switch rows[i].key {
+		case "app-macos":
+			appMacos = &rows[i]
+		case "gui-windows":
+			guiWindows = &rows[i]
+		}
+	}
+	if appMacos == nil || guiWindows == nil {
+		t.Fatalf("missing rows: app-macos=%v gui-windows=%v", appMacos, guiWindows)
+	}
+
+	if len(appMacos.dependsOn) != 1 || appMacos.dependsOn[0] != "gui" {
+		t.Errorf("app-macos.dependsOn = %v, want [gui] (matched via step 25 ownership)", appMacos.dependsOn)
+	}
+	if len(guiWindows.dependsOn) != 1 || guiWindows.dependsOn[0] != "gui" {
+		t.Errorf("gui-windows.dependsOn = %v, want [gui] (matched via step 26 ownership)", guiWindows.dependsOn)
+	}
+	// depth has to be set explicitly for these — teamDepths(teams) never
+	// sees them, since they're not literal Teams-table rows.
+	wantDepth := 1 // gui is a root (depth 0) here, so its orphan children are depth 1
+	if appMacos.depth != wantDepth {
+		t.Errorf("app-macos.depth = %d, want %d (one level under gui)", appMacos.depth, wantDepth)
+	}
+	if guiWindows.depth != wantDepth {
+		t.Errorf("gui-windows.depth = %d, want %d (one level under gui)", guiWindows.depth, wantDepth)
+	}
+
+	if appMacos.status != "done" {
+		t.Errorf("app-macos.status = %q, want %q (has a TEAM DONE terminal line)", appMacos.status, "done")
+	}
+	if guiWindows.status == "done" {
+		t.Errorf("gui-windows.status = %q, want anything but done — it has no terminal line", guiWindows.status)
+	}
+}

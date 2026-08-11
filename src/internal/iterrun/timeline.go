@@ -344,7 +344,11 @@ func MergeRows(a, b []Row) []Row {
 	return rows
 }
 
-var teamTerminalLine = regexp.MustCompile(`^TEAM (DONE|BLOCKED):`)
+// (?m) is required — the terminal line is essentially never the first
+// line of the file (it's written last, per protocol), and without
+// multiline mode ^ only anchors to the very start of the whole string, so
+// this silently matched nothing on any real log.
+var teamTerminalLine = regexp.MustCompile(`(?m)^TEAM (DONE|BLOCKED):`)
 
 const validationMarker = "##ITERATE-VALIDATION##"
 
@@ -494,6 +498,7 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 	// invisible is exactly the wrong failure mode for a view meant to show
 	// the whole picture, not just the parts that happened.
 	depths := teamDepths(teams)
+	stepOwner := map[int]string{} // step number -> the Teams-table row that owns it
 	for team, meta := range teams {
 		r := get(team)
 		r.status = meta.status
@@ -501,6 +506,7 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 		r.dependsOn = meta.dependsOn
 		marks := readValidationMarkers(filepath.Join(teamsDir, team+".log.md"))
 		for _, n := range meta.stepNums {
+			stepOwner[n] = team
 			sd := StepDetail{Num: n, Step: steps[n], Validation: validations[n]}
 			if sd.Step == "" && sd.Validation == "" {
 				continue // step number in the table but not found in either list — skip rather than show a blank pair
@@ -511,6 +517,45 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 			r.steps = append(r.steps, sd)
 		}
 		sort.Slice(r.steps, func(i, j int) bool { return r.steps[i].Num < r.steps[j].Num })
+	}
+
+	// A team-log or registry name that ISN'T a literal Teams-table row is
+	// either a flat (unteamed) plan's only row — teams is empty there,
+	// nothing to match against — or, on a teamed plan, a split-off
+	// sub-dispatch: a team can and does fan out into more than one
+	// concurrently-running agent (confirmed live: "gui" owns steps 25-32,
+	// but the actual work ran as three separate dispatches — app-macos,
+	// gui-macos2, gui-windows — each scoped to its own log file so they
+	// never race on a shared one). Nothing records that split anywhere
+	// (no naming convention for it exists yet), so the only reliable,
+	// non-guessing signal is which step numbers the orphan's own
+	// ##ITERATE-VALIDATION## markers report against — those are real
+	// data, not a name-similarity heuristic, and a step number belongs to
+	// exactly one Teams-table row. A match nests it under that row exactly
+	// like a real dependency (this package's only use of dependsOn is
+	// display nesting, so borrowing the same field is safe); it also
+	// picks up a real status from its OWN terminal line instead of
+	// defaulting to "running" just because it has recorded activity.
+	for team, r := range byTeam {
+		if _, isTeamsRow := teams[team]; isTeamsRow || team == "" {
+			continue
+		}
+		lf := filepath.Join(teamsDir, team+".log.md")
+		for step := range readValidationMarkers(lf) {
+			if owner, ok := stepOwner[step]; ok {
+				r.dependsOn = []string{owner}
+				r.depth = depths[owner] + 1 // teamDepths never saw this row (it's not in teams), so its depth has to be set here too, not just dependsOn
+				break
+			}
+		}
+		if data, err := os.ReadFile(lf); err == nil {
+			switch teamTerminalLine.FindString(string(data)) {
+			case "TEAM DONE:":
+				r.status = "done"
+			case "TEAM BLOCKED:":
+				r.status = "blocked (see log)"
+			}
+		}
 	}
 
 	var rows []Row
