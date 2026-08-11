@@ -59,8 +59,10 @@ Usage:
   iterate-run version`)
 }
 
-// nameCmd claims the next plan codename from the global, machine-wide,
-// alphabetically-ordered registry and prints it bare to stdout — the
+// nameCmd claims the next plan codename in the CURRENT project's own
+// alphabetical sequence (that project's 1st new plan is an a-word, 2nd a
+// b-word, ...) — drawn from a machine-wide "already used" set so no two
+// projects ever land on the same word — and prints it bare to stdout. The
 // caller (/iterate-planner, /iterate) captures it directly as the new
 // plan's name. Registering the codename IS the point of this call: run it
 // once per new plan, not speculatively.
@@ -69,7 +71,12 @@ func nameCmd(args []string) {
 		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next")
 		os.Exit(2)
 	}
-	name, err := iterrun.NextPlanName()
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		os.Exit(1)
+	}
+	name, err := iterrun.NextPlanName(cwd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
 		os.Exit(1)

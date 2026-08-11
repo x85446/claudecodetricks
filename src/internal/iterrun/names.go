@@ -3,9 +3,13 @@
 // plans/" — a per-project check only, so nothing stopped two different
 // projects from independently picking the same word (confirmed live:
 // "wren" got used by two unrelated projects, and see the dashboard bugs
-// that same collision caused). NextPlanName replaces that with one
-// machine-wide, deterministic sequence: walk the alphabet a, b, c, ... z,
-// a, b, ... and never hand out a name that's already been used anywhere.
+// that same collision caused). NextPlanName replaces that with: each
+// project walks the alphabet on its OWN sequence (that project's 1st new
+// plan is an a-word, 2nd is a b-word, ...), while the actual word chosen
+// for a letter is drawn from one machine-wide "already used" set — so two
+// projects' first plans are both a-words, just never the SAME a-word
+// (project 1 gets "aardvark", project 2's first plan skips it for the next
+// available a-word, "antelope" — it does not jump ahead to a b-word).
 package iterrun
 
 import (
@@ -22,7 +26,7 @@ import (
 // y) just have a smaller pool, which only matters once that letter comes
 // up for the Nth time in the a-through-z cycle.
 var animalsByLetter = map[byte][]string{
-	'a': {"ant", "ape", "auk", "alpaca", "antelope"},
+	'a': {"aardvark", "antelope", "ant", "ape", "auk", "alpaca"},
 	'b': {"badger", "bear", "bison", "boar", "bobcat", "bee"},
 	'c': {"cat", "crow", "cobra", "coyote", "crane", "civet"},
 	'd': {"dog", "deer", "dove", "dolphin", "duck", "donkey"},
@@ -58,13 +62,15 @@ var alphabet = func() []byte {
 	return letters
 }()
 
-// nameState is the persisted record: every codename handed out so far,
-// where the alphabetical cycle left off, and whether the one-time import
-// of pre-existing on-disk plan names has run yet.
+// nameState is the persisted record: every codename handed out so far
+// (shared, machine-wide — this is what "globally unique" means here), each
+// project's own next-letter position in ITS alphabetical sequence (keyed
+// by absolute project directory), and whether the one-time import of
+// pre-existing on-disk plan names has run yet.
 type nameState struct {
-	Used    map[string]bool `json:"used"`
-	NextIdx int             `json:"next_idx"`
-	Seeded  bool            `json:"seeded"`
+	Used           map[string]bool `json:"used"`
+	ProjectNextIdx map[string]int  `json:"project_next_idx"`
+	Seeded         bool            `json:"seeded"`
 }
 
 // NamesPath is the global registry file every NextPlanName call reads and
@@ -78,14 +84,15 @@ func namesLockPath() string {
 	return NamesPath() + ".lock"
 }
 
-// NextPlanName claims and returns the next codename in the global
-// alphabetical cycle (a, b, c, ... z, a, b, ...), skipping any letter whose
-// whole pool is already used and never reissuing a name already assigned
-// anywhere on the machine. The very first call seeds the "already used"
-// set from every plan name already on disk across every known project, so
-// names in use before this registry existed are never handed out again.
-func NextPlanName() (string, error) {
-	return nextPlanName(NamesPath(), namesLockPath(), seedFromKnownProjects)
+// NextPlanName claims and returns the next codename in projectDir's OWN
+// alphabetical sequence (a, b, c, ... z, a, b, ... — that project's 1st new
+// plan is an a-word, 2nd a b-word, and so on), never reissuing a word
+// already assigned to ANY project on the machine. The very first call
+// (from any project) seeds the "already used" set from every plan name
+// already on disk across every known project, so names in use before this
+// registry existed are never handed out again.
+func NextPlanName(projectDir string) (string, error) {
+	return nextPlanName(NamesPath(), namesLockPath(), projectDir, seedFromKnownProjects)
 }
 
 // seedFromKnownProjects collects every plan name already on disk across
@@ -113,9 +120,10 @@ func seedFromKnownProjects() map[string]bool {
 
 // nextPlanName is NextPlanName's testable core — path, lockPath, and the
 // seed function are injected so tests exercise the real algorithm
-// (locking, seeding, alphabetical cycling, persistence) against a
-// throwaway directory instead of the machine's real global registry.
-func nextPlanName(path, lockPath string, seed func() map[string]bool) (string, error) {
+// (locking, seeding, per-project alphabetical cycling, persistence)
+// against a throwaway directory instead of the machine's real global
+// registry.
+func nextPlanName(path, lockPath, projectDir string, seed func() map[string]bool) (string, error) {
 	unlock, err := lockFile(lockPath)
 	if err != nil {
 		return "", err
@@ -133,14 +141,17 @@ func nextPlanName(path, lockPath string, seed func() map[string]bool) (string, e
 		st.Seeded = true
 	}
 
+	key := projectKey(projectDir)
+	startIdx := st.ProjectNextIdx[key]
+
 	for i := range len(alphabet) {
-		idx := (st.NextIdx + i) % len(alphabet)
+		idx := (startIdx + i) % len(alphabet)
 		for _, name := range animalsByLetter[alphabet[idx]] {
 			if st.Used[name] {
 				continue
 			}
 			st.Used[name] = true
-			st.NextIdx = (idx + 1) % len(alphabet)
+			st.ProjectNextIdx[key] = (idx + 1) % len(alphabet)
 			if err := saveNameState(path, st); err != nil {
 				return "", err
 			}
@@ -150,11 +161,23 @@ func nextPlanName(path, lockPath string, seed func() map[string]bool) (string, e
 	return "", fmt.Errorf("iterate-run: every animal codename in the pool is already in use — extend the pool in names.go")
 }
 
+// projectKey normalizes projectDir to an absolute path so the same project
+// always maps to the same entry in ProjectNextIdx regardless of which
+// relative path or cwd a given call happened to use. Falls back to the raw
+// string on a resolution error rather than failing the whole call.
+func projectKey(projectDir string) string {
+	abs, err := filepath.Abs(projectDir)
+	if err != nil {
+		return projectDir
+	}
+	return abs
+}
+
 func loadNameState(path string) (*nameState, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &nameState{Used: map[string]bool{}}, nil
+			return &nameState{Used: map[string]bool{}, ProjectNextIdx: map[string]int{}}, nil
 		}
 		return nil, err
 	}
@@ -164,6 +187,9 @@ func loadNameState(path string) (*nameState, error) {
 	}
 	if st.Used == nil {
 		st.Used = map[string]bool{}
+	}
+	if st.ProjectNextIdx == nil {
+		st.ProjectNextIdx = map[string]int{}
 	}
 	return &st, nil
 }
