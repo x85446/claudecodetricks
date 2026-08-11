@@ -496,3 +496,76 @@ func TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen(t *testing.T) {
 		t.Errorf(`expected 2 rows with class="bar bar-open" (both in-progress rows' last span), got %d; output:\n%s`, got, out)
 	}
 }
+
+// TestBurndownChartShadesByValidationState confirms the burndown grid
+// classifies each requirement correctly: met -> green (bd-done), reported
+// but not fully resolved (partial/not-met) or currently the team's inferred
+// working step -> yellow (bd-active), no signal at all -> white (bd-queued)
+// — and that clicking through embeds the owning team's dependency chain.
+func TestBurndownChartShadesByValidationState(t *testing.T) {
+	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
+	rows := []Row{
+		{key: "engine", label: "engine", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}},
+			steps: []StepDetail{{Num: 1, Step: "build the engine", Validation: "engine builds clean", VStatus: "met"}}},
+		{key: "app-macos", label: "app-macos", status: "in-progress", dependsOn: []string{"engine"}, spans: []span{{start: base, end: base.Add(time.Minute)}},
+			steps: []StepDetail{
+				{Num: 2, Step: "wire the UI", Validation: "UI renders"},        // no VStatus, but it's the working step -> active
+				{Num: 3, Step: "ship installer", Validation: "installer runs"}, // untouched -> queued
+			}},
+	}
+	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
+
+	if !strings.Contains(out, `<h2>Requirements</h2>`) {
+		t.Fatalf("expected a Requirements burndown section; output:\n%s", out)
+	}
+	if !strings.Contains(out, `class="bd-cell bd-done" data-num="1"`) {
+		t.Errorf("requirement 1 (VStatus=met) should render bd-done; output:\n%s", out)
+	}
+	if !strings.Contains(out, `class="bd-cell bd-active" data-num="2"`) {
+		t.Errorf("requirement 2 (inferred working step) should render bd-active; output:\n%s", out)
+	}
+	if !strings.Contains(out, `class="bd-cell bd-queued" data-num="3"`) {
+		t.Errorf("requirement 3 (no signal at all) should render bd-queued; output:\n%s", out)
+	}
+	if !strings.Contains(out, `"dependsOn":["engine"]`) {
+		t.Errorf("requirement 2/3's embedded data should carry app-macos's own full Depends-on list; output:\n%s", out)
+	}
+}
+
+// TestBurndownChartShowsFullDependsOnListNotJustPrimary reproduces a real
+// bug found live: a team can list several dependencies (a real plan had one
+// team depending on all seven others), but an earlier version of this
+// chart walked only the single "primary" dependency orderTeamRows uses for
+// display indentation — that's a deliberate simplification scoped to
+// indentation only, and silently dropped every dependency but the first
+// when reused here. The click-through detail must show the team's own
+// complete Depends-on list.
+func TestBurndownChartShowsFullDependsOnListNotJustPrimary(t *testing.T) {
+	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
+	rows := []Row{
+		{key: "audio-filters", label: "audio-filters", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}}},
+		{key: "settings-surfaces", label: "settings-surfaces", status: "done", dependsOn: []string{"audio-filters"}, spans: []span{{start: base, end: base.Add(time.Minute)}}},
+		{key: "tech-debt", label: "tech-debt", status: "in-progress", dependsOn: []string{"audio-filters", "settings-surfaces"}, spans: []span{{start: base, end: base.Add(time.Minute)}},
+			steps: []StepDetail{{Num: 17, Step: "clean up", Validation: "clean"}}},
+	}
+	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
+
+	if !strings.Contains(out, `"dependsOn":["audio-filters","settings-surfaces"]`) {
+		t.Errorf("requirement 17's dependsOn should list BOTH of tech-debt's real dependencies, not just the first; output:\n%s", out)
+	}
+}
+
+// TestBurndownChartOmittedWhenNoStepDetail confirms a plan with no
+// per-team Steps/Validation detail (a flat/unteamed plan, or any plan
+// whose rows just don't have step data) renders no Requirements section at
+// all rather than an empty, confusing one.
+func TestBurndownChartOmittedWhenNoStepDetail(t *testing.T) {
+	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
+	rows := []Row{
+		{key: "", label: "coordinator", spans: []span{{start: base, end: base.Add(time.Minute)}}},
+	}
+	out := RenderTimelineHTML(rows, PlanSummary{Name: "finch"}, "")
+	if strings.Contains(out, `<h2>Requirements</h2>`) {
+		t.Errorf("expected no Requirements section for a plan with no step detail; output:\n%s", out)
+	}
+}

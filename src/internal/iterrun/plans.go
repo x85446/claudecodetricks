@@ -31,12 +31,12 @@ type PlanSummary struct {
 	// planning time instead of elapsed execution time. Empty for plans
 	// written before this field existed, or a plan still sitting at
 	// phase: planned.
-	Executing string
-	Goal      string // truncated to ~160 chars — for the dashboard card list
-	GoalFull    string // untruncated — for the plan detail page
-	HasTeams    bool
-	TeamsTotal  int
-	TeamsDone   int
+	Executing  string
+	Goal       string // truncated to ~160 chars — for the dashboard card list
+	GoalFull   string // untruncated — for the plan detail page
+	HasTeams   bool
+	TeamsTotal int
+	TeamsDone  int
 }
 
 // IsCompleted reports whether every team in this plan's Teams table has

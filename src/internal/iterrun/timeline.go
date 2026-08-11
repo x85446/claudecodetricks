@@ -993,50 +993,37 @@ type burnStep struct {
 	Step       string
 	Validation string
 	Team       string
-	Chain      []string // this step's owning team's dependency chain, root-first, itself last (e.g. ["engine","app-macos"]) — the "dependency view" the chart's click-through shows
+	DependsOn  []string // this step's owning team's OWN full Depends-on list from the Teams table, resolved to display labels — every team that must finish first, not just one. A team can list several (tech-debt genuinely depends on all seven of the others in a real plan); showing only a single "primary" parent (the shortcut orderTeamRows takes purely for indentation) would silently hide the rest.
 	State      string   // "done" (validation reported met), "active" (currently being worked, or reported partial/not-met), "queued" (white — no signal yet)
 }
 
 // collectSteps flattens every row's Steps/Validation detail into one
 // Num-ordered list spanning the whole plan, each carrying its owning row's
-// label and full upstream dependency chain — the data the burndown chart
-// and its click-through detail panel are built from. Rows with no steps
-// (flat/unteamed plans have none at all — see BuildRowsFromFilesystem)
-// contribute nothing, same limitation as the existing per-team panel.
+// label and full Depends-on list — the data the burndown chart and its
+// click-through detail panel are built from. Rows with no steps (flat/
+// unteamed plans have none at all — see BuildRowsFromFilesystem) contribute
+// nothing, same limitation as the existing per-team panel.
 func collectSteps(rows []Row) []burnStep {
-	byKey := map[string]Row{}
+	labelOf := map[string]string{}
 	for _, r := range rows {
-		byKey[r.key] = r
+		labelOf[r.key] = r.label
 	}
-
-	// Walks the SAME primary-dependency-only chain orderTeamRows uses for
-	// display nesting (a team can list more than one dependency, but the
-	// first-listed one wins for a single linear chain) — consistency with
-	// how the rest of the page already groups dependency chains matters
-	// more here than surfacing every listed dependency.
-	chainFor := func(key string) []string {
-		var chain []string
-		seen := map[string]bool{}
-		for cur := key; cur != "" && !seen[cur]; {
-			seen[cur] = true
-			label := cur
-			r, ok := byKey[cur]
-			if ok {
-				label = r.label
+	resolveDeps := func(keys []string) []string {
+		labels := make([]string, len(keys))
+		for i, k := range keys {
+			if l, ok := labelOf[k]; ok {
+				labels[i] = l
+			} else {
+				labels[i] = k
 			}
-			chain = append([]string{label}, chain...)
-			if !ok || len(r.dependsOn) == 0 {
-				break
-			}
-			cur = r.dependsOn[0]
 		}
-		return chain
+		return labels
 	}
 
 	var out []burnStep
 	for _, r := range rows {
 		working := currentWorkingStepNum(r)
-		chain := chainFor(r.key)
+		deps := resolveDeps(r.dependsOn)
 		for _, sd := range r.steps {
 			state := "queued"
 			switch {
@@ -1047,7 +1034,7 @@ func collectSteps(rows []Row) []burnStep {
 			case sd.Num == working:
 				state = "active"
 			}
-			out = append(out, burnStep{Num: sd.Num, Step: sd.Step, Validation: sd.Validation, Team: r.label, Chain: chain, State: state})
+			out = append(out, burnStep{Num: sd.Num, Step: sd.Step, Validation: sd.Validation, Team: r.label, DependsOn: deps, State: state})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Num < out[j].Num })
@@ -1059,7 +1046,7 @@ func collectSteps(rows []Row) []burnStep {
 // between the Coordinator section and the per-team Activity breakdown.
 // Clicking a cell (vanilla JS, no round trip — the detail data is embedded
 // as JSON right below the grid) opens a panel showing that requirement's
-// owning team, its upstream dependency chain, and its Step/Validation
+// owning team, everything that team depends on, and its Step/Validation
 // text: "what accomplishing this task means and what it depends on."
 // Silently renders nothing for a plan with no per-team step detail (flat/
 // unteamed plans — see collectSteps).
@@ -1087,12 +1074,12 @@ func writeBurndownChart(b *strings.Builder, rows []Row) {
 		Step       string   `json:"step"`
 		Validation string   `json:"validation"`
 		Team       string   `json:"team"`
-		Chain      []string `json:"chain"`
+		DependsOn  []string `json:"dependsOn"`
 		State      string   `json:"state"`
 	}
 	data := make(map[string]burnStepJSON, len(steps))
 	for _, s := range steps {
-		data[strconv.Itoa(s.Num)] = burnStepJSON{Step: s.Step, Validation: s.Validation, Team: s.Team, Chain: s.Chain, State: s.State}
+		data[strconv.Itoa(s.Num)] = burnStepJSON{Step: s.Step, Validation: s.Validation, Team: s.Team, DependsOn: s.DependsOn, State: s.State}
 	}
 	// json.Marshal HTML-escapes '<', '>' and '&' by default — exactly what
 	// keeps a plan's own step/validation text (arbitrary markdown, could
@@ -1108,8 +1095,8 @@ function bdShow(num){
   var el=document.getElementById('bd-detail');
   if(!d){el.style.display='none';return;}
   var stateLabel={done:'done',active:'active',queued:'not yet worked on'}[d.state]||d.state;
-  var html='<div class="bd-detail-num">Requirement '+num+' &middot; '+bdEsc(stateLabel)+'</div>';
-  html+='<div class="bd-detail-chain">'+bdEsc(d.chain.join(' → '))+'</div>';
+  var html='<div class="bd-detail-num">Requirement '+num+' &middot; '+bdEsc(d.team)+' &middot; '+bdEsc(stateLabel)+'</div>';
+  html+='<div class="bd-detail-chain">depends on: '+bdEsc(d.dependsOn.length?d.dependsOn.join(', '):'none')+'</div>';
   if(d.step){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'a.</span><span>'+bdEsc(d.step)+'</span></div>';}
   if(d.validation){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'b.</span><span>'+bdEsc(d.validation)+'</span></div>';}
   el.innerHTML=html;
