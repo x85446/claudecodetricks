@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestParsePlanFileBlockedOnOperator reproduces the exact shape found live
@@ -113,5 +114,60 @@ func TestParsePlanFileGoalTruncation(t *testing.T) {
 	}
 	if len(ps.GoalFull) <= len(ps.Goal) {
 		t.Errorf("GoalFull should be longer than the truncated Goal, got GoalFull=%d Goal=%d", len(ps.GoalFull), len(ps.Goal))
+	}
+}
+
+// TestParsePlanFileExecutingDistinctFromStarted confirms Started: (drafting
+// time, set once by /iterate-planner) and Executing: (real execution-start
+// time, set once by /iterate at the planned->executing transition) parse
+// independently — the dashboard's "running for" figure depends on these
+// never getting conflated.
+func TestParsePlanFileExecutingDistinctFromStarted(t *testing.T) {
+	dir := t.TempDir()
+	plansDir := filepath.Join(dir, ".claude", "iterate", "plans")
+	if err := os.MkdirAll(plansDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "name: aardvark\nStarted: 2026-08-11 13:59:24 (planned)\nExecuting: 2026-08-11 16:32:55\nphase: executing\n\n## Goal\nSomething.\n"
+	if err := os.WriteFile(filepath.Join(plansDir, "aardvark.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	ps, err := GetPlanSummary(dir, "aardvark")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	started, ok := ps.StartedAt()
+	if !ok || !started.Equal(time.Date(2026, 8, 11, 13, 59, 24, 0, time.Local)) {
+		t.Errorf("StartedAt() = %v, %v; want 2026-08-11 13:59:24", started, ok)
+	}
+	executing, ok := ps.ExecutingAt()
+	if !ok || !executing.Equal(time.Date(2026, 8, 11, 16, 32, 55, 0, time.Local)) {
+		t.Errorf("ExecutingAt() = %v, %v; want 2026-08-11 16:32:55", executing, ok)
+	}
+}
+
+// TestParsePlanFileExecutingAbsent confirms ExecutingAt() reports ok=false
+// (not a zero-value false positive) for a plan that hasn't started
+// executing yet, or predates the field entirely — callers must fall back
+// to a different signal rather than trusting a zero time.
+func TestParsePlanFileExecutingAbsent(t *testing.T) {
+	dir := t.TempDir()
+	plansDir := filepath.Join(dir, ".claude", "iterate", "plans")
+	if err := os.MkdirAll(plansDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "name: mole\nStarted: 2026-08-11 (planned)\nphase: planned\n\n## Goal\nSomething.\n"
+	if err := os.WriteFile(filepath.Join(plansDir, "mole.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	ps, err := GetPlanSummary(dir, "mole")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := ps.ExecutingAt(); ok {
+		t.Errorf("ExecutingAt() ok = true for a plan with no Executing: line, want false")
 	}
 }

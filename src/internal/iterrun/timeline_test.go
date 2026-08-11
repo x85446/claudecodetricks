@@ -431,3 +431,68 @@ func TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning(t *testing.T) {
 		t.Errorf("running count is 0 — the coordinator's own activity isn't being counted")
 	}
 }
+
+// TestRunboxPrefersExecutingOverStarted reproduces the bug reported live: a
+// plan drafted via /iterate-planner at 13:59, not actually run until 16:32,
+// showed "running for 2h36m" the instant /iterate was invoked — that read
+// as elapsed drafting time, not elapsed execution time. Once Executing: is
+// present, the runbox must anchor to it instead of Started:.
+func TestRunboxPrefersExecutingOverStarted(t *testing.T) {
+	drafted := time.Date(2026, 8, 11, 13, 59, 24, 0, time.Local)
+	executing := time.Date(2026, 8, 11, 16, 32, 55, 0, time.Local)
+	rows := []Row{
+		{key: "coordinator", label: "coordinator", spans: []span{{start: executing, end: executing.Add(3 * time.Minute)}}},
+	}
+	plan := PlanSummary{
+		Name:      "aardvark",
+		Started:   drafted.Format("2006-01-02 15:04:05"),
+		Executing: executing.Format("2006-01-02 15:04:05"),
+	}
+	out := RenderTimelineHTML(rows, plan, "")
+
+	if !strings.Contains(out, "since "+executing.Format("2006-01-02 15:04:05")) {
+		t.Errorf("runbox should anchor to Executing: (%s), not Started: (%s); output:\n%s",
+			executing.Format("2006-01-02 15:04:05"), drafted.Format("2006-01-02 15:04:05"), out)
+	}
+	if strings.Contains(out, "2h36m") {
+		t.Errorf("runbox shows elapsed drafting time (2h36m) instead of elapsed execution time; output:\n%s", out)
+	}
+}
+
+// TestRunboxFallsBackToEarliestActivityWhenExecutingMissing covers plans
+// written before the Executing: field existed — the runbox should prefer
+// real recorded activity (minT) over a stale Started: drafting timestamp
+// rather than reverting to the original bug.
+func TestRunboxFallsBackToEarliestActivityWhenExecutingMissing(t *testing.T) {
+	drafted := time.Date(2026, 8, 11, 13, 59, 24, 0, time.Local)
+	activity := time.Date(2026, 8, 11, 16, 32, 55, 0, time.Local)
+	rows := []Row{
+		{key: "coordinator", label: "coordinator", spans: []span{{start: activity, end: activity.Add(3 * time.Minute)}}},
+	}
+	plan := PlanSummary{Name: "aardvark", Started: drafted.Format("2006-01-02 15:04:05") + " (planned)"}
+	out := RenderTimelineHTML(rows, plan, "")
+
+	if !strings.Contains(out, "since "+activity.Format("2006-01-02 15:04:05")) {
+		t.Errorf("runbox should fall back to earliest recorded activity (%s) when Executing: is absent, not Started: (%s); output:\n%s",
+			activity.Format("2006-01-02 15:04:05"), drafted.Format("2006-01-02 15:04:05"), out)
+	}
+}
+
+// TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen reproduces the bug
+// reported live: only the row whose last span happened to end at the
+// plan-wide maxT got the "still running" stripe — every other genuinely
+// in-progress row's last bar rendered as plain "confirmed activity" and
+// looked finished. The open styling belongs to the last span of EACH
+// in-progress row, independent of the others.
+func TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen(t *testing.T) {
+	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
+	rows := []Row{
+		{key: "prd", label: "prd", status: "in-progress", spans: []span{{start: base, end: base.Add(3 * time.Minute)}}},
+		{key: "audio-filters", label: "audio-filters", status: "in-progress", spans: []span{{start: base, end: base.Add(12 * time.Minute)}}}, // ends latest — this used to be the only row ever marked open
+	}
+	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
+
+	if got := strings.Count(out, `class="bar bar-open"`); got != 2 {
+		t.Errorf(`expected 2 rows with class="bar bar-open" (both in-progress rows' last span), got %d; output:\n%s`, got, out)
+	}
+}

@@ -911,6 +911,8 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		b.WriteString(`</div>`)
 	}
 
+	writeBurndownChart(&b, rows)
+
 	// The divider line goes ONLY between separate root-level groups, not
 	// between a parent and its own nested children — a dependency chain
 	// (e.g. cli-frame -> selection -> reports) is one visual unit now that
@@ -959,6 +961,164 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 // dependency chain, nested together) from the next — never set within a
 // group, only between them; the coordinator's own single-row block always
 // passes false, having no siblings to separate from.
+// currentWorkingStepNum returns the step number a row is presumed to be
+// actively working on right now, or 0 if none. The mark is inferred, not
+// self-reported — teams only file a ##ITERATE-VALIDATION## marker once a
+// step is actually resolved (met/partial/not-met), so there's no "I just
+// started this" signal to read directly. The best available proxy: for a
+// row whose overall status is in-progress, the first step in Num order
+// that hasn't reported anything yet is the one it's presumably on right
+// now. Everything after that is just queued behind it, not "in progress."
+// Shared by writeGanttRow's per-team panel and the burndown chart so both
+// agree on which cell is "active" instead of drifting independently.
+func currentWorkingStepNum(r Row) int {
+	if r.status != "in-progress" {
+		return 0
+	}
+	for _, sd := range r.steps {
+		if sd.VStatus == "" {
+			return sd.Num
+		}
+	}
+	return 0
+}
+
+// burnStep is one numbered requirement's flattened view for the burndown
+// chart — a step number can only belong to one team (per Teams-table row),
+// so unlike Row.steps (grouped per-team), this is one entry per requirement
+// across the WHOLE plan, sorted by Num, letting the chart answer "where do
+// we stand on requirement N" without knowing which team owns it first.
+type burnStep struct {
+	Num        int
+	Step       string
+	Validation string
+	Team       string
+	Chain      []string // this step's owning team's dependency chain, root-first, itself last (e.g. ["engine","app-macos"]) — the "dependency view" the chart's click-through shows
+	State      string   // "done" (validation reported met), "active" (currently being worked, or reported partial/not-met), "queued" (white — no signal yet)
+}
+
+// collectSteps flattens every row's Steps/Validation detail into one
+// Num-ordered list spanning the whole plan, each carrying its owning row's
+// label and full upstream dependency chain — the data the burndown chart
+// and its click-through detail panel are built from. Rows with no steps
+// (flat/unteamed plans have none at all — see BuildRowsFromFilesystem)
+// contribute nothing, same limitation as the existing per-team panel.
+func collectSteps(rows []Row) []burnStep {
+	byKey := map[string]Row{}
+	for _, r := range rows {
+		byKey[r.key] = r
+	}
+
+	// Walks the SAME primary-dependency-only chain orderTeamRows uses for
+	// display nesting (a team can list more than one dependency, but the
+	// first-listed one wins for a single linear chain) — consistency with
+	// how the rest of the page already groups dependency chains matters
+	// more here than surfacing every listed dependency.
+	chainFor := func(key string) []string {
+		var chain []string
+		seen := map[string]bool{}
+		for cur := key; cur != "" && !seen[cur]; {
+			seen[cur] = true
+			label := cur
+			r, ok := byKey[cur]
+			if ok {
+				label = r.label
+			}
+			chain = append([]string{label}, chain...)
+			if !ok || len(r.dependsOn) == 0 {
+				break
+			}
+			cur = r.dependsOn[0]
+		}
+		return chain
+	}
+
+	var out []burnStep
+	for _, r := range rows {
+		working := currentWorkingStepNum(r)
+		chain := chainFor(r.key)
+		for _, sd := range r.steps {
+			state := "queued"
+			switch {
+			case sd.VStatus == "met":
+				state = "done"
+			case sd.VStatus == "partial", sd.VStatus == "not-met":
+				state = "active" // reported, but not fully resolved — needs more work, not untouched
+			case sd.Num == working:
+				state = "active"
+			}
+			out = append(out, burnStep{Num: sd.Num, Step: sd.Step, Validation: sd.Validation, Team: r.label, Chain: chain, State: state})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Num < out[j].Num })
+	return out
+}
+
+// writeBurndownChart renders one numbered cell per requirement across the
+// whole plan — white for untouched, yellow for active, green for done —
+// between the Coordinator section and the per-team Activity breakdown.
+// Clicking a cell (vanilla JS, no round trip — the detail data is embedded
+// as JSON right below the grid) opens a panel showing that requirement's
+// owning team, its upstream dependency chain, and its Step/Validation
+// text: "what accomplishing this task means and what it depends on."
+// Silently renders nothing for a plan with no per-team step detail (flat/
+// unteamed plans — see collectSteps).
+func writeBurndownChart(b *strings.Builder, rows []Row) {
+	steps := collectSteps(rows)
+	if len(steps) == 0 {
+		return
+	}
+
+	b.WriteString(`<h2>Requirements</h2><div class="burndown">`)
+	for _, s := range steps {
+		cls := "bd-queued"
+		switch s.State {
+		case "done":
+			cls = "bd-done"
+		case "active":
+			cls = "bd-active"
+		}
+		fmt.Fprintf(b, `<div class="bd-cell %s" data-num="%d" onclick="bdShow(%d)" title="%d &middot; %s">%d</div>`,
+			cls, s.Num, s.Num, s.Num, html.EscapeString(s.Team), s.Num)
+	}
+	b.WriteString(`</div><div id="bd-detail" class="bd-detail" style="display:none"></div>`)
+
+	type burnStepJSON struct {
+		Step       string   `json:"step"`
+		Validation string   `json:"validation"`
+		Team       string   `json:"team"`
+		Chain      []string `json:"chain"`
+		State      string   `json:"state"`
+	}
+	data := make(map[string]burnStepJSON, len(steps))
+	for _, s := range steps {
+		data[strconv.Itoa(s.Num)] = burnStepJSON{Step: s.Step, Validation: s.Validation, Team: s.Team, Chain: s.Chain, State: s.State}
+	}
+	// json.Marshal HTML-escapes '<', '>' and '&' by default — exactly what
+	// keeps a plan's own step/validation text (arbitrary markdown, could
+	// itself contain "</script>") from breaking out of this script block.
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	b.WriteString(`<script>var bdData=` + string(encoded) + `;
+function bdEsc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+function bdShow(num){
+  var d=bdData[num];
+  var el=document.getElementById('bd-detail');
+  if(!d){el.style.display='none';return;}
+  var stateLabel={done:'done',active:'active',queued:'not yet worked on'}[d.state]||d.state;
+  var html='<div class="bd-detail-num">Requirement '+num+' &middot; '+bdEsc(stateLabel)+'</div>';
+  html+='<div class="bd-detail-chain">'+bdEsc(d.chain.join(' → '))+'</div>';
+  if(d.step){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'a.</span><span>'+bdEsc(d.step)+'</span></div>';}
+  if(d.validation){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'b.</span><span>'+bdEsc(d.validation)+'</span></div>';}
+  el.innerHTML=html;
+  el.style.display='block';
+  document.querySelectorAll('.bd-cell').forEach(function(c){c.classList.toggle('bd-selected',c.dataset.num===String(num));});
+}
+</script>`)
+}
+
 func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divider bool) {
 	pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
 	var busy time.Duration
@@ -1033,23 +1193,7 @@ func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divid
 	b.WriteString(rowClose + "\n")
 
 	if hasSteps {
-		// The "currently being worked" mark is inferred, not self-reported
-		// — teams only file a ##ITERATE-VALIDATION## marker once a step is
-		// actually resolved (met/partial/not-met), so there's no "I just
-		// started this" signal to read. The best available proxy: for a
-		// team whose overall status is in-progress, the first step in
-		// Num order that hasn't reported anything yet is the one it's
-		// presumably on right now. Everything after that is just queued
-		// behind it, not "in progress," so it stays unmarked.
-		working := 0
-		if r.status == "in-progress" {
-			for _, sd := range r.steps {
-				if sd.VStatus == "" {
-					working = sd.Num
-					break
-				}
-			}
-		}
+		working := currentWorkingStepNum(r)
 
 		b.WriteString(`<div class="steps-detail">`)
 		for _, sd := range r.steps {
@@ -1221,6 +1365,18 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .vmark.v-not-met{color:var(--danger)}
 .vmark.v-working{color:var(--warn);animation:vworking 1.4s ease-in-out infinite}
 @keyframes vworking{0%,100%{opacity:1}50%{opacity:.3}}
+.burndown{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.bd-cell{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:700;cursor:pointer;color:var(--text-dim);background:var(--surface);transition:transform .1s}
+.bd-cell:hover{transform:translateY(-1px);border-color:var(--accent)}
+.bd-cell.bd-queued{background:var(--surface);color:var(--text-faint)}
+.bd-cell.bd-active{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.bd-cell.bd-done{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+.bd-cell.bd-selected{box-shadow:0 0 0 2px var(--accent)}
+.bd-detail{margin:0 0 22px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px}
+.bd-detail-num{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+.bd-detail-chain{font-size:12px;color:var(--text-dim);margin-bottom:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.bd-detail-row{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:6px;color:var(--text)}
+.bd-detail-row .bd-detail-label{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600;min-width:28px}
 .gaplist{display:flex;flex-direction:column;gap:8px}
 .gap-item{display:flex;gap:10px;align-items:baseline;font-size:13px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:6px}
 .gap-item .dur{font-weight:700;color:var(--danger)}

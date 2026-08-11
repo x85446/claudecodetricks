@@ -21,6 +21,8 @@ Each plan has a top-level `phase:` field:
 - `phase: planned` — written by `/iterate-planner`, waiting for execution to start.
 - `phase: executing` — execution is in flight (or has been; check `running:` for whether a run is currently live).
 
+Two separate timestamps, don't conflate them: `Started:` is when the plan was **drafted** (set once by `/iterate-planner` or on a direct fresh-task run, kept forever). `Executing:` is when execution **actually began** (set once, by `/iterate`, at the exact moment `phase` first flips to `executing` — see the transition points below — and never touched again, including on resume). A plan drafted well ahead of when it's actually run needs both: `Started:` answers "when was this planned", `Executing:` answers "how long has this really been running" (what the dashboard's "Running for" box uses).
+
 **Legacy migration:** see /iterate-planner's "Named plans" section for the one-time `active.md` → `plans/<name>.md` migration procedure — identical here, do it silently on first touch rather than maintaining two copies of the same steps.
 
 ### Entry decisions on `/iterate`
@@ -29,10 +31,10 @@ Resolve in this order:
 
 0. **`$1` is exactly "version"** (or "what version", "iterate version"): run `iterate-run version` and print its output verbatim — real installed binary, not a memory recall, works from any directory. If not found, report "iterate-run isn't installed — run `make install` in claudecodetricks." Then **stop**, no plan involved.
 1. **A plan is already `phase: executing`** (scan `plans/`): resume THAT plan from its "Status / Log", honoring the concurrency lock. This takes precedence over everything below — it's what makes the `/loop` re-fires (which pass no `$1`) continue the live run instead of prompting. If several are somehow executing, pick the one named by `current`, else the most-recently-heartbeated.
-2. **`$1` names an existing plan** (`$1` exactly matches a `plans/<name>.md`, e.g. `/iterate dog`): set `current` = that plan; if `phase: planned` → transition to `phase: executing`, set up the auto-resume loop, begin; if already executing → resume it.
-3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** plan, named via `iterate-run name next`, with `phase: executing`, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
-4. **`$1` empty, exactly one plan exists** with `phase: planned`: transition it to `phase: executing`, set `current`, set up the loop, begin.
-5. **`$1` empty, multiple planned plans exist**: ask the user which one via a **number picker** (AskUserQuestion) — one option per plan, labeled `<name>` with description `started <date> — <goal>`. Then execute the chosen plan (transition to executing, set current, loop, begin). This is the ONLY place `/iterate` asks a question, and it only happens on a human-typed no-arg `/iterate` with no executing plan.
+2. **`$1` names an existing plan** (`$1` exactly matches a `plans/<name>.md`, e.g. `/iterate dog`): set `current` = that plan; if `phase: planned` → transition to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set up the auto-resume loop, begin; if already executing → resume it (leave `Executing:` untouched).
+3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** plan, named via `iterate-run name next`, with `phase: executing`, **`Executing:` set to the same UTC timestamp as `Started:`**, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
+4. **`$1` empty, exactly one plan exists** with `phase: planned`: transition it to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set `current`, set up the loop, begin.
+5. **`$1` empty, multiple planned plans exist**: ask the user which one via a **number picker** (AskUserQuestion) — one option per plan, labeled `<name>` with description `started <date> — <goal>`. Then execute the chosen plan (transition to executing, **set `Executing:`**, set current, loop, begin). This is the ONLY place `/iterate` asks a question, and it only happens on a human-typed no-arg `/iterate` with no executing plan.
 6. **Neither `$1` nor any plan exists**: report "no plans yet — supply instructions or run /iterate-planner first" and stop. (Reporting is not the same as asking.)
 
 Create `./.claude/iterate/` and `./.claude/iterate/plans/` if they don't exist.
@@ -157,6 +159,7 @@ Write `./.claude/iterate/plans/<name>.md` (name from `iterate-run name next` for
 
 name: <animal>
 Started: <UTC timestamp>
+Executing: <UTC timestamp>     # same instant as Started: on this direct fresh-task path — set once, never touch again
 CWD: <pwd at first invocation>
 phase: executing
 running: <UTC timestamp>       # heartbeat — update at every step boundary
@@ -187,7 +190,7 @@ running: <UTC timestamp>       # heartbeat — update at every step boundary
 
 If resuming, do not overwrite — append to Decisions log and Status / Log. Update the `running:` heartbeat as you work.
 
-If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Validation/Constraints are already there — just set `phase: executing`, take the lock, set up `/loop`, and start. Do not re-parse from $1.
+If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Validation/Constraints are already there — just set `phase: executing`, **add an `Executing: <UTC timestamp now>` line** (this is the real execution-start marker the dashboard's "Running for" box reads — do NOT touch `Started:`, which stays as the original drafting time), take the lock, set up `/loop`, and start. Do not re-parse from $1.
 
 ### 3. Execute the steps
 
@@ -328,7 +331,7 @@ What the skill does:
 Plan `owl` is `phase: planned`, `teamed: true`, with Teams: `deploy` (steps 2,4; no deps; agent backend-expert) and `link-tree` (steps 3,5; depends on `deploy`; agent documentation-expert). User types `/iterate owl`.
 
 What the skill does:
-- Transitions `owl` to `phase: executing`, takes the lock, sets up `/loop 1m /iterate` (1 minute max, teamed or not — notifications help when they land but never widen the poll interval).
+- Transitions `owl` to `phase: executing`, sets `Executing: <now>`, takes the lock, sets up `/loop 1m /iterate` (1 minute max, teamed or not — notifications help when they land but never widen the poll interval).
 - Team dispatch: `deploy` has no unmet dependencies → ready. `link-tree` depends on `deploy`, which isn't done yet → not ready.
 - Dispatches one Agent named `owl-deploy` (steps 2,4 + Goal + Constraints + its scoped log path `./.claude/iterate/plans/owl.teams/deploy.log.md` + the mandatory-checkin instruction, background). Sets `deploy` row `Status: in-progress`. Logs "dispatched teams: deploy (background, in progress)". Ends the turn.
 - Mid-flight, if the user checks in: reads `deploy.log.md`'s latest checkin line (not just waiting for a terminal line) and reports it plainly — e.g. "deploy — updated 4m ago, container built, running smoke test now." No terminal line yet, so nothing to merge; this is just reading the log, not a poll tick.
