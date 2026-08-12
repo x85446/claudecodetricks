@@ -735,22 +735,30 @@ func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, step
 }
 
 // reCoordStepStatus matches the coordinator's own inline per-step self
-// report in a flat plan's Status/Log — "step 5 PARTIAL: ...", "steps 2-3
-// DONE: ...", case-insensitive since real logs mix "DONE" and "partial"
-// in the same file. This is a free-text convention, not a structured
-// marker, because there's no per-team log file for the coordinator's own
-// unassigned steps to write one into (##ITERATE-VALIDATION## is scoped to
-// dispatched teams, per /iterate's own SKILL.md) — confirmed live as the
-// actual, only signal a real flat-plan coordinator produces.
-var reCoordStepStatus = regexp.MustCompile(`(?i)\bsteps?\s+(\d+)(?:-(\d+))?\s+(done|partial|blocked|not-met)\b`)
+// report in a flat plan's Status/Log — "step 5 PARTIAL: Windows VM on
+// bridge...", "steps 2-3 DONE: bridge up...", case-insensitive since real
+// logs mix "DONE" and "partial" in the same file. This is a free-text
+// convention, not a structured marker, because there's no per-team log
+// file for the coordinator's own unassigned steps to write one into
+// (##ITERATE-VALIDATION## is scoped to dispatched teams, per /iterate's
+// own SKILL.md) — confirmed live as the actual, only signal a real
+// flat-plan coordinator produces. Group 4 captures the rest of that same
+// line (the actual explanation) as the note — RE2's "." already stops at
+// a newline, so this only ever captures within one log line.
+var reCoordStepStatus = regexp.MustCompile(`(?i)\bsteps?\s+(\d+)(?:-(\d+))?\s+(done|partial|blocked|not-met)\b:?\s*(.*)`)
 
 // parseCoordinatorStepStatus turns those inline reports into the same
-// validationMark shape readValidationMarkers produces for a team log, so
-// collectSteps' done/active/queued shading works identically regardless
-// of source. A range ("steps 2-3 DONE") applies to every step in it.
-// Later matches win for a given step number — Status/Log is append-only
-// and chronological, so a later line is a correction/update, same rule
-// readValidationMarkers already follows.
+// validationMark shape readValidationMarkers produces for a team log —
+// status AND note both — so collectSteps' shading and the burndown
+// chart's click-through detail work identically regardless of source.
+// Confirmed live as a real gap: the note text was being read out of the
+// coordinator's own log then silently discarded, so a flat plan's
+// unassigned steps never got the "what actually happened" explanation a
+// teamed plan's steps already show. A range ("steps 2-3 DONE") applies
+// the same status AND note to every step in it. Later matches win for a
+// given step number — Status/Log is append-only and chronological, so a
+// later line is a correction/update, same rule readValidationMarkers
+// already follows.
 func parseCoordinatorStepStatus(statusLog string) map[int]validationMark {
 	marks := map[int]validationMark{}
 	for _, m := range reCoordStepStatus.FindAllStringSubmatch(statusLog, -1) {
@@ -775,8 +783,9 @@ func parseCoordinatorStepStatus(statusLog string) map[int]validationMark {
 		case "blocked", "not-met":
 			status = "not-met"
 		}
+		note := strings.TrimSpace(m[4])
 		for n := start; n <= end; n++ {
-			marks[n] = validationMark{status: status}
+			marks[n] = validationMark{status: status, note: note}
 		}
 	}
 	return marks
@@ -1133,9 +1142,36 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	}
 
 	b.WriteString(`<footer>Built from what's already on disk — each team's own log file plus any iterate-run-wrapped unit's registry timestamps, merged with hook-derived tool-call data wherever it's been captured.</footer>`)
+	writeNoteModal(&b)
 	b.WriteString(`</div></body></html>`)
 
 	return b.String()
+}
+
+// writeNoteModal renders the one shared popup every clickable validation
+// glyph (see validationGlyph) opens — a real, readable box instead of a
+// native title tooltip. Confirmed live as a real usability gap: a note is
+// often several sentences of explanation (why a check is only partial,
+// what a perf-check failure actually means on this machine), and a
+// tooltip truncates, can't be selected/copied, and vanishes the instant
+// the mouse moves off it. One shared modal (not one per glyph) keeps the
+// page light regardless of how many notes exist — content is read
+// straight off the clicked element's own data-* attributes at click time,
+// no per-glyph JSON payload needed.
+func writeNoteModal(b *strings.Builder) {
+	b.WriteString(`<div id="note-modal" class="note-modal" style="display:none" onclick="if(event.target===this)noteModalClose()"><div class="note-modal-box"><button type="button" class="note-modal-close" onclick="noteModalClose()" aria-label="Close">&times;</button><div class="note-modal-label"></div><div class="note-modal-text"></div></div></div>
+<script>
+function showNote(el){
+  var modal=document.getElementById('note-modal');
+  var label=modal.querySelector('.note-modal-label');
+  label.textContent=el.dataset.label||'';
+  label.className='note-modal-label '+(el.dataset.cls||'');
+  modal.querySelector('.note-modal-text').textContent=el.dataset.note||'';
+  modal.style.display='flex';
+}
+function noteModalClose(){ document.getElementById('note-modal').style.display='none'; }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')noteModalClose(); });
+</script>`)
 }
 
 // writeGanttRow renders one team (or the coordinator's) row: the status
@@ -1197,7 +1233,8 @@ type burnStep struct {
 	Validation string
 	Team       string
 	DependsOn  []string // this step's owning team's OWN full Depends-on list from the Teams table, resolved to display labels — every team that must finish first, not just one. A team can list several (tech-debt genuinely depends on all seven of the others in a real plan); showing only a single "primary" parent (the shortcut orderTeamRows takes purely for indentation) would silently hide the rest.
-	State      string   // "done" (validation reported met), "active" (currently being worked, or reported partial/not-met), "queued" (white — no signal yet)
+	VNote      string   // the team's own explanation for why this landed where it did (##ITERATE-VALIDATION## note, or the coordinator's own inline log text on a flat plan) — empty when nothing was reported. This is the actual "what happened" a click on the cell should surface, not just the bare status.
+	State      string   // "done" (met), "active" (currently being worked, or reported partial), "gaveup" (reported not-met — attempted and failed, or a hard blocker; NOT the same bucket as "still working"), "queued" (white — no signal yet)
 }
 
 // collectSteps flattens every row's Steps/Validation detail into one
@@ -1232,12 +1269,20 @@ func collectSteps(rows []Row) []burnStep {
 			switch {
 			case sd.VStatus == "met":
 				state = "done"
-			case sd.VStatus == "partial", sd.VStatus == "not-met":
-				state = "active" // reported, but not fully resolved — needs more work, not untouched
+			case sd.VStatus == "not-met":
+				// Attempted and reported failed (or a hard blocker) — a
+				// real, considered outcome, not "still working on it."
+				// Confirmed live: this used to share the same amber
+				// "active" bucket as a genuinely in-progress step, which
+				// read as "still going" for a requirement the team had
+				// actually given up on.
+				state = "gaveup"
+			case sd.VStatus == "partial":
+				state = "active"
 			case sd.Num == working:
 				state = "active"
 			}
-			out = append(out, burnStep{Num: sd.Num, Step: sd.Step, Validation: sd.Validation, Team: r.label, DependsOn: deps, State: state})
+			out = append(out, burnStep{Num: sd.Num, Step: sd.Step, Validation: sd.Validation, Team: r.label, DependsOn: deps, VNote: sd.VNote, State: state})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Num < out[j].Num })
@@ -1267,9 +1312,19 @@ func writeBurndownChart(b *strings.Builder, rows []Row) {
 			cls = "bd-done"
 		case "active":
 			cls = "bd-active"
+		case "gaveup":
+			cls = "bd-gaveup"
 		}
-		fmt.Fprintf(b, `<div class="bd-cell %s" data-num="%d" onclick="bdShow(%d)" title="%d &middot; %s">%d</div>`,
-			cls, s.Num, s.Num, s.Num, html.EscapeString(s.Team), s.Num)
+		// The little flag: a real reported note (why a step is active,
+		// partial, or given up on) is exactly the feedback worth a click
+		// — mark it BEFORE the click, not just after, so a note isn't
+		// something you find only by clicking every cell to check.
+		flag := ""
+		if s.VNote != "" {
+			flag = `<span class="bd-flag" title="has a note"></span>`
+		}
+		fmt.Fprintf(b, `<div class="bd-cell %s" data-num="%d" onclick="bdShow(%d)" title="%d &middot; %s">%d%s</div>`,
+			cls, s.Num, s.Num, s.Num, html.EscapeString(s.Team), s.Num, flag)
 	}
 	b.WriteString(`</div><div id="bd-detail" class="bd-detail" style="display:none"></div>`)
 
@@ -1278,11 +1333,12 @@ func writeBurndownChart(b *strings.Builder, rows []Row) {
 		Validation string   `json:"validation"`
 		Team       string   `json:"team"`
 		DependsOn  []string `json:"dependsOn"`
+		VNote      string   `json:"note"`
 		State      string   `json:"state"`
 	}
 	data := make(map[string]burnStepJSON, len(steps))
 	for _, s := range steps {
-		data[strconv.Itoa(s.Num)] = burnStepJSON{Step: s.Step, Validation: s.Validation, Team: s.Team, DependsOn: s.DependsOn, State: s.State}
+		data[strconv.Itoa(s.Num)] = burnStepJSON{Step: s.Step, Validation: s.Validation, Team: s.Team, DependsOn: s.DependsOn, VNote: s.VNote, State: s.State}
 	}
 	// json.Marshal HTML-escapes '<', '>' and '&' by default — exactly what
 	// keeps a plan's own step/validation text (arbitrary markdown, could
@@ -1297,11 +1353,12 @@ function bdShow(num){
   var d=bdData[num];
   var el=document.getElementById('bd-detail');
   if(!d){el.style.display='none';return;}
-  var stateLabel={done:'done',active:'active',queued:'not yet worked on'}[d.state]||d.state;
-  var html='<div class="bd-detail-num">Requirement '+num+' &middot; '+bdEsc(d.team)+' &middot; '+bdEsc(stateLabel)+'</div>';
+  var stateLabel={done:'done',active:'active',gaveup:'gave up',queued:'not yet worked on'}[d.state]||d.state;
+  var html='<div class="bd-detail-num bd-detail-'+d.state+'">Requirement '+num+' &middot; '+bdEsc(d.team)+' &middot; '+bdEsc(stateLabel)+'</div>';
   html+='<div class="bd-detail-chain">depends on: '+bdEsc(d.dependsOn.length?d.dependsOn.join(', '):'none')+'</div>';
   if(d.step){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'a.</span><span>'+bdEsc(d.step)+'</span></div>';}
   if(d.validation){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'b.</span><span>'+bdEsc(d.validation)+'</span></div>';}
+  if(d.note){html+='<div class="bd-detail-note"><div class="bd-detail-note-label">note</div><div>'+bdEsc(d.note)+'</div></div>';}
   el.innerHTML=html;
   el.style.display='block';
   document.querySelectorAll('.bd-cell').forEach(function(c){c.classList.toggle('bd-selected',c.dataset.num===String(num));});
@@ -1417,7 +1474,15 @@ func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divid
 // validationGlyph renders the team's own ##ITERATE-VALIDATION## report for
 // this Nb, if it wrote one — nothing at all when it hasn't, since "not yet
 // reported" and "reported not-met" are different facts and only one of
-// them is worth a red mark.
+// them is worth a red mark. A real note (the actual, often multi-sentence,
+// explanation of why the check landed where it did) opens the shared
+// #note-modal on click instead of a native title tooltip — confirmed live
+// as a real usability gap: a tooltip truncates, can't be selected/copied,
+// and disappears the instant the mouse moves off it, exactly wrong for a
+// note that's the whole point of clicking through (a real one seen live:
+// several sentences of retention/perf-check detail, cut off mid-word in
+// the tooltip). A status with no note (met with nothing further to say)
+// stays a plain, non-interactive glyph — nothing to show in a popup.
 func validationGlyph(status, note string) string {
 	var cls, symbol, label string
 	switch status {
@@ -1430,11 +1495,11 @@ func validationGlyph(status, note string) string {
 	default:
 		return ""
 	}
-	title := label
-	if note != "" {
-		title += ": " + note
+	if note == "" {
+		return fmt.Sprintf(`<span class="vmark %s" title="%s">%s</span>`, cls, html.EscapeString(label), symbol)
 	}
-	return fmt.Sprintf(`<span class="vmark %s" title="%s">%s</span>`, cls, html.EscapeString(title), symbol)
+	return fmt.Sprintf(`<span class="vmark %s vmark-clickable" onclick="showNote(this)" data-cls="%s" data-label="%s" data-note="%s" title="click for details">%s</span>`,
+		cls, cls, html.EscapeString(label), html.EscapeString(note), symbol)
 }
 
 func plural(n int) string {

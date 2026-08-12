@@ -238,3 +238,34 @@ func TestGetArchivedPlanSummarySetsArchived(t *testing.T) {
 		t.Errorf("ArchiveFile = %q, want %q", ps.ArchiveFile, archiveFile)
 	}
 }
+
+// TestFinishedAtParsesIndependentlyOfExecuting confirms Finished: (set
+// once, by /iterate, right before archiving) parses on its own — the
+// archived-plan counterpart to Executing:, needed so the dashboard's "Ran
+// for" figure has a real "done at" boundary instead of depending on
+// whatever hook/registry activity data happens to exist for the project.
+func TestFinishedAtParsesIndependentlyOfExecuting(t *testing.T) {
+	dir := t.TempDir()
+	archiveDir := filepath.Join(dir, ".claude", "iterate", "archive")
+	if err := os.MkdirAll(archiveDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	archiveFile := "20260812T030000Z-bison-done.md"
+	content := "name: bison\nStarted: 2026-08-12 02:47:31 UTC (planned)\nExecuting: 2026-08-12T02:54:23Z\nFinished: 2026-08-12T03:00:00Z\nphase: complete\n\n## Goal\nBridge it.\n"
+	if err := os.WriteFile(filepath.Join(archiveDir, archiveFile), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	ps, err := GetArchivedPlanSummary(dir, archiveFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fin, ok := ps.FinishedAt()
+	if !ok || !fin.Equal(time.Date(2026, 8, 12, 3, 0, 0, 0, time.UTC)) {
+		t.Errorf("FinishedAt() = %v, %v; want 2026-08-12 03:00:00 UTC", fin, ok)
+	}
+	exec, ok := ps.ExecutingAt()
+	if !ok || !exec.Equal(time.Date(2026, 8, 12, 2, 54, 23, 0, time.UTC)) {
+		t.Errorf("ExecutingAt() = %v, %v; want 2026-08-12 02:54:23 UTC (Finished: must not clobber it)", exec, ok)
+	}
+}

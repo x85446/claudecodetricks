@@ -650,6 +650,62 @@ func TestRunboxFallsBackToEarliestActivityWhenExecutingMissing(t *testing.T) {
 	}
 }
 
+// TestRunboxHandlesZeroConfirmedActivity reproduces the bug shown live: a
+// flat plan with a correct Executing: but no hook or iterate-run-wrapped
+// registry data at all (no spans on ANY row) showed "0000-12-31 18:09:24
+// -> 18:09:24 (1s of recorded activity)" and "Running for 0s" — Go's zero
+// time.Time leaking straight into the page because minT/maxT never got
+// set, and maxT.Sub(started) went hugely negative and got silently
+// clamped to 0. A row with real Steps/Validation detail but zero spans is
+// a real, common shape (see BuildRowsFromFilesystem's unassigned-steps
+// attribution to the coordinator) — the page must fall back to "now" for
+// the duration and never print the zero-value date at all.
+func TestRunboxHandlesZeroConfirmedActivity(t *testing.T) {
+	executing := time.Now().Add(-90 * time.Minute)
+	rows := []Row{
+		{key: "", label: "coordinator", steps: []StepDetail{{Num: 1, Step: "x", Validation: "y"}}}, // no spans at all
+	}
+	plan := PlanSummary{Name: "bison", Executing: executing.UTC().Format("2006-01-02T15:04:05Z")}
+	out := RenderTimelineHTML(rows, plan, "")
+
+	if strings.Contains(out, "0000-") {
+		t.Errorf("zero-value timestamp leaked into the page; output:\n%s", out)
+	}
+	if strings.Contains(out, `class="runbox-dur">0s<`) {
+		t.Errorf("runbox shows 0s despite Executing: being 90 minutes ago; output:\n%s", out)
+	}
+	if strings.Contains(out, `class="axis">`) {
+		t.Errorf("axis line should be omitted with zero confirmed activity, not show 0000-derived timestamps; output:\n%s", out)
+	}
+}
+
+// TestRunboxPrefersFinishedOverActivityForArchivedPlans confirms an
+// archived plan's "Ran for" figure anchors to its own declared Finished:
+// (set once by /iterate right before archiving) rather than maxT — the
+// latest CONFIRMED activity span, which is only as reliable as whatever
+// hook/registry data happens to exist for that project, and can end far
+// earlier than the plan's real completion instant.
+func TestRunboxPrefersFinishedOverActivityForArchivedPlans(t *testing.T) {
+	executing := time.Date(2026, 8, 12, 2, 54, 23, 0, time.UTC)
+	staleActivity := time.Date(2026, 8, 12, 2, 55, 0, 0, time.UTC) // a confirmed span, but well before the real finish
+	finished := time.Date(2026, 8, 12, 5, 0, 0, 0, time.UTC)
+	rows := []Row{
+		{key: "", label: "coordinator", spans: []span{{start: staleActivity, end: staleActivity.Add(time.Second)}}},
+	}
+	plan := PlanSummary{
+		Name:      "bison",
+		Archived:  true,
+		Executing: executing.Format("2006-01-02T15:04:05Z"),
+		Finished:  finished.Format("2006-01-02T15:04:05Z"),
+	}
+	out := RenderTimelineHTML(rows, plan, "")
+
+	wantDur := finished.Sub(executing).Round(time.Second)
+	if !strings.Contains(out, `class="runbox-dur">`+wantDur.String()+`<`) {
+		t.Errorf("runbox should show the Executing:->Finished: span (%s), anchored to Finished: not the stale confirmed-activity span; output:\n%s", wantDur, out)
+	}
+}
+
 // TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen reproduces the bug
 // reported live: only the row whose last span happened to end at the
 // plan-wide maxT got the "still running" stripe — every other genuinely
