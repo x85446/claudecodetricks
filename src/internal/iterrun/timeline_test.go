@@ -302,6 +302,96 @@ func TestBuildRowsFromArchivePreservesGoalAndSteps(t *testing.T) {
 	}
 }
 
+// TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator
+// reproduces a real gap found live: a plan drafted via /iterate-planner
+// but never teamified (teamed: false, no ## Teams table) had real Steps/
+// Validation detail and real per-step progress in its own Status/Log
+// ("step 1 DONE: ...", "steps 2-3 DONE: ...", "step 5 PARTIAL: ..." — the
+// exact free-text shape a live flat-plan coordinator actually writes,
+// since there's no per-team log file for it to write a structured
+// ##ITERATE-VALIDATION## marker into), yet showed no Requirements
+// burndown chart at all — every step number was invisible because
+// nothing ever attached them to any row; that only ever happened inside
+// the Teams-table loop, and teams is empty on a flat plan. Confirms the
+// coordinator row now carries every unassigned step, correctly shaded by
+// its own inline status reports, with an untouched step correctly
+// inferred as the one currently being worked.
+func TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator(t *testing.T) {
+	home := t.TempDir()
+	plansDir := filepath.Join(home, ".claude", "iterate", "plans")
+	if err := os.MkdirAll(plansDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	planMD := "# Plan\n\nname: bison\nStarted: 2026-08-12T02:54:00Z\nExecuting: 2026-08-12T02:54:00Z\nphase: executing\nteamed: false\n\n" +
+		"## Steps\n1. back up state\n2. create bridge\n3. confirm host survived\n\n" +
+		"## Validation\n1. backup file exists\n2. bridge stanza present\n3. host reachable\n\n" +
+		"## Status / Log\n" +
+		"- 2026-08-12T02:55Z step 1 DONE: backed up.\n" +
+		"- 2026-08-12T03:00Z steps 2-3 DONE: bridge up, host survived.\n"
+	if err := os.WriteFile(filepath.Join(plansDir, "bison.md"), []byte(planMD), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Coordinator activity so it reads as currently running — otherwise
+	// there'd be no row at all (BuildRowsFromFilesystem only creates rows
+	// from team-log files / registry entries / the Teams table; a flat
+	// plan's coordinator needs SOME recorded activity to exist as a row).
+	regDir := RegistryDir(home)
+	entry := &Entry{Plan: "bison", Team: "", Unit: "step1",
+		Started: time.Date(2026, 8, 12, 2, 55, 0, 0, time.UTC)}
+	if err := entry.Write(regDir); err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := BuildRowsFromFilesystem("bison", home, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var coord *Row
+	for i := range rows {
+		if rows[i].key == "" {
+			coord = &rows[i]
+		}
+	}
+	if coord == nil {
+		t.Fatalf("no coordinator row at all; rows: %+v", rows)
+	}
+	if len(coord.steps) != 3 {
+		t.Fatalf("coordinator.steps = %d, want 3 (all of them unassigned on a flat plan); got: %+v", len(coord.steps), coord.steps)
+	}
+	byNum := map[int]StepDetail{}
+	for _, sd := range coord.steps {
+		byNum[sd.Num] = sd
+	}
+	if byNum[1].VStatus != "met" {
+		t.Errorf("step 1 VStatus = %q, want %q (from \"step 1 DONE\")", byNum[1].VStatus, "met")
+	}
+	if byNum[2].VStatus != "met" || byNum[3].VStatus != "met" {
+		t.Errorf("steps 2-3 VStatus = %q/%q, want both %q (from \"steps 2-3 DONE\")", byNum[2].VStatus, byNum[3].VStatus, "met")
+	}
+}
+
+// TestParseCoordinatorStepStatusRangesAndCase confirms the free-text
+// parser handles both a single-step and a range report, is
+// case-insensitive (a real log mixed "DONE" and "partial" in the same
+// file), and folds "blocked" into the same not-met bucket
+// ##ITERATE-VALIDATION## already uses.
+func TestParseCoordinatorStepStatusRangesAndCase(t *testing.T) {
+	log := "- step 1 DONE: backed up.\n" +
+		"- steps 2-3 DONE: bridge up.\n" +
+		"- step 5 PARTIAL: windows only.\n" +
+		"- step 6 partial: reachable.\n" +
+		"- step 9 blocked: no access.\n"
+	marks := parseCoordinatorStepStatus(log)
+	want := map[int]string{1: "met", 2: "met", 3: "met", 5: "partial", 6: "partial", 9: "not-met"}
+	for n, wantStatus := range want {
+		if got := marks[n].status; got != wantStatus {
+			t.Errorf("step %d status = %q, want %q", n, got, wantStatus)
+		}
+	}
+}
+
 // TestBuildRowsFromFilesystemExcludesStaleRegistryEntries reproduces the
 // second bug reported live, alongside the coordinator one: plan codenames
 // get reused within the SAME project over time too, not just across

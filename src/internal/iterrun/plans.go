@@ -31,7 +31,20 @@ type PlanSummary struct {
 	// planning time instead of elapsed execution time. Empty for plans
 	// written before this field existed, or a plan still sitting at
 	// phase: planned.
-	Executing  string
+	Executing string
+	// Finished is this plan's own declared "Finished:" value — set once,
+	// by /iterate, at the moment it's actually done and about to archive.
+	// Mirrors Executing's own "set once, never touched again" rule, just
+	// at the other end of the run. Without it, an archived plan's own
+	// "ran for" duration had no reliable end boundary short of maxT (the
+	// latest CONFIRMED activity span) — which is only as good as whatever
+	// hook/registry data happened to exist, and is simply absent for a
+	// project with neither wired up (confirmed live: a flat plan with no
+	// hooks and no iterate-run-wrapped commands showed "running for 0s"
+	// despite Executing: being correct, because maxT was Go's zero
+	// time.Time — there was nothing to compute a real span against).
+	// Empty for plans written before this field existed.
+	Finished   string
 	Goal       string // truncated to ~160 chars — for the dashboard card list
 	GoalFull   string // untruncated — for the plan detail page
 	HasTeams   bool
@@ -85,11 +98,20 @@ func (p PlanSummary) ExecutingAt() (time.Time, bool) {
 	return parsePlanStarted(p.Executing)
 }
 
+// FinishedAt is this plan's own declared Finished: value, parsed the same
+// way as StartedAt/ExecutingAt. Returns ok=false when absent (plan
+// predates the field, or a live plan that isn't done yet) — callers fall
+// back to a different signal (maxT, or "now") rather than guessing.
+func (p PlanSummary) FinishedAt() (time.Time, bool) {
+	return parsePlanStarted(p.Finished)
+}
+
 var (
 	reName             = regexp.MustCompile(`^name:\s*(.+)$`)
 	rePhase            = regexp.MustCompile(`^phase:\s*(.+)$`)
 	reStarted          = regexp.MustCompile(`^Started:\s*(.+)$`)
 	reExecuting        = regexp.MustCompile(`^Executing:\s*(.+)$`)
+	reFinished         = regexp.MustCompile(`^Finished:\s*(.+)$`)
 	reTeamed           = regexp.MustCompile(`^teamed:\s*true\s*$`)
 	reStatus           = regexp.MustCompile(`^status:\s*(.+)$`)
 	reLeadingTimestamp = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2})(Z)?)?`)
@@ -243,6 +265,9 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		}
 		if m := reExecuting.FindStringSubmatch(line); m != nil {
 			ps.Executing = strings.TrimSpace(m[1])
+		}
+		if m := reFinished.FindStringSubmatch(line); m != nil {
+			ps.Finished = strings.TrimSpace(m[1])
 		}
 		if m := reStatus.FindStringSubmatch(line); m != nil {
 			ps.Status = strings.TrimSpace(m[1])

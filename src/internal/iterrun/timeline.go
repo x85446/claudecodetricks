@@ -465,7 +465,7 @@ func buildRowsFrom(planFilePath, teamsDir, plan, homeDir string, scanDirs []stri
 	// Started: lives, needed below to keep a registry entry left over from
 	// an earlier, unrelated run that reused this same codename from
 	// silently merging into this run's picture.
-	teams, steps, validations, planStarted := readPlanTeamsAndSteps(planFilePath)
+	teams, steps, validations, planStarted, statusLog := readPlanTeamsAndSteps(planFilePath)
 
 	logFiles, _ := filepath.Glob(filepath.Join(teamsDir, "*.log.md"))
 	for _, lf := range logFiles {
@@ -550,6 +550,55 @@ func buildRowsFrom(planFilePath, teamsDir, plan, homeDir string, scanDirs []stri
 			r.steps = append(r.steps, sd)
 		}
 		sort.Slice(r.steps, func(i, j int) bool { return r.steps[i].Num < r.steps[j].Num })
+	}
+
+	// Any Steps/Validation pair no named team claimed belongs to the
+	// coordinator's own "unassigned steps" (see /iterate's own SKILL.md:
+	// "what the coordinator uses for the plan's unassigned steps"). The
+	// common case is a flat plan with no ## Teams table at all — teams is
+	// empty, so EVERY step lands here — but it also covers a genuinely
+	// teamed plan that just never assigned every step to a team.
+	// Confirmed live as a real gap: a plan drafted via /iterate-planner
+	// but never teamified showed no Requirements burndown at all, despite
+	// having real Steps/Validation detail and real per-step progress
+	// already logged — the coordinator row simply never got a .steps
+	// slice populated, since that only ever happened inside the
+	// Teams-table loop above. Status comes from parseCoordinatorStepStatus
+	// rather than readValidationMarkers — there's no per-team log file for
+	// the coordinator's own steps to write a ##ITERATE-VALIDATION## marker
+	// into, only its inline "step N DONE:" lines in the plan's own
+	// Status/Log.
+	var unassigned []int
+	for n := range steps {
+		if _, owned := stepOwner[n]; !owned {
+			unassigned = append(unassigned, n)
+		}
+	}
+	for n := range validations {
+		if _, owned := stepOwner[n]; !owned {
+			unassigned = append(unassigned, n)
+		}
+	}
+	if len(unassigned) > 0 {
+		sort.Ints(unassigned)
+		coordMarks := parseCoordinatorStepStatus(statusLog)
+		coord := get("")
+		seen := map[int]bool{}
+		for _, n := range unassigned {
+			if seen[n] {
+				continue // steps and validations can both name the same number
+			}
+			seen[n] = true
+			sd := StepDetail{Num: n, Step: steps[n], Validation: validations[n]}
+			if sd.Step == "" && sd.Validation == "" {
+				continue
+			}
+			if m, ok := coordMarks[n]; ok {
+				sd.VStatus, sd.VNote = m.status, m.note
+			}
+			coord.steps = append(coord.steps, sd)
+		}
+		sort.Slice(coord.steps, func(i, j int) bool { return coord.steps[i].Num < coord.steps[j].Num })
 	}
 
 	// A team-log or registry name that ISN'T a literal Teams-table row is
@@ -715,8 +764,15 @@ func parseCoordinatorStepStatus(statusLog string) map[int]validationMark {
 				end = e
 			}
 		}
+		// Normalize to the same three-value vocabulary
+		// (met/partial/not-met) validationMark and validationGlyph use
+		// everywhere else — "done"/"blocked" are this convention's own
+		// words, not the internal ones.
 		status := strings.ToLower(m[3])
-		if status == "blocked" {
+		switch status {
+		case "done":
+			status = "met"
+		case "blocked", "not-met":
 			status = "not-met"
 		}
 		for n := start; n <= end; n++ {
@@ -880,6 +936,19 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 			}
 		}
 	}
+	// hasActivity distinguishes "rows exist but none of them have any
+	// CONFIRMED span yet" from real activity — a real, live gap confirmed
+	// live: a flat plan with no hooks wired and no iterate-run-wrapped
+	// commands has a coordinator row (it owns unassigned Steps/Validation
+	// detail — see BuildRowsFromFilesystem) but zero spans, so minT/maxT
+	// both stayed at Go's zero time.Time. That zero value used to leak
+	// straight into the page — "0000-12-31 18:09:24" as the activity
+	// span, "Running for 0s" (maxT.Sub(started) went hugely NEGATIVE,
+	// clamped to 0) — reading as "just started" or "stuck" when the truth
+	// was simply "no hook/registry data exists for this plan at all."
+	// minT/maxT still get used below purely for bar positioning math
+	// (pct), which is harmless with no spans to plot regardless.
+	hasActivity := !minT.IsZero()
 	total := maxT.Sub(minT)
 	if total <= 0 {
 		total = time.Second
@@ -926,8 +995,12 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	var b strings.Builder
 	b.WriteString(timelineHead(title))
 	b.WriteString(header)
-	fmt.Fprintf(&b, `<div class="sub">%s &rarr; %s (%s of recorded activity)</div>`+"\n",
-		minT.Local().Format("2006-01-02 15:04:05"), maxT.Local().Format("15:04:05"), total.Round(time.Second))
+	if hasActivity {
+		fmt.Fprintf(&b, `<div class="sub">%s &rarr; %s (%s of recorded activity)</div>`+"\n",
+			minT.Local().Format("2006-01-02 15:04:05"), maxT.Local().Format("15:04:05"), total.Round(time.Second))
+	} else {
+		b.WriteString(`<div class="sub">no confirmed activity yet — this plan has no hook or iterate-run-wrapped registry data on this machine</div>` + "\n")
+	}
 
 	// A separate, explicitly-labeled "running for" figure — deliberately
 	// NOT the same number as the activity span above. That span is the
@@ -968,7 +1041,30 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		if plan.Archived {
 			label = "Ran for"
 		}
-		runDur := max(maxT.Sub(started), 0)
+		// The end-of-range for this duration, in preference order:
+		//   1. Finished: — set once by /iterate right before archiving,
+		//      the real "done at" instant. Only meaningful once the plan
+		//      IS archived (a live plan's Finished: is by definition
+		//      unset).
+		//   2. maxT — the latest CONFIRMED activity span, when any exist.
+		//   3. time.Now() — when hasActivity is false there's no maxT to
+		//      fall back to at all (Go's zero time.Time otherwise leaks
+		//      straight into this math as a wildly negative duration,
+		//      clamped to a misleading flat 0s — confirmed live on a flat
+		//      plan with no hook/registry data, correct Executing: and
+		//      all, still showing "Running for 0s"). "Right now" is the
+		//      only honest answer available for a plan that's still live
+		//      with zero confirmed activity anywhere.
+		activityEnd := maxT
+		if plan.Archived {
+			if fin, finOK := plan.FinishedAt(); finOK {
+				activityEnd = fin
+			}
+		}
+		if !hasActivity && activityEnd.IsZero() {
+			activityEnd = time.Now()
+		}
+		runDur := max(activityEnd.Sub(started), 0)
 		fmt.Fprintf(&b, `<div class="runbox"><span class="runbox-label">%s</span><span class="runbox-dur">%s</span><span class="runbox-since">since %s</span></div>`+"\n",
 			label, runDur.Round(time.Second), started.Local().Format("2006-01-02 15:04:05"))
 	}
@@ -1018,8 +1114,10 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		}
 		writeGanttRow(&b, r, pct, divider)
 	}
-	fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
-		minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
+	if hasActivity {
+		fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
+			minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
+	}
 	b.WriteString(`</div>`)
 
 	b.WriteString(`<div class="legend"><span><span class="sw" style="background:var(--busy)"></span>confirmed activity</span><span><span class="sw sw-open"></span>still running</span><span><span class="sw" style="background:var(--danger)"></span>severe gap (5m+)</span><span>unmarked gaps under 5m are normal think-time</span></div>`)
@@ -1062,7 +1160,7 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 // Shared by writeGanttRow's per-team panel and the burndown chart so both
 // agree on which cell is "active" instead of drifting independently.
 func currentWorkingStepNum(r Row) int {
-	if r.status != "in-progress" {
+	if !rowIsRunning(r) {
 		return 0
 	}
 	for _, sd := range r.steps {
@@ -1071,6 +1169,21 @@ func currentWorkingStepNum(r Row) int {
 		}
 	}
 	return 0
+}
+
+// rowIsRunning reuses statusPill's own definition of "currently running"
+// instead of a second, separately-maintained check — a named team row
+// always has an explicit status (in-progress, done, pending, ...) so this
+// behaves exactly like the old literal `status == "in-progress"` check
+// for those. The coordinator row is the one case that differs: it never
+// gets an explicit status field at all (see BuildRowsFromFilesystem), so
+// a literal-string check could never recognize it as "working on
+// something right now" — needed so the burndown chart's "active" cell
+// inference (currentWorkingStepNum) also works for a flat plan's
+// unassigned steps, attributed to the coordinator.
+func rowIsRunning(r Row) bool {
+	class, _ := statusPill(r.status, len(r.spans) > 0)
+	return class == "p-running"
 }
 
 // burnStep is one numbered requirement's flattened view for the burndown
