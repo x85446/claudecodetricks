@@ -45,20 +45,21 @@ func TestArchivedBadgeReflectsBlockedAndPhase(t *testing.T) {
 	}
 }
 
-// TestDashboardRendersTagFilterAndArchivedSection reproduces two things
-// found live in the same session: a completed plan simply vanished from
-// the dashboard once /iterate archived it (no ListArchivedPlans call
+// TestDashboardSeparatesActiveAndArchivedTabs reproduces two things found
+// live in the same session: a completed plan simply vanished from the
+// dashboard once /iterate archived it (no ListArchivedPlans call
 // anywhere), and there was no way to hide badge categories a visitor
 // doesn't care about. Drives the actual rendering functions handleIndex
-// calls (writeTagFilter, writeProjectSection) directly against a real
-// live+archived plan pair on disk — NOT through handleIndex/ListProjects,
-// which read the real machine-wide project registry
+// calls (writeTagFilter, writeLiveProjectSection,
+// writeArchivedProjectAccordion) directly against a real live+archived
+// plan pair on disk — NOT through handleIndex/ListProjects, which read
+// the real machine-wide project registry
 // (~/.claude/iterate-run/projects.json) and would pollute it with this
-// test's temp directory. Confirms a data-tag on every card (live and
-// archived), a checkbox for each distinct tag actually in play, and a
-// rendered "Archived" section for a project whose only other plan has
-// already finished.
-func TestDashboardRendersTagFilterAndArchivedSection(t *testing.T) {
+// test's temp directory. Confirms: a data-tag on every card (live and
+// archived), a checkbox for each distinct tag actually in play, live
+// plans render in the project section (not archived ones), and archived
+// plans render as their own collapsed per-project accordion row instead.
+func TestDashboardSeparatesActiveAndArchivedTabs(t *testing.T) {
 	dir := t.TempDir()
 	plansDir := filepath.Join(dir, ".claude", "iterate", "plans")
 	archiveDir := filepath.Join(dir, ".claude", "iterate", "archive")
@@ -95,27 +96,44 @@ func TestDashboardRendersTagFilterAndArchivedSection(t *testing.T) {
 		tagSet[label] = true
 	}
 
-	var b strings.Builder
-	writeTagFilter(&b, tagSet)
-	writeProjectSection(&b, dir, "proj", plans, archived)
-	out := b.String()
+	var active, archivedTab strings.Builder
+	writeLiveProjectSection(&active, dir, "proj", plans)
+	writeArchivedProjectAccordion(&archivedTab, dir, "proj", archived)
 
-	if !strings.Contains(out, `data-tag="executing"`) {
-		t.Errorf("expected the live executing plan's card to carry data-tag=\"executing\"; output:\n%s", out)
+	var filter strings.Builder
+	writeTagFilter(&filter, tagSet)
+
+	if !strings.Contains(active.String(), `data-tag="executing"`) {
+		t.Errorf("expected the live executing plan's card to carry data-tag=\"executing\"; output:\n%s", active.String())
 	}
-	if !strings.Contains(out, `data-tag="complete"`) {
-		t.Errorf("expected the archived plan's card to carry data-tag=\"complete\" (its own declared phase); output:\n%s", out)
+	if strings.Contains(active.String(), "antelope") {
+		t.Errorf("archived plan antelope leaked into the Active section's rendering; output:\n%s", active.String())
 	}
-	if !strings.Contains(out, `<input type="checkbox" class="tf-cb" data-tag="executing"`) {
-		t.Errorf("expected a filter checkbox for the \"executing\" tag; output:\n%s", out)
+	if !strings.Contains(archivedTab.String(), `data-tag="complete"`) {
+		t.Errorf("expected the archived plan's card to carry data-tag=\"complete\" (its own declared phase); output:\n%s", archivedTab.String())
 	}
-	if !strings.Contains(out, `<input type="checkbox" class="tf-cb" data-tag="complete"`) {
-		t.Errorf("expected a filter checkbox for the \"complete\" tag; output:\n%s", out)
+	if !strings.Contains(archivedTab.String(), `<details class="archived-project">`) {
+		t.Errorf("expected antelope's project to render as a collapsed archived-project row; output:\n%s", archivedTab.String())
 	}
-	if !strings.Contains(out, `<details class="archived">`) {
-		t.Errorf("expected an Archived section now that antelope has a card to show; output:\n%s", out)
+	if !strings.Contains(archivedTab.String(), "antelope") {
+		t.Errorf("archived plan antelope missing from the Archived tab entirely; output:\n%s", archivedTab.String())
 	}
-	if !strings.Contains(out, "antelope") {
-		t.Errorf("archived plan antelope missing from the index entirely; output:\n%s", out)
+	if !strings.Contains(filter.String(), `<input type="checkbox" class="tf-cb" data-tag="executing"`) {
+		t.Errorf("expected a filter checkbox for the \"executing\" tag; output:\n%s", filter.String())
+	}
+	if !strings.Contains(filter.String(), `<input type="checkbox" class="tf-cb" data-tag="complete"`) {
+		t.Errorf("expected a filter checkbox for the \"complete\" tag; output:\n%s", filter.String())
+	}
+}
+
+// TestArchivedProjectAccordionOmittedWhenNoArchivedPlans confirms a
+// project with zero archived runs contributes no row at all to the
+// Archived tab — an always-visible empty accordion per project would be
+// pure noise in a tab meant purely for browsing finished history.
+func TestArchivedProjectAccordionOmittedWhenNoArchivedPlans(t *testing.T) {
+	var b strings.Builder
+	writeArchivedProjectAccordion(&b, "/some/project", "proj", nil)
+	if b.Len() != 0 {
+		t.Errorf("expected no output for a project with no archived plans, got:\n%s", b.String())
 	}
 }

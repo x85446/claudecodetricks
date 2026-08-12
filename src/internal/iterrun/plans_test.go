@@ -208,3 +208,33 @@ func TestListArchivedPlans(t *testing.T) {
 		t.Errorf("ArchiveFile = %q, want the exact archived filename", ps.ArchiveFile)
 	}
 }
+
+// TestGetArchivedPlanSummarySetsArchived reproduces a real bug found live:
+// GetArchivedPlanSummary (the single-file lookup handleArchive actually
+// uses, as opposed to ListArchivedPlans' directory scan) called
+// parsePlanFile directly and returned it as-is, never setting Archived —
+// so the archived plan's own detail page silently showed "Running for"
+// instead of "Ran for" and no ARCHIVED chip, exactly the "looks live when
+// it isn't" bug this whole feature exists to prevent.
+func TestGetArchivedPlanSummarySetsArchived(t *testing.T) {
+	dir := t.TempDir()
+	archiveDir := filepath.Join(dir, ".claude", "iterate", "archive")
+	if err := os.MkdirAll(archiveDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	archiveFile := "20260812T012354Z-aardvark-done.md"
+	if err := os.WriteFile(filepath.Join(archiveDir, archiveFile), []byte("name: aardvark\nphase: complete\n\n## Goal\nShip it.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	ps, err := GetArchivedPlanSummary(dir, archiveFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ps.Archived {
+		t.Error("Archived = false, want true — GetArchivedPlanSummary must set it, not just ListArchivedPlans")
+	}
+	if ps.ArchiveFile != archiveFile {
+		t.Errorf("ArchiveFile = %q, want %q", ps.ArchiveFile, archiveFile)
+	}
+}

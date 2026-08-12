@@ -613,20 +613,24 @@ var reNumberedItem = regexp.MustCompile(`^(\d+)\.\s+(.*)$`)
 // the dashboard needs from it beyond raw activity: each team's status and
 // step-number list from the Teams table, the Steps and Validation sections
 // themselves keyed by number — the "Na./Nb." pairing shown in chat, now
-// available for the dashboard to show the same way on click — and this
-// plan's own declared Started: time (zero if missing or unparseable).
-// planFilePath is the exact file to read — the live plans/<name>.md path
-// for a running plan, or an archive/<timestamp>-<name>-done.md path for a
-// finished one (see BuildRowsFromArchive); this function doesn't care
-// which. Returns nils (not an error) if the file can't be read.
-func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, steps, validations map[int]string, started time.Time) {
+// available for the dashboard to show the same way on click — this plan's
+// own declared Started: time (zero if missing or unparseable), and the raw
+// text of the Status / Log section (used to recover the coordinator's own
+// inline "step N DONE:" progress reports on a flat/unteamed plan — see
+// parseCoordinatorStepStatus). planFilePath is the exact file to read —
+// the live plans/<name>.md path for a running plan, or an
+// archive/<timestamp>-<name>-done.md path for a finished one (see
+// BuildRowsFromArchive); this function doesn't care which. Returns nils
+// (not an error) if the file can't be read.
+func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, steps, validations map[int]string, started time.Time, statusLog string) {
 	data, err := os.ReadFile(planFilePath)
 	if err != nil {
-		return nil, nil, nil, time.Time{}
+		return nil, nil, nil, time.Time{}, ""
 	}
 	teams = map[string]teamMeta{}
 	steps = map[int]string{}
 	validations = map[int]string{}
+	var statusLines []string
 	section := ""
 	for line := range strings.SplitSeq(string(data), "\n") {
 		if m := reStarted.FindStringSubmatch(line); m != nil {
@@ -643,6 +647,8 @@ func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, step
 				section = "validation"
 			case "## Teams":
 				section = "teams"
+			case "## Status / Log":
+				section = "status"
 			default:
 				section = ""
 			}
@@ -672,9 +678,52 @@ func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, step
 				}
 				teams[cells[0]] = teamMeta{status: cells[len(cells)-1], stepNums: parseIntList(stepsCol), dependsOn: parseTeamList(dependsCol)}
 			}
+		case "status":
+			statusLines = append(statusLines, line)
 		}
 	}
-	return teams, steps, validations, started
+	return teams, steps, validations, started, strings.Join(statusLines, "\n")
+}
+
+// reCoordStepStatus matches the coordinator's own inline per-step self
+// report in a flat plan's Status/Log — "step 5 PARTIAL: ...", "steps 2-3
+// DONE: ...", case-insensitive since real logs mix "DONE" and "partial"
+// in the same file. This is a free-text convention, not a structured
+// marker, because there's no per-team log file for the coordinator's own
+// unassigned steps to write one into (##ITERATE-VALIDATION## is scoped to
+// dispatched teams, per /iterate's own SKILL.md) — confirmed live as the
+// actual, only signal a real flat-plan coordinator produces.
+var reCoordStepStatus = regexp.MustCompile(`(?i)\bsteps?\s+(\d+)(?:-(\d+))?\s+(done|partial|blocked|not-met)\b`)
+
+// parseCoordinatorStepStatus turns those inline reports into the same
+// validationMark shape readValidationMarkers produces for a team log, so
+// collectSteps' done/active/queued shading works identically regardless
+// of source. A range ("steps 2-3 DONE") applies to every step in it.
+// Later matches win for a given step number — Status/Log is append-only
+// and chronological, so a later line is a correction/update, same rule
+// readValidationMarkers already follows.
+func parseCoordinatorStepStatus(statusLog string) map[int]validationMark {
+	marks := map[int]validationMark{}
+	for _, m := range reCoordStepStatus.FindAllStringSubmatch(statusLog, -1) {
+		start, err := strconv.Atoi(m[1])
+		if err != nil {
+			continue
+		}
+		end := start
+		if m[2] != "" {
+			if e, err := strconv.Atoi(m[2]); err == nil {
+				end = e
+			}
+		}
+		status := strings.ToLower(m[3])
+		if status == "blocked" {
+			status = "not-met"
+		}
+		for n := start; n <= end; n++ {
+			marks[n] = validationMark{status: status}
+		}
+	}
+	return marks
 }
 
 func parseIntList(s string) []int {

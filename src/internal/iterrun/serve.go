@@ -46,11 +46,12 @@ func handleIndex(w http.ResponseWriter, _ *http.Request) {
 		archived []PlanSummary
 	}
 	var all []projPlans
-	totalPlans := 0
+	totalPlans, totalArchived := 0, 0
 	for _, proj := range projects {
 		plans, _ := ListPlans(proj)
 		archived, _ := ListArchivedPlans(proj)
 		totalPlans += len(plans)
+		totalArchived += len(archived)
 		all = append(all, projPlans{dir: proj, short: filepath.Base(proj), plans: plans, archived: archived})
 	}
 
@@ -78,6 +79,17 @@ func handleIndex(w http.ResponseWriter, _ *http.Request) {
 	writeTagFilter(&b, tagSet)
 	b.WriteString(`</div>`)
 
+	// Top-level split: Active is everything still in flight (or planned,
+	// or blocked-on-operator) — the existing per-project sub-tabs live
+	// entirely inside it, unchanged. Archived is its own separate tab, not
+	// a collapsible tucked inside each project's live section — a
+	// finished run and a live one are different enough concerns that
+	// mixing them in the same list made the "what's actually happening
+	// right now" view noisier than it needed to be.
+	fmt.Fprintf(&b, `<nav class="toptabs"><button class="toptab active" data-top="active" onclick="showTop('active')">Active <span class="tcount">%d</span></button><button class="toptab" data-top="archived" onclick="showTop('archived')">Archived <span class="tcount">%d</span></button></nav>`,
+		totalPlans, totalArchived)
+
+	b.WriteString(`<div id="top-active">`)
 	b.WriteString(`<nav class="tabs">`)
 	fmt.Fprintf(&b, `<button class="tab active" data-tab="all" onclick="showTab('all')">All <span class="tcount">%d</span></button>`, totalPlans)
 	for i, pp := range all {
@@ -88,20 +100,40 @@ func handleIndex(w http.ResponseWriter, _ *http.Request) {
 
 	b.WriteString(`<div id="tab-all" class="tabpanel">`)
 	for _, pp := range all {
-		writeProjectSection(&b, pp.dir, pp.short, pp.plans, pp.archived)
+		writeLiveProjectSection(&b, pp.dir, pp.short, pp.plans)
 	}
 	b.WriteString(`</div>`)
 
 	for i, pp := range all {
 		fmt.Fprintf(&b, `<div id="tab-p%d" class="tabpanel" style="display:none">`, i)
-		writeProjectSection(&b, pp.dir, pp.short, pp.plans, pp.archived)
+		writeLiveProjectSection(&b, pp.dir, pp.short, pp.plans)
 		b.WriteString(`</div>`)
 	}
+	b.WriteString(`</div>`)
+
+	// Archived: one collapsed row per project — just its name and how many
+	// finished runs it has — expanding on click to the same plan cards the
+	// Active tab uses. A project with zero archived runs doesn't get a row
+	// at all; nothing to look back at yet.
+	b.WriteString(`<div id="top-archived" style="display:none">`)
+	if totalArchived == 0 {
+		b.WriteString(`<p class="empty">no archived plans yet</p>`)
+	} else {
+		for _, pp := range all {
+			writeArchivedProjectAccordion(&b, pp.dir, pp.short, pp.archived)
+		}
+	}
+	b.WriteString(`</div>`)
 
 	b.WriteString(`<script>
 function showTab(id){
   document.querySelectorAll('.tabpanel').forEach(function(el){ el.style.display = (el.id === 'tab-'+id) ? '' : 'none'; });
   document.querySelectorAll('.tab').forEach(function(el){ el.classList.toggle('active', el.dataset.tab === id); });
+}
+function showTop(id){
+  document.getElementById('top-active').style.display = (id === 'active') ? '' : 'none';
+  document.getElementById('top-archived').style.display = (id === 'archived') ? '' : 'none';
+  document.querySelectorAll('.toptab').forEach(function(el){ el.classList.toggle('active', el.dataset.top === id); });
 }
 </script>`)
 
@@ -183,29 +215,32 @@ tfApply();
 </script>`)
 }
 
-func writeProjectSection(b *strings.Builder, dir, short string, plans, archived []PlanSummary) {
+// writeLiveProjectSection renders one project's LIVE plans only, for the
+// Active tab — archived runs get their own separate top-level tab now
+// (writeArchivedProjectAccordion), not a collapsible tucked in here.
+func writeLiveProjectSection(b *strings.Builder, dir, short string, plans []PlanSummary) {
 	fmt.Fprintf(b, `<section class="project"><h2 title="%s">%s</h2>`, html.EscapeString(dir), html.EscapeString(short))
 	if len(plans) == 0 {
 		b.WriteString(`<p class="empty">no plans found</p>`)
 	} else {
 		writeLivePlans(b, dir, plans)
 	}
-	writeArchivedPlans(b, dir, archived)
 	b.WriteString(`</section>`)
 }
 
-// writeArchivedPlans renders every finished/given-up run for this project
-// as a collapsed <details> block — completed history you can still open
-// and review (Goal, Requirements burndown, per-team timeline), just not
-// competing for space with the live plans a visitor actually came to
-// check on. Confirmed live as a real gap: before this existed, a plan
-// simply vanished from the dashboard the moment /iterate archived it —
-// right when someone would most want to look back at what it did.
-func writeArchivedPlans(b *strings.Builder, dir string, archived []PlanSummary) {
+// writeArchivedProjectAccordion renders one project as a single collapsed
+// row in the Archived tab — just its name and how many finished runs it
+// has — expanding on click to the same plan cards the Active tab uses
+// (Goal, Requirements burndown, per-team timeline all still just a click
+// away). A project with zero archived runs gets no row at all — nothing
+// to look back at yet, and an always-visible empty row would just be
+// noise in a tab meant purely for browsing history.
+func writeArchivedProjectAccordion(b *strings.Builder, dir, short string, archived []PlanSummary) {
 	if len(archived) == 0 {
 		return
 	}
-	fmt.Fprintf(b, `<details class="archived"><summary>Archived <span class="tcount">%d</span></summary><div class="plans">`, len(archived))
+	fmt.Fprintf(b, `<details class="archived-project"><summary title="%s">%s <span class="tcount">%d</span></summary><div class="plans">`,
+		html.EscapeString(dir), html.EscapeString(short), len(archived))
 	for _, p := range archived {
 		badge, badgeClass := archivedBadge(p)
 		fmt.Fprintf(b, `<a class="plan-card" data-tag="%s" href="/archive?project=%s&file=%s"><span class="badge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s</span></a>`,
@@ -394,12 +429,18 @@ h2{font-size:13px;color:var(--text-dim);margin:0;font-weight:600;text-transform:
 .project{margin-bottom:28px}
 .project h2{border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:10px}
 .plans{display:flex;flex-direction:column;gap:8px}
-.archived{margin-top:10px}
-.archived>summary{cursor:pointer;list-style:none;font-size:12px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;padding:6px 0}
-.archived>summary::-webkit-details-marker{display:none}
-.archived>summary:hover{color:var(--text)}
-.archived[open]>summary{margin-bottom:8px}
-.archived .plans{opacity:.85}
+.toptabs{display:flex;gap:20px;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.toptab{font:inherit;font-size:14px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);padding:0 0 10px;cursor:pointer}
+.toptab:hover{color:var(--text)}
+.toptab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.toptab.active .tcount{color:var(--accent)}
+.archived-project{margin-bottom:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden}
+.archived-project>summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:6px;padding:12px 14px;font-size:13.5px;font-weight:600;color:var(--text)}
+.archived-project>summary::-webkit-details-marker{display:none}
+.archived-project>summary:hover{background:var(--surface-2)}
+.archived-project>summary::before{content:'\203A';color:var(--text-faint);font-size:16px;line-height:1;margin-right:2px;transition:transform .15s}
+.archived-project[open]>summary::before{transform:rotate(90deg)}
+.archived-project .plans{padding:0 14px 14px}
 .plan-card{display:grid;grid-template-columns:92px 90px 1fr 230px;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:12.5px}
 .plan-card:hover{border-color:var(--accent)}
 .badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px;border-radius:4px;text-align:center;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}

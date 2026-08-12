@@ -186,7 +186,13 @@ func ListArchivedPlans(projectDir string) ([]PlanSummary, error) {
 // counterpart to GetPlanSummary.
 func GetArchivedPlanSummary(homeDir, archiveFile string) (PlanSummary, error) {
 	path := filepath.Join(homeDir, ".claude", "iterate", "archive", archiveFile)
-	return parsePlanFile(path, homeDir)
+	ps, err := parsePlanFile(path, homeDir)
+	if err != nil {
+		return ps, err
+	}
+	ps.Archived = true
+	ps.ArchiveFile = archiveFile
+	return ps, nil
 }
 
 func parsePlanFile(path, projectDir string) (PlanSummary, error) {
