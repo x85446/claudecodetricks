@@ -419,6 +419,33 @@ func readValidationMarkers(logPath string) map[int]validationMark {
 // homeDir is where the plan file and team logs live; scanDirs additionally
 // searches for registry entries (homeDir is always scanned too).
 func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, error) {
+	planFilePath := filepath.Join(homeDir, ".claude", "iterate", "plans", plan+".md")
+	teamsDir := filepath.Join(homeDir, ".claude", "iterate", "plans", plan+".teams")
+	return buildRowsFrom(planFilePath, teamsDir, plan, homeDir, scanDirs)
+}
+
+// BuildRowsFromArchive is BuildRowsFromFilesystem's counterpart for a run
+// /iterate has already finished and moved to .claude/iterate/archive/ —
+// same two data sources (team logs + registry entries), just pointed at
+// the archived file and its sibling "<archiveFile-without-.md>.teams/"
+// dir instead of the live plans/ directory. Confirmed live as a real gap:
+// without this, a plan's OWN page kept resolving after archiving (nothing
+// 404s), but with no plan file to read, teams/steps/validations all come
+// back empty — no Goal, no Requirements burndown, no team grouping — while
+// registry entries and hook events for that plan name (both permanent,
+// global logs, unaffected by archiving) still get pulled in unbounded,
+// rendering as one large ungrouped dump instead of the plan's real
+// structure. archiveFile is the exact archived filename (see
+// PlanSummary.ArchiveFile); planName is that file's own declared "name:"
+// (PlanSummary.Name) — needed separately because registry entries and hook
+// events are keyed by the plan's real name, never by its archive filename.
+func BuildRowsFromArchive(archiveFile, planName, homeDir string, scanDirs []string) ([]Row, error) {
+	planFilePath := filepath.Join(homeDir, ".claude", "iterate", "archive", archiveFile)
+	teamsDir := filepath.Join(homeDir, ".claude", "iterate", "archive", strings.TrimSuffix(archiveFile, ".md")+".teams")
+	return buildRowsFrom(planFilePath, teamsDir, planName, homeDir, scanDirs)
+}
+
+func buildRowsFrom(planFilePath, teamsDir, plan, homeDir string, scanDirs []string) ([]Row, error) {
 	byTeam := map[string]*Row{}
 	get := func(team string) *Row {
 		if r, ok := byTeam[team]; ok {
@@ -438,9 +465,8 @@ func BuildRowsFromFilesystem(plan, homeDir string, scanDirs []string) ([]Row, er
 	// Started: lives, needed below to keep a registry entry left over from
 	// an earlier, unrelated run that reused this same codename from
 	// silently merging into this run's picture.
-	teams, steps, validations, planStarted := readPlanTeamsAndSteps(homeDir, plan)
+	teams, steps, validations, planStarted := readPlanTeamsAndSteps(planFilePath)
 
-	teamsDir := filepath.Join(homeDir, ".claude", "iterate", "plans", plan+".teams")
 	logFiles, _ := filepath.Glob(filepath.Join(teamsDir, "*.log.md"))
 	for _, lf := range logFiles {
 		team := strings.TrimSuffix(filepath.Base(lf), ".log.md")
@@ -589,9 +615,12 @@ var reNumberedItem = regexp.MustCompile(`^(\d+)\.\s+(.*)$`)
 // themselves keyed by number — the "Na./Nb." pairing shown in chat, now
 // available for the dashboard to show the same way on click — and this
 // plan's own declared Started: time (zero if missing or unparseable).
-// Returns nils (not an error) if the plan file can't be read.
-func readPlanTeamsAndSteps(homeDir, plan string) (teams map[string]teamMeta, steps, validations map[int]string, started time.Time) {
-	data, err := os.ReadFile(filepath.Join(homeDir, ".claude", "iterate", "plans", plan+".md"))
+// planFilePath is the exact file to read — the live plans/<name>.md path
+// for a running plan, or an archive/<timestamp>-<name>-done.md path for a
+// finished one (see BuildRowsFromArchive); this function doesn't care
+// which. Returns nils (not an error) if the file can't be read.
+func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, steps, validations map[int]string, started time.Time) {
+	data, err := os.ReadFile(planFilePath)
 	if err != nil {
 		return nil, nil, nil, time.Time{}
 	}

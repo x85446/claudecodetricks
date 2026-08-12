@@ -37,6 +37,16 @@ type PlanSummary struct {
 	HasTeams   bool
 	TeamsTotal int
 	TeamsDone  int
+	// Archived is true for a plan read from .claude/iterate/archive/ (see
+	// ListArchivedPlans) instead of the live .claude/iterate/plans/ — a
+	// completed or given-up run, moved there by /iterate on exit per its
+	// own SKILL.md. ArchiveFile is the archived file's exact base name
+	// (e.g. "20260812T012354Z-aardvark-done.md", NOT just "<name>.md" —
+	// the timestamp prefix is what the live plans/ directory drops), the
+	// one piece of information needed to re-locate this exact run's file
+	// and its sibling ".teams/" dir later (BuildRowsFromArchive).
+	Archived    bool
+	ArchiveFile string
 }
 
 // IsCompleted reports whether every team in this plan's Teams table has
@@ -142,6 +152,41 @@ func ListPlans(projectDir string) ([]PlanSummary, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Started > out[j].Started })
 	return out, nil
+}
+
+// ListArchivedPlans scans <projectDir>/.claude/iterate/archive/*.md — every
+// run /iterate has ever finished or given up on in this project, newest
+// first (the UTC-timestamp filename prefix sorts correctly as a plain
+// string). Confirmed live as a real gap: without this, the dashboard had
+// no way at all to see a plan once it archived — the exact moment a run
+// finishes is when someone most wants to review it, and it would just
+// silently vanish from the "0 plans" project listing.
+func ListArchivedPlans(projectDir string) ([]PlanSummary, error) {
+	dir := filepath.Join(projectDir, ".claude", "iterate", "archive")
+	matches, err := filepath.Glob(filepath.Join(dir, "*.md"))
+	if err != nil {
+		return nil, err
+	}
+	var out []PlanSummary
+	for _, m := range matches {
+		ps, err := parsePlanFile(m, projectDir)
+		if err != nil {
+			continue
+		}
+		ps.Archived = true
+		ps.ArchiveFile = filepath.Base(m)
+		out = append(out, ps)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ArchiveFile > out[j].ArchiveFile })
+	return out, nil
+}
+
+// GetArchivedPlanSummary reads one specific archived plan file directly, by
+// its exact archive filename (see PlanSummary.ArchiveFile) — the detail-page
+// counterpart to GetPlanSummary.
+func GetArchivedPlanSummary(homeDir, archiveFile string) (PlanSummary, error) {
+	path := filepath.Join(homeDir, ".claude", "iterate", "archive", archiveFile)
+	return parsePlanFile(path, homeDir)
 }
 
 func parsePlanFile(path, projectDir string) (PlanSummary, error) {
