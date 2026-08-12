@@ -801,7 +801,11 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	if homeURL != "" {
 		backLink = `<a class="back" href="` + html.EscapeString(homeURL) + `">&larr; Dashboard</a>`
 	}
-	header := backLink + `<div class="eyebrow">iterate plan</div><h1>` + html.EscapeString(planName) + `</h1>`
+	eyebrow := `<div class="eyebrow">iterate plan</div>`
+	if plan.Archived {
+		eyebrow = `<div class="eyebrow">iterate plan <span class="archived-chip">archived</span></div>`
+	}
+	header := backLink + eyebrow + `<h1>` + html.EscapeString(planName) + `</h1>`
 	if plan.Blocked() && plan.NextAttempt != "" {
 		// The most urgent thing on the page, so it goes first — a plan can
 		// have every team done and still be sitting here waiting on one
@@ -907,9 +911,17 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		started, ok = plan.StartedAt()
 	}
 	if ok {
+		// "Running for" implies still in flight — actively misleading for
+		// an archived plan (exactly the class of bug this whole box exists
+		// to fix elsewhere: language that reads as live when the thing it
+		// describes is over). "Ran for" for a finished run, same figure.
+		label := "Running for"
+		if plan.Archived {
+			label = "Ran for"
+		}
 		runDur := max(maxT.Sub(started), 0)
-		fmt.Fprintf(&b, `<div class="runbox"><span class="runbox-label">Running for</span><span class="runbox-dur">%s</span><span class="runbox-since">since %s</span></div>`+"\n",
-			runDur.Round(time.Second), started.Local().Format("2006-01-02 15:04:05"))
+		fmt.Fprintf(&b, `<div class="runbox"><span class="runbox-label">%s</span><span class="runbox-dur">%s</span><span class="runbox-since">since %s</span></div>`+"\n",
+			label, runDur.Round(time.Second), started.Local().Format("2006-01-02 15:04:05"))
 	}
 
 	b.WriteString(`<div class="stats">`)
@@ -1315,6 +1327,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
 .wrap,body>div{max-width:900px;margin:0 auto}
 .mono,.n,.dur,.busy,.axis,.pmeta{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
 .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.archived-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.02em;background:var(--surface-2);color:var(--text-faint);border:1px solid var(--border)}
 h1{font-size:24px;font-weight:700;margin:2px 0 8px;text-wrap:balance;letter-spacing:-.01em}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin:26px 0 12px}
 .sub{color:var(--text-dim);font-size:12px;margin-bottom:10px}

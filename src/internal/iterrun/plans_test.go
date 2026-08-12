@@ -171,3 +171,40 @@ func TestParsePlanFileExecutingAbsent(t *testing.T) {
 		t.Errorf("ExecutingAt() ok = true for a plan with no Executing: line, want false")
 	}
 }
+
+// TestListArchivedPlans reproduces a real gap found live: a completed run
+// (moved by /iterate to .claude/iterate/archive/<timestamp>-<name>-done.md
+// on success, per its own SKILL.md) simply vanished from the dashboard —
+// ListPlans only ever looked at plans/, never archive/. Confirms archived
+// runs are discoverable, tagged Archived, and keep their real declared
+// name (not the timestamped filename) plus the exact archive filename
+// needed to re-locate them.
+func TestListArchivedPlans(t *testing.T) {
+	dir := t.TempDir()
+	archiveDir := filepath.Join(dir, ".claude", "iterate", "archive")
+	if err := os.MkdirAll(archiveDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "name: aardvark\nStarted: 2026-08-11T13:59:24Z (planned)\nphase: complete\n\n## Goal\nShip the thing.\n"
+	if err := os.WriteFile(filepath.Join(archiveDir, "20260812T012354Z-aardvark-done.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	archived, err := ListArchivedPlans(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(archived) != 1 {
+		t.Fatalf("ListArchivedPlans returned %d entries, want 1", len(archived))
+	}
+	ps := archived[0]
+	if !ps.Archived {
+		t.Error("Archived = false, want true")
+	}
+	if ps.Name != "aardvark" {
+		t.Errorf("Name = %q, want %q (from the frontmatter, not the timestamped filename)", ps.Name, "aardvark")
+	}
+	if ps.ArchiveFile != "20260812T012354Z-aardvark-done.md" {
+		t.Errorf("ArchiveFile = %q, want the exact archived filename", ps.ArchiveFile)
+	}
+}

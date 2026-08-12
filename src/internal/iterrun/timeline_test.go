@@ -243,6 +243,65 @@ func TestParsePlanStartedRespectsUTCSuffix(t *testing.T) {
 	}
 }
 
+// TestBuildRowsFromArchivePreservesGoalAndSteps reproduces the bug found
+// live: once /iterate archives a finished plan (moves it out of plans/ to
+// archive/<timestamp>-<name>-done.md per its own SKILL.md), its own
+// dashboard page kept resolving — but with nothing left at the old plans/
+// path, teams/steps/validations all came back empty: no Goal, no
+// Requirements burndown, no team status, while registry/hook data for
+// that plan name (permanent and global, unaffected by archiving) still
+// got pulled in unbounded — a large ungrouped dump instead of the plan's
+// real structure. BuildRowsFromArchive must read the SAME Teams/Steps/
+// Validation detail a live plan gets, just from the archived file and its
+// sibling "<file>.teams/" dir instead of plans/<name>.teams/.
+func TestBuildRowsFromArchivePreservesGoalAndSteps(t *testing.T) {
+	home := t.TempDir()
+	archiveDir := filepath.Join(home, ".claude", "iterate", "archive")
+	if err := os.MkdirAll(archiveDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	archiveFile := "20260812T012354Z-aardvark-done.md"
+	planMD := "# Plan\n\nname: aardvark\nStarted: 2026-08-11T13:59:24Z (planned)\nphase: complete\nteamed: true\n\n" +
+		"## Goal\nShip the thing.\n\n" +
+		"## Steps\n1. build it\n\n" +
+		"## Validation\n1. it builds\n\n" +
+		"## Teams\n\n| Team | Steps | Focus | Depends on | Agent | Status |\n" +
+		"|---|---|---|---|---|---|\n| audio-filters | 1 | build | — | agent | done |\n"
+	if err := os.WriteFile(filepath.Join(archiveDir, archiveFile), []byte(planMD), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	teamsDir := filepath.Join(archiveDir, "20260812T012354Z-aardvark-done.teams")
+	if err := os.MkdirAll(teamsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logContent := "some progress\nTEAM DONE: shipped\n##ITERATE-VALIDATION## {\"step\":1,\"status\":\"met\",\"note\":\"green\"}\n"
+	if err := os.WriteFile(filepath.Join(teamsDir, "audio-filters.log.md"), []byte(logContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := BuildRowsFromArchive(archiveFile, "aardvark", home, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var team *Row
+	for i := range rows {
+		if rows[i].key == "audio-filters" {
+			team = &rows[i]
+		}
+	}
+	if team == nil {
+		t.Fatalf("audio-filters row missing entirely; rows: %+v", rows)
+	}
+	if len(team.steps) != 1 || team.steps[0].Step != "build it" {
+		t.Errorf("audio-filters.steps = %+v, want the plan's own Step 1 detail read from the archived file", team.steps)
+	}
+	if team.status != "done" {
+		t.Errorf("audio-filters.status = %q, want %q from the archived Teams table", team.status, "done")
+	}
+}
+
 // TestBuildRowsFromFilesystemExcludesStaleRegistryEntries reproduces the
 // second bug reported live, alongside the coordinator one: plan codenames
 // get reused within the SAME project over time too, not just across

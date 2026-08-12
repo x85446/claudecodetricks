@@ -155,7 +155,7 @@ func writeLivePlans(b *strings.Builder, dir string, plans []PlanSummary) {
 			url.QueryEscape(dir), url.QueryEscape(p.Name), badgeClass, badge,
 			html.EscapeString(p.Name), html.EscapeString(p.Goal), html.EscapeString(p.Started), teamsInfo)
 	}
-	b.WriteString(`</div></section>`)
+	b.WriteString(`</div>`)
 }
 
 func handlePlan(w http.ResponseWriter, r *http.Request) {
@@ -181,6 +181,42 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 	if events, err := ReadEvents(); err == nil {
 		labels, _ := ReadLabels()
 		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, name, proj, planStarted))
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(RenderTimelineHTML(rows, plan, "/")))
+}
+
+// handleArchive is handlePlan's counterpart for a finished/given-up run —
+// same rendering, pointed at .claude/iterate/archive/ instead of the live
+// plans/ directory (see BuildRowsFromArchive). file is the plan's exact
+// archived filename (PlanSummary.ArchiveFile), not its bare name — the
+// archive directory can hold more than one timestamped file, and the bare
+// name alone can't disambiguate them or locate the file at all.
+func handleArchive(w http.ResponseWriter, r *http.Request) {
+	proj := r.URL.Query().Get("project")
+	file := r.URL.Query().Get("file")
+	if proj == "" || file == "" {
+		http.Error(w, "missing project or file", http.StatusBadRequest)
+		return
+	}
+
+	plan, err := GetArchivedPlanSummary(proj, file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := BuildRowsFromArchive(file, plan.Name, proj, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	planStarted, _ := plan.StartedAt()
+	if events, err := ReadEvents(); err == nil {
+		labels, _ := ReadLabels()
+		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, plan.Name, proj, planStarted))
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -226,6 +262,12 @@ h2{font-size:13px;color:var(--text-dim);margin:0;font-weight:600;text-transform:
 .project{margin-bottom:28px}
 .project h2{border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:10px}
 .plans{display:flex;flex-direction:column;gap:8px}
+.archived{margin-top:10px}
+.archived>summary{cursor:pointer;list-style:none;font-size:12px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;padding:6px 0}
+.archived>summary::-webkit-details-marker{display:none}
+.archived>summary:hover{color:var(--text)}
+.archived[open]>summary{margin-bottom:8px}
+.archived .plans{opacity:.85}
 .plan-card{display:grid;grid-template-columns:92px 90px 1fr 230px;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:12.5px}
 .plan-card:hover{border-color:var(--accent)}
 .badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px;border-radius:4px;text-align:center;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
