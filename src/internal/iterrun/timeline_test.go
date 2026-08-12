@@ -1,6 +1,7 @@
 package iterrun
 
 import (
+	"html"
 	"os"
 	"path/filepath"
 	"strings"
@@ -392,6 +393,20 @@ func TestParseCoordinatorStepStatusRangesAndCase(t *testing.T) {
 	}
 }
 
+// TestParseCoordinatorStepStatusCapturesNote reproduces a real gap found
+// live: the descriptive text after the status word ("Windows VM on
+// bridge...") was being read out of the coordinator's own log and then
+// silently discarded — a flat plan's unassigned steps never got the "why"
+// a teamed plan's own ##ITERATE-VALIDATION## notes already provide.
+func TestParseCoordinatorStepStatusCapturesNote(t *testing.T) {
+	log := "- 2026-08-12T03:00Z step 5 PARTIAL: Windows VM on bridge (192.168.144.184). macos-vm deferred.\n"
+	marks := parseCoordinatorStepStatus(log)
+	want := "Windows VM on bridge (192.168.144.184). macos-vm deferred."
+	if got := marks[5].note; got != want {
+		t.Errorf("step 5 note = %q, want %q", got, want)
+	}
+}
+
 // TestBuildRowsFromFilesystemExcludesStaleRegistryEntries reproduces the
 // second bug reported live, alongside the coordinator one: plan codenames
 // get reused within the SAME project over time too, not just across
@@ -760,6 +775,58 @@ func TestBurndownChartShadesByValidationState(t *testing.T) {
 	}
 }
 
+// TestBurndownChartDistinguishesGaveUpFromActive reproduces the exact bug
+// shown live: a step the team explicitly reported "not-met" (attempted a
+// perf-check, it failed, they gave up) rendered in the SAME amber
+// "active" bucket as a step genuinely still being worked on — reading as
+// "still going" for something the team had actually abandoned. Confirms
+// not-met gets its own distinct "gaveup" state/color, carries its note
+// into the embedded data for the click-through panel, and gets the
+// little flag marker cells-with-a-note get.
+func TestBurndownChartDistinguishesGaveUpFromActive(t *testing.T) {
+	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
+	rows := []Row{
+		// Real shape found live: the store team finished (status "done")
+		// having reported step 5 only "partial" — a perf-check clause
+		// failing for a documented, accepted reason (the recorded
+		// baseline is a GitHub-runner figure, doesn't apply on a laptop)
+		// — and moved on regardless. That's settled, not "still going."
+		{key: "store", label: "store", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}},
+			steps: []StepDetail{
+				{Num: 5, Step: "run the full local gate suite", Validation: "all gates exit 0",
+					VStatus: "partial", VNote: "perf-check FAILS ladder/1e3/import_s (0.0277s vs 0.0159s limit) — but the baseline is a GitHub-runner figure"},
+				{Num: 6, Step: "hard blocker", Validation: "x", VStatus: "not-met", VNote: "no access"},
+			}},
+		// A DIFFERENT team, still genuinely in flight — its own "partial"
+		// report must stay active, not get swept into gaveup just because
+		// SOME row somewhere finished.
+		{key: "pipeline", label: "pipeline", status: "in-progress", spans: []span{{start: base, end: base.Add(time.Minute)}},
+			steps: []StepDetail{
+				{Num: 7, Step: "still going", Validation: "x", VStatus: "partial", VNote: "in progress"},
+			}},
+	}
+	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
+
+	if !strings.Contains(out, `class="bd-cell bd-gaveup" data-num="5"`) {
+		t.Errorf("requirement 5 (partial, but its team already finished) should render bd-gaveup, NOT bd-active — that bucket means 'still working'; output:\n%s", out)
+	}
+	if strings.Contains(out, `class="bd-cell bd-active" data-num="5"`) {
+		t.Errorf("requirement 5 must NOT render as bd-active; output:\n%s", out)
+	}
+	if !strings.Contains(out, `class="bd-cell bd-gaveup" data-num="6"`) {
+		t.Errorf("requirement 6 (VStatus=not-met) should render bd-gaveup; output:\n%s", out)
+	}
+	if !strings.Contains(out, `class="bd-cell bd-active" data-num="7"`) {
+		t.Errorf("requirement 7 (partial, team genuinely still in-progress) should render bd-active; output:\n%s", out)
+	}
+	if !strings.Contains(out, `"note":"perf-check FAILS ladder/1e3/import_s (0.0277s vs 0.0159s limit) — but the baseline is a GitHub-runner figure"`) {
+		t.Errorf("requirement 5's real note text missing from the embedded click-through data; output:\n%s", out)
+	}
+	if strings.Count(out, `class="bd-flag"`) != 3 {
+		t.Errorf(`expected 3 flag markers (all three steps have a note), got %d; output:%s`, strings.Count(out, `class="bd-flag"`), out)
+	}
+}
+
 // TestBurndownChartShowsFullDependsOnListNotJustPrimary reproduces a real
 // bug found live: a team can list several dependencies (a real plan had one
 // team depending on all seven others), but an earlier version of this
@@ -795,5 +862,29 @@ func TestBurndownChartOmittedWhenNoStepDetail(t *testing.T) {
 	out := RenderTimelineHTML(rows, PlanSummary{Name: "finch"}, "")
 	if strings.Contains(out, `<h2>Requirements</h2>`) {
 		t.Errorf("expected no Requirements section for a plan with no step detail; output:\n%s", out)
+	}
+}
+
+// TestValidationGlyphOpensModalOnlyWhenNoteExists reproduces the bug shown
+// live: a real validation note (several sentences explaining why a check
+// landed where it did) was embedded in a native title="..." tooltip —
+// truncates, can't be selected/copied, vanishes when the mouse moves.
+// Confirms a glyph with a real note is click-triggered into the shared
+// #note-modal (data-note carries the FULL text, not truncated into a
+// title attribute), while a glyph with no note stays a plain,
+// non-interactive marker — nothing to show in a popup.
+func TestValidationGlyphOpensModalOnlyWhenNoteExists(t *testing.T) {
+	long := "partial: verify/test/conformance/round-trip/acceptance/verify-leak all exit 0; retention proved from the CLI (16 imports leave exactly 10 manifests) and in Rust at the default N=10 with a prior snapshot opened read-only before pre-edit balances."
+	withNote := validationGlyph("partial", long)
+	if !strings.Contains(withNote, `onclick="showNote(this)"`) {
+		t.Errorf("a glyph with a real note should be click-triggered into the shared modal; got: %s", withNote)
+	}
+	if !strings.Contains(withNote, `data-note="`+html.EscapeString(long)+`"`) {
+		t.Errorf("the glyph's data-note should carry the FULL note text, not a truncated version; got: %s", withNote)
+	}
+
+	noNote := validationGlyph("met", "")
+	if strings.Contains(noNote, "onclick") {
+		t.Errorf("a glyph with no note should not be clickable at all; got: %s", noNote)
 	}
 }

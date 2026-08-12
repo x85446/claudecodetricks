@@ -1272,13 +1272,24 @@ func collectSteps(rows []Row) []burnStep {
 			case sd.VStatus == "not-met":
 				// Attempted and reported failed (or a hard blocker) — a
 				// real, considered outcome, not "still working on it."
-				// Confirmed live: this used to share the same amber
-				// "active" bucket as a genuinely in-progress step, which
-				// read as "still going" for a requirement the team had
-				// actually given up on.
 				state = "gaveup"
-			case sd.VStatus == "partial":
+			case sd.VStatus == "partial" && rowIsRunning(r):
+				// The team is still actively on this — genuinely "still
+				// going," the one case "partial" really does mean active.
 				state = "active"
+			case sd.VStatus == "partial":
+				// "Partial" alone doesn't say whether work is ongoing or
+				// over — that depends on whether the OWNING TEAM is still
+				// running. Confirmed live: a team that finished (Teams
+				// table status "done") had reported one of its own steps
+				// "partial" (a perf-check clause failing for a documented,
+				// accepted reason — the recorded baseline is a
+				// GitHub-runner figure, doesn't apply on a laptop) and
+				// moved on regardless. That's a settled outcome the team
+				// isn't coming back to, not a step "still going" — sharing
+				// the same amber bucket as a step actually in flight read
+				// as "still working" for something already wrapped up.
+				state = "gaveup"
 			case sd.Num == working:
 				state = "active"
 			}
@@ -1537,6 +1548,7 @@ func timelineHead(title string) string {
   --warn:#b45309; --warn-bg:#fbecd5;
   --queued:#a29b8d; --queued-bg:#f0ece2;
   --danger:#dc2626; --danger-a:#f3b8b8; --danger-b:#fbe1e1;
+  --gaveup:#c2410c; --gaveup-bg:#fee3d1;
   --accent:#0e7490; --accent-bg:#e5f4f7;
 }
 @media (prefers-color-scheme:dark){:root{
@@ -1547,6 +1559,7 @@ func timelineHead(title string) string {
   --warn:#f59e0b; --warn-bg:#3a2705;
   --queued:#565d64; --queued-bg:#1d2227;
   --danger:#ef4444; --danger-a:#5a1414; --danger-b:#2c0a0a;
+  --gaveup:#fb923c; --gaveup-bg:#431407;
   --accent:#22d3ee; --accent-bg:#0f2e33;
 }}
 *{box-sizing:border-box}
@@ -1618,21 +1631,39 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .vmark{display:inline-block;font-weight:700}
 .vmark.v-met{color:var(--good)}
 .vmark.v-partial{color:var(--warn)}
-.vmark.v-not-met{color:var(--danger)}
+.vmark.v-not-met{color:var(--gaveup)}
 .vmark.v-working{color:var(--warn);animation:vworking 1.4s ease-in-out infinite}
+.vmark-clickable{cursor:pointer}
+.vmark-clickable:hover{opacity:.7}
 @keyframes vworking{0%,100%{opacity:1}50%{opacity:.3}}
 .burndown{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.bd-cell{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:700;cursor:pointer;color:var(--text-dim);background:var(--surface);transition:transform .1s}
+.bd-cell{position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:700;cursor:pointer;color:var(--text-dim);background:var(--surface);transition:transform .1s}
 .bd-cell:hover{transform:translateY(-1px);border-color:var(--accent)}
 .bd-cell.bd-queued{background:var(--surface);color:var(--text-faint)}
 .bd-cell.bd-active{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
 .bd-cell.bd-done{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+.bd-cell.bd-gaveup{background:var(--gaveup-bg);color:var(--gaveup);border-color:var(--gaveup)}
 .bd-cell.bd-selected{box-shadow:0 0 0 2px var(--accent)}
+.bd-flag{position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:1.5px solid var(--surface)}
 .bd-detail{margin:0 0 22px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px}
 .bd-detail-num{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+.bd-detail-num.bd-detail-gaveup{color:var(--gaveup)}
+.bd-detail-num.bd-detail-done{color:var(--good)}
+.bd-detail-num.bd-detail-active{color:var(--warn)}
 .bd-detail-chain{font-size:12px;color:var(--text-dim);margin-bottom:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .bd-detail-row{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:6px;color:var(--text)}
 .bd-detail-row .bd-detail-label{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600;min-width:28px}
+.bd-detail-note{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;color:var(--text)}
+.bd-detail-note-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);font-weight:600;margin-bottom:4px}
+.note-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.note-modal-box{position:relative;max-width:480px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px 22px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:70vh;overflow-y:auto}
+.note-modal-close{position:absolute;top:8px;right:10px;background:none;border:none;font-size:22px;line-height:1;color:var(--text-faint);cursor:pointer;padding:6px}
+.note-modal-close:hover{color:var(--text)}
+.note-modal-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:10px}
+.note-modal-label.v-met{color:var(--good)}
+.note-modal-label.v-partial{color:var(--warn)}
+.note-modal-label.v-not-met{color:var(--gaveup)}
+.note-modal-text{font-size:13.5px;line-height:1.55;color:var(--text);white-space:pre-wrap}
 .gaplist{display:flex;flex-direction:column;gap:8px}
 .gap-item{display:flex;gap:10px;align-items:baseline;font-size:13px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:6px}
 .gap-item .dur{font-weight:700;color:var(--danger)}
