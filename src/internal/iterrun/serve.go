@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -53,6 +54,30 @@ func handleIndex(w http.ResponseWriter, _ *http.Request) {
 		all = append(all, projPlans{dir: proj, short: filepath.Base(proj), plans: plans, archived: archived})
 	}
 
+	// The tag filter lets a visitor hide badge categories they don't care
+	// about right now (e.g. "archived", "completed") — a settings popup,
+	// not a server-side query, since it's a per-visitor display
+	// preference persisted in the browser's own localStorage. tagSet is
+	// every distinct badge label actually in play across every project
+	// right now (live AND archived) — built from data, never a fixed
+	// list, since a badge can be an arbitrary custom "phase:" string a
+	// coordinator wrote (confirmed live: badges besides the five standard
+	// ones do show up).
+	tagSet := map[string]bool{}
+	for _, pp := range all {
+		for _, p := range pp.plans {
+			label, _ := liveBadge(p)
+			tagSet[label] = true
+		}
+		for _, p := range pp.archived {
+			label, _ := archivedBadge(p)
+			tagSet[label] = true
+		}
+	}
+	b.WriteString(`<div class="toolbar-row">`)
+	writeTagFilter(&b, tagSet)
+	b.WriteString(`</div>`)
+
 	b.WriteString(`<nav class="tabs">`)
 	fmt.Fprintf(&b, `<button class="tab active" data-tab="all" onclick="showTab('all')">All <span class="tcount">%d</span></button>`, totalPlans)
 	for i, pp := range all {
@@ -85,6 +110,79 @@ function showTab(id){
 	_, _ = w.Write([]byte(b.String()))
 }
 
+// writeTagFilter renders the "⚙ Filter" settings popup — checkboxes for
+// every badge/tag currently in play (see tagSet's own doc), letting a
+// visitor hide categories they don't care about right now (e.g. archived,
+// completed). This is a per-visitor DISPLAY preference, not a query — it
+// hides/shows already-rendered .plan-card elements client-side and
+// persists the hidden set in the browser's own localStorage (so it
+// survives a reload, but is local to this browser, never sent to or
+// stored by the server). tags is sorted with the handful of standard
+// badges first in their natural priority order, then any custom "phase:"
+// string a coordinator wrote alphabetically after.
+func writeTagFilter(b *strings.Builder, tagSet map[string]bool) {
+	priority := []string{"executing", "needs you", "planned", "completed", "archived"}
+	seen := map[string]bool{}
+	var tags []string
+	for _, t := range priority {
+		if tagSet[t] {
+			tags = append(tags, t)
+			seen[t] = true
+		}
+	}
+	var rest []string
+	for t := range tagSet {
+		if !seen[t] {
+			rest = append(rest, t)
+		}
+	}
+	sort.Strings(rest)
+	tags = append(tags, rest...)
+
+	b.WriteString(`<div class="tagfilter"><button type="button" class="tagfilter-btn" onclick="tfToggle(event)">&#9881; Filter<span id="tf-count" class="tf-count"></span></button><div id="tf-panel" class="tagfilter-panel" style="display:none"><div class="tf-title">Show tags</div>`)
+	for _, t := range tags {
+		fmt.Fprintf(b, `<label class="tf-row"><input type="checkbox" class="tf-cb" data-tag="%s" checked onchange="tfOnToggle(this)"> %s</label>`,
+			html.EscapeString(t), html.EscapeString(t))
+	}
+	b.WriteString(`<button type="button" class="tf-reset" onclick="tfReset()">Show all</button></div></div>
+<script>
+(function(){
+var TF_KEY = 'iterate-run-hidden-tags';
+function tfLoad(){ try { return JSON.parse(localStorage.getItem(TF_KEY) || '[]'); } catch(e){ return []; } }
+function tfSave(list){ try { localStorage.setItem(TF_KEY, JSON.stringify(list)); } catch(e){} }
+function tfApply(){
+  var hidden = tfLoad();
+  document.querySelectorAll('.plan-card').forEach(function(c){
+    c.style.display = hidden.indexOf(c.dataset.tag) !== -1 ? 'none' : '';
+  });
+  document.querySelectorAll('.tf-cb').forEach(function(cb){
+    cb.checked = hidden.indexOf(cb.dataset.tag) === -1;
+  });
+  var count = document.getElementById('tf-count');
+  count.textContent = hidden.length ? ' (' + hidden.length + ' hidden)' : '';
+}
+window.tfOnToggle = function(cb){
+  var hidden = tfLoad(), tag = cb.dataset.tag, idx = hidden.indexOf(tag);
+  if (cb.checked) { if (idx !== -1) hidden.splice(idx, 1); }
+  else if (idx === -1) { hidden.push(tag); }
+  tfSave(hidden);
+  tfApply();
+};
+window.tfReset = function(){ tfSave([]); tfApply(); };
+window.tfToggle = function(e){
+  e.stopPropagation();
+  var p = document.getElementById('tf-panel');
+  p.style.display = p.style.display === 'none' ? '' : 'none';
+};
+document.addEventListener('click', function(e){
+  var tf = document.querySelector('.tagfilter');
+  if (tf && !tf.contains(e.target)) { document.getElementById('tf-panel').style.display = 'none'; }
+});
+tfApply();
+})();
+</script>`)
+}
+
 func writeProjectSection(b *strings.Builder, dir, short string, plans, archived []PlanSummary) {
 	fmt.Fprintf(b, `<section class="project"><h2 title="%s">%s</h2>`, html.EscapeString(dir), html.EscapeString(short))
 	if len(plans) == 0 {
@@ -109,53 +207,76 @@ func writeArchivedPlans(b *strings.Builder, dir string, archived []PlanSummary) 
 	}
 	fmt.Fprintf(b, `<details class="archived"><summary>Archived <span class="tcount">%d</span></summary><div class="plans">`, len(archived))
 	for _, p := range archived {
-		badge, badgeClass := "archived", "b-archived"
-		if p.Blocked() {
-			badge, badgeClass = "needs you", "b-blocked"
-		} else if p.Phase != "" {
-			badge = p.Phase
-		}
-		fmt.Fprintf(b, `<a class="plan-card" href="/archive?project=%s&file=%s"><span class="badge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s</span></a>`,
-			url.QueryEscape(dir), url.QueryEscape(p.ArchiveFile), badgeClass, html.EscapeString(badge),
+		badge, badgeClass := archivedBadge(p)
+		fmt.Fprintf(b, `<a class="plan-card" data-tag="%s" href="/archive?project=%s&file=%s"><span class="badge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s</span></a>`,
+			html.EscapeString(badge), url.QueryEscape(dir), url.QueryEscape(p.ArchiveFile), badgeClass, html.EscapeString(badge),
 			html.EscapeString(p.Name), html.EscapeString(p.Goal), html.EscapeString(p.Started))
 	}
 	b.WriteString(`</div></details>`)
 }
 
+// archivedBadge is an archived plan's card badge — "needs you" beats
+// everything (a finished run can still leave a status:blocked-on-operator
+// clause, same as a live plan can), otherwise its own declared phase
+// (typically "complete"), falling back to the generic "archived" both when
+// the file predates phase: being set on archive at all AND when phase
+// still reads "executing" or "planned" — confirmed live: /iterate's own
+// SKILL.md only requires MOVING the file on archive, not updating phase:
+// first, so an archived run can carry a stale in-flight-sounding phase
+// (aardvark's archived copy still says "phase: executing"). Showing that
+// verbatim recreates exactly the "looks live when it isn't" problem this
+// whole feature exists to avoid, AND collides in the tag filter with
+// genuinely live plans sharing the same label — one "executing" checkbox
+// would then hide/show two unrelated things together.
+func archivedBadge(p PlanSummary) (label, class string) {
+	if p.Blocked() {
+		return "needs you", "b-blocked"
+	}
+	if p.Phase != "" && p.Phase != "executing" && p.Phase != "planned" {
+		return p.Phase, "b-archived"
+	}
+	return "archived", "b-archived"
+}
+
 func writeLivePlans(b *strings.Builder, dir string, plans []PlanSummary) {
 	b.WriteString(`<div class="plans">`)
 	for _, p := range plans {
-		// Order matters: IsCompleted() (team-verified) beats a bare
-		// declared phase, but an honestly-labeled phase beats silently
-		// defaulting to "planned" — confirmed live: five plans declaring
-		// "phase: complete" with zero team rows actually done (never-
-		// executed, likely superseded/archived, not verified-finished)
-		// were showing as "planned" simply because only "executing" was
-		// ever specially recognized; everything else fell through to the
-		// default, indistinguishable from a plan nothing had touched yet.
-		// Blocked always wins last: a plan can be 100% done by its Teams
-		// table and still be sitting here waiting on a human.
-		badge, badgeClass := "planned", "b-planned"
-		switch {
-		case p.Phase == "executing":
-			badge, badgeClass = "executing", "b-executing"
-		case p.IsCompleted():
-			badge, badgeClass = "completed", "b-done"
-		case p.Phase != "" && p.Phase != "planned":
-			badge, badgeClass = p.Phase, "b-archived"
-		}
-		if p.Blocked() {
-			badge, badgeClass = "needs you", "b-blocked"
-		}
+		badge, badgeClass := liveBadge(p)
 		teamsInfo := ""
 		if p.HasTeams {
 			teamsInfo = fmt.Sprintf(" &middot; teams %d/%d", p.TeamsDone, p.TeamsTotal)
 		}
-		fmt.Fprintf(b, `<a class="plan-card" href="/plan?project=%s&name=%s"><span class="badge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s%s</span></a>`,
-			url.QueryEscape(dir), url.QueryEscape(p.Name), badgeClass, badge,
+		fmt.Fprintf(b, `<a class="plan-card" data-tag="%s" href="/plan?project=%s&name=%s"><span class="badge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s%s</span></a>`,
+			html.EscapeString(badge), url.QueryEscape(dir), url.QueryEscape(p.Name), badgeClass, badge,
 			html.EscapeString(p.Name), html.EscapeString(p.Goal), html.EscapeString(p.Started), teamsInfo)
 	}
 	b.WriteString(`</div>`)
+}
+
+// liveBadge is a live (unarchived) plan's card badge. Order matters:
+// IsCompleted() (team-verified) beats a bare declared phase, but an
+// honestly-labeled phase beats silently defaulting to "planned" —
+// confirmed live: five plans declaring "phase: complete" with zero team
+// rows actually done (never-executed, likely superseded/archived, not
+// verified-finished) were showing as "planned" simply because only
+// "executing" was ever specially recognized; everything else fell through
+// to the default, indistinguishable from a plan nothing had touched yet.
+// Blocked always wins last: a plan can be 100% done by its Teams table
+// and still be sitting here waiting on a human.
+func liveBadge(p PlanSummary) (label, class string) {
+	label, class = "planned", "b-planned"
+	switch {
+	case p.Phase == "executing":
+		label, class = "executing", "b-executing"
+	case p.IsCompleted():
+		label, class = "completed", "b-done"
+	case p.Phase != "" && p.Phase != "planned":
+		label, class = p.Phase, "b-archived"
+	}
+	if p.Blocked() {
+		label, class = "needs you", "b-blocked"
+	}
+	return label, class
 }
 
 func handlePlan(w http.ResponseWriter, r *http.Request) {
@@ -249,6 +370,17 @@ func dashboardHead(title string) string {
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding:28px 20px 50px;margin:0}
 body>div{max-width:960px;margin:0 auto}
 .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.toolbar-row{display:flex;justify-content:flex-end;margin-bottom:8px}
+.tagfilter{position:relative}
+.tagfilter-btn{font:inherit;font-size:12.5px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:7px 12px;border-radius:8px;cursor:pointer}
+.tagfilter-btn:hover{border-color:var(--accent);color:var(--text)}
+.tf-count{color:var(--accent);font-size:11px;margin-left:2px}
+.tagfilter-panel{position:absolute;right:0;top:calc(100% + 6px);z-index:10;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.tf-title{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-bottom:8px}
+.tf-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);padding:4px 0;cursor:pointer}
+.tf-row input{accent-color:var(--accent)}
+.tf-reset{font:inherit;font-size:11.5px;background:none;border:none;color:var(--accent);cursor:pointer;padding:8px 0 0;margin-top:4px;border-top:1px solid var(--border);width:100%;text-align:left}
+.tf-reset:hover{text-decoration:underline}
 h1{font-size:24px;font-weight:700;margin:2px 0 8px;letter-spacing:-.01em}
 h2{font-size:13px;color:var(--text-dim);margin:0;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .sub{color:var(--text-dim);font-size:12.5px;margin-bottom:22px}
