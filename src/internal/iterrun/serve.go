@@ -19,6 +19,7 @@ func Serve(addr string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/plan", handlePlan)
+	mux.HandleFunc("/archive", handleArchive)
 	fmt.Printf("iterate-run dashboard: http://%s\n", addr)
 	return http.ListenAndServe(addr, mux)
 }
@@ -38,16 +39,18 @@ func handleIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	type projPlans struct {
-		dir   string
-		short string
-		plans []PlanSummary
+		dir      string
+		short    string
+		plans    []PlanSummary
+		archived []PlanSummary
 	}
 	var all []projPlans
 	totalPlans := 0
 	for _, proj := range projects {
 		plans, _ := ListPlans(proj)
+		archived, _ := ListArchivedPlans(proj)
 		totalPlans += len(plans)
-		all = append(all, projPlans{dir: proj, short: filepath.Base(proj), plans: plans})
+		all = append(all, projPlans{dir: proj, short: filepath.Base(proj), plans: plans, archived: archived})
 	}
 
 	b.WriteString(`<nav class="tabs">`)
@@ -60,13 +63,13 @@ func handleIndex(w http.ResponseWriter, _ *http.Request) {
 
 	b.WriteString(`<div id="tab-all" class="tabpanel">`)
 	for _, pp := range all {
-		writeProjectSection(&b, pp.dir, pp.short, pp.plans)
+		writeProjectSection(&b, pp.dir, pp.short, pp.plans, pp.archived)
 	}
 	b.WriteString(`</div>`)
 
 	for i, pp := range all {
 		fmt.Fprintf(&b, `<div id="tab-p%d" class="tabpanel" style="display:none">`, i)
-		writeProjectSection(&b, pp.dir, pp.short, pp.plans)
+		writeProjectSection(&b, pp.dir, pp.short, pp.plans, pp.archived)
 		b.WriteString(`</div>`)
 	}
 
@@ -82,12 +85,44 @@ function showTab(id){
 	_, _ = w.Write([]byte(b.String()))
 }
 
-func writeProjectSection(b *strings.Builder, dir, short string, plans []PlanSummary) {
+func writeProjectSection(b *strings.Builder, dir, short string, plans, archived []PlanSummary) {
 	fmt.Fprintf(b, `<section class="project"><h2 title="%s">%s</h2>`, html.EscapeString(dir), html.EscapeString(short))
 	if len(plans) == 0 {
-		b.WriteString(`<p class="empty">no plans found</p></section>`)
+		b.WriteString(`<p class="empty">no plans found</p>`)
+	} else {
+		writeLivePlans(b, dir, plans)
+	}
+	writeArchivedPlans(b, dir, archived)
+	b.WriteString(`</section>`)
+}
+
+// writeArchivedPlans renders every finished/given-up run for this project
+// as a collapsed <details> block — completed history you can still open
+// and review (Goal, Requirements burndown, per-team timeline), just not
+// competing for space with the live plans a visitor actually came to
+// check on. Confirmed live as a real gap: before this existed, a plan
+// simply vanished from the dashboard the moment /iterate archived it —
+// right when someone would most want to look back at what it did.
+func writeArchivedPlans(b *strings.Builder, dir string, archived []PlanSummary) {
+	if len(archived) == 0 {
 		return
 	}
+	fmt.Fprintf(b, `<details class="archived"><summary>Archived <span class="tcount">%d</span></summary><div class="plans">`, len(archived))
+	for _, p := range archived {
+		badge, badgeClass := "archived", "b-archived"
+		if p.Blocked() {
+			badge, badgeClass = "needs you", "b-blocked"
+		} else if p.Phase != "" {
+			badge = p.Phase
+		}
+		fmt.Fprintf(b, `<a class="plan-card" href="/archive?project=%s&file=%s"><span class="badge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s</span></a>`,
+			url.QueryEscape(dir), url.QueryEscape(p.ArchiveFile), badgeClass, html.EscapeString(badge),
+			html.EscapeString(p.Name), html.EscapeString(p.Goal), html.EscapeString(p.Started))
+	}
+	b.WriteString(`</div></details>`)
+}
+
+func writeLivePlans(b *strings.Builder, dir string, plans []PlanSummary) {
 	b.WriteString(`<div class="plans">`)
 	for _, p := range plans {
 		// Order matters: IsCompleted() (team-verified) beats a bare
