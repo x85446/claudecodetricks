@@ -269,3 +269,35 @@ func TestFinishedAtParsesIndependentlyOfExecuting(t *testing.T) {
 		t.Errorf("ExecutingAt() = %v, %v; want 2026-08-12 02:54:23 UTC (Finished: must not clobber it)", exec, ok)
 	}
 }
+
+// TestEffectiveStartPrefersExecutingOverStarted reproduces a real bug
+// found live: a plan drafted at 01:45 UTC, not actually run until 22:24:51
+// UTC that same day, showed its coordinator's gantt bar as ONE continuous
+// timeline spanning the whole gap with a bogus "severe gap" in the middle
+// — drafting-phase tool calls (made while planning, tagged with this
+// plan's name because `current` already pointed at it) were slipping
+// through the stale-data filter because that filter's cutoff was
+// StartedAt() (drafting time) instead of the real execution boundary.
+// EffectiveStart() is what every hook/registry filtering call site must
+// use instead.
+func TestEffectiveStartPrefersExecutingOverStarted(t *testing.T) {
+	p := PlanSummary{Started: "2026-08-12T01:45:00Z (planned)", Executing: "2026-08-12T22:24:51Z"}
+	got, ok := p.EffectiveStart()
+	want := time.Date(2026, 8, 12, 22, 24, 51, 0, time.UTC)
+	if !ok || !got.Equal(want) {
+		t.Errorf("EffectiveStart() = %v, %v; want %v (Executing:, not the far-earlier Started:)", got, ok, want)
+	}
+}
+
+// TestEffectiveStartFallsBackToStartedWhenExecutingAbsent confirms a plan
+// that predates the Executing: field (or hasn't transitioned to executing
+// yet) still gets a usable boundary from Started:, rather than EffectiveStart
+// silently returning nothing.
+func TestEffectiveStartFallsBackToStartedWhenExecutingAbsent(t *testing.T) {
+	p := PlanSummary{Started: "2026-08-10 05:39:52"}
+	got, ok := p.EffectiveStart()
+	want := time.Date(2026, 8, 10, 5, 39, 52, 0, time.Local)
+	if !ok || !got.Equal(want) {
+		t.Errorf("EffectiveStart() = %v, %v; want %v", got, ok, want)
+	}
+}

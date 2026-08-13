@@ -202,8 +202,8 @@ dev: fmt test build  ## Format, test, and build
 cycle: uninstall clean build install  ## Full clean rebuild and install
 
 .PHONY: run
-run: build  ## Build and run development version
-	@$(BINARY_DIR)/myapp
+run: build  ## Detect OS, build, and run the development binary
+	@./makehelp.sh run
 
 ##@ Cleanup
 
@@ -275,6 +275,19 @@ cmd_prereqs() {
     echo "All prerequisites satisfied"
 }
 
+cmd_run() {
+    local os arch binary
+    os="$(uname -s)"
+    arch="$(uname -m)"
+    echo "Detected OS: ${os} (${arch})"
+    binary="${BINARY_DIR}/myapp"
+    if [[ ! -x "$binary" ]]; then
+        echo "Error: $binary not found or not executable (did the build step run?)" >&2
+        exit 1
+    fi
+    exec "$binary"
+}
+
 cmd_build_production() {
     local version="${1:-$(git describe --tags 2>/dev/null || echo "0.0.0-dev")}"
     local ldflags="-s -w -X main.Version=${version}"
@@ -327,12 +340,13 @@ cmd_uninstall() {
 
 case "${1:-}" in
     prereqs)            cmd_prereqs ;;
+    run)                cmd_run ;;
     build-production)   cmd_build_production "${2:-}" ;;
     install-dev)        cmd_install_dev ;;
     install-production) cmd_install_production ;;
     uninstall)          cmd_uninstall ;;
     *)
-        echo "Usage: $0 {prereqs|build-production|install-dev|install-production|uninstall}" >&2
+        echo "Usage: $0 {prereqs|run|build-production|install-dev|install-production|uninstall}" >&2
         exit 1
         ;;
 esac

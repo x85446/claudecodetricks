@@ -98,6 +98,27 @@ func (p PlanSummary) ExecutingAt() (time.Time, bool) {
 	return parsePlanStarted(p.Executing)
 }
 
+// EffectiveStart is the right boundary for "exclude anything from before
+// THIS execution instance" — Executing: (real execution start) when
+// present, Started: (drafting time) otherwise. Callers filtering
+// hook/registry activity down to a single plan instance (excluding stale
+// data left over from an earlier, unrelated run reusing the same
+// codename) must use this, never StartedAt() directly — confirmed live: a
+// plan drafted at 17:11, not actually run until 17:24:51, showed the
+// coordinator's own gantt bar spanning that ENTIRE 13m58s as one
+// continuous timeline with a "severe gap" in the middle. That gap wasn't
+// a real stall during execution — it was the boundary between drafting
+// (tool calls made while planning, tagged with this plan's name because
+// `current` already pointed at it) and real execution. StartedAt() drew
+// the stale-data cutoff at drafting time, so it let the drafting-phase
+// activity straight through instead of excluding it.
+func (p PlanSummary) EffectiveStart() (time.Time, bool) {
+	if t, ok := p.ExecutingAt(); ok {
+		return t, true
+	}
+	return p.StartedAt()
+}
+
 // FinishedAt is this plan's own declared Finished: value, parsed the same
 // way as StartedAt/ExecutingAt. Returns ok=false when absent (plan
 // predates the field, or a live plan that isn't done yet) — callers fall

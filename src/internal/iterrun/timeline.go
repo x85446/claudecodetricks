@@ -663,14 +663,22 @@ var reNumberedItem = regexp.MustCompile(`^(\d+)\.\s+(.*)$`)
 // step-number list from the Teams table, the Steps and Validation sections
 // themselves keyed by number — the "Na./Nb." pairing shown in chat, now
 // available for the dashboard to show the same way on click — this plan's
-// own declared Started: time (zero if missing or unparseable), and the raw
-// text of the Status / Log section (used to recover the coordinator's own
-// inline "step N DONE:" progress reports on a flat/unteamed plan — see
-// parseCoordinatorStepStatus). planFilePath is the exact file to read —
-// the live plans/<name>.md path for a running plan, or an
-// archive/<timestamp>-<name>-done.md path for a finished one (see
-// BuildRowsFromArchive); this function doesn't care which. Returns nils
-// (not an error) if the file can't be read.
+// own EffectiveStart (Executing: when present, Started: otherwise — zero
+// if neither is parseable), and the raw text of the Status / Log section
+// (used to recover the coordinator's own inline "step N DONE:" progress
+// reports on a flat/unteamed plan — see parseCoordinatorStepStatus).
+// started is the boundary buildRowsFrom uses to exclude a stale registry
+// entry left over from an earlier, unrelated run that reused this same
+// plan codename — it must be Executing:, not Started:, or genuine
+// drafting-phase activity (tool calls made while planning, tagged with
+// this plan's name because `current` already pointed at it) slips through
+// as if it were part of THIS execution, showing up as a bogus "severe
+// gap" between the drafting burst and real execution (confirmed live: a
+// plan drafted at 17:11, not run until 17:24:51, showed exactly that).
+// planFilePath is the exact file to read — the live plans/<name>.md path
+// for a running plan, or an archive/<timestamp>-<name>-done.md path for a
+// finished one (see BuildRowsFromArchive); this function doesn't care
+// which. Returns nils (not an error) if the file can't be read.
 func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, steps, validations map[int]string, started time.Time, statusLog string) {
 	data, err := os.ReadFile(planFilePath)
 	if err != nil {
@@ -680,11 +688,17 @@ func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, step
 	steps = map[int]string{}
 	validations = map[int]string{}
 	var statusLines []string
+	var executing time.Time
 	section := ""
 	for line := range strings.SplitSeq(string(data), "\n") {
 		if m := reStarted.FindStringSubmatch(line); m != nil {
 			if t, ok := parsePlanStarted(m[1]); ok {
 				started = t
+			}
+		}
+		if m := reExecuting.FindStringSubmatch(line); m != nil {
+			if t, ok := parsePlanStarted(m[1]); ok {
+				executing = t
 			}
 		}
 		trimmed := strings.TrimSpace(line)
@@ -730,6 +744,9 @@ func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, step
 		case "status":
 			statusLines = append(statusLines, line)
 		}
+	}
+	if !executing.IsZero() {
+		started = executing
 	}
 	return teams, steps, validations, started, strings.Join(statusLines, "\n")
 }

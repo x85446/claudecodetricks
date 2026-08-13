@@ -213,9 +213,7 @@ do_install() {
             install_skill venue-classifier "$PERSONALDB"
             ;;
         dev-makefiles)
-            install_skill dev-makefiles "$WARDEN"
-            install_skill dev-makefiles "$FINANCE"
-            install_skill dev-makefiles "$PERSONALDB"
+            install_skill dev-makefiles "$USERGLOBAL"
             ;;
         hours-maker)
             install_skill hours-maker "$FINANCE"

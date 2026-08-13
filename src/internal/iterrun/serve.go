@@ -332,7 +332,7 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		plan = PlanSummary{Name: name, ProjectDir: proj}
 	}
-	planStarted, _ := plan.StartedAt()
+	planStarted, _ := plan.EffectiveStart()
 
 	if events, err := ReadEvents(); err == nil {
 		labels, _ := ReadLabels()
@@ -369,7 +369,7 @@ func handleArchive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	planStarted, _ := plan.StartedAt()
+	planStarted, _ := plan.EffectiveStart()
 	if events, err := ReadEvents(); err == nil {
 		labels, _ := ReadLabels()
 		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, plan.Name, proj, planStarted))

@@ -156,7 +156,7 @@ func timelineCmd(args []string) {
 		if ps, err := iterrun.GetPlanSummary(home, plan); err == nil {
 			planSummary = ps
 		}
-		planStarted, _ := planSummary.StartedAt()
+		planStarted, _ := planSummary.EffectiveStart()
 
 		rows, err = iterrun.BuildRowsFromFilesystem(plan, home, scanDirs)
 		if err != nil {
