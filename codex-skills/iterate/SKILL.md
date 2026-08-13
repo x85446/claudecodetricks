@@ -8,6 +8,43 @@ description: Use when given a multi-step task with validation criteria and asked
 
 The user invoked this skill because they're tired of being interrupted by clarifying questions. The whole point: **make the call yourself, log it, continue**. Only return control when the validation criteria they provided are all green, or when you've truly exhausted reasonable attempts.
 
+## Codex port notes
+
+This skill was converted from Claude Code by `/skill-2-codex`. Notes for
+this port specifically (see the general mapping table in
+`references/codex-format.md` if that file was carried over, or
+https://developers.openai.com/codex/skills for the underlying rules):
+
+- **Arguments.** No `argument-hint` field exists in Codex frontmatter.
+  Usage: `$1` (or `$ARGUMENTS`) is a paragraph describing the work to do
+  AND how to validate success — same substitution syntax Claude Code
+  used, confirmed to carry over unchanged.
+- **Dependencies — must also be ported for this skill to fully work:**
+  `iterate-planner` (writes the `phase: planned` state this skill
+  transitions and executes, invoked below as `$iterate-planner`) and
+  `oracle` (its data file read directly in the oracle-fallback step, plus
+  suggested at the end of a run via `$oracle harvest`).
+- **The "Agent" column in the plan's Teams table** names a Claude Code
+  `subagent_type` (`backend-expert`, `frontend-engineer`, etc. — written
+  by the `$iterate-planner` port). Codex has no fixed roster of named
+  subagent personas: when dispatching a team (see "Team dispatch"
+  below), read that column as a plain-language role description to fold
+  into the spawn instruction, not a formal parameter Codex recognizes.
+- **The heaviest conversions in this file are the `/loop` auto-resume
+  mechanism (now Cron-based, see "Auto-resume via Cron" below) and the
+  Agent-tool team dispatch (now natural-language subagent spawning, see
+  "Team dispatch" below).** Both carry `codex-port:` HTML-comment flags
+  at their first occurrence — read those before trusting a long
+  unattended run.
+- **Do not run this Codex port and the Claude Code `/iterate-planner` /
+  `/iterate` against the same plan file at the same time.** Both write to
+  `./.claude/iterate/plans/<name>.md` using the same schema, but team
+  dispatch and auto-resume mechanics differ — interleaving the two on a
+  live `phase: executing` plan risks a corrupted Teams `Status` column,
+  a double-dispatched team, or two competing resumption schedules both
+  holding (or fighting over) the `running:` lock. Pick one tool per plan
+  for its whole lifecycle.
+
 ## Named plans & state files (this is how resumption works)
 
 Plans are **saved, animal-named, and persistent**. Each plan is one file:
@@ -34,7 +71,7 @@ Resolve in this order:
 2. **`$1` names an existing plan** (`$1` exactly matches a `plans/<name>.md`, e.g. `$iterate dog`): set `current` = that plan; if `phase: planned` → transition to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set up the auto-resume loop, begin; if already executing → resume it (leave `Executing:` untouched).
 3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** plan, named via `iterate-run name next`, with `phase: executing`, **`Executing:` set to the same UTC timestamp as `Started:`**, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
 4. **`$1` empty, exactly one plan exists** with `phase: planned`: transition it to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set `current`, set up the loop, begin.
-5. **`$1` empty, multiple planned plans exist**: ask the user which one via a **number picker** (AskUserQuestion) — one option per plan, labeled `<name>` with description `started <date> — <goal>`. Then execute the chosen plan (transition to executing, **set `Executing:`**, set current, loop, begin). This is the ONLY place `$iterate` asks a question, and it only happens on a human-typed no-arg `$iterate` with no executing plan.
+5. **`$1` empty, multiple planned plans exist**: ask the user which one — list every plan as `<name>: started <date> — <goal>` and have them pick by name. <!-- codex-port: was Claude Code's AskUserQuestion (a structured multiple-choice picker); no confirmed Codex equivalent, so this is now a plain-language list-and-ask instead of a formal picker tool call --> Then execute the chosen plan (transition to executing, **set `Executing:`**, set current, start the Cron job, begin). This is the ONLY place `$iterate` asks a question, and it only happens on a human-typed no-arg `$iterate` with no executing plan.
 6. **Neither `$1` nor any plan exists**: report "no plans yet — supply instructions or run $iterate-planner first" and stop. (Reporting is not the same as asking.)
 
 Create `./.claude/iterate/` and `./.claude/iterate/plans/` if they don't exist.
@@ -120,7 +157,7 @@ A fresh subagent has no memory of how long anything in this project normally tak
 
 The fix is real data, not a better guess: if `./.claude/data/oracle.md` (or the global oracle) has a known duration for a specific operation — a build, a migration, a deploy step — `$iterate-planner`'s oracle merge (see its SKILL.md) folds it into that step's Constraints as a concrete number, e.g. `Context: the app-build compile normally completes in under 60s (even faster on a warm cache).` That Constraint flows into the team's prompt verbatim (item 4 above), so the team's pre-announcement line uses the real number instead of inventing one, and the coordinator's Overdue check compares against it directly instead of falling back to the generic window.
 
-**When a team hits a real, unexplained deviation from a known baseline** (the compile that always takes under a minute is still running at 10x that with no error), that's a strong signal to actively investigate right then — check the process, look for a hang, don't just keep waiting — not something to shrug off because it's still short of some generic ceiling. It's also exactly the kind of fact worth an `/oracle harvest` at the end of the run, win or lose: either "confirmed: still under 60s" (reinforcing the baseline) or "found: now regularly takes N minutes because of X" (updating it) are both worth capturing so the next run starts smarter than this one did.
+**When a team hits a real, unexplained deviation from a known baseline** (the compile that always takes under a minute is still running at 10x that with no error), that's a strong signal to actively investigate right then — check the process, look for a hang, don't just keep waiting — not something to shrug off because it's still short of some generic ceiling. It's also exactly the kind of fact worth an `$oracle harvest` at the end of the run, win or lose: either "confirmed: still under 60s" (reinforcing the baseline) or "found: now regularly takes N minutes because of X" (updating it) are both worth capturing so the next run starts smarter than this one did.
 
 ## Steps
 
@@ -141,7 +178,7 @@ If you reached this step via a fresh `$iterate <task>` (i.e. `$1` non-empty, no 
 
 - Build the oracle buzzword index by reading the **index sections** of both stores:
   - Project: `./.claude/data/oracle.md`
-  - Global: `~/.claude/skills/oracle/known.md`
+  - Global: `~/.agents/skills/oracle/known.md` <!-- codex-port: was ~/.claude/skills/oracle/known.md -->
 - Scan your interpreted task (Goal + Steps + the user's `$1`) for buzzword matches against the index. Case-insensitive substring; allow plural / verb forms.
 - For each matched buzzword, read its full 5W+H entry from the right store (project wins on conflict).
 - Fold the entry into Steps / Validations / Constraints using the same rules as `$iterate-planner`:
@@ -168,6 +205,7 @@ Executing: <UTC timestamp>     # same instant as Started: on this direct fresh-t
 CWD: <pwd at first invocation>
 phase: executing
 running: <UTC timestamp>       # heartbeat — update at every step boundary
+cron_job_id: <id>              # codex-port: id returned by CronCreate, needed to CronDelete it later
 
 ## Goal
 <one sentence>
@@ -339,10 +377,10 @@ Plan `owl` is `phase: planned`, `teamed: true`, with Teams: `deploy` (steps 2,4;
 What the skill does:
 - Transitions `owl` to `phase: executing`, sets `Executing: <now>`, takes the lock, calls `CronCreate` for a 1-minute recurring `$iterate` job and records its id as `cron_job_id:` (1 minute max, teamed or not — notifications help when they land but never widen the poll interval).
 - Team dispatch: `deploy` has no unmet dependencies → ready. `link-tree` depends on `deploy`, which isn't done yet → not ready.
-- Dispatches one Agent named `owl-deploy` (steps 2,4 + Goal + Constraints + its scoped log path `./.claude/iterate/plans/owl.teams/deploy.log.md` + the mandatory-checkin instruction, background). Sets `deploy` row `Status: in-progress`. Logs "dispatched teams: deploy (background, in progress)". Ends the turn.
+- Spawns a subagent labeled `owl-deploy` (steps 2,4 + Goal + Constraints + its scoped log path `./.claude/iterate/plans/owl.teams/deploy.log.md` + the mandatory-checkin instruction). Sets `deploy` row `Status: in-progress`. Logs "dispatched teams: deploy (background, in progress)". Ends the turn without waiting on it.
 - Mid-flight, if the user checks in: reads `deploy.log.md`'s latest checkin line (not just waiting for a terminal line) and reports it plainly — e.g. "deploy — updated 4m ago, container built, running smoke test now." No terminal line yet, so nothing to merge; this is just reading the log, not a poll tick.
-- `owl-deploy` finishes → **automatic completion notification** arrives (no need to wait for the next loop tick). `deploy.log.md` ends with `TEAM DONE: metrics-service deployed and smoke-tested, curl https://metrics.gravhl.com/health returns 200`. Merges that into `owl.md`'s Status/Log under `### Team: deploy`, checks off steps 2 and 4, sets the `deploy` row `Status: done`.
+- `owl-deploy` finishes → **if a completion notification arrives, great** (no need to wait for the next Cron tick); otherwise the next tick's log check catches it. `deploy.log.md` ends with `TEAM DONE: metrics-service deployed and smoke-tested, curl https://metrics.gravhl.com/health returns 200`. Merges that into `owl.md`'s Status/Log under `### Team: deploy`, checks off steps 2 and 4, sets the `deploy` row `Status: done`.
 - Same turn: `link-tree`'s dependency (`deploy`) just cleared → now ready. Dispatches `owl-link-tree` immediately (steps 3,5 + same Goal/Constraints + its own scoped log path), sets `Status: in-progress`. Ends the turn.
 - `owl-link-tree` finishes → notification arrives, `link-tree.log.md` ends with `TEAM DONE: link tree updated, verified live in browser`. Merges it, checks off steps 3 and 5, sets `link-tree` `Status: done`.
 - All teams done, no unassigned steps → runs full-plan Validation once more across everything. All green.
-- Archives `owl.md` and `owl.teams/`, invokes `/loop` (no args) to cancel, reports: "✓ owl done — 2 teams (deploy, link-tree ran sequentially due to dependency), 4 steps, all validations green."
+- Archives `owl.md` and `owl.teams/`, calls `CronDelete` on `cron_job_id:` to cancel, reports: "✓ owl done — 2 teams (deploy, link-tree ran sequentially due to dependency), 4 steps, all validations green."

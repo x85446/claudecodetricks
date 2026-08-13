@@ -121,6 +121,17 @@ table. Concretely, for each Claude-Code-specific mechanism found:
 - **Everything else** (domain logic, file schemas, validation rules,
   business logic) → leave untouched. Don't rewrite prose that isn't
   actually about a Claude-Code-specific mechanism.
+- **Internal links to moved supporting files.** `scaffold.sh` moves every
+  non-`SKILL.md` `.md` file into `references/`, but a Markdown link
+  inside the body pointing at the old bare filename (e.g.
+  `[examples.md](examples.md)`) doesn't get rewritten automatically —
+  grep the scaffolded `SKILL.md` for links to any file that just got
+  moved into `references/` and fix the path.
+- **Check every reference file too, not just `SKILL.md`.** A moved
+  `references/*.md` can carry its own Claude-Code-specific mentions
+  (worked examples referencing `/other-skill`, `/loop`, etc.) — run the
+  same mapping-table pass over it. Don't assume only the top-level
+  SKILL.md needs conversion.
 
 ### 5. Install to the requested target
 

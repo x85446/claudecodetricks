@@ -33,9 +33,9 @@ https://developers.openai.com/codex/skills for the underlying rules):
   over unchanged.
 - **Dependencies — must also be ported for this skill to fully work:**
   `iterate` (the executor this hands off to, invoked below as `$iterate`)
-  and `oracle` (its data file read directly, not invoked as a skill, but
-  the global copy's path assumes it lives at Codex's own skills
-  location).
+  and `oracle` (its data file read directly at plan time, AND suggested
+  to the user as an explicit invocation — `$oracle add`, `$oracle
+  remember` — in a few places below).
 - **The "Agent" column in the Teams table** (see "Teams" below) names a
   Claude Code `subagent_type` (`backend-expert`, `frontend-engineer`,
   etc.) — Codex has no fixed roster of named subagent personas. Treat
@@ -171,7 +171,7 @@ When the current plan already has `teamed: true` and a new step is appended:
 
 ### 1. Read the oracle
 
-1. Check for `./.claude/data/oracle.md` and `~/.claude/skills/oracle/known.md`. If both absent: note "no oracle — planning without project context" and skip to Step 2 with empty oracle data. This is a silent no-op, not a refusal.
+1. Check for `./.claude/data/oracle.md` and `~/.agents/skills/oracle/known.md`. If both absent: note "no oracle — planning without project context" and skip to Step 2 with empty oracle data. This is a silent no-op, not a refusal.
 2. Parse the oracle index/sections (Post-action checklists, Testing requirements, Gotchas, Deployment rituals, Naming conventions, Architecture notes / buzzword 5W+H entries). Treat any section as optional — only use what's present.
 
 ### 2. Identify the plan source
@@ -193,7 +193,7 @@ Oracle is a **buzzword glossary** (5W+H per registered term), not a categorical 
 
 1. **Build the buzzword index** from both oracle stores:
    - Project: `./.claude/data/oracle.md` index section
-   - Global: `~/.claude/skills/oracle/known.md` index section
+   - Global: `~/.agents/skills/oracle/known.md` index section
 2. **Scan the user's plan** (Goal + Steps + the recent conversation context that informed it) for buzzword matches against the index. Match case-insensitive substring. Match plural / verb forms.
 3. **For each matched buzzword**, read its 5W+H entry from the right store (project wins on conflict).
 4. **Fold the entry's fields into the plan** as follows:
@@ -236,7 +236,7 @@ And in the Oracle context audit trail:
 
 #### When oracle has no matching entries
 
-The plan is written without oracle augmentation. Note in the audit trail: "Oracle scanned, 0 matches. Buzzwords in plan: [list]. Use `/oracle add <buzzword>` to register one."
+The plan is written without oracle augmentation. Note in the audit trail: "Oracle scanned, 0 matches. Buzzwords in plan: [list]. Use `$oracle add <buzzword>` to register one."
 
 ### 5. Write the plan file
 
@@ -327,7 +327,7 @@ plan written to owl
 Want changes, or type `$iterate` (or `$iterate <name>`) to execute?
 ```
 
-If the project had no oracle, omit the "Oracle rules applied" section and add a one-liner: `(No oracle found for this project — planned without project context. Use /oracle remember to start one.)`
+If the project had no oracle, omit the "Oracle rules applied" section and add a one-liner: `(No oracle found for this project — planned without project context. Use $oracle remember to start one.)`
 
 If the plan is teamed (`teamed: true`), insert the Teams table between Constraints and Oracle rules applied:
 
@@ -381,7 +381,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
    - a **CLI command** → actually running the command end-to-end (not "the flag parsing looks right").
    - a **migration / script** → executing it against a real (test or local) target (not "the SQL parses").
    "Static code review passes" / "tests pass" alone is NOT validation when the change ships behavior. Strengthen validations to require interactive testing where the oracle says so.
-7. **Don't write to the oracle from here.** This skill READS the oracle. Only the `/oracle` skill writes to it. If the user shares a new lesson while refining the plan, suggest `/oracle remember <fact>` separately.
+7. **Don't write to the oracle from here.** This skill READS the oracle. Only the `$oracle` skill writes to it. If the user shares a new lesson while refining the plan, suggest `$oracle remember <fact>` separately.
 8. **No oracle is fine.** Don't refuse to run on projects without an oracle — just plan without the extra context and say so in the footer.
 9. **NEVER write "STOP", "abort", "give up", "halt", or "manual intervention required" into any step or validation.** The whole point of `$iterate` is autonomous recovery — it exhausts alternatives, it doesn't bail at the first sign of trouble. Validations describe the desired post-condition only. Recovery from a failed validation is `$iterate`'s job at execution time, not yours.
 10. **If a step's natural form is "check X, and if missing, halt" — rewrite it as a productive step that creates/repairs X.** Examples:
@@ -401,4 +401,4 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 
 ## Examples
 
-Two full worked examples (a plain restate-the-plan run with oracle merge, and a teamify + rapid-fire-adds streak) live in [examples.md](examples.md) — load that file when you need to see the exact output shape end to end, e.g. building a similar plan-writing skill from this one as a template, or checking an edge case in the operation router / auto-classify / rapid-fire terse-mode logic against a concrete run.
+Two full worked examples (a plain restate-the-plan run with oracle merge, and a teamify + rapid-fire-adds streak) live in [references/examples.md](references/examples.md) <!-- codex-port: was examples.md; scaffold.sh moved supporting .md files into references/ --> — load that file when you need to see the exact output shape end to end, e.g. building a similar plan-writing skill from this one as a template, or checking an edge case in the operation router / auto-classify / rapid-fire terse-mode logic against a concrete run.
