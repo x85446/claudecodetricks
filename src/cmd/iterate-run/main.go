@@ -96,12 +96,19 @@ func registerCWD() {
 
 func hookCmd(args []string) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "iterate-run: hook requires pre or post")
+		fmt.Fprintln(os.Stderr, "iterate-run: hook requires pre, post, subagent-start, or subagent-stop")
 		os.Exit(2)
 	}
 	phase := args[0]
-	if phase != "pre" && phase != "post" {
-		fmt.Fprintln(os.Stderr, "iterate-run: hook phase must be pre or post")
+	switch phase {
+	case "pre", "post":
+		// PreToolUse/PostToolUse — every hook-wired platform (Claude Code,
+		// Codex) sends one of these.
+	case "subagent-start", "subagent-stop":
+		// Codex-only lifecycle events (SubagentStart/SubagentStop) — see
+		// HandleHook's doc comment for why subagent-start matters here.
+	default:
+		fmt.Fprintln(os.Stderr, "iterate-run: hook phase must be pre, post, subagent-start, or subagent-stop")
 		os.Exit(2)
 	}
 	// Never fail loudly here: a hook that exits non-zero or hangs can

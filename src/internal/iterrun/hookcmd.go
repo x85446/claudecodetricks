@@ -25,14 +25,18 @@ type hookInput struct {
 	DurationMs *int            `json:"duration_ms"`
 }
 
-// HandleHook is the entry point for `iterate-run hook pre|post`. It reads
-// one HookInput JSON object from r, records an Event, and — specifically for
-// an Agent-tool PostToolUse — resolves the new subagent's agent_id to the
-// human label we gave it at dispatch time (its own "description"), so later
-// events from that agent_id can be shown under a real team name instead of
-// an opaque ID. Never fails loudly: a hook that errors blocks nothing by
-// design (best-effort observability), so all errors are swallowed after an
-// attempt — this must never be the thing that breaks a real tool call.
+// HandleHook is the entry point for `iterate-run hook
+// pre|post|subagent-start|subagent-stop`. It reads one HookInput JSON object
+// from r and records an Event for pre/post. For a dispatch-tool PostToolUse
+// (Claude Code's Agent tool, or Codex's spawn_agent) it resolves the new
+// subagent's agent_id to the human label we gave it at dispatch time, so
+// later events from that agent_id can be shown under a real team name
+// instead of an opaque ID — see resolveDispatchLabel and
+// PendingSpawnLabelsPath's doc comments for why the two platforms need two
+// different mechanisms for the same outcome. Never fails loudly: a hook
+// that errors blocks nothing by design (best-effort observability), so all
+// errors are swallowed after an attempt — this must never be the thing that
+// breaks a real tool call.
 func HandleHook(phase string, r io.Reader) {
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -47,6 +51,19 @@ func HandleHook(phase string, r io.Reader) {
 	}
 
 	RegisterProject(in.CWD)
+
+	// SubagentStart/SubagentStop carry no tool_name/tool_input — they're
+	// Codex-only lifecycle events (Claude Code has no equivalent hook this
+	// binary needs to act on), not a PreToolUse/PostToolUse observation, so
+	// they never reach the Event-recording path below.
+	if phase == "subagent-start" {
+		handleCodexSubagentStart(in)
+		return
+	}
+	if phase == "subagent-stop" {
+		return
+	}
+
 	summary := summarize(in.ToolName, in.ToolInput)
 	plan, team := resolvePlanTeam(in.CWD, in.AgentID)
 
@@ -80,6 +97,58 @@ func HandleHook(phase string, r io.Reader) {
 			_ = SetLabel(agentID, label)
 		}
 	}
+
+	// Codex's own dispatch tool: same intent as the Claude Code path above,
+	// but Codex's spawn_agent PostToolUse response never carries the new
+	// agent's id (confirmed empirically — see PendingSpawnLabelsPath), so
+	// the label has to be queued now and claimed later, at SubagentStart.
+	if phase == "post" && isCodexSpawnTool(in.ToolName) {
+		if label, ok := extractCodexSpawnTaskName(in.ToolInput); ok {
+			_ = PushPendingSpawnLabel(in.SessionID, label)
+		}
+	}
+}
+
+// handleCodexSubagentStart claims this session's oldest queued spawn label
+// (pushed by the PostToolUse handler above) the moment Codex confirms a
+// subagent has actually started, and assigns it to the now-known agent_id.
+func handleCodexSubagentStart(in hookInput) {
+	if in.SessionID == "" || in.AgentID == "" {
+		return
+	}
+	if label, ok, _ := PopPendingSpawnLabel(in.SessionID); ok {
+		_ = SetLabel(in.AgentID, label)
+	}
+}
+
+// isCodexSpawnTool reports whether toolName is Codex's subagent-dispatch
+// tool. Confirmed empirically (Codex CLI 0.147.0): its hook payload reports
+// tool_name as "collaborationspawn_agent" (no separator) for a spawn_agent
+// call — not "Agent", the way Claude Code names its own dispatch tool.
+// Matched with Contains rather than an exact string so a future Codex
+// version renaming or re-prefixing this tool doesn't silently stop working.
+func isCodexSpawnTool(toolName string) bool {
+	return strings.Contains(toolName, "spawn_agent")
+}
+
+// extractCodexSpawnTaskName pulls the human label out of a Codex
+// spawn_agent call's own tool_input. task_name is the only plain-text label
+// field available — Codex encrypts tool_input.message before it reaches
+// hooks (confirmed empirically: a Fernet-token-shaped blob, not the actual
+// prompt text), so there is nothing else usable here.
+func extractCodexSpawnTaskName(raw json.RawMessage) (string, bool) {
+	if len(raw) == 0 {
+		return "", false
+	}
+	var m map[string]any
+	if json.Unmarshal(raw, &m) != nil {
+		return "", false
+	}
+	name, _ := m["task_name"].(string)
+	if name == "" {
+		return "", false
+	}
+	return name, true
 }
 
 // resolvePlanTeam figures out which plan (and, for a team member, which

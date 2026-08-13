@@ -36,6 +36,16 @@ https://developers.openai.com/codex/skills for the underlying rules):
   "Team dispatch" below).** Both carry `codex-port:` HTML-comment flags
   at their first occurrence — read those before trusting a long
   unattended run.
+- **Dashboard team labeling requires `task_name` on every spawn.** For the
+  `iterate-run` dashboard to show a Codex-run team under its real name
+  (`owl-database`) instead of a raw agent id, `iterate-run` (as of the
+  version built alongside this port) resolves the label via a
+  `SubagentStart` hook plus a queue keyed off each spawn's `task_name`
+  field — see step 3 of "Team dispatch" below. This requires
+  `~/.codex/hooks.json` (or the project's own `.codex/hooks.json`) to wire
+  `PreToolUse`, `PostToolUse`, AND `SubagentStart` to
+  `iterate-run hook pre|post|subagent-start` — `SubagentStart` specifically
+  is new and easy to miss if copying an older Claude Code hook config.
 - **Do not run this Codex port and the Claude Code `/iterate-planner` /
   `/iterate` against the same plan file at the same time.** Both write to
   `./.claude/iterate/plans/<name>.md` using the same schema, but team
@@ -121,7 +131,7 @@ When a plan IS teamed, on each `$iterate` entry (fresh dispatch, an automatic ba
 
 1. **Compute readiness.** A team is *ready* if every team named in its `Depends on` column has `Status: done` in its own row. `$iterate-planner` writes every row with `Status: pending` at teamify/auto-classify time — **that Status cell is the one thing `$iterate` is allowed to update** in the Teams table (`pending` → `in-progress` → `done` / `blocked (<reason>)`); never touch Team/Steps/Focus/Depends on/Agent, and never add or remove a row — that's `$iterate-planner`'s side of the table. Teams with no unmet dependencies and no prior dispatch are ready immediately.
 2. **Unassigned steps** (step numbers not listed under any team) belong to the coordinator — that's you, the top-level `$iterate` turn. Execute them yourself, serially, following the normal "Execute the steps" procedure, at whatever point their step numbers fall relative to team dependencies (before dispatching teams that depend on them, interleaved otherwise).
-3. **Spawn every currently-ready, not-yet-dispatched team as its own subagent, all in the same turn** — one plain-language spawn instruction per team ("spawn an agent to handle team `<name>`: ...", issued for every ready team together so they run concurrently), not sequentially one after another. Don't block this turn waiting on them to finish. Set that row's `Status` to `in-progress` immediately on dispatch, so a status report never has to say just "still going" — it can say *which* teams are running.
+3. **Spawn every currently-ready, not-yet-dispatched team as its own subagent, all in the same turn** — one plain-language spawn instruction per team ("spawn an agent to handle team `<name>`: ...", issued for every ready team together so they run concurrently), not sequentially one after another. **Set the spawn's `task_name` to `<plan-name>-<team-name>` explicitly** (e.g. `owl-database`) — this is the one plain-text field Codex's spawn tool exposes to the dashboard's hook wiring for labeling a subagent before it starts (its `message`/prompt field is not readable there — confirmed empirically it arrives encrypted at the hook layer), so a missing or generic `task_name` means that team's activity shows up under a raw agent id instead of its real name. Don't block this turn waiting on them to finish. Set that row's `Status` to `in-progress` immediately on dispatch, so a status report never has to say just "still going" — it can say *which* teams are running.
 4. **Each team's spawn instruction must be fully self-contained** (a fresh subagent has no memory of this conversation or this plan file beyond what you put in the instruction). Include, verbatim:
    - **Its identity, as its own labeled statement — not something to infer from a file path.** State it plainly: "You are team: `<team-name>` (from this plan's Teams table). Your log file MUST be exactly `./.claude/iterate/plans/<name>.teams/<team-name>.log.md` — do not rename yourself, even if you'd naturally describe your own work differently." Confirmed live: a dispatched team named its own log file after its own description of the work instead of the Teams-table name (`app-macos` instead of `gui`) — the identity had only ever been implicit, embedded inside a path string it was told to write to, never stated as its own fact.
    - The plan's Goal.
