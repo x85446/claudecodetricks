@@ -30,6 +30,7 @@ GRAVHL_CLOUD=~/workspace/gravhl/backend/cloud-setup/.claude/skills
 GRAVHL_API_HEALTH=~/workspace/gravhl/backend/mgmt/api-health-dashboard/.claude/skills
 MKTOOL=~/workspace/x85446/marketing-tool/.claude/skills
 HOUSES=~/workspace/x85446/houses/.claude/skills
+RECODE=~/workspace/izuma/RECODE/.claude/skills
 USERGLOBAL="$HOME/.claude/skills"   # user-global skills, available in every session
 
 # ── All targets (for global skills) ────────────────────────────
@@ -107,6 +108,9 @@ install_3p_skill() {
 
 # PM skills list
 PM_SKILLS="pm pm-epic pm-feature pm-requirement pm-test pm-iterator pm-auditor pm-preflight pm-publish pm-status pm-webtool"
+
+# codeconverter family (meta + 11 stage children)
+CODECONVERTER_SKILLS="codeconverter codeconverter-01-service-profile codeconverter-02-codebase-analysis codeconverter-03-dependency-discovery codeconverter-04-test-baseline codeconverter-05-api-surface codeconverter-06-domain-analysis codeconverter-07-target-codebase codeconverter-08-gap-validation codeconverter-09-dependency-audit codeconverter-10-service-alignment codeconverter-11-migration-plan"
 
 WEBTOOL_SRC=~/workspace/x85446/claudecodetricks/webtool
 
@@ -253,6 +257,18 @@ do_install() {
             ;;
         skill-2-codex)
             install_skill skill-2-codex "$USERGLOBAL"
+            ;;
+        codeconverter)
+            for s in $CODECONVERTER_SKILLS; do
+                install_skill "$s" "$RECODE"
+            done
+            ;;
+        codeconverter-*)
+            # Skip during install_all (codeconverter handles the batch).
+            # But if called directly, install this one skill.
+            if [ -n "$DIRECT_INSTALL" ]; then
+                install_skill "$skill" "$RECODE"
+            fi
             ;;
         *)
             skip "$skill"

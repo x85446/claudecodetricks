@@ -106,14 +106,14 @@ If a current plan exists and the user just describes more work, **add it to the 
    - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file). If the current plan has `teamed: true`, also run the cheap single-step Team classification (see "Auto-classify on add" below) on each newly added step — this is O(1) per step, never a full re-teamify.
    - no plans exist → create the first plan (name from `iterate-run name next`, set current).
 
-For ops 3–7, run the oracle merge (Step 4) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations.
+For ops 3–7, run the oracle merge (Step 4) AND the access preflight scan (Step 5) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations and any newly-introduced access dependency gets a verification step.
 
 ### Teamify procedure (op 5 — full reclustering)
 
 1. Read the target plan's Goal + full Steps + Validation lists.
 2. For each step, identify what context executing it actually requires — which files, which system/service, which domain knowledge. This is the real unit of analysis, not the step's topic label.
 3. Group steps by **shared context need**: any two steps that require the same files/system/domain knowledge go in the same team, regardless of how different they sound topically — splitting them would mean two agents both paying to load context one agent already has, for no gain. Steps only split into different teams when their context needs are genuinely independent (different files, different systems, nothing that has to be known by both) — that's the only case where parallel dispatch actually saves work instead of just adding coordination overhead. Up to roughly 10 teams; no target count, no fixed taxonomy (not "code vs UI vs other," not any preset pair). A 4-step plan might yield one team or four; a 30-step plan might yield six — whatever the actual context boundaries support. Don't default toward fewer teams for its own sake, and don't force extra splits the context doesn't support either.
-4. For each group: name it (short kebab-case), write a one-line Focus, list its step numbers, infer real ordering dependencies on other teams (data must exist before code reads it, infra must exist before code deploys to it — not just numeric step order), and suggest an `Agent` (subagent_type) that best matches the Focus.
+4. For each group: name it (short kebab-case), write a one-line Focus, list its step numbers, infer real ordering dependencies on other teams (data must exist before code reads it, infra must exist before code deploys to it — not just numeric step order), and suggest an `Agent` (subagent_type) that best matches the Focus. If this group's steps reference an access dependency (SSH host, API key, gated URL — see "Access preflight scan" above) not shared by other teams, give it its own access-verification step as its first step, ahead of its other steps — don't rely on a global check, since teams may run against different machines/credentials entirely.
 5. Steps that don't cleanly fit any group stay unassigned (omit from the table) rather than forcing a bad fit.
 6. If the plan has no genuine independent context boundaries (e.g. every step touches the same file/system, or it's a strictly sequential dependency chain), don't write a Teams section at all — report "no independent context boundaries found — steps are sequential, staying flat" and leave `teamed` unset. This is a valid, expected outcome, not a failure.
 7. Write `## Teams` into the plan file, set `teamed: true` (only when a Teams section was actually written), re-print the full plan.
@@ -123,7 +123,7 @@ For ops 3–7, run the oracle merge (Step 4) on whatever plan you end up writing
 
 When the current plan already has `teamed: true` and a new step is appended:
 
-1. Compare the new step's content against each existing team's Focus. If it clearly matches exactly one team, append its number to that team's Steps list in the `## Teams` table — nothing else about the table changes (don't touch Depends on / Agent / other teams).
+1. Compare the new step's content against each existing team's Focus. If it clearly matches exactly one team, append its number to that team's Steps list in the `## Teams` table — nothing else about the table changes (don't touch Depends on / Agent / other teams). If the new step introduces an access dependency (SSH host, API key, gated URL) that team's existing steps don't already have a verification step for, also insert one `[skill: /accounts]` step at the front of that team's steps — this is still a single, cheap classification (one dependency, one step), not a re-teamify.
 2. If it doesn't clearly match any existing team, leave it unassigned (simply don't add it to the Teams table) — the coordinator will execute it directly at `/iterate` time. Never force a bad fit, and never trigger a full teamify pass just to place one step.
 3. This is a single classification judgment, not a re-analysis of the whole plan — it must stay cheap so rapid-fire `/iterate-planner add ...` calls don't slow down.
 
@@ -205,7 +205,25 @@ And in the Oracle context audit trail:
 
 The plan is written without oracle augmentation. Note in the audit trail: "Oracle scanned, 0 matches. Buzzwords in plan: [list]. Use `/oracle add <buzzword>` to register one."
 
-### 5. Write the plan file
+### 5. Access preflight scan (mandatory, every plan, every refinement)
+
+**Why this exists:** a plan that references a remote machine, an SSH host, an API/access key, or a gated URL can look like it's making progress while actually just waiting on something nobody ever confirmed was reachable. (Real case: a plan drove work on an incus VM over `ssh cypressLinux` and sat "in progress" for a long stretch — the actual problem was nobody had ever confirmed the plan could check on that VM's build status from that host at all. It wasn't blocked, it was guessing.) This step exists so that check happens at planning time, as the plan's own first step, instead of being discovered mid-run.
+
+This is **not opt-in** — run it on every plan write and every refinement, same as the oracle merge, over the full Goal + Steps + Validation + Constraints (including anything the oracle merge in Step 4 just added).
+
+1. **Scan for access dependencies** — anything later steps need reachable that isn't already local/guaranteed: SSH hosts / remote machine names (`ssh <host>`, "on <host>", VM/container targets reached via a remote), API keys / access keys / tokens / credentials / secrets, gated URLs (dashboards, APIs requiring login), cloud accounts (AWS/GCP/Cloudflare/etc.), git remotes or GitHub/GitLab orgs+repos not already known-accessible, database connection targets.
+2. **For each dependency found, identify the SPECIFIC capability later steps actually need** — not bare reachability. "Can ssh to cypressLinux" is not the requirement; "can ssh to cypressLinux AND run `incus` there AND read a target VM's build status" is. Bare-connectivity checks miss exactly the failure mode this step exists to catch.
+3. **Dedupe** — one verification step per distinct target+capability, even if several later steps reference it.
+4. **Write one verification Step+Validation pair per dependency, tagged `[skill: /accounts]`** (the `accounts` skill already owns SSH/credential/cloud-account access diagnosis and repair — don't reinvent it here):
+   - Na: `Verify <capability> on <target>. [skill: /accounts]`
+   - Nb: a real, runnable, END-TO-END probe of the exact operation later steps depend on — reuse the oracle's known-good command for that target if one exists (Step 4 may have just surfaced it), otherwise the most direct real command that exercises the actual capability (not `ssh host true` — the real status/read command later steps will actually run).
+5. **Insert these steps at the very front of whichever scope depends on them** — ahead of every other step in that scope, since nothing that needs the access should run before it's confirmed:
+   - Flat plan, or a dependency referenced by unassigned/global steps → front of the main `## Steps`/`## Validation` lists; renumber everything else after.
+   - Teamed plan, dependency referenced only within one team's steps → that team's own first step (see "Teamify procedure" and "Auto-classify on add" below) — different teams may run against different machines/credentials, so a global check would be both wrong-scoped and wasted work for teams that don't need it.
+6. **Add one `Access:`-prefixed Constraint per dependency** (same pattern as the existing `Timing:` prefix): `Access: <target> — <capability needed>, verified via step <N>`. This is the structured marker `/iterate` uses to recognize an access-check step and treat its failure differently from an ordinary failing validation (immediate `/accounts` self-heal attempt, immediate operator-wall report if that fails — no 5-cycle wait on something that simply doesn't exist yet).
+7. **If nothing was found**, write nothing and note it in the audit trail (Step 6 below) — most plans touching only local files have no access dependencies. This is a normal, expected outcome, not a shortcut taken.
+
+### 6. Write the plan file
 
 Schema, written to `./.claude/iterate/plans/<name>.md`:
 
@@ -239,9 +257,13 @@ teamed: false               # set true only after a teamify pass writes ## Teams
 - Naming: <oracle convention if applicable>
 - Context: <oracle architecture note if applicable>
 - Timing: <known duration for a specific operation, if the oracle has one>
+- Access: <target> — <capability needed>, verified via step <N> (one per access dependency found)
 
 ## Teams
 <!-- Only present when teamed: true. See "Teams" section above for schema. Omit entirely on flat plans. -->
+
+## Access preflight
+<!-- Audit trail from Step 5. One line per dependency found + which step verifies it, or "No external access dependencies detected." -->
 
 ## Oracle context applied
 <!-- Audit trail: which oracle rules were folded in. Lets the user see what changed. -->
@@ -259,7 +281,7 @@ teamed: false               # set true only after a teamify pass writes ## Teams
 
 Storage uses two parallel numbered lists (Steps + Validation, indexed 1:1). The `planner:` field tells `/iterate` "oracle was already consulted — don't re-read it" (see iterate's behavior).
 
-### 6. Present the plan
+### 7. Present the plan
 
 Always lead with a one-line **save confirmation** so the user knows it persisted:
 - created a brand-new plan → `plan written to <animal>`
@@ -284,6 +306,12 @@ plan written to owl
 
 **Constraints:** <list, if any>
 
+**Access preflight:**
+- <target> → verified via step <N> (<capability>) [skill: /accounts]
+- ...
+
+(No external access dependencies detected.) <!-- use this line instead when the scan found nothing -->
+
 **Oracle rules applied:**
 - Post-action: <entry> → added step <N>
 - Testing: <entry> → strengthened validation <N>
@@ -307,11 +335,11 @@ If the plan is teamed (`teamed: true`), insert the Teams table between Constrain
 | docs | 6 | Update README | code | documentation-expert | pending |
 ```
 
-### 7. Handle refinements
+### 8. Handle refinements
 
-If the user responds with changes in natural conversation, update the current plan file in place AND re-run the oracle merge (in case the refinement brought new oracle-relevant scope). Re-print the full plan. Keep `phase: planned`. Don't archive — overwrite. Refinements target the **current** plan unless the user names a different one — never spin up a second plan for a refinement.
+If the user responds with changes in natural conversation, update the current plan file in place AND re-run the oracle merge (in case the refinement brought new oracle-relevant scope) AND the access preflight scan (in case the refinement introduced a new remote host, key, or gated URL). Re-print the full plan. Keep `phase: planned`. Don't archive — overwrite. Refinements target the **current** plan unless the user names a different one — never spin up a second plan for a refinement.
 
-### 8. Rapid-fire terse mode
+### 9. Rapid-fire terse mode
 
 The user often queues several `/iterate-planner add <thing>` calls back-to-back without reading each result — dictating a stream of additions and hitting enter repeatedly. Printing the full plan (goal + every paired step + oracle audit + footer prompt) on every single one of those is slow to produce and clutters the conversation by the time they catch up.
 
@@ -365,6 +393,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 18. **Never invalidate team membership except through teamify or remove-from.** Refining Steps/Validation/Constraints text must not silently drop a step's team assignment. If `remove-from` deletes a step that belonged to a team, remove its number from that team's row too (renumbering the rest) — don't leave a stale reference to a step that no longer exists.
 19. **Rapid-fire streaks get a one-line reply, not a full reprint.** See "Rapid-fire terse mode" above — this exists because the user queues several adds in a row without reading each one; a full plan dump on every single one is slow and clutters the conversation. Always show the full plan on the first invocation of a streak and whenever there's genuine doubt about whether the streak ended.
 20. **No fixed team count or taxonomy — split on independent context needs, not topic labels.** Two steps stay in the same team whenever they need the same files/system/domain knowledge, even if they sound topically different — splitting those gains nothing and costs two agents paying to load the same context. Two steps only go in different teams when their context needs are genuinely independent — that's the only case parallel dispatch actually saves work. Never default to a binary split ("UI vs other", "code vs everything else") and never bias toward the fewest possible groups just because fewer is simpler to write; also never bias toward the most possible groups if steps genuinely share context. Up to roughly 10 teams, discovered from actual context boundaries in the plan, not chosen from habit.
+21. **Every plan gets an access preflight pass, every time — not opt-in, not something the user has to ask for.** Scan for SSH hosts, remote machines, API/access keys, credentials, and gated URLs; write a verification step, tagged `[skill: /accounts]`, at the very front of whichever scope (global, or a specific team) actually depends on it — before any step that needs that access. The check must exercise the SPECIFIC capability later steps depend on (e.g. "can read the remote build's status"), not bare reachability — a plan that assumes access works and finds out mid-run has already wasted the time this step exists to save. See "Access preflight scan" above.
 
 ## Examples
 
