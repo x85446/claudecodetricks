@@ -37,7 +37,7 @@ A single pointer file `./.claude/iterate/current` holds the name of the **curren
 
 ## Teams (optional grouping for parallel execution)
 
-A plan can be **teamed**: its Steps partitioned into named groups so `/iterate` dispatches one subagent per independent team to run concurrently instead of one agent working the whole Steps list serially. Teaming is **opt-in and explicit** — most plans stay flat, and flat plans behave exactly as they always have.
+A plan can be **teamed**: its Steps partitioned into named groups so `/iterate` dispatches one subagent per independent team to run concurrently instead of one agent working the whole Steps list serially. **Teaming is the default** — every newly-created plan gets a Teamify pass automatically (see "Write the plan file" below) unless the request explicitly asks to stay flat ("flat", "flatify", "keep it flat", "no teams", "don't team this"), or the plan genuinely has no independent context boundaries to split on (a normal, expected Teamify outcome — see "Teamify procedure" below). An already-teamed plan can be converted back with `/iterate-planner flat` / `flatify` (see "Flatify procedure" below); an already-flat plan can still be teamed on request with the existing teamify trigger phrases.
 
 Team count and categories are **discovered per plan, up to roughly 10 teams** — there's no fixed pair, no preset taxonomy (not a "UI vs other" or "code vs everything else" template), and no bias toward the fewest possible groups. A small plan might yield one team; a large, multi-subsystem plan might yield seven or eight. Let the content decide each time.
 
@@ -47,6 +47,8 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 - A topic label ("database", "UI") is a decent proxy for this but isn't the test itself. Two topically-similar steps needing genuinely disjoint context can still split; two topically-different steps that both need the same file or system should stay together.
 
 **Trigger phrases** (route to the teamify operation, #5 below): "team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", "team-stack this" — optionally naming a plan ("teamify <name>").
+
+**Flat trigger phrases** (route to the flatify operation, #6 below — the reverse): "flat", "flatify", "make flat", "convert to flat", "un-team", "remove teams", "flatten the plan", "go back to flat" — optionally naming a plan ("flatify <name>"). Also recognized inline during plan creation/refinement ("plan this, keep it flat", "no teams") to skip the now-default auto-teamify pass for that request.
 
 **Schema** — a plan file with teams has a `teamed: true` field alongside `phase`/`running`/`name`, and a `## Teams` section (placed after `## Constraints`):
 
@@ -98,15 +100,17 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 4. **add-to-named** — `add to "<name>" that <thing>`, "to `<name>` add `<thing>`": open `plans/<name>.md`, append the new Step + an inferred Validation, set `current` = `<name>`, re-print that plan. Then **stop**.
 
-5. **teamify** — `$1` matches a teamify trigger phrase ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", optionally "teamify `<name>`"): resolve the target plan (named, else current), run the Teamify procedure (see "Teamify procedure" below) over its full Steps list, write the `## Teams` table and set `teamed: true`, re-print the plan including the Teams table. Then **stop**. This is the only operation that does a full from-scratch reclustering — never run it implicitly as part of any other op.
+5. **teamify** — `$1` matches a teamify trigger phrase ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", optionally "teamify `<name>`"): resolve the target plan (named, else current), run the Teamify procedure (see "Teamify procedure" below) over its full Steps list, write the `## Teams` table and set `teamed: true`, re-print the plan including the Teams table. Then **stop**. This is the only operation that does a full from-scratch reclustering — never run it implicitly as part of any other op. (Since teaming is now the default on new plans, this op mainly matters for teaming a plan that was created flat — by explicit request or because the original Teamify pass found no boundaries to split on.)
 
-6. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below).
+6. **flatify** — `$1` matches a flat trigger phrase ("flat", "flatify", "make flat", "convert to flat", "un-team", "remove teams", "flatten the plan", "go back to flat", optionally "flatify `<name>`"): resolve the target plan (named, else current), run the Flatify procedure (see "Flatify procedure" below), re-print the plan without the Teams table. Then **stop**. The reverse of op 5 — always available as an escape hatch now that teaming is the default.
 
-7. **default (the common case)** — anything else describing work:
-   - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file). If the current plan has `teamed: true`, also run the cheap single-step Team classification (see "Auto-classify on add" below) on each newly added step — this is O(1) per step, never a full re-teamify.
-   - no plans exist → create the first plan (name from `iterate-run name next`, set current).
+7. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below — this includes the now-default auto-Teamify pass unless `$1` also carries a flat trigger phrase, see Step 6 "Write the plan file").
 
-For ops 3–7, run the oracle merge (Step 4) AND the access preflight scan (Step 5) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations and any newly-introduced access dependency gets a verification step.
+8. **default (the common case)** — anything else describing work:
+   - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file). If the current plan has `teamed: true`, also run the cheap single-step Team classification (see "Auto-classify on add" below) on each newly added step — this is O(1) per step, never a full re-teamify. If the current plan is flat, it stays flat on ordinary refinement (adding to a flat plan never auto-teamifies mid-stream — that would re-cluster on every add; use the explicit teamify trigger if the plan has grown enough to warrant it).
+   - no plans exist → create the first plan (name from `iterate-run name next`, set current) — same auto-Teamify-by-default path as op 7.
+
+For ops 3–8, run the oracle merge (Step 4) AND the access preflight scan (Step 5) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations and any newly-introduced access dependency gets a verification step.
 
 ### Teamify procedure (op 5 — full reclustering)
 

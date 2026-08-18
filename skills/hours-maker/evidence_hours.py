@@ -142,20 +142,48 @@ def _domain(url):
     return m.group(1).lower() if m else "?"
 
 def build_timeline(section, claude_evts, browser_evts, table):
-    """cell (col,row) -> set of tasks active there (+ 'UNMAPPED:<x>')."""
+    """cell (col,row) -> set of tasks active there (+ 'UNMAPPED:<x>').
+    cnt (col,row) -> Counter of event counts per label (mapped task or
+    UNMAPPED:<x>), the attention evidence for --dominant filtering."""
     cell = collections.defaultdict(set)
     raw = collections.defaultdict(set)
+    cnt = collections.defaultdict(collections.Counter)
     for local, cwd in claude_evts:
         col = COL_BY_WD[local.weekday()]; row = row_for(section, local)
         raw[(col, row)].add(cwd)
         t = map_task(cwd, table.get("projects", {}))
-        cell[(col, row)].add(t if t else f"UNMAPPED:{os.path.basename(cwd.rstrip('/'))}")
+        label = t if t else f"UNMAPPED:{os.path.basename(cwd.rstrip('/'))}"
+        cell[(col, row)].add(label)
+        cnt[(col, row)][label] += 1
     for local, dom in browser_evts:
         col = COL_BY_WD[local.weekday()]; row = row_for(section, local)
         t = map_task(dom, table.get("domains", {}))
         if t:
             cell[(col, row)].add(t)
-    return cell, raw
+            cnt[(col, row)][t] += 1
+        else:
+            cnt[(col, row)][f"UNMAPPED:{dom}"] += 1
+    return cell, raw, cnt
+
+
+def dominant_filter(cell, cnt):
+    """Keep a slot only if the mapped task with the most events in it has at
+    least as many events as every unmapped activity there — i.e. the mapped
+    task was the dominant (attention-holding) activity, not a background
+    session. The slot is narrowed to that single dominant task."""
+    out = {}
+    for k, tasks in cell.items():
+        c = cnt.get(k)
+        if not c:
+            continue
+        mapped = {t: n for t, n in c.items() if not t.startswith("UNMAPPED:")}
+        if not mapped:
+            continue
+        top_task, top_n = max(mapped.items(), key=lambda kv: kv[1])
+        top_unmapped = max((n for t, n in c.items() if t.startswith("UNMAPPED:")), default=0)
+        if top_n >= top_unmapped:
+            out[k] = {top_task}
+    return out
 
 def shift_occupied(cell, occupied, section):
     """Work that happened DURING a meeting can't share the slot (NEDO: 1/slot).
@@ -250,6 +278,9 @@ def main():
                     help="max hours to report; trims DOWN only (default 30 = Softbank/NEDO ceiling)")
     ap.add_argument("--nocap", action="store_true", help="place the full real total, no ceiling")
     ap.add_argument("--occupied", help="json list of [col,row] joint cells to avoid")
+    ap.add_argument("--dominant", action="store_true",
+                    help="attention-based: place a task only in slots where it was the "
+                         "dominant activity (most events), not a background session")
     ap.add_argument("--tz", type=float, default=-5.0, help="local offset from UTC (CDT=-5, CST=-6)")
     ap.add_argument("--json")
     a = ap.parse_args()
@@ -258,7 +289,9 @@ def main():
     table = load_map(a.map)
     claude_evts = collect_claude(start, end, a.tz)
     browser_evts = collect_browser(start, end, a.tz) if a.browser else []
-    cell, raw = build_timeline(a.section, claude_evts, browser_evts, table)
+    cell, raw, cnt = build_timeline(a.section, claude_evts, browser_evts, table)
+    if a.dominant:
+        cell = dominant_filter(cell, cnt)
 
     if a.cmd == "timeline":
         print(f"# REAL activity timeline for week {a.week} ({a.section}); "

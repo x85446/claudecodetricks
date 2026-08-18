@@ -39,6 +39,7 @@ style/format reference and a last-resort layout aid (see Fallback below).
   place the full real total). This is honest downward truncation the user has
   authorized — it represents the reportable portion of real work, never inflates.
 - `--occupied occ.json` — `[[col,row],...]` joint/meeting cells to avoid (from Step 3's writability read).
+- `--dominant` — attention-based placement: a task takes a slot only when it was the slot's dominant activity by event count. Without it, a mapped task merely present (e.g. an autonomous session emitting events in the background while the human works on something unmapped) claims the whole slot. Use `--dominant` whenever background/autonomous Claude sessions ran during the week.
 - `--tz` — local UTC offset (CDT = −5 May–Oct, CST = −6 Nov–Mar).
 
 ## Procedure

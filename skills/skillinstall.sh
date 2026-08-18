@@ -243,6 +243,9 @@ do_install() {
         iterate)
             install_skill iterate "$USERGLOBAL"
             ;;
+        vm)
+            install_skill vm "$USERGLOBAL"
+            ;;
         source2pdf)
             install_skill source2pdf "$USERGLOBAL"
             ;;
