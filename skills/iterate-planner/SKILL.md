@@ -108,7 +108,7 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 2. **delete `<name>`** — "delete `<name>`", "remove plan `<name>`", "drop `<name>`": delete `plans/<name>.md`. If it was the current plan, repoint `current` to the sole remaining plan (if exactly one) else clear it. If the plan is `phase: executing`, refuse and tell the user to let it finish or stop the loop first. If the plan had a `branch:` with commits on it, say so — the branch is left in place, unmerged (sweep it later with `/feature-branch cleanup` or merge it explicitly). Confirm in one line. Then **stop**.
 
-3. **remove-from** — "from `<name>` remove `<thing>`", "remove `<thing>` from `<name>`", "from `<name>` drop step N": open `plans/<name>.md`, remove the matching Step + its paired Validation (renumber the rest 1:1), re-print that plan. Then **stop**.
+3. **remove-from** — "from `<name>` remove `<thing>`", "remove `<thing>` from `<name>`", "from `<name>` drop step N": open `plans/<name>.md`, remove the matching Step + its paired Validation + its Provenance line (renumber all three lists 1:1), re-print that plan. Then **stop**.
 
 4. **add-to-named** — `add to "<name>" that <thing>`, "to `<name>` add `<thing>`": open `plans/<name>.md`, append the new Step + an inferred Validation, set `current` = `<name>`, re-print that plan. Then **stop**.
 
@@ -160,6 +160,7 @@ The user is deliberately ending a plan that didn't finish all-green. Honor it �
 2. If `running:` is a fresh timestamp (within 90s — a live `/iterate` run): refuse — "a run is live on `<name>`; stop the loop first (`/loop` with no args), then close." Otherwise proceed (a stale heartbeat or `running: false` is the normal case here).
 3. Cancel any auto-resume loop/cron the plan set up (`/loop` no-args, or the recorded `cron_job_id:`), so nothing re-fires against an archived plan.
 4. Set `running: false`. In the plan file, leave the Steps/Validation checkboxes exactly as they stand — the archive IS the record of what didn't finish.
+4.5. **Publish the partial changelog — through the same final sweep.** If `## Changelog draft` has entries, run `/iterate`'s two-pass sweep (consolidate multi-attempt lines into as-landed lines; validate every claim against the actual tree — a closed plan is especially likely to hold draft lines for work later abandoned) and distill the survivors into `CHANGELOG.md` + `RELEASES.md`, entry heading suffixed `(partial — plan closed unfinished)`. Completed work deserves its record even when the plan didn't; an empty or fully-swept-away draft publishes nothing.
 5. Move `plans/<name>.md` → `archive/<UTC-timestamp>-<name>-closed.md` (and `plans/<name>.teams/` → `archive/<UTC-timestamp>-<name>-closed.teams/` if teamed). Repoint/clear `current` same as the delete op.
 6. **Report — the merge line is mandatory, first, and unmissable:**
    ```
@@ -175,7 +176,7 @@ The user wants the unfinished work to continue as a fresh plan without losing th
 
 1. Resolve the source plan (named, else current). Same fresh-`running:` refusal as Close step 2; same loop/cron cancellation as Close step 3.
 2. Identify the unfinished steps: unchecked entries in `## Steps` (and any step whose paired Validation isn't met per the Status/Log). Completed steps stay behind in the source plan.
-3. Create the new plan: name from `iterate-run name next`, `phase: planned`, `Started: <now>`, carrying over — renumbered 1:1 from 1 — the unfinished Steps + their paired Validations, the Goal (reworded to cover only the remaining scope if the original is now too broad), all still-relevant Constraints (including `Access:` ones whose steps carried over), and **`branch: <the source plan's branch>` verbatim — do NOT create a new branch and do NOT invoke `/feature-branch start`**. The whole point is the new plan continues on the same branch, on top of the commits already there. If the source was teamed, re-run Teamify fresh over the carried steps (the old table's step numbers are meaningless after renumbering).
+3. Create the new plan: name from `iterate-run name next`, `phase: planned`, `Started: <now>`, carrying over — renumbered 1:1 from 1 — the unfinished Steps + their paired Validations, the Goal (reworded to cover only the remaining scope if the original is now too broad), all still-relevant Constraints (including `Access:` ones whose steps carried over), and **`branch: <the source plan's branch>` verbatim — do NOT create a new branch and do NOT invoke `/feature-branch start`**. The whole point is the new plan continues on the same branch, on top of the commits already there. Carry each surviving step's `## Provenance` line with it (renumbered alongside). Also carry the source's `## Changelog draft` lines forward verbatim into the new plan's draft section — nothing publishes now; when the successor completes, its distillation covers the whole branch's accumulated story. If the source was teamed, re-run Teamify fresh over the carried steps (the old table's step numbers are meaningless after renumbering).
 4. Set `current` = the new plan.
 5. Archive the source: `archive/<UTC-timestamp>-<name>-rolled-to-<newname>.md` (+ `.teams/` dir if present), checkboxes left as they stand.
 6. **Report — same mandatory merge line as Close:**
@@ -346,6 +347,26 @@ human-gate: <step N>           # only when Step 5.5 found a terminal human-decis
 ## Teams
 <!-- Only present when teamed: true. See "Teams" section above for schema. Omit entirely on flat plans. -->
 
+## Provenance
+<!-- One line per step, numbered 1:1 with Steps, written AT THE MOMENT the step is created: WHY does
+     this step exist? Three source kinds, each naming its origin specifically:
+       15. You asked for a redundant transcript_<serial>.txt beside each recording, even though it's redundant.
+       13. You reported a bug: text in the description field can't be copied.
+       17. Oracle: "app-build compile" entry — its How mandates the smoke-run after any build change.
+       18. Inferred: validation for step 3 (you gave no explicit check; planner chose `make test`).
+     SYNTHESIZE, don't quote: the user often rambles through context, tangents, and self-corrections
+     before landing on the ask — boil each ask down to its simplest one-sentence form, keeping only
+     the distinctive words that anchor it to their message (a filename, a feature name, "even though
+     it's redundant"). The test: reading the line, the user instantly recognizes "yes, that's what I
+     meant" — without re-reading their own paragraph. One ask can spawn several steps (same provenance
+     line on each); one step can merge several asks (join them: "You asked for X and, separately, Y").
+     Renumber with Steps on remove-from. Never backfill from memory later; if the origin is genuinely
+     unknown (legacy plan), write "unrecorded (pre-provenance plan)". -->
+
+## Changelog draft
+<!-- Empty at planning time. /iterate appends one line per real change at step check-off / team merge,
+     then distills into CHANGELOG.md + RELEASES.md at completion — see /iterate's "Changelog" section. -->
+
 ## Access preflight
 <!-- Audit trail from Step 5. One line per dependency found + which step verifies it, or "No external access dependencies detected." -->
 
@@ -381,13 +402,17 @@ plan written to owl
 
 **Goal:** <goal>
 
+1-prompted: You asked for <paraphrase of the user's ask that created this step>.
 1a. <step 1>
 1b. <validation 1>
 
+2-prompted: You reported a bug: <paraphrase>.
 2a. <step 2>
 2b. <validation 2>
 
 ...
+
+(The `N-prompted:` line prints the step's Provenance entry — the user's own ask in their own key words, or `Oracle: <entry>` / `Inferred: <what the planner chose and why>` for steps the user didn't directly request. This is how the user audits, at a glance, that each step traces to something they actually said — and spots steps they never asked for.)
 
 **Constraints:** <list, if any>
 
@@ -483,6 +508,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 23. **One plan = one feature branch, managed only through `/feature-branch`.** Every new plan in a git repo gets `feature/<name>-<slug>` created at plan-creation time and recorded as `branch:` in the frontmatter — before the plan file is written, so nothing lands on main. Roll-forward plans are the one exception: they inherit their source plan's branch verbatim and never create a new one. Not a git repo → skip silently, no `branch:` field.
 24. **Close and roll-forward NEVER merge, and ALWAYS say the merge hasn't happened.** The ⚠-line naming the unmerged branch is mandatory in both reports — the user must never discover later that archived work silently isn't on main. The only paths that merge a plan's branch are `/iterate`'s all-green completion and an explicit user order ("merge it", "close it and merge") — nothing implicit, ever.
 25. **A plan ending in human decisions gets a `human-gate` marker, and no validation outside the gate step may depend on the gate's outputs.** Detect it at planning time (Step 5.5) — never let "requires a human session" reach execution disguised as an ordinary validation, where it can only ever read as an unresolvable red check. The gate's prepare-work (agendas, evidence, briefing material) stays agent-owned; only the decision itself gates.
+26. **Every step records its provenance at creation time — the user's ask, SYNTHESIZED to its simplest form.** One `## Provenance` line per step, written the moment the step is written (never reconstructed later): the user's ask boiled down to one plain sentence — distill a rambling multi-paragraph description to the essential ask, preserving only the few distinctive words that make it recognizably theirs — or `Oracle: <entry>` for oracle-merged steps, or `Inferred: <what + why>` for planner-invented steps (access preflight probes, inferred validations). Presentation prints it as `N-prompted:` above each Na/Nb pair. This is the user's audit line: every step must trace to something — and a step whose provenance you can't state is a step you shouldn't be adding. Renumbers with Steps on remove-from; carried verbatim on roll-forward.
 
 ## Examples
 

@@ -67,6 +67,24 @@ Every plan in a git repo runs on its own feature branch — `branch: feature/<na
 4. Report the merge in the success summary: PR URL, merge commit, branch deleted.
 5. **If the merge itself fails** (conflicts with a moved main, required CI checks, protected-branch rules): the PLAN is still complete — don't un-archive, don't count it as a failed validation, don't retry-loop the merge. Report success WITH a plainly-flagged exception: "⚠ plan complete but NOT merged — PR <url> open, blocked by <reason>; branch `<branch>` preserved." Resolving that is the user's call.
 
+## Changelog (drafted while working, published once at the end)
+
+Every plan produces two changelog entries in the project root — the git-worthy distillation of the run (plan files themselves stay local):
+
+- **`CHANGELOG.md`** — technical, [Keep a Changelog](https://keepachangelog.com) convention: prepend `## [<plan-name>] - YYYY-MM-DD` with `### Added` / `### Changed` / `### Fixed` / `### Removed` / `### Security` subsections, one terse line per change, PR/issue refs allowed. Developer audience.
+- **`RELEASES.md`** — product-level, marketing style: prepend `## YYYY-MM-DD — <plain-English title>` with **New** / **Improved** / **Fixed** labels. Written for someone who uses the product and has never seen the code: benefit-first ("You can now…"), no jargon, no file paths, no superlatives. Refactors, tests, tooling, and internal plumbing are omitted entirely — if nothing user-visible shipped, write the one honest line "Internal improvements only" rather than dressing plumbing up as features.
+
+**Drafting (during execution — coordinator only, never teams):** every time you check off a step or merge a team's `TEAM DONE`, append one line to the plan file's `## Changelog draft` section while context is hot: `- [added|changed|fixed|removed|security|internal] <what changed, product-level phrasing> (step N)`. One line per real change — skip steps that produced no change (pure verification, research recorded elsewhere). This is cheap, crash-safe raw material, not published prose.
+
+**Publishing (once, in Step 5's success path, BEFORE `/feature-branch finish`) — a real final sweep, not a copy-paste of the draft.** The draft is a mid-flight journal: a feature that took three attempts, got reworked, or was partially rolled back has three-plus lines describing states that no longer exist. Two mandatory passes over it:
+
+1. **Consolidate — describe what LANDED, not the journey.** Group draft lines by the actual feature/fix they belong to (not by step number — one feature often spans several steps and re-attempts). Each group becomes ONE line describing the final, as-merged state. Lines describing superseded intermediate states, reverted work, or fix-of-my-own-earlier-line are folded away entirely — the reader gets the net change, never the churn. (Rewrites that ship nothing net = no line.)
+2. **Validate — every published claim must be true of the final tree.** For each consolidated line, confirm it's backed by a green validation (or directly observable in the final state: file exists, endpoint responds, behavior demonstrated). A draft line whose feature was later cut, disabled, or left broken does NOT publish — drafts record intent at check-off time; only the sweep confirms survival. When in doubt, re-check the thing itself, not the draft.
+
+Then format: drop `internal`-tagged lines from `RELEASES.md` (they stay in `CHANGELOG.md` under Changed), create either file with a standard header if missing, prepend, never rewrite old entries. The git-committer hook (or a manual commit) lands them on the plan's branch so they merge with the work in the same PR — that's the point: the changelog IS the reviewable summary of the branch, so a wrong claim in it is a review-poisoning bug, same severity as a false validation.
+
+**On not-all-green endings** (close, roll — see `/iterate-planner`'s ops): the draft section is the honest partial record — close publishes it flagged as partial; roll carries it forward to the successor plan (same branch, so the eventual merge publishes the whole accumulated story). Blocked/stuck plans just keep their draft in the plan file until resumed.
+
 **Never merge an incomplete plan.** Blocked, stuck, closed-by-order, rolled-forward — in every not-all-green ending the branch stays unmerged, and **every such report must say so explicitly** (the ⚠-line naming the branch and the open/unopened PR). The user may then: fix the gaps interactively and `/iterate` again (normal resume — merge happens when it finally goes all-green); order "close the plan" or "roll it to a new plan" (route those to `/iterate-planner`'s close/roll ops — roll keeps the SAME branch); or explicitly order a merge anyway ("merge it", "merge what we have") — an explicit order is the one thing that overrides the all-green requirement: run the merge flow above and continue with whatever else they asked.
 
 ## Concurrency lock (don't double-run)
@@ -118,7 +136,7 @@ When a plan IS teamed, on each `/iterate` entry (fresh dispatch, an automatic ba
      - **Fresh** (a write within the last ~2 minutes, matching the team's own mandated ≤1-minute checkin cadence plus a small buffer — or, if the last line was a "starting: X, expect ~Nm" announcement backed by a real Constraint number, still within that N) → on track. Leave it, don't act.
      - **Overdue** (past the Fresh window, no terminal line) → **don't wait passively — ping it.** Send a lightweight status-check message by its dispatch name (`<plan-name>-<team-name>`) asking it to report progress. This is cheap (a heartbeat costs nothing) and catches a problem — or confirms a long operation is legitimately still running — well before it becomes a big silent gap. **A known baseline makes this sharper, not just faster:** if the last log line says "starting: run compile, expect ~60s" (a real Constraint-backed number) and it's now been 5 minutes, that's a strong, specific signal something's actually wrong — ping immediately, don't wait for a generic timer. Without a known baseline, ~10 minutes of total silence is the outer bound before pinging. If it responds, or the log gets a fresh write, treat it as fine and don't escalate further this tick.
      - **Stale** (a ping was already sent in a prior tick, and several minutes have passed with still no response and no fresh log write) → now, and only now, treat it as dead. Side-effecting work (writes, migrations, deploys) can't safely run twice — a second agent doing the same work could double-apply a change the first one already made, or corrupt a resource under concurrent access — so this tier is strictly downstream of Overdue, never a standalone timer of its own. Log "team `<name>` unresponsive after ping, treating as dead, re-dispatching" and dispatch a fresh one.
-     - `TEAM DONE` / `TEAM BLOCKED` present → **merge**: copy the team's log content into the main plan file under a `### Team: <name>` heading in Decisions log / Status-Log, check off that team's step numbers in the main `## Steps` checklist, and set that row's `Status` cell to `done` or `blocked (<reason>)` — the only cell you touch. This merge is the ONLY thing that writes team content into the shared plan file, and only the coordinator does it — never a team subagent.
+     - `TEAM DONE` / `TEAM BLOCKED` present → **merge**: copy the team's log content into the main plan file under a `### Team: <name>` heading in Decisions log / Status-Log, check off that team's step numbers in the main `## Steps` checklist, append one `## Changelog draft` line per real change the team shipped (from its log — see "Changelog" above), and set that row's `Status` cell to `done` or `blocked (<reason>)` — the only cell you touch in the Teams table. This merge is the ONLY thing that writes team content into the shared plan file, and only the coordinator does it — never a team subagent.
 7. **Newly-ready teams** (all their dependencies just flipped to `Status: done`) get dispatched immediately after merging — right then, on the same notification or tick, not on the next cycle.
 8. **Full-plan validation** (the "Validate" step below) only runs once every team AND every unassigned step is `Status: done`. Some teams done, others still in flight is a normal **end-of-turn, not complete** state — log it and let `/loop`/cron continue; this is not a status-check menu, it's the existing "normal end-of-turn" allowance applied per-team.
 9. **One blocked team does not block independent teams** — exactly like the existing "one blocked outcome does NOT block other outcomes" rule, just scoped to teams instead of goal-outcomes. Only report a hard stop when EVERY team (and every unassigned step) is either done or blocked, with at least one blocked — aggregate the blockers from each `TEAM BLOCKED` line into the single stuck-report (see "Report and either complete or stop" below).
@@ -222,6 +240,11 @@ human-gate: <step N>           # only when the plan marks a terminal human-decis
 - <rule>
 - <rule>
 
+## Changelog draft
+(append-only, coordinator-only. One line per real change at step check-off / team merge:
+`- [added|changed|fixed|removed|security|internal] <product-level phrasing> (step N)`.
+Distilled into CHANGELOG.md + RELEASES.md once, at the success path — see "Changelog" above.)
+
 ## Decisions log
 (append-only. Each entry: timestamp + decision made + why.)
 
@@ -263,7 +286,7 @@ Walk through `Steps` in order. For each step:
    - Command not found on remote → try with full path / alternative names.
    - Resource locked → wait 5s, retry.
    - File parse error → try alternative encoding / line-ending.
-5. Mark the step done in the checklist when complete.
+5. Mark the step done in the checklist when complete, and append its one-line entry to `## Changelog draft` (see "Changelog" above) if it changed anything real.
 
 ### 4. Validate
 
@@ -289,6 +312,7 @@ If any check fails:
 
 **On full success (every validation check green):**
 - Set `running: false` in `active.md`.
+- **Publish the changelogs** (see "Changelog" above): distill `## Changelog draft` into `CHANGELOG.md` + `RELEASES.md`, commit them on the plan's branch — they ride the PR.
 - **Run the merge flow** (see "Feature branch" above): `/feature-branch finish` → merge the PR → branch deleted, back on the default branch. All-green is the merge trigger; no separate approval needed. A failed merge does NOT un-succeed the plan — flag it in the summary (`⚠ complete but NOT merged — <reason>, branch preserved`) and continue archiving.
 - **Add a `Finished: <UTC timestamp now>` line** (same `date -u +%Y-%m-%dT%H:%M:%SZ` format as `Executing:`) right before archiving — this is the real "done at" instant the dashboard's "Ran for" figure reads once archived. Without it, that figure falls back to the latest CONFIRMED activity span (hook/registry data), which can simply not exist for a project with neither wired up — confirmed live: a flat plan showed "Running for 0s" despite a correct `Executing:`, because there was no activity data to compute a span against at all. Set once, never touched again.
 - Cancel the auto-resume loop — the exact mechanism recorded in `loop-mechanism:`, with the verified-cancel procedure from "Auto-resume" (a /loop stop does NOT kill a cron; read the result, confirm dead, clear the field).
@@ -367,6 +391,7 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 22. **Never start a wait-and-poll loop against a remote target without first confirming, via one real probe of the actual capability needed, that you can observe its state.** See "Access verification" above. A step/team that's "still running" against a remote host, VM, or API with no verified way to check on it is not progress — treat the missing probe itself as the blocker, and run it before doing anything else in that scope. On probe failure: try `/accounts` self-heal first, then report an operator-wall blocker immediately (no 5-cycle wait) if that can't fix it — never proceed to the wait loop hoping it resolves.
 23. **All-green is the ONLY automatic merge trigger; every not-all-green report names the unmerged branch.** On full success, run the merge flow (`/feature-branch finish` → merge PR → delete branch) as part of Step 5 — no separate approval needed, that's what all-green means. On ANY other ending (blocked, stuck, user-ordered close, roll-forward), the branch stays unmerged and the report carries the ⚠ not-merged line — the user must never have to guess whether unfinished work landed on main. The one override is an explicit user order to merge ("merge it", "merge what we have and close") — obey it, then do whatever else they asked. Branch operations always go through `/feature-branch`, never hand-rolled git; and a failed merge on an otherwise-complete plan is flagged, not retried into the 5-cycle loop — merge conflicts against a moved main are the user's call, not a validation failure.
 24. **Teams never touch the branch.** Dispatched team subagents work on the coordinator's already-checked-out plan branch — no switching, no creating, no pushing, no merging. All branch lifecycle belongs to the coordinator (and `/iterate-planner` at creation time). A team that needs "a different branch" doesn't — that's a sign the step belongs to a different plan.
+25. **Changelog: draft at every check-off, publish exactly once — through the final sweep.** One draft line per real change, appended by the coordinator at step check-off / team merge — never by teams, never as polished prose. Publishing always runs the two-pass sweep (consolidate multi-attempt/reworked lines into one as-landed line each; validate every claim against the final tree — unvalidated claims don't publish). `CHANGELOG.md`/`RELEASES.md` are written only in the success path (or a flagged-partial entry on close, same sweep applied) — never incrementally mid-run, and old entries are never rewritten. `RELEASES.md` carries only user-visible changes in product language; internal work stays in `CHANGELOG.md`.
 
 ## Example trigger
 
