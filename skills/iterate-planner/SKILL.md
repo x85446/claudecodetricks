@@ -289,6 +289,15 @@ This is **not opt-in** — run it on every plan write and every refinement, same
 6. **Add one `Access:`-prefixed Constraint per dependency** (same pattern as the existing `Timing:` prefix): `Access: <target> — <capability needed>, verified via step <N>`. This is the structured marker `/iterate` uses to recognize an access-check step and treat its failure differently from an ordinary failing validation (immediate `/accounts` self-heal attempt, immediate operator-wall report if that fails — no 5-cycle wait on something that simply doesn't exist yet).
 7. **If nothing was found**, write nothing and note it in the audit trail (Step 6 below) — most plans touching only local files have no access dependencies. This is a normal, expected outcome, not a shortcut taken.
 
+### 5.5. Human-gate detection (mandatory scan, same spirit as the access preflight)
+
+Scan the plan for a **terminal human gate**: a step whose completion inherently requires human decisions or approval — a decision session, "review and approve", "Q&A with the owner", "final sign-off", recording product choices no agent may make. (Distinct from an operator *blocker* like a missing credential — a gate is designed-in, known at planning time.)
+
+- **Found, and it's at the end** (nothing but reporting depends on it): mark it — `human-gate: <step N>` in the frontmatter, and `(human-gate)` suffix on the step line. **Scope every OTHER validation to be agent-completable**: no validation outside the gate step may quantify over the gate's outputs (the civet failure: V8 required zero unchecked boxes across ALL stage MANIFESTs, including the human-gated one — guaranteeing an unreachable green; it should have excluded stage-12's box, which the gate step itself owns). At execution time `/iterate` treats reaching the gate with everything else green as **success-with-handoff**: loop cancelled, user actually asked via a prompt (not just a markdown file), branch unmerged until the gate clears — see its Step 5.
+- **Found mid-plan**: don't leave it inline where it would stall autonomous execution — restructure: move it to the end if ordering allows; otherwise split the plan at the gate (steps after it become a follow-on plan, noted in the footer) so each autonomous stretch ends at a gate rather than parking on one.
+- **Rule 9's ban on STOP-steps is unchanged** — a human-gate is not a "halt if X" check; it's a real deliverable (prepare the agenda/materials, hold the session, record decisions) whose *completion* needs a human. Prepare-side work stays agent-owned; only the decision itself gates.
+- Not found → nothing to write; most plans have no gate.
+
 ### 6. Write the plan file
 
 **On a brand-new plan** (op 9, or the first-plan path of op 10) — after Steps 1-5 above have produced the full Goal/Steps/Validation/Constraints — do two things before writing:
@@ -311,6 +320,7 @@ running: false
 planner: iterate-planner    # marker so /iterate knows oracle was consulted
 teamed: false               # set true only after a teamify pass writes ## Teams
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo); created via /feature-branch at plan creation, merged+deleted by /iterate only on all-green
+human-gate: <step N>           # only when Step 5.5 found a terminal human-decision step; /iterate ends in success-with-handoff there, not "blocked"
 
 ## Goal
 <one sentence>
@@ -472,6 +482,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 22. **Flatify never refuses on an executing plan without saying why, and never refuses on an already-flat one either.** Same phase:executing guard as delete (removing Teams out from under a live dispatch would orphan tracked status) — refuse and say so. On an already-flat plan, `flatify` is a no-op, not an error: report "already flat" and stop. Never touch the underlying `## Steps`/`## Validation` content — flatify only ever removes the `## Teams` section and flips `teamed: false`.
 23. **One plan = one feature branch, managed only through `/feature-branch`.** Every new plan in a git repo gets `feature/<name>-<slug>` created at plan-creation time and recorded as `branch:` in the frontmatter — before the plan file is written, so nothing lands on main. Roll-forward plans are the one exception: they inherit their source plan's branch verbatim and never create a new one. Not a git repo → skip silently, no `branch:` field.
 24. **Close and roll-forward NEVER merge, and ALWAYS say the merge hasn't happened.** The ⚠-line naming the unmerged branch is mandatory in both reports — the user must never discover later that archived work silently isn't on main. The only paths that merge a plan's branch are `/iterate`'s all-green completion and an explicit user order ("merge it", "close it and merge") — nothing implicit, ever.
+25. **A plan ending in human decisions gets a `human-gate` marker, and no validation outside the gate step may depend on the gate's outputs.** Detect it at planning time (Step 5.5) — never let "requires a human session" reach execution disguised as an ordinary validation, where it can only ever read as an unresolvable red check. The gate's prepare-work (agendas, evidence, briefing material) stays agent-owned; only the decision itself gates.
 
 ## Examples
 

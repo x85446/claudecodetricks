@@ -202,6 +202,8 @@ CWD: <pwd at first invocation>
 phase: executing
 running: <UTC timestamp>       # heartbeat — update at every step boundary
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo) — see "Feature branch" above
+loop-mechanism: cron <job-id>  # or "/loop" — EXACTLY what the auto-resume armed; cancellation targets this; cleared on verified cancel
+human-gate: <step N>           # only when the plan marks a terminal human-decision step (written by /iterate-planner) — see Step 5's human-gate path
 
 ## Goal
 <one sentence>
