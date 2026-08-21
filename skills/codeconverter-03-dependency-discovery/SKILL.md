@@ -42,6 +42,10 @@ conversion branch. Output goes to `docs/codeconverter/03-dependency-discovery/re
 - [ ] Code *borrowing* was searched, not just API consumption — grepped for package
       names, class names, and utility names unique to this repo.
 - [ ] `references.md` is a ranked inventory organized by relationship type.
+- [ ] **Every external repo this stage read appears in
+      `00-source-provenance/provenance.json`** with a fetch timestamp no older than
+      this stage's start date, and none has `working_tree: unrelated`. A repo with no
+      provenance row was not discovered, it was assumed.
 
 ## Notes
 

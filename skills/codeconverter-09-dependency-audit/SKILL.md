@@ -49,6 +49,13 @@ timelines.
 - [ ] Cross-reference audit done: every consumer in `references.md` checked for
       non-API couplings.
 - [ ] Every finding is verified, severity-classified, and has a remediation timeline.
+- [ ] **Every external repo this stage read appears in
+      `00-source-provenance/provenance.json`** with a fetch timestamp no older than
+      this stage's start date, and none has `working_tree: unrelated`.
+- [ ] Category 1 (direct database access) and category 10 (shared infrastructure)
+      findings are reconciled against `05c-datastore-peers` where that stage has run.
+      This audit is repo-first and 05c is table-first; the two must agree, and a
+      disagreement is a finding in its own right.
 
 ## Tips from experience
 

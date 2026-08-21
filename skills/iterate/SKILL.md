@@ -1,6 +1,6 @@
 ---
 name: iterate
-description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
+description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: <paragraph describing the work to do AND how to validate success>
 ---
 
@@ -51,6 +51,24 @@ API errors, transient stalls, or hitting context limits will silently end a turn
 
 The user can manually stop the loop any time with `/loop` (no args) or by pressing Esc during the inter-tick wait.
 
+## Feature branch (one plan = one branch, merge only on all-green)
+
+Every plan in a git repo runs on its own feature branch — `branch: feature/<name>-<slug>` in the plan's frontmatter, normally created by `/iterate-planner` at plan-creation time. All branch operations go through the **`feature-branch` skill** (`[skill: /feature-branch]`), never hand-rolled git.
+
+**At execution start** (any transition to `phase: executing`, and on every resume entry):
+- Plan has `branch:` → ensure it's checked out (`git rev-parse --abbrev-ref HEAD`; if not on it, check it out) before any step runs. All work — coordinator steps AND dispatched teams, which share the same working tree — happens on this branch. Teams never switch branches.
+- Plan has no `branch:` but this IS a git repo (direct `/iterate <task>` fresh runs, pre-branch-era plans): create one now via `/feature-branch start feature <plan-name>-<short-goal-slug>` and write `branch:` into the plan file. If currently on the default branch with uncommitted work, let `/feature-branch start` handle carrying it onto the new branch.
+- Not a git repo → no branch anything; log `not a git repo — no feature branch` once and proceed. Every branch-related instruction in this file is a silent no-op for such plans.
+
+**On all-green completion — the merge flow** (runs in Step 5's success path, BEFORE archiving):
+1. Working tree clean? Commit any stragglers first (the git-committer hook usually has already).
+2. `/feature-branch finish` — pushes the branch and opens the PR/MR.
+3. **Merge it.** An all-green plan is standing approval to land: `gh pr merge --squash --delete-branch` (or `glab mr merge` + branch deletion on GitLab). Then confirm you're back on the default branch, pulled, with the feature branch gone local + remote.
+4. Report the merge in the success summary: PR URL, merge commit, branch deleted.
+5. **If the merge itself fails** (conflicts with a moved main, required CI checks, protected-branch rules): the PLAN is still complete — don't un-archive, don't count it as a failed validation, don't retry-loop the merge. Report success WITH a plainly-flagged exception: "⚠ plan complete but NOT merged — PR <url> open, blocked by <reason>; branch `<branch>` preserved." Resolving that is the user's call.
+
+**Never merge an incomplete plan.** Blocked, stuck, closed-by-order, rolled-forward — in every not-all-green ending the branch stays unmerged, and **every such report must say so explicitly** (the ⚠-line naming the branch and the open/unopened PR). The user may then: fix the gaps interactively and `/iterate` again (normal resume — merge happens when it finally goes all-green); order "close the plan" or "roll it to a new plan" (route those to `/iterate-planner`'s close/roll ops — roll keeps the SAME branch); or explicitly order a merge anyway ("merge it", "merge what we have") — an explicit order is the one thing that overrides the all-green requirement: run the merge flow above and continue with whatever else they asked.
+
 ## Concurrency lock (don't double-run)
 
 The state file has a `running` field:
@@ -85,6 +103,7 @@ When a plan IS teamed, on each `/iterate` entry (fresh dispatch, an automatic ba
    - The plan's Goal.
    - This team's Steps + Validations (the exact Na/Nb pairs it owns — nothing from other teams).
    - The plan's global Constraints — **including any known baseline duration for a specific operation** that `/iterate-planner` folded in from the oracle (e.g., "compiling X normally completes in under 60s") — see "Know the baseline, don't guess it" below. If a Constraint gives a real number, that's the team's expectation, not something to estimate.
+   - **The plan's feature branch, stated plainly:** "All work happens on the already-checked-out branch `<branch>` — never switch branches, never create one, never merge or push. Branch lifecycle belongs to the coordinator." (Teams share the coordinator's working tree; a team switching branches mid-run would yank every other team's files out from under it.)
    - **If this team's Steps depend on a remote/access-gated resource** — an SSH host, API key, database, or gated URL, per an `Access:` Constraint or a `[skill: /accounts]`-tagged step — that step must be this team's own first action, run for real before anything else: the exact capability its later steps need, not bare connectivity. A team that starts polling/waiting on a remote resource without first confirming it can observe that resource's actual state is not making progress, it's guessing — see "Access verification" above for the full failure-handling protocol (self-heal via `/accounts`, then an immediate operator-wall report if that can't fix it, never a silent wait-and-hope).
    - **The team writes ONLY to its own scoped log file (named above), never to the main plan file.** This is what makes concurrent dispatch safe: N subagents never touch the same file, so there's no write race for the coordinator to worry about.
    - **Mandatory progress checkins, real content, real tooling — not a guess.** Run any operation likely to take more than ~1 minute through `iterate-run` instead of invoking it bare: `iterate-run run --plan <plan> --team <team> --unit <step-id> -- <command...>`. It wraps the command, tees its output, ticks a heartbeat every 10s, and — critically — makes the *wake-up* decision itself: it stays silent on its own stdout for routine ticks, and only prints when something is actually worth reacting to (`ALERT stalled ...` after 6 quiet ticks / 60s of genuine inactivity, `RESUMED ...`, `DONE ... exit=0`, `FAILED ... exit=<code>`). Relay whatever `iterate-run` reports into your own outward checkin log at least once a minute — that's real observability, not a paraphrase. **If you are writing a new script/tool as part of this step** (not just invoking an existing one), have it emit `##ITERATE-PROGRESS## {"done":N,"total":M,"message":"..."}` lines as it works (a line per item or per batch) — `iterate-run` parses that exactly, instead of guessing at arbitrary output; a silent loop over thousands of items is exactly the black-box case this exists to prevent. If a Constraint carries a known duration for this exact operation (see "Know the baseline" below), that's real evidence — trust it over `iterate-run`'s own generic stall window. The team must also log a line every time it finishes a step, and `iterate-run status` (run from any directory, no plan file parsing needed) is always available as an independent cross-check of current state — yours or any other team's.
@@ -182,6 +201,7 @@ Executing: <UTC timestamp>     # same instant as Started: on this direct fresh-t
 CWD: <pwd at first invocation>
 phase: executing
 running: <UTC timestamp>       # heartbeat — update at every step boundary
+branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo) — see "Feature branch" above
 
 ## Goal
 <one sentence>
@@ -267,10 +287,11 @@ If any check fails:
 
 **On full success (every validation check green):**
 - Set `running: false` in `active.md`.
+- **Run the merge flow** (see "Feature branch" above): `/feature-branch finish` → merge the PR → branch deleted, back on the default branch. All-green is the merge trigger; no separate approval needed. A failed merge does NOT un-succeed the plan — flag it in the summary (`⚠ complete but NOT merged — <reason>, branch preserved`) and continue archiving.
 - **Add a `Finished: <UTC timestamp now>` line** (same `date -u +%Y-%m-%dT%H:%M:%SZ` format as `Executing:`) right before archiving — this is the real "done at" instant the dashboard's "Ran for" figure reads once archived. Without it, that figure falls back to the latest CONFIRMED activity span (hook/registry data), which can simply not exist for a project with neither wired up — confirmed live: a flat plan showed "Running for 0s" despite a correct `Executing:`, because there was no activity data to compute a span against at all. Set once, never touched again.
 - Invoke `/loop` (no args) to cancel the auto-resume loop.
 - Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`. If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it. If the plan was teamed, also move `./.claude/iterate/plans/<name>.teams/` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.teams/` (the per-team logs are already merged into the archived plan file — this just keeps the raw team logs around for audit, don't leave the working `.teams/` dir behind).
-- Report a 3-5 line summary: goal, what was done, validation results, time taken. On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
+- Report a 3-5 line summary: goal, what was done, validation results, time taken, **and the merge result** (`merged to <default> via PR <url>, branch deleted` — or the ⚠ not-merged flag with reason). On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
 - **Suggest `/oracle harvest`** to the user — one line at end of report: "If anything in this run is worth remembering for next time, run `/oracle harvest`." Don't auto-invoke; oracle harvesting is opt-in.
 
 **On stuck (5-cycle cap hit AND every other outcome also stuck — genuinely no forward motion possible), OR every validation is met except one clause that only a human can clear** (billing, an external approval, physical/credential access no agent has — a wall, not a failing check):
@@ -282,12 +303,15 @@ If any check fails:
 - Stop. Report ONE blocker reason — the specific check that failed 5 times (or the specific operator-only clause) AND why no other outcome could absorb attention — plus what specific operator action would unblock. **Do NOT write a menu of "things the user could do next." Do NOT list "(a) ... (b) ..." options. Do NOT frame remaining work as choices.** One blocker, one ask, done. On a teamed plan where multiple teams are blocked, aggregate: report the done/blocked status of every team in one line each, then the single most-actionable next operator step (usually whichever blocker, once fixed, unblocks the most dependent teams).
 - Do **not** archive — leave `active.md` in place so the user can read what happened and re-invoke fresh after fixing the blocker.
 
+- **The merge-status line is mandatory in every stuck report** (git-repo plans): `⚠ feature branch <branch> NOT merged — <PR open at <url> | no PR opened>`. The merge only happens on all-green completion or an explicit user order (see "Feature branch" above) — the user must never have to wonder whether blocked work landed on main. It didn't.
+
 Acceptable stuck-report shape:
 ```
 Blocked.
 Last green: Outcome 1 steps 1-3, Outcome 2 fully done.
 Hard blocker: Outcome 3 step 5b (`bao auth list` returns 403) — failed 5 cycles, last error: "permission denied: kubernetes-kelwin1 backend not registered".
 Need: someone with OpenBao root token to run `bao auth enable -path=kubernetes-kelwin1 kubernetes`.
+⚠ feature branch `feature/owl-bao-auth` NOT merged — no PR opened. Merges automatically when the plan finishes all green.
 Run `/iterate` again once that's done.
 ```
 
@@ -333,6 +357,8 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 20. **Never dispatch a team whose dependencies aren't `status: done`.** Check the Teams table's `Depends on` column before every dispatch, every tick. A team becomes eligible the moment its dependencies clear — dispatch it that same tick, don't wait for an extra loop cycle.
 21. **A `TEAM BLOCKED` team is a per-team giveup, not a whole-plan giveup.** Apply rule 16 (one blocked outcome doesn't block others) at the team level: keep dispatching and progressing every team that isn't itself blocked. Only reach the whole-plan "stuck" report (rule 14/16's stuck path) when every team is done-or-blocked and at least one is blocked.
 22. **Never start a wait-and-poll loop against a remote target without first confirming, via one real probe of the actual capability needed, that you can observe its state.** See "Access verification" above. A step/team that's "still running" against a remote host, VM, or API with no verified way to check on it is not progress — treat the missing probe itself as the blocker, and run it before doing anything else in that scope. On probe failure: try `/accounts` self-heal first, then report an operator-wall blocker immediately (no 5-cycle wait) if that can't fix it — never proceed to the wait loop hoping it resolves.
+23. **All-green is the ONLY automatic merge trigger; every not-all-green report names the unmerged branch.** On full success, run the merge flow (`/feature-branch finish` → merge PR → delete branch) as part of Step 5 — no separate approval needed, that's what all-green means. On ANY other ending (blocked, stuck, user-ordered close, roll-forward), the branch stays unmerged and the report carries the ⚠ not-merged line — the user must never have to guess whether unfinished work landed on main. The one override is an explicit user order to merge ("merge it", "merge what we have and close") — obey it, then do whatever else they asked. Branch operations always go through `/feature-branch`, never hand-rolled git; and a failed merge on an otherwise-complete plan is flagged, not retried into the 5-cycle loop — merge conflicts against a moved main are the user's call, not a validation failure.
+24. **Teams never touch the branch.** Dispatched team subagents work on the coordinator's already-checked-out plan branch — no switching, no creating, no pushing, no merging. All branch lifecycle belongs to the coordinator (and `/iterate-planner` at creation time). A team that needs "a different branch" doesn't — that's a sign the step belongs to a different plan.
 
 ## Example trigger
 
@@ -360,4 +386,5 @@ What the skill does:
 - Same turn: `link-tree`'s dependency (`deploy`) just cleared → now ready. Dispatches `owl-link-tree` immediately (steps 3,5 + same Goal/Constraints + its own scoped log path), sets `Status: in-progress`. Ends the turn.
 - `owl-link-tree` finishes → notification arrives, `link-tree.log.md` ends with `TEAM DONE: link tree updated, verified live in browser`. Merges it, checks off steps 3 and 5, sets `link-tree` `Status: done`.
 - All teams done, no unassigned steps → runs full-plan Validation once more across everything. All green.
-- Archives `owl.md` and `owl.teams/`, invokes `/loop` (no args) to cancel, reports: "✓ owl done — 2 teams (deploy, link-tree ran sequentially due to dependency), 4 steps, all validations green."
+- Merge flow: `/feature-branch finish` pushes `feature/owl-metrics-service` and opens the PR, then `gh pr merge --squash --delete-branch` lands it on main and removes the branch local + remote.
+- Archives `owl.md` and `owl.teams/`, invokes `/loop` (no args) to cancel, reports: "✓ owl done — 2 teams (deploy, link-tree ran sequentially due to dependency), 4 steps, all validations green. Merged to main via PR #12, `feature/owl-metrics-service` deleted."

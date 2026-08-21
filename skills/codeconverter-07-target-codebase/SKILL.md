@@ -49,7 +49,23 @@ and containerization/CI preferences.
 - [ ] `stack.md` has complete technology decisions and repo coordinates.
 - [ ] `analysis.md` quantifies the implementation gap (endpoint counts, domain
       features), consistent with API.md and GAP_ANALYSIS.md.
-- [ ] The replacement repo exists locally on its branch.
+- [ ] The replacement repo exists locally **and appears in
+      `00-source-provenance/provenance.json` with a fetch timestamp no older than this
+      stage's start date**. "Exists locally on its branch" is not sufficient and never
+      was: a clone that has never been fetched satisfies it perfectly, which is how
+      this pipeline once analysed a six-month-old target tree while upstream had moved
+      306 commits.
+- [ ] The target's `working_tree` status is recorded. Where it is not `same`, every
+      figure in `analysis.md` states whether it came from **the ref** or **the disk**,
+      and no figure is taken from the disk when the status is `unrelated`.
+- [ ] **Every factual claim about the target codebase carries an evidence line**
+      (templates.md §4): claim, exact command, ref, source, literal result. This
+      applies to negative claims — "the target has no X" — which are the ones most
+      often asserted from memory and were the ones that propagated wrongly into stages
+      10 and 11 on the IAM run.
+- [ ] Every figure inherited from a prior artifact carries a `codeconverter-verify`
+      record with verdict `pass`, and every superseded figure carries a correction
+      block (templates.md §5) whose `Excluded` field is non-empty.
 
 ## Interactivity note
 

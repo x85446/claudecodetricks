@@ -52,6 +52,19 @@ domains go where, the routing table, bad-actors impact, and the rationale.
       a gateway rule.
 - [ ] Tightly coupled domains (e.g. accounts + policies needing real-time account
       data) are flagged with their coupling analysis.
+- [ ] **Every dropped endpoint cites its row in `05a-endpoint-consumers`**, and **zero
+      endpoints are dropped whose consumer status is `unknown`** rather than `empty`.
+
+      "No caller found" and "not looked for" must never render identically. On the IAM
+      run a proposal to drop 84 API-key endpoints was justified by "zero sibling
+      services call it" — a check run against the 33 base endpoints only, i.e. 39% of
+      the drop. The other 51 (32 aggregator, 13 legacy-v1, 6 admin) have callers that
+      no sibling-service scan can see: distributors, support tooling, legacy customer
+      integrations. Building 05a does not by itself prevent this; the rule does.
+- [ ] Where the scope charter's Q5 answer is `partial-lockstep` or `no-lockstep`, the
+      MANIFEST states that the citation-required drop rule was in force.
+- [ ] Where the scope charter's Q4 says the store changes, every decision that moves
+      data cites `05c-datastore-peers`' verdict for the tables involved.
 
 ## Tips from experience
 

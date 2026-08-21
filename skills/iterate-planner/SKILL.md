@@ -1,7 +1,7 @@
 ---
 name: iterate-planner
-description: The planning half of the iterate stack. Formalizes a task into structured pair-format (1a task / 1b validation) BEFORE autonomous execution, and consults the project oracle (./.claude/data/oracle.md) to bake known checklists, testing requirements, gotchas, deployment rituals, and naming conventions into the plan (a no-op when no oracle exists). Triggers on "/iterate-planner", "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle", and on managing saved plans ("list plans", "display our plans", "add to <name>", "delete <name>", "from <name> remove <x>"). Also triggers on teamify requests ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams") which group the current plan's steps into named teams for parallel execution at /iterate time. Plans are saved, animal-named, and persistent under ./.claude/iterate/plans/. The user reviews, optionally refines in natural conversation, then runs /iterate (or /iterate <name>) to execute.
-argument-hint: <optional context, e.g. "restate the plan from above" or "plan: 1. do X, 2. validate Y">
+description: The planning half of the iterate stack. Formalizes a task into structured pair-format (1a task / 1b validation) BEFORE autonomous execution, and consults the project oracle (./.claude/data/oracle.md) to bake known checklists, testing requirements, gotchas, deployment rituals, and naming conventions into the plan (a no-op when no oracle exists). Triggers on "/iterate-planner", "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle", and on managing saved plans ("list plans", "display our plans", "add to <name>", "delete <name>", "from <name> remove <x>", "close <name>" to archive an unfinished plan with its feature branch left unmerged, "roll <name>" to carry unfinished steps to a new plan on the same feature branch). Every new plan in a git repo gets its own feature branch (via the feature-branch skill); /iterate merges it to the default branch only when the plan finishes all green. New plans are teamed by default — grouped into named teams for parallel execution at /iterate time — unless the request says to stay flat. Triggers on explicit teamify requests ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams") to team an existing flat plan, and on flatify requests ("flat", "flatify", "make flat", "convert to flat", "un-team", "remove teams") to convert a teamed plan back to flat. Plans are saved, animal-named, and persistent under ./.claude/iterate/plans/. The user reviews, optionally refines in natural conversation, then runs /iterate (or /iterate <name>) to execute.
+argument-hint: <optional context, e.g. "restate the plan from above", "plan: 1. do X, 2. validate Y", or "flat" / "flatify" to un-team the current plan>
 ---
 
 # /iterate-planner — Build the plan (oracle-aware), don't execute
@@ -73,6 +73,18 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 
 **`iterate-run`** is the real installed CLI binary (`~/go/bin/iterate-run`, built from `claudecodetricks`) that `/iterate` uses at execution time to wrap long-running commands with real heartbeat/progress tracking instead of guessed timers — see `/iterate`'s "Team dispatch" and "Know the baseline, don't guess it" for how it's used. `/iterate-planner` invokes it directly for one thing — `iterate-run name next`, to assign every new plan's codename (see "Named plans" above) — and otherwise references its version (see op 0 above) and can point to `iterate-run status` when a plan mentions wanting live visibility into a run.
 
+## One plan = one feature branch
+
+Every plan in a git repo lives on its own feature branch, managed through the **`feature-branch` skill** (`[skill: /feature-branch]`) — never by hand-rolled git commands. The lifecycle:
+
+- **At new-plan creation** (here, in the planner): invoke `/feature-branch start feature <plan-name> <short-goal-slug>` to create and check out `feature/<plan-name>-<slug>` (e.g. `feature/owl-access-preflight`) BEFORE writing the plan file, then record it in the plan's frontmatter as `branch: feature/<name>-<slug>`. This means the plan file itself, and every code edit the plan later drives, lands on the branch — never on main. (This also satisfies feature-branch's own pre-edit gate, which would otherwise block the plan-file Write on a default branch.)
+- **During execution**: `/iterate` checks out the plan's `branch:` at execution start and all work happens there — see its SKILL.md.
+- **At all-green completion**: `/iterate` runs the merge flow (push → PR → merge to the default branch → delete the branch) automatically. **A plan that did not finish all-green NEVER merges** — not on blocked, not on close, not on roll-forward — unless the user explicitly orders a merge.
+- **Not a git repo** (no `.git` — e.g. a Google Drive project): skip all of this silently; write the plan with no `branch:` field and note "not a git repo — no feature branch" in the audit trail. Everything else works unchanged.
+- **Refinements never touch the branch.** Adding/removing steps edits the plan file on whatever branch is checked out; only creation makes a branch, only `/iterate` merges one.
+
+Two plan-management operations exist specifically for the not-all-green endings (ops 7 and 8 below): **close** (archive as-is, merge withheld) and **roll** (carry unfinished steps to a new plan that inherits the SAME branch). Both must state plainly that the merge has not happened.
+
 ### Creating vs. adding — bias hard toward the current plan
 
 Creating a NEW plan must be **explicit**. The DEFAULT for any planning request is to **add to / refine the current plan**. Only create a new plan when:
@@ -94,7 +106,7 @@ If a current plan exists and the user just describes more work, **add it to the 
 
    Mark the current plan with `(current)`. Sort by `Started:` ascending. If no plans exist, say so. Then **stop** — this is a read-only op.
 
-2. **delete `<name>`** — "delete `<name>`", "remove plan `<name>`", "drop `<name>`": delete `plans/<name>.md`. If it was the current plan, repoint `current` to the sole remaining plan (if exactly one) else clear it. If the plan is `phase: executing`, refuse and tell the user to let it finish or stop the loop first. Confirm in one line. Then **stop**.
+2. **delete `<name>`** — "delete `<name>`", "remove plan `<name>`", "drop `<name>`": delete `plans/<name>.md`. If it was the current plan, repoint `current` to the sole remaining plan (if exactly one) else clear it. If the plan is `phase: executing`, refuse and tell the user to let it finish or stop the loop first. If the plan had a `branch:` with commits on it, say so — the branch is left in place, unmerged (sweep it later with `/feature-branch cleanup` or merge it explicitly). Confirm in one line. Then **stop**.
 
 3. **remove-from** — "from `<name>` remove `<thing>`", "remove `<thing>` from `<name>`", "from `<name>` drop step N": open `plans/<name>.md`, remove the matching Step + its paired Validation (renumber the rest 1:1), re-print that plan. Then **stop**.
 
@@ -104,13 +116,17 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 6. **flatify** — `$1` matches a flat trigger phrase ("flat", "flatify", "make flat", "convert to flat", "un-team", "remove teams", "flatten the plan", "go back to flat", optionally "flatify `<name>`"): resolve the target plan (named, else current), run the Flatify procedure (see "Flatify procedure" below), re-print the plan without the Teams table. Then **stop**. The reverse of op 5 — always available as an escape hatch now that teaming is the default.
 
-7. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below — this includes the now-default auto-Teamify pass unless `$1` also carries a flat trigger phrase, see Step 6 "Write the plan file").
+7. **close** — "close `<name>`", "close the plan", "archive `<name>` as is", "wrap it up unfinished", "close it out": archive the plan even though not everything finished. Run the Close procedure (see "Close procedure" below). Then **stop**. The defining property: **the feature branch is NOT merged** — the close report must say so explicitly.
 
-8. **default (the common case)** — anything else describing work:
+8. **roll** — "roll `<name>`", "roll the uncompleted steps to a new plan", "carry the unfinished work forward", "roll it over": create a NEW plan holding only the source plan's unfinished steps, **inheriting the same feature branch**, and archive the source. Run the Roll-forward procedure (see below). Then **stop**. Same defining property as close: no merge happened, and the report says so.
+
+9. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below — this includes the now-default auto-Teamify pass unless `$1` also carries a flat trigger phrase, see Step 6 "Write the plan file", and the feature-branch creation per "One plan = one feature branch" above).
+
+10. **default (the common case)** — anything else describing work:
    - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file). If the current plan has `teamed: true`, also run the cheap single-step Team classification (see "Auto-classify on add" below) on each newly added step — this is O(1) per step, never a full re-teamify. If the current plan is flat, it stays flat on ordinary refinement (adding to a flat plan never auto-teamifies mid-stream — that would re-cluster on every add; use the explicit teamify trigger if the plan has grown enough to warrant it).
-   - no plans exist → create the first plan (name from `iterate-run name next`, set current) — same auto-Teamify-by-default path as op 7.
+   - no plans exist → create the first plan (name from `iterate-run name next`, set current) — same auto-Teamify-by-default and feature-branch-creation path as op 9.
 
-For ops 3–8, run the oracle merge (Step 4) AND the access preflight scan (Step 5) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations and any newly-introduced access dependency gets a verification step.
+For ops 3–6 and 9–10, run the oracle merge (Step 4) AND the access preflight scan (Step 5) on whatever plan you end up writing/refining — including add-to-named and default-add operations, so newly added steps get oracle-aware validations and any newly-introduced access dependency gets a verification step. (Ops 7 and 8 move existing content without re-planning it — no oracle/preflight re-run there.)
 
 ### Teamify procedure (op 5 — full reclustering)
 
@@ -123,7 +139,53 @@ For ops 3–8, run the oracle merge (Step 4) AND the access preflight scan (Step
 7. Write `## Teams` into the plan file, set `teamed: true` (only when a Teams section was actually written), re-print the full plan.
 8. In the presented output, add one line explaining the grouping rationale (what context boundary separates each team) and which teams can run in parallel (those with no `Depends on` entries pointing at an unfinished team).
 
-### Auto-classify on add (part of op 7 — cheap, O(1) per step, never a full reorg)
+This procedure runs two ways: explicitly via op 5 (teamify) on an existing plan, and **automatically** on every new plan (op 9, the first-plan path of op 10, and the fresh-Teamify pass of a roll-forward per op 8) as part of "Write the plan file" (Step 6) — teaming by default means this pass always runs on creation, not just on request.
+
+### Flatify procedure (op 6 — the reverse, always cheap)
+
+Unlike Teamify, this is never expensive — Teams is purely additive metadata (see "Teams" schema above: "the flat lists themselves are untouched"), so undoing it is just removing that layer, not re-deriving anything.
+
+1. Resolve the target plan (named, else current).
+2. If the plan has `phase: executing`: **refuse** — "that plan is executing; stripping its Teams table mid-run would orphan any dispatched team's tracked status. Let it finish or stop the loop first." Same guard as the delete op. Do not modify the file.
+3. If the plan is already flat (no `## Teams` section / `teamed` not `true`): report "`<name>` is already flat" and **stop** — a no-op, not an error.
+4. Delete the `## Teams` section from the plan file entirely. Set `teamed: false` (keep the field, same convention as a plan that was never teamed).
+5. The `## Steps` / `## Validation` lists are untouched — no step content, numbering, or validation is affected. Any step that had its own access-preflight step (inserted per-team) stays exactly where it is in the flat list, just no longer grouped under a team name.
+6. Re-print the full plan (now without a Teams block) with a one-line confirmation: `<name> flattened — N steps now run serially`.
+
+### Close procedure (op 7 — archive incomplete, merge withheld)
+
+The user is deliberately ending a plan that didn't finish all-green. Honor it — don't argue, don't try to finish the remaining steps first — but make the consequences visible.
+
+1. Resolve the target plan (named, else current).
+2. If `running:` is a fresh timestamp (within 90s — a live `/iterate` run): refuse — "a run is live on `<name>`; stop the loop first (`/loop` with no args), then close." Otherwise proceed (a stale heartbeat or `running: false` is the normal case here).
+3. Cancel any auto-resume loop/cron the plan set up (`/loop` no-args, or the recorded `cron_job_id:`), so nothing re-fires against an archived plan.
+4. Set `running: false`. In the plan file, leave the Steps/Validation checkboxes exactly as they stand — the archive IS the record of what didn't finish.
+5. Move `plans/<name>.md` → `archive/<UTC-timestamp>-<name>-closed.md` (and `plans/<name>.teams/` → `archive/<UTC-timestamp>-<name>-closed.teams/` if teamed). Repoint/clear `current` same as the delete op.
+6. **Report — the merge line is mandatory, first, and unmissable:**
+   ```
+   <name> closed and archived with N of M steps unfinished (list the unfinished step numbers + one-line gists).
+   ⚠ feature branch `<branch>` has NOT been merged — the PR <is still open at <url> | was never opened>. The work on it is not on <default branch>.
+   Say "merge <name>'s branch" to merge it as-is, or "roll <name>" was the moment to carry the work forward — the branch is preserved either way.
+   ```
+   If the plan has no `branch:` (not a git repo), omit the merge lines. If the user's close order ALSO said to merge ("close it and merge", "merge what we have and close"), that's an explicit merge order — run the merge flow (push → PR → merge → delete branch, via `/feature-branch finish` + PR merge, same flow `/iterate` uses on all-green) before archiving, and report the merge as done instead.
+
+### Roll-forward procedure (op 8 — unfinished steps to a new plan, same branch)
+
+The user wants the unfinished work to continue as a fresh plan without losing the branch state accumulated so far.
+
+1. Resolve the source plan (named, else current). Same fresh-`running:` refusal as Close step 2; same loop/cron cancellation as Close step 3.
+2. Identify the unfinished steps: unchecked entries in `## Steps` (and any step whose paired Validation isn't met per the Status/Log). Completed steps stay behind in the source plan.
+3. Create the new plan: name from `iterate-run name next`, `phase: planned`, `Started: <now>`, carrying over — renumbered 1:1 from 1 — the unfinished Steps + their paired Validations, the Goal (reworded to cover only the remaining scope if the original is now too broad), all still-relevant Constraints (including `Access:` ones whose steps carried over), and **`branch: <the source plan's branch>` verbatim — do NOT create a new branch and do NOT invoke `/feature-branch start`**. The whole point is the new plan continues on the same branch, on top of the commits already there. If the source was teamed, re-run Teamify fresh over the carried steps (the old table's step numbers are meaningless after renumbering).
+4. Set `current` = the new plan.
+5. Archive the source: `archive/<UTC-timestamp>-<name>-rolled-to-<newname>.md` (+ `.teams/` dir if present), checkboxes left as they stand.
+6. **Report — same mandatory merge line as Close:**
+   ```
+   rolled <old> → <new>: N unfinished steps carried over (renumbered), M completed steps archived with <old>.
+   ⚠ feature branch `<branch>` has NOT been merged — <new> continues on it; the merge happens when <new> finishes all green.
+   Type /iterate (or /iterate <new>) to resume execution.
+   ```
+
+### Auto-classify on add (part of op 10 — cheap, O(1) per step, never a full reorg)
 
 When the current plan already has `teamed: true` and a new step is appended:
 
@@ -229,6 +291,13 @@ This is **not opt-in** — run it on every plan write and every refinement, same
 
 ### 6. Write the plan file
 
+**On a brand-new plan** (op 9, or the first-plan path of op 10) — after Steps 1-5 above have produced the full Goal/Steps/Validation/Constraints — do two things before writing:
+
+1. **Create the feature branch** (git repos only — see "One plan = one feature branch" above): invoke `/feature-branch start feature <plan-name>-<short-goal-slug>` so `feature/<name>-<slug>` exists and is checked out BEFORE the plan file is written. Record it as `branch:` in the frontmatter. Not a git repo → skip, no `branch:` field, one audit-trail note. (Roll-forward plans skip this too — they inherit their source's branch, per op 8.)
+2. Run the **Teamify procedure** (see below) automatically, unless `$1` also carried a flat trigger phrase (see "Flat trigger phrases" above), in which case skip straight to writing flat. This is what makes teaming the default: every new plan gets a real attempt at clustering, and either ends up with a `## Teams` table or a legitimate "no independent context boundaries — staying flat" outcome (both are normal, neither needs the user to ask).
+
+**Refining an existing plan triggers neither** — no new branch (the plan already has one, or deliberately has none), and no auto-teamify: a flat plan being added to stays flat (use the explicit teamify trigger if it's grown enough to warrant teams); a teamed plan being added to uses the existing cheap Auto-classify-on-add, never a full re-cluster.
+
 Schema, written to `./.claude/iterate/plans/<name>.md`:
 
 ```markdown
@@ -241,6 +310,7 @@ phase: planned
 running: false
 planner: iterate-planner    # marker so /iterate knows oracle was consulted
 teamed: false               # set true only after a teamify pass writes ## Teams
+branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo); created via /feature-branch at plan creation, merged+deleted by /iterate only on all-green
 
 ## Goal
 <one sentence>
@@ -297,6 +367,7 @@ Then print the plan in paired 1a/1b format, AND show which oracle rules were app
 plan written to owl
 
 **Plan ready** — owl — ./.claude/iterate/plans/owl.md (phase: planned, oracle-aware)
+**Branch:** `feature/owl-<slug>` (created + checked out — merges to <default> automatically when the plan finishes all green)
 
 **Goal:** <goal>
 
@@ -392,12 +463,15 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 13. **Rollback in a plan is never terminal.** If a step needs rollback on failure, the validation MUST also include "then retry, up to N times, until success." Never write "rolled back per chart" or "failures roll back and stop." Recovery is `/iterate`'s job — your plan describes the desired end state (every chart migrated, everything green), not the give-up condition.
 14. **Commit to the full goal, not a one-item pilot — unless the user explicitly asked for a pilot.** If the user said "port everything" or "do the whole sweep," plan to do the whole sweep. Don't downgrade to "let's try one and check in." That downgrade IS the status-check failure mode dressed up as caution.
 15. **Scope validations to "caused by this work," not "all global state."** Broad checks like `kubectl get pod -A | grep -v Running | wc -l == 0` catch pre-existing failures and will read as "blocked" when they shouldn't. Prefer scoped checks: "pods in the changed namespaces are Running", "Applications touched by this run are Synced", or "no NEW non-Running pods compared to baseline captured at run start." If the goal genuinely IS cluster-wide health, say so explicitly in the Goal section so the executor knows pre-existing failures are in-scope.
-16. **Teamify only on explicit request.** Never invent the first Teams table unassisted — a plan stays flat unless the user says a teamify trigger phrase. Most plans should stay flat; teaming is for plans with genuinely independent tracks of work.
+16. **Teaming is the default on every new plan; flat is the opt-out, not the other way around.** Run the Teamify procedure automatically when a brand-new plan is written (op 9, or the first-plan path of op 10), unless the request explicitly asked to stay flat. A plan legitimately ending up flat because Teamify found no independent context boundaries is still a normal outcome — don't force teams onto a plan that has none. **Refining an existing plan never auto-teamifies** — that stays manual (the teamify trigger phrases) so rapid-fire adds to a flat plan don't get re-clustered out from under the user.
 17. **Auto-classify on add is a single judgment call, never a re-run of teamify.** Once `teamed: true`, slot each newly appended step into the best-fit existing team in one cheap decision, or leave it unassigned. Don't re-cluster the whole plan on every add — that's what makes rapid-fire adds stay fast.
-18. **Never invalidate team membership except through teamify or remove-from.** Refining Steps/Validation/Constraints text must not silently drop a step's team assignment. If `remove-from` deletes a step that belonged to a team, remove its number from that team's row too (renumbering the rest) — don't leave a stale reference to a step that no longer exists.
+18. **Never invalidate team membership except through teamify, flatify, or remove-from.** Refining Steps/Validation/Constraints text must not silently drop a step's team assignment. If `remove-from` deletes a step that belonged to a team, remove its number from that team's row too (renumbering the rest) — don't leave a stale reference to a step that no longer exists. Flatify is the one operation that's SUPPOSED to drop every step's team assignment at once — that's its entire job, not a bug.
 19. **Rapid-fire streaks get a one-line reply, not a full reprint.** See "Rapid-fire terse mode" above — this exists because the user queues several adds in a row without reading each one; a full plan dump on every single one is slow and clutters the conversation. Always show the full plan on the first invocation of a streak and whenever there's genuine doubt about whether the streak ended.
 20. **No fixed team count or taxonomy — split on independent context needs, not topic labels.** Two steps stay in the same team whenever they need the same files/system/domain knowledge, even if they sound topically different — splitting those gains nothing and costs two agents paying to load the same context. Two steps only go in different teams when their context needs are genuinely independent — that's the only case parallel dispatch actually saves work. Never default to a binary split ("UI vs other", "code vs everything else") and never bias toward the fewest possible groups just because fewer is simpler to write; also never bias toward the most possible groups if steps genuinely share context. Up to roughly 10 teams, discovered from actual context boundaries in the plan, not chosen from habit.
 21. **Every plan gets an access preflight pass, every time — not opt-in, not something the user has to ask for.** Scan for SSH hosts, remote machines, API/access keys, credentials, and gated URLs; write a verification step, tagged `[skill: /accounts]`, at the very front of whichever scope (global, or a specific team) actually depends on it — before any step that needs that access. The check must exercise the SPECIFIC capability later steps depend on (e.g. "can read the remote build's status"), not bare reachability — a plan that assumes access works and finds out mid-run has already wasted the time this step exists to save. See "Access preflight scan" above.
+22. **Flatify never refuses on an executing plan without saying why, and never refuses on an already-flat one either.** Same phase:executing guard as delete (removing Teams out from under a live dispatch would orphan tracked status) — refuse and say so. On an already-flat plan, `flatify` is a no-op, not an error: report "already flat" and stop. Never touch the underlying `## Steps`/`## Validation` content — flatify only ever removes the `## Teams` section and flips `teamed: false`.
+23. **One plan = one feature branch, managed only through `/feature-branch`.** Every new plan in a git repo gets `feature/<name>-<slug>` created at plan-creation time and recorded as `branch:` in the frontmatter — before the plan file is written, so nothing lands on main. Roll-forward plans are the one exception: they inherit their source plan's branch verbatim and never create a new one. Not a git repo → skip silently, no `branch:` field.
+24. **Close and roll-forward NEVER merge, and ALWAYS say the merge hasn't happened.** The ⚠-line naming the unmerged branch is mandatory in both reports — the user must never discover later that archived work silently isn't on main. The only paths that merge a plan's branch are `/iterate`'s all-green completion and an explicit user order ("merge it", "close it and merge") — nothing implicit, ever.
 
 ## Examples
 
