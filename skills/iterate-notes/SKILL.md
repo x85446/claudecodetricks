@@ -2,7 +2,7 @@
 name: iterate-notes
 description: The brainstorm half of the iterate stack — capture and discuss ideas for the NEXT iterate plan, before any formal planning. Triggers on "/iterate-notes", "take a note" (direct capture for the next plan), and on "explore <topic>", "discuss <topic>", "what about <x>" when the conversation is about ideas for upcoming iterate work. Two modes — note mode appends the ask to the current notes file and acks in one line; discussion mode thinks hard but answers curated (direct questions ≤50 words, analysis ≤200 words), parking full depth in the notes file's research appendix and recording every decision reached. Notes live under ./.claude/iterate/notes/ and hand off via "turn these notes into a plan" (routed to /iterate-planner). This skill never plans, never executes, never creates branches.
 argument-hint: <a note to take, or "explore/discuss <topic>", or "list notes" / "show notes" / "new notes <topic>">
-version: 1.0.0
+version: 1.0.1
 ---
 <!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
 
@@ -55,7 +55,7 @@ status: open                  # → consumed (plan: <name>) when /iterate-planne
 2. **discussion mode** — "explore …", "discuss …", "what about …", "should we …", or a direct question about a candidate idea: engage, but **curated**:
    - Think and research as hard as the question deserves — read code, check files, compare approaches. Effort is unlimited; screen space is not.
    - **A direct question gets a direct answer in ≤50 words.** Answer first, one supporting reason if needed, stop.
-   - **Analysis (trade-offs, feasibility, "what about X") gets ≤200 words on screen** — the boiled-down verdict of however much thinking happened, not the thinking itself. If you worked out 10,000 words of reasoning, the user gets the 200 that change their decision.
+   - **Analysis (trade-offs, feasibility, "what about X") gets ≤200 words on screen** — the boiled-down verdict of however much thinking happened, not the thinking itself. However much reasoning it took — there is no ceiling on the thinking — the user gets only the ~200 words that change their decision.
    - Overflow depth that's genuinely worth keeping (option comparisons, discovered constraints, rejected-and-why) goes into `## Research appendix` — silently; mention it only as `(depth in appendix)` at the end of the reply.
    - **When the discussion reaches a decision** (user says "let's do X", "yes, that way", "decided", "skip that"), append one line to `## Decisions` right then and ack it inline: `✔ decided: <one line>`. A raised-but-unresolved question goes to `## Open questions` instead.
    - Anything in the discussion the user clearly wants IN the next plan also gets a `## Notes` line — don't make them say "take a note" for something they just plainly asked for.
