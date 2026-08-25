@@ -243,6 +243,12 @@ do_install() {
         ip)
             install_skill ip "$USERGLOBAL"
             ;;
+        i)
+            install_skill i "$USERGLOBAL"
+            ;;
+        in)
+            install_skill in "$USERGLOBAL"
+            ;;
         iterate)
             install_skill iterate "$USERGLOBAL"
             ;;
