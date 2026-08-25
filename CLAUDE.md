@@ -10,6 +10,7 @@ A Claude Code marketplace providing session hooks for voice announcements, AI-po
 
 This repo is also the canonical backup/source for globally-installed Claude Code skills (deployed via `skills/skillinstall.sh`). Two work together as the iterate stack:
 
+- **`/iterate-notes`** (`skills/iterate-notes/`) — pre-planning brainstorm: "take a note" captures ideas for the next plan; "explore/discuss/what about" runs curated discussion (answers ≤50 words, analysis ≤200, depth parked in a research appendix); decisions recorded as made. Notes live at `./.claude/iterate/notes/`; "turn these notes into a plan" hands off to the planner's notes-to-plan op.
 - **`/iterate-planner`** (`skills/iterate-planner/`) — formalizes a task into a saved, oracle-aware plan (paired Step/Validation, optionally teamed for parallel execution). Plans, never executes. `/ip` (`skills/ip/`) is a pure alias for it.
 - **`/iterate`** (`skills/iterate/`) — executes a saved plan autonomously to completion, looping via `/loop` until every validation passes or it hits a genuine blocker. Dispatches one subagent per team on teamed plans.
 

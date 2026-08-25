@@ -246,6 +246,9 @@ do_install() {
         iterate)
             install_skill iterate "$USERGLOBAL"
             ;;
+        iterate-notes)
+            install_skill iterate-notes "$USERGLOBAL"
+            ;;
         vm)
             install_skill vm "$USERGLOBAL"
             ;;
