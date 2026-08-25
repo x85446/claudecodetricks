@@ -2,7 +2,10 @@
 name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: <paragraph describing the work to do AND how to validate success>
+disable-model-invocation: true
+version: 3.2.0
 ---
+<!-- version: bump on EVERY behavioral change to this skill (minor for additions, major for schema/contract changes, patch for wording). Stamped into every plan this skill executes (executor-version:) at the moment phase flips to executing. -->
 
 # /iterate — Run a task to completion without interrupting the user
 
@@ -14,7 +17,7 @@ Plans are **saved, animal-named, and persistent**. Each plan is one file:
 
     ./.claude/iterate/plans/<name>.md        (project-local, relative to cwd)
 
-`<name>` is a common animal (dog, cat, fox, owl, elk, wren, …), assigned via `iterate-run name next` — see /iterate-planner's "Named plans" for why (this project's own alphabetical sequence, a/b/c/…, drawing from one machine-wide "already used" set so two unrelated projects never land on the same codename). If `iterate-run` isn't installed, fall back to any common animal not already present in this project's own `plans/` and note that the global registry was unavailable. `./.claude/iterate/current` points at the **current** plan. **The plan file** below always means the plan being executed (resolved from `$1`'s name, or `current`, or the sole executing/only plan). Older wording in this doc may say `active.md` — read it as the resolved plan file.
+`<name>` is a common animal (dog, cat, fox, owl, elk, wren, …), assigned via `iterate-run name next` — see /iterate-planner's "Named plans" for why (this project's own alphabetical sequence, a/b/c/…, drawing from one machine-wide "already used" set so two unrelated projects never land on the same codename). If `iterate-run` isn't installed, fall back to any common animal not already present in this project's own `plans/` and note that the global registry was unavailable. `./.claude/iterate/current` points at the **current** plan. **The plan file** below always means the plan being executed (resolved from `$1`'s name, or `current`, or the sole executing/only plan).
 
 Each plan has a top-level `phase:` field:
 
@@ -119,7 +122,7 @@ When a plan IS teamed, on each `/iterate` entry (fresh dispatch, an automatic ba
 4. **Each team's Agent prompt must be fully self-contained** (a fresh subagent has no memory of this conversation or this plan file beyond what you put in the prompt). Include, verbatim:
    - **Its identity, as its own labeled statement — not something to infer from a file path.** State it plainly: "You are team: `<team-name>` (from this plan's Teams table). Your log file MUST be exactly `./.claude/iterate/plans/<name>.teams/<team-name>.log.md` — do not rename yourself, even if you'd naturally describe your own work differently." Confirmed live: a dispatched team named its own log file after its own description of the work instead of the Teams-table name (`app-macos` instead of `gui`) — the identity had only ever been implicit, embedded inside a path string it was told to write to, never stated as its own fact.
    - The plan's Goal.
-   - This team's Steps + Validations (the exact Na/Nb pairs it owns — nothing from other teams).
+   - This team's Steps + Validations (the exact Na/Nb pairs it owns — nothing from other teams), **including each step's `[skill: /x]` tag, plus this instruction verbatim: "A step's `[skill: /x]` tag is binding — invoke that skill for that step's work; do not substitute ad-hoc shell for work a tagged skill governs. `[skill: none]` steps are yours to do directly."**
    - The plan's global Constraints — **including any known baseline duration for a specific operation** that `/iterate-planner` folded in from the oracle (e.g., "compiling X normally completes in under 60s") — see "Know the baseline, don't guess it" below. If a Constraint gives a real number, that's the team's expectation, not something to estimate.
    - **The plan's feature branch, stated plainly:** "All work happens on the already-checked-out branch `<branch>` — never switch branches, never create one, never merge or push. Branch lifecycle belongs to the coordinator." (Teams share the coordinator's working tree; a team switching branches mid-run would yank every other team's files out from under it.)
    - **If this team's Steps depend on a remote/access-gated resource** — an SSH host, API key, database, or gated URL, per an `Access:` Constraint or a `[skill: /accounts]`-tagged step — that step must be this team's own first action, run for real before anything else: the exact capability its later steps need, not bare connectivity. A team that starts polling/waiting on a remote resource without first confirming it can observe that resource's actual state is not making progress, it's guessing — see "Access verification" above for the full failure-handling protocol (self-heal via `/accounts`, then an immediate operator-wall report if that can't fix it, never a silent wait-and-hope).
@@ -218,6 +221,7 @@ Started: <UTC timestamp>
 Executing: <UTC timestamp>     # same instant as Started: on this direct fresh-task path — set once, never touch again
 CWD: <pwd at first invocation>
 phase: executing
+executor-version: <version>    # this skill's own frontmatter `version:` — stamped when phase first flips to executing; on resume by a DIFFERENT version, leave it and add a Status/Log line "resumed by executor <version>"
 running: <UTC timestamp>       # heartbeat — update at every step boundary
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo) — see "Feature branch" above
 loop-mechanism: cron <job-id>  # or "/loop" — EXACTLY what the auto-resume armed; cancellation targets this; cleared on verified cancel
@@ -254,7 +258,7 @@ Distilled into CHANGELOG.md + RELEASES.md once, at the success path — see "Cha
 
 If resuming, do not overwrite — append to Decisions log and Status / Log. Update the `running:` heartbeat as you work.
 
-If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Validation/Constraints are already there — just set `phase: executing`, **add an `Executing: <UTC timestamp now>` line** (this is the real execution-start marker the dashboard's "Running for" box reads — do NOT touch `Started:`, which stays as the original drafting time), take the lock, set up `/loop`, and start. Do not re-parse from $1.
+If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Validation/Constraints are already there — just set `phase: executing`, **add `Executing: <UTC timestamp now>` and `executor-version: <this skill's version>` lines** (this is the real execution-start marker the dashboard's "Running for" box reads — do NOT touch `Started:`, which stays as the original drafting time), take the lock, set up `/loop`, and start. Do not re-parse from $1.
 
 ### 3. Execute the steps
 
@@ -272,7 +276,7 @@ Log every alternative attempt in **Status / Log**. Log the chosen mechanism in *
 
 Walk through `Steps` in order. For each step:
 
-1. Figure out *how* to do it from current context. Read files, run commands, ssh wherever needed.
+1. Figure out *how* to do it from current context. Read files, run commands, ssh wherever needed. **If the step carries a `[skill: /x]` tag, invoke that skill — the tag is binding, not advisory** (Na's mechanism may flex per rule 11, but "which tool governs this work" doesn't). On a direct fresh-task run whose steps have no tags (no planner pass ran), do the cheap version yourself: before executing a step, check the always-loaded skills list for an obvious governing skill (builds → `/dev-makefiles`, access → `/accounts`) and use it.
 2. **If a decision is required that the user didn't pre-specify, pick the most reasonable interpretation.** Examples of safe defaults:
    - Path doesn't exist → create it (`mkdir -p`).
    - Command failed with permissions → try `sudo`.
@@ -311,7 +315,7 @@ If any check fails:
 ### 5. Report and either complete or stop
 
 **On full success (every validation check green):**
-- Set `running: false` in `active.md`.
+- Set `running: false` in the plan file.
 - **Publish the changelogs** (see "Changelog" above): distill `## Changelog draft` into `CHANGELOG.md` + `RELEASES.md`, commit them on the plan's branch — they ride the PR.
 - **Run the merge flow** (see "Feature branch" above): `/feature-branch finish` → merge the PR → branch deleted, back on the default branch. All-green is the merge trigger; no separate approval needed. A failed merge does NOT un-succeed the plan — flag it in the summary (`⚠ complete but NOT merged — <reason>, branch preserved`) and continue archiving.
 - **Add a `Finished: <UTC timestamp now>` line** (same `date -u +%Y-%m-%dT%H:%M:%SZ` format as `Executing:`) right before archiving — this is the real "done at" instant the dashboard's "Ran for" figure reads once archived. Without it, that figure falls back to the latest CONFIRMED activity span (hook/registry data), which can simply not exist for a project with neither wired up — confirmed live: a flat plan showed "Running for 0s" despite a correct `Executing:`, because there was no activity data to compute a span against at all. Set once, never touched again.
@@ -327,13 +331,13 @@ If any check fails:
 - Report shape: 2-3 lines of what's done + `awaiting human gate: <what>` + where the prepared material lives + the ⚠ branch-not-merged line.
 
 **On stuck (5-cycle cap hit AND every other outcome also stuck — genuinely no forward motion possible), OR every validation is met except one clause that only a human can clear** (billing, an external approval, physical/credential access no agent has — a wall, not a failing check — and the plan did NOT mark it as a `human-gate`, else use the human-gate path above):
-- Set `running: false`. Update `active.md`: mark which steps completed, which validation checks pass, which fail and why.
+- Set `running: false`. Update the plan file: mark which steps completed, which validation checks pass, which fail and why.
 - Write the "Next attempt" hint in the ONE standardized shape the dashboard tool actually parses — this was previously freeform prose per-run, which the dashboard couldn't recognize at all (it just kept reading as plain `executing` no matter how done the plan actually was):
   - At the very top of the file, above the frontmatter, a blockquote banner: `> **Next attempt (one operator action):** <what's blocking, one or two sentences> <the exact command(s) to run once it's cleared>`.
   - In the frontmatter, `status: blocked-on-operator: <one-line reason>` — that exact `blocked-on-operator` prefix is the literal string the dashboard matches on; don't paraphrase it into "waiting on user" or similar. This is IN ADDITION to `phase:`, not a replacement — leave `phase: executing` as-is.
 - Cancel the loop — exact mechanism from `loop-mechanism:`, verified dead, field cleared (see "Auto-resume"). Without this, the loop fires forever and re-hits the same giveup — and canceling the WRONG mechanism (a /loop stop against an armed cron) is exactly as bad as not canceling, just quieter.
 - Stop. Report ONE blocker reason — the specific check that failed 5 times (or the specific operator-only clause) AND why no other outcome could absorb attention — plus what specific operator action would unblock. **Do NOT write a menu of "things the user could do next." Do NOT list "(a) ... (b) ..." options. Do NOT frame remaining work as choices.** One blocker, one ask, done. On a teamed plan where multiple teams are blocked, aggregate: report the done/blocked status of every team in one line each, then the single most-actionable next operator step (usually whichever blocker, once fixed, unblocks the most dependent teams).
-- Do **not** archive — leave `active.md` in place so the user can read what happened and re-invoke fresh after fixing the blocker.
+- Do **not** archive — leave the plan file in place so the user can read what happened and re-invoke fresh after fixing the blocker.
 
 - **The merge-status line is mandatory in every stuck report** (git-repo plans): `⚠ feature branch <branch> NOT merged — <PR open at <url> | no PR opened>`. The merge only happens on all-green completion or an explicit user order (see "Feature branch" above) — the user must never have to wonder whether blocked work landed on main. It didn't.
 
@@ -354,7 +358,7 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 
 **On normal end-of-turn (work not yet complete, no giveup):**
 - Set `running: false` (lock released).
-- Leave `active.md` and the `/loop` schedule intact. The next loop tick will resume from state.
+- Leave the plan file and the `/loop` schedule intact. The next loop tick will resume from state.
 - Brief status line to the user is OK but not required.
 
 ## Rules (hard, non-negotiable)
@@ -362,8 +366,8 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 1. **Never ask the user a clarifying question during execution.** If you need a decision, pick the most reasonable one and log it in the Decisions log. The user can read the log later. Exactly two sanctioned exceptions: the entry rule 5 plan picker, and the **human-gate handoff** (Step 5) — when the only thing left is the plan's marked `human-gate` step, autonomy is over by definition and asking IS the job.
 2. **Never stop just because something is uncertain.** Pick a path, try it, log, continue. "Uncertain" is not the same as "stuck".
 3. **Never declare success without running every validation check.** Self-validate, every time.
-4. **Always update `active.md` before doing anything destructive** (delete, overwrite, force-push, restart service). The state file is the resumption contract; don't violate it.
-5. **Never replace `active.md` without archiving first.** Old state goes to `./.claude/iterate/archive/<UTC-timestamp>.md`.
+4. **Always update the plan file before doing anything destructive** (delete, overwrite, force-push, restart service). The state file is the resumption contract; don't violate it.
+5. **Never replace a plan file without archiving first.** Old state goes to `./.claude/iterate/archive/<UTC-timestamp>.md`.
 6. **Logging is mandatory.** Every decision and every step outcome must land in the appropriate section. Future-you (next `/iterate` call) reads the log to know what's already done.
 7. **Don't loop forever.** 5 cycles per failing validation check, then stop and report. On stop, cancel the `/loop` so it doesn't keep re-running into the same wall.
 8. **Respect the user's constraints absolutely.** Constraints listed in the state file override your own judgment.
@@ -392,6 +396,7 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 23. **All-green is the ONLY automatic merge trigger; every not-all-green report names the unmerged branch.** On full success, run the merge flow (`/feature-branch finish` → merge PR → delete branch) as part of Step 5 — no separate approval needed, that's what all-green means. On ANY other ending (blocked, stuck, user-ordered close, roll-forward), the branch stays unmerged and the report carries the ⚠ not-merged line — the user must never have to guess whether unfinished work landed on main. The one override is an explicit user order to merge ("merge it", "merge what we have and close") — obey it, then do whatever else they asked. Branch operations always go through `/feature-branch`, never hand-rolled git; and a failed merge on an otherwise-complete plan is flagged, not retried into the 5-cycle loop — merge conflicts against a moved main are the user's call, not a validation failure.
 24. **Teams never touch the branch.** Dispatched team subagents work on the coordinator's already-checked-out plan branch — no switching, no creating, no pushing, no merging. All branch lifecycle belongs to the coordinator (and `/iterate-planner` at creation time). A team that needs "a different branch" doesn't — that's a sign the step belongs to a different plan.
 25. **Changelog: draft at every check-off, publish exactly once — through the final sweep.** One draft line per real change, appended by the coordinator at step check-off / team merge — never by teams, never as polished prose. Publishing always runs the two-pass sweep (consolidate multi-attempt/reworked lines into one as-landed line each; validate every claim against the final tree — unvalidated claims don't publish). `CHANGELOG.md`/`RELEASES.md` are written only in the success path (or a flagged-partial entry on close, same sweep applied) — never incrementally mid-run, and old entries are never rewritten. `RELEASES.md` carries only user-visible changes in product language; internal work stays in `CHANGELOG.md`.
+26. **A step's `[skill: /x]` tag is binding, for coordinator and teams alike.** Rule 11's "Na is a hint" covers the mechanism *within* the governing tool, never a license to bypass the tool: a build step tagged `/dev-makefiles` gets its target added via that skill, not an ad-hoc shell script that happens to compile. Tags travel into every team prompt with the binding instruction. Untagged plans (direct fresh-task runs) get the cheap check: scan the always-loaded skills list before each step for an obvious governing skill.
 
 ## Example trigger
 

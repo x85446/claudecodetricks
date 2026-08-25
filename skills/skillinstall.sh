@@ -240,6 +240,9 @@ do_install() {
         iterate-planner)
             install_skill iterate-planner "$USERGLOBAL"
             ;;
+        ip)
+            install_skill ip "$USERGLOBAL"
+            ;;
         iterate)
             install_skill iterate "$USERGLOBAL"
             ;;

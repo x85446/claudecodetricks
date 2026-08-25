@@ -10,10 +10,10 @@ A Claude Code marketplace providing session hooks for voice announcements, AI-po
 
 This repo is also the canonical backup/source for globally-installed Claude Code skills (deployed via `skills/skillinstall.sh`). Two work together as the iterate stack:
 
-- **`/iterate-planner`** (`skills/iterate-planner/`) — formalizes a task into a saved, oracle-aware plan (paired Step/Validation, optionally teamed for parallel execution). Plans, never executes.
+- **`/iterate-planner`** (`skills/iterate-planner/`) — formalizes a task into a saved, oracle-aware plan (paired Step/Validation, optionally teamed for parallel execution). Plans, never executes. `/ip` (`skills/ip/`) is a pure alias for it.
 - **`/iterate`** (`skills/iterate/`) — executes a saved plan autonomously to completion, looping via `/loop` until every validation passes or it hits a genuine blocker. Dispatches one subagent per team on teamed plans.
 
-Both are user-invoked only (`disable-model-invocation: true`) — real side effects (file writes, autonomous execution) mean explicit invocation is deliberate, not natural-language auto-trigger. Plan state lives at `./.claude/iterate/plans/<name>.md` in whichever project they're run from; live status/dashboard for that state is `iterate-run` (`src/cmd/iterate-run/`, this repo's own Go binary — `iterate-run serve` for the web dashboard, `iterate-run status`/`timeline` for the CLI).
+`/iterate` and `/ip` carry `disable-model-invocation: true` — real side effects (autonomous execution, PR merges) mean explicit user invocation is deliberate, not natural-language auto-trigger. `/iterate-planner` deliberately does NOT carry the flag: `/ip` delegates to it via the Skill tool, and that flag blocks Skill-tool delegation entirely. Plan state lives at `./.claude/iterate/plans/<name>.md` in whichever project they're run from; live status/dashboard for that state is `iterate-run` (`src/cmd/iterate-run/`, this repo's own Go binary — `iterate-run serve` for the web dashboard, `iterate-run status`/`timeline` for the CLI).
 
 ## Build & Development Commands
 
