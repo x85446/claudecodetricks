@@ -275,6 +275,19 @@ The available-skills list is already in context (descriptions are always loaded)
 
 This exists because plans reliably bypassed installed skills: executors built software with ad-hoc shell instead of the Makefile skill, because nothing at planning time forced the lookup. The tag converts an always-loaded description into an explicit instruction at the moment of action.
 
+### 5.8. Standing finisher tasks (mandatory, every plan — tests, then docs)
+
+Every plan ends with the same two finisher steps, appended automatically at creation — the user does not ask for them each time:
+
+1. **Test pass** — `Na: Run the project test suite via TESTMASTER — fast+standard tiers only, all green; maintain coverage first for behavior this plan added/changed. [skill: /testmaster]` / `Nb: /testmaster run reports 0 failures across fast+standard; every feature this plan added or changed has a registered, executed test (new tests show runs ≥ 1 in ./.claude/testmaster/registry.json).` The slow tier is NEVER part of this step — it belongs to the nightly schedule.
+2. **Docs pass** — `Na: Sync the end-user product documentation to the final state of this plan's work — add new features' operating instructions, update changed behavior, delete removed features' docs. [skill: /product-docs]` / `Nb: /product-docs reports docs synced (or "already true"); no doc section describes behavior absent from the final tree; new user-visible features each have an operating section.`
+
+Placement and ordering rules:
+- **Order is fixed: tests BEFORE docs** — docs describe what survived the tests, and the docs edit rides the branch after the suite is green.
+- **They are the last agent steps.** Only a `human-gate` step (Step 5.5) may come after them. Refinement adds insert BEFORE the finishers — new work always lands ahead of them, and they keep their end position through every renumbering.
+- Provenance line for both: `Standing rule: end-of-plan finisher (tests then docs).` Team classification: leave both unassigned (coordinator-run, after all teams merge) — they sweep the whole plan's work, so no single team owns them.
+- A plan whose project genuinely has no product (pure ops/infra plan, no end users) may drop the docs finisher — note it in the audit trail (`docs finisher skipped: no end-user product`). The test finisher is never skipped.
+
 ### 6. Write the plan file
 
 **On a brand-new plan** (op 9, or the first-plan path of op 10) — after Steps 1-5 above have produced the full Goal/Steps/Validation/Constraints — do two things before writing:

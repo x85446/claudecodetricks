@@ -1,0 +1,57 @@
+---
+name: testmaster
+description: TESTMASTER — the SQA test-suite meta for any project. Owns the whole test lifecycle through its children — maintain (write/update cases), prune (consolidate, conform, keep the suite true), run (execute with real-world timing measurement), report (HTML report card). Triggers on "testmaster", "maintain the test suite", "run the tests through testmaster", "test report card", "prune the tests", "set up nightly tests". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). Timing registry at ./.claude/testmaster/registry.json is built from real measured runs, never estimates.
+argument-hint: <maintain | prune | run [tier] | report | nightly | status>
+version: 1.0.0
+---
+<!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
+
+# /testmaster — SQA suite orchestrator (TESTMASTER)
+
+Meta skill. Routes to one child per concern and owns the shared contracts below. Do the routed work via the Skill tool — never inline a child's job here.
+
+| Child | Job |
+|---|---|
+| `/testmaster-maintain` | Write new test cases, update existing ones to match current behavior |
+| `/testmaster-prune` | Prune dead tests, consolidate duplicates, conform headers ↔ registry |
+| `/testmaster-run` | Execute a tier (or named tests), measure real durations, update the registry |
+| `/testmaster-report` | Regenerate the HTML report card from registry + run history |
+
+## Shared contracts (all children obey these)
+
+**State lives at `./.claude/testmaster/`** (project-local, created on first touch):
+- `registry.json` — one entry per test: `{id, cmd, file, avg_ms, last_ms, runs, tier, parallel_safe, last_result, updated}`. **Measured truth**: `avg_ms`/`last_ms` come only from real `/testmaster-run` executions — never estimated, never hand-edited.
+- `history.jsonl` — append-only run log: `{ts, id, ms, result, tier, runner}` per execution. This is the raw data behind every timing claim.
+- `report/index.html` — the self-contained report card (see `/testmaster-report`).
+
+**Tiers are derived from measured `avg_ms`, recomputed by `/testmaster-run` after every run:**
+- `fast` — avg ≤ 10s. Always safe to run, any time, including every iterate plan.
+- `standard` — avg ≤ 2min. Runs in iterate plans' end-of-plan test task.
+- `slow` — avg > 2min. **NEVER run inside an iterate plan.** Nightly/explicit-only. An hour-long suite mid-plan is exactly the failure this tier exists to prevent.
+
+**Per-test header** — every test function/file carries a TESTMASTER header comment the children keep in sync:
+```
+# TESTMASTER: id=<stable-id> tier=fast parallel=yes  (avg 3.2s over 41 runs)
+```
+Division of authority: the **registry is authoritative for timing** (measured); the **header is authoritative for `parallel=`** (a declared property of the test's side effects — shared DB, port binds, global fixtures — that measurement can't infer). Conform passes (`/testmaster-prune`) sync the derived fields into headers; a header's `parallel=no` is never overridden by anyone.
+
+**Parallelism**: `/testmaster-run` runs `parallel=yes` tests of a tier concurrently, `parallel=no` tests serially after. Real wall-clock for the whole batch also lands in `history.jsonl`.
+
+**Real-world mandate**: tests exercise the product the way a user/caller does (run the CLI, hit the endpoint, load the page) — the same interactive-testing mandate as `/iterate`. A "test" that only inspects code doesn't survive `/testmaster-prune`.
+
+## Router — parse `$1`
+
+1. **maintain** ("maintain", "add/update tests for <x>") → Skill tool: `testmaster-maintain`, args verbatim.
+2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → Skill tool: `testmaster-prune`, args verbatim.
+3. **run** ("run", "run fast", "run standard", "run slow", "run <test-id>") → Skill tool: `testmaster-run`, args verbatim. Bare "run" = fast+standard (the iterate-safe set).
+4. **report** ("report", "report card", "how are the tests") → Skill tool: `testmaster-report`.
+5. **nightly** ("nightly", "set up nightly tests") → arm a scheduled full run (all tiers incl. slow) at local midnight via the harness's cron/schedule mechanism, prompt `/testmaster run all`. **Record the mechanism + job id in `./.claude/testmaster/nightly.json`** and tell the user the exact cancel command (a cron needs CronDelete — a /loop stop will NOT kill it). Never arm a second nightly if `nightly.json` already records a live one.
+6. **status** ("status") → one screen from `registry.json`: counts per tier, pass/fail split, slowest 5, last full-run date. Read-only.
+7. **default** (anything else describing test work) → decide maintain vs prune vs run by the work's nature and route as above.
+
+## Rules
+
+1. **Never run the slow tier inside an iterate plan.** The plan's standing test step is `run` (= fast+standard). Slow is nightly or an explicit user "run slow"/"run all".
+2. **All timing claims trace to `history.jsonl`.** No estimated durations anywhere — a test with `runs: 0` reports "unmeasured", not a guess.
+3. **Registry writes go through the children.** The meta routes; it never edits state itself.
+4. **One nightly per project.** Check `nightly.json` before arming; canceling uses the exact recorded mechanism.
