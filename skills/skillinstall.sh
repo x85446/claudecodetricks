@@ -109,6 +109,9 @@ install_3p_skill() {
 # PM skills list
 PM_SKILLS="pm pm-epic pm-feature pm-requirement pm-test pm-iterator pm-auditor pm-preflight pm-publish pm-status pm-webtool"
 
+# TESTMASTER family (meta + 4 children)
+TESTMASTER_SKILLS="testmaster testmaster-maintain testmaster-prune testmaster-run testmaster-report"
+
 # codeconverter family (meta + 18 stage children + 1 shared helper)
 CODECONVERTER_SKILLS="codeconverter codeconverter-00-guidance codeconverter-00-source-provenance codeconverter-01-service-profile codeconverter-02-codebase-analysis codeconverter-03-dependency-discovery codeconverter-04-test-baseline codeconverter-05-api-surface codeconverter-05a-endpoint-consumers codeconverter-05b-outbound-dependencies codeconverter-05c-datastore-peers codeconverter-06-domain-analysis codeconverter-07-target-codebase codeconverter-08-gap-validation codeconverter-09-dependency-audit codeconverter-10-service-alignment codeconverter-10a-pilot-slice codeconverter-11-migration-plan codeconverter-12-migration-qa codeconverter-verify"
 
@@ -251,6 +254,20 @@ do_install() {
             ;;
         iterate)
             install_skill iterate "$USERGLOBAL"
+            ;;
+        testmaster)
+            for s in $TESTMASTER_SKILLS; do
+                install_skill "$s" "$USERGLOBAL"
+            done
+            ;;
+        testmaster-*)
+            # Skip during install_all (testmaster handles the batch).
+            if [ -n "$DIRECT_INSTALL" ]; then
+                install_skill "$skill" "$USERGLOBAL"
+            fi
+            ;;
+        product-docs)
+            install_skill product-docs "$USERGLOBAL"
             ;;
         iterate-notes)
             install_skill iterate-notes "$USERGLOBAL"
