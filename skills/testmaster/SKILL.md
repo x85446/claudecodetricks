@@ -1,9 +1,9 @@
 ---
 name: testmaster
 description: TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: adopt (onboard an existing suite), derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Route ALL test-suite work here; the meta picks the child.
-when_to_use: Use for any test-suite work: "testmaster", "adopt this suite", "onboard testmaster", "set up testmaster here", "run the tests", "maintain the test suite", "add tests for <x>", "derive tests for <requirement>", "should this have a test", "what tests does this need", "prune the tests", "consolidate duplicate tests", "clean up the suite", "test report card", "how are the tests", "what's untested", "test coverage", "what did this change invalidate", "which tests drifted", "set up nightly tests". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates.
+when_to_use: Use for any test-suite work: "testmaster", "testmaster init", "adopt this suite", "onboard testmaster", "set up testmaster here", "run the tests", "maintain the test suite", "add tests for <x>", "derive tests for <requirement>", "should this have a test", "what tests does this need", "prune the tests", "consolidate duplicate tests", "clean up the suite", "test report card", "how are the tests", "what's untested", "test coverage", "what did this change invalidate", "which tests drifted", "set up nightly tests". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates.
 argument-hint: <adopt | maintain | prune | run [tier] | report | nightly | status>
-version: 1.3.0
+version: 1.4.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -46,7 +46,7 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 ## Router — parse `$1`
 
 0. **derive** ("derive tests for <requirement>", "should this have a test", "what tests does this need") → Skill tool: `testmaster-derive`, args verbatim. Also the entry point `/iterate-planner` uses on every plan.
-0.25. **adopt** ("adopt", "onboard", "set up testmaster here", "bring this suite into testmaster", "conform this project") → Skill tool: `testmaster-adopt`, args verbatim. The one-time pass a project runs before anything else here is meaningful.
+0.25. **adopt** ("adopt", "init", "initialize", "onboard", "set up testmaster here", "bring this suite into testmaster", "conform this project") → Skill tool: `testmaster-adopt`, args verbatim. The one-time pass a project runs before anything else here is meaningful.
 0.5. **catalog** ("catalog", "status", "drift", "coverage", "impact <plan>", "what did this change invalidate", "what's untested") → Skill tool: `testmaster-catalog`, args verbatim.
 1. **maintain** ("maintain", "add/update tests for <x>") → Skill tool: `testmaster-maintain`, args verbatim.
 2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → Skill tool: `testmaster-prune`, args verbatim.
