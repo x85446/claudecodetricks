@@ -112,6 +112,9 @@ PM_SKILLS="pm pm-epic pm-feature pm-requirement pm-test pm-iterator pm-auditor p
 # TESTMASTER family (meta + 4 children)
 TESTMASTER_SKILLS="testmaster testmaster-maintain testmaster-prune testmaster-run testmaster-report"
 
+# UXMASTER family (meta + 7 children)
+UXMASTER_SKILLS="uxmaster uxmaster-analysis uxmaster-macos uxmaster-linux uxmaster-windows uxmaster-web uxmaster-cli uxmaster-implement"
+
 # codeconverter family (meta + 18 stage children + 1 shared helper)
 CODECONVERTER_SKILLS="codeconverter codeconverter-00-guidance codeconverter-00-source-provenance codeconverter-01-service-profile codeconverter-02-codebase-analysis codeconverter-03-dependency-discovery codeconverter-04-test-baseline codeconverter-05-api-surface codeconverter-05a-endpoint-consumers codeconverter-05b-outbound-dependencies codeconverter-05c-datastore-peers codeconverter-06-domain-analysis codeconverter-07-target-codebase codeconverter-08-gap-validation codeconverter-09-dependency-audit codeconverter-10-service-alignment codeconverter-10a-pilot-slice codeconverter-11-migration-plan codeconverter-12-migration-qa codeconverter-verify"
 
@@ -262,6 +265,17 @@ do_install() {
             ;;
         testmaster-*)
             # Skip during install_all (testmaster handles the batch).
+            if [ -n "$DIRECT_INSTALL" ]; then
+                install_skill "$skill" "$USERGLOBAL"
+            fi
+            ;;
+        uxmaster)
+            for s in $UXMASTER_SKILLS; do
+                install_skill "$s" "$USERGLOBAL"
+            done
+            ;;
+        uxmaster-*)
+            # Skip during install_all (uxmaster handles the batch).
             if [ -n "$DIRECT_INSTALL" ]; then
                 install_skill "$skill" "$USERGLOBAL"
             fi

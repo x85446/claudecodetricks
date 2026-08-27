@@ -10,6 +10,7 @@ A Claude Code marketplace providing session hooks for voice announcements, AI-po
 
 This repo is also the canonical backup/source for globally-installed Claude Code skills (deployed via `skills/skillinstall.sh`). Two work together as the iterate stack:
 
+- **`/uxmaster`** (`skills/uxmaster*/`) — UXMASTER, the UX/UI design meta: children are `analysis` (platform-agnostic audit), five platform experts (`macos`, `linux`, `windows`, `web`, `cli`), and `implement` (writes the real framework code — SwiftUI, GTK4/libadwaita, WinUI 3, web, TUI). Shared findings ledger at `./.claude/uxmaster/findings.md`; FFIV's Find step routes here for UI scopes.
 - **`/testmaster`** (`skills/testmaster*/`) — TESTMASTER, the SQA suite meta with children maintain/prune/run/report. Real-world-measured timing registry at `./.claude/testmaster/registry.json` drives tiers (fast ≤10s, standard ≤2min, slow >2min — slow is nightly-only, never mid-plan); `testmaster-report` renders a self-contained HTML report card.
 - **`/product-docs`** (`skills/product-docs/`) — keeps end-user product documentation true each iteration: adds new features' operating instructions, updates changed behavior, deletes removed features' docs.
 - Every iterate plan ends with three standing finisher steps appended by the planner: `/dev-makefiles` maintenance, `/testmaster` run (fast+standard), then `/product-docs` sync.
