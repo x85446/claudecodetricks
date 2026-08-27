@@ -301,6 +301,9 @@ do_install() {
         fix-chrome-remote-desktop)
             install_skill fix-chrome-remote-desktop "$USERGLOBAL"
             ;;
+        tutorial)
+            install_skill tutorial "$USERGLOBAL"
+            ;;
         skill-builder)
             install_skill skill-builder "$USERGLOBAL"
             ;;
