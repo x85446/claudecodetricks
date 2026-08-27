@@ -1,9 +1,9 @@
 ---
 name: testmaster
-description: TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Route ALL test-suite work here; the meta picks the child.
-when_to_use: Use for any test-suite work: "testmaster", "run the tests", "maintain the test suite", "add tests for <x>", "derive tests for <requirement>", "should this have a test", "what tests does this need", "prune the tests", "consolidate duplicate tests", "clean up the suite", "test report card", "how are the tests", "what's untested", "test coverage", "what did this change invalidate", "which tests drifted", "set up nightly tests". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates.
-argument-hint: <maintain | prune | run [tier] | report | nightly | status>
-version: 1.2.0
+description: TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: adopt (onboard an existing suite), derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Route ALL test-suite work here; the meta picks the child.
+when_to_use: Use for any test-suite work: "testmaster", "adopt this suite", "onboard testmaster", "set up testmaster here", "run the tests", "maintain the test suite", "add tests for <x>", "derive tests for <requirement>", "should this have a test", "what tests does this need", "prune the tests", "consolidate duplicate tests", "clean up the suite", "test report card", "how are the tests", "what's untested", "test coverage", "what did this change invalidate", "which tests drifted", "set up nightly tests". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates.
+argument-hint: <adopt | maintain | prune | run [tier] | report | nightly | status>
+version: 1.3.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -13,6 +13,7 @@ Meta skill. Routes to one child per concern and owns the shared contracts below.
 
 | Child | Job |
 |---|---|
+| `/testmaster-adopt` | One-time onboarding: discover an existing suite, seed the catalog, compute `covers` |
 | `/testmaster-derive` | Read a requirement in the user's words and derive the test cases it implies |
 | `/testmaster-catalog` | The organizing index: requirement → cases → covered code, plus validity as code changes |
 | `/testmaster-maintain` | Write new test cases, update existing ones to match current behavior |
@@ -45,6 +46,7 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 ## Router — parse `$1`
 
 0. **derive** ("derive tests for <requirement>", "should this have a test", "what tests does this need") → Skill tool: `testmaster-derive`, args verbatim. Also the entry point `/iterate-planner` uses on every plan.
+0.25. **adopt** ("adopt", "onboard", "set up testmaster here", "bring this suite into testmaster", "conform this project") → Skill tool: `testmaster-adopt`, args verbatim. The one-time pass a project runs before anything else here is meaningful.
 0.5. **catalog** ("catalog", "status", "drift", "coverage", "impact <plan>", "what did this change invalidate", "what's untested") → Skill tool: `testmaster-catalog`, args verbatim.
 1. **maintain** ("maintain", "add/update tests for <x>") → Skill tool: `testmaster-maintain`, args verbatim.
 2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → Skill tool: `testmaster-prune`, args verbatim.
@@ -62,3 +64,4 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 4. **One nightly per project.** Check `nightly.json` before arming; canceling uses the exact recorded mechanism.
 5. **Every test traces to a requirement.** A case exists because something was asked for — `/testmaster-derive` records the ask in the user's words, `/testmaster-catalog` keeps the link, and a test that traces to nothing is a `coverage` gap to resolve, not a test to keep by default.
 6. **Green is not the same as valid.** A test that passed before the code it covers changed is `drifted`, not `valid` — only a green run against the current tree clears it. Report drift whenever asked for suite health.
+7. **An unadopted project answers everything wrong.** With no `catalog.json` — or a catalog whose `covers` are empty — drift is undetectable, `impact` reports `could affect: 0`, and every plan looks safe. When a routed child finds no catalog, say so and route to `adopt` first rather than returning a clean-looking zero.

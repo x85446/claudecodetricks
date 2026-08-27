@@ -110,7 +110,7 @@ install_3p_skill() {
 PM_SKILLS="pm pm-epic pm-feature pm-requirement pm-test pm-iterator pm-auditor pm-preflight pm-publish pm-status pm-webtool"
 
 # TESTMASTER family (meta + 4 children)
-TESTMASTER_SKILLS="testmaster testmaster-derive testmaster-catalog testmaster-maintain testmaster-prune testmaster-run testmaster-report"
+TESTMASTER_SKILLS="testmaster testmaster-adopt testmaster-derive testmaster-catalog testmaster-maintain testmaster-prune testmaster-run testmaster-report"
 
 # UXMASTER family (meta + 7 children)
 UXMASTER_SKILLS="uxmaster uxmaster-analysis uxmaster-macos uxmaster-linux uxmaster-windows uxmaster-web uxmaster-cli uxmaster-implement"

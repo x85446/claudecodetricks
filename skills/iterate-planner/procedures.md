@@ -98,3 +98,38 @@ The user wants the unfinished work to continue as a fresh plan without losing th
 - **Settings informational text** → any informational/help/explainer text sitting inline in a settings screen is a finding; the standard fix is relocating it under an **(i)** info affordance (tooltip, popover, or expandable) so the setting's control stands alone and the explanation is one tap away.
 
 The four steps get normal treatment — skill tags, provenance (`You asked for FFIV over <scope>.` on all four), team classification (they usually stay one team or unassigned: each phase needs the previous phase's context). Findings fixed during the sweep feed `## Changelog draft` like any other change. FFIV never replaces the standing finishers (Step 5.8) — TESTMASTER and product-docs still run after it.
+
+## The testmaster block
+
+Rendered in Step 7 of the plan presentation from `/testmaster-catalog impact <plan>`. Four numbers, no prose around them:
+
+```
+  -current total test cases: <x>
+  -plan adds: <n>
+  -new total: <z>
+  -plan could effect: <y> (will FFIV)
+```
+
+### The FFIV commitment
+
+A nonzero `could effect` is not an annotation of what the plan happens to contain — it is a **commitment the plan is then required to honor**. If this plan can drift existing cases, this plan sweeps them.
+
+When the count is nonzero and no existing step covers that scope, append an FFIV step before the standing finishers:
+
+> `Na: FFIV the <y> cases this plan puts into drift — Find which of them actually drifted (git diff ∩ covers after the plan's steps), Fix each against current behavior, Iterate until the set is dry, Verify green. [skill: /testmaster]`
+> `Nb: /testmaster-catalog drift reports zero drifted cases attributable to this plan; every case it names is green against HEAD.`
+> Provenance: `Standing rule: nonzero could-effect always FFIVs.`
+
+### Prediction vs derived
+
+The count is a **prediction** — the planner reading step prose and guessing which files get touched. The sweep acts on the **derived** set: which of those cases actually drifted, computed after execution from `git diff ∩ covers`. Predicting 7 and finding 3 is a correct outcome, not an error.
+
+### Zero is not always zero
+
+| Catalog state | Render |
+|---|---|
+| Populated, no case covers this plan's files | `0 (nothing to FFIV)` |
+| Empty, absent, or `covers` unrecorded | `unknown (no covers recorded — run /testmaster-adopt)` |
+| No catalog at all | `-current total test cases: 0 (no catalog — run /testmaster-adopt)` |
+
+An unadopted project reports zero forever, which makes every plan look safe. Treat `unknown` as nonzero: the blast radius is unmeasured, not empty (rule 27.7).

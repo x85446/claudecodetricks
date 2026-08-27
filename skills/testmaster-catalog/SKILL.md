@@ -2,7 +2,7 @@
 name: testmaster-catalog
 description: TESTMASTER child (invoked via /testmaster): the organizing index — requirement to cases to covered code — recomputing validity (valid/drifted/orphaned/unverified) as the code changes.
 argument-hint: <status | drift | coverage | impact <plan> | link <test-id> <files...> | rebuild>
-version: 1.2.0
+version: 1.3.0
 ---
 
 # /testmaster-catalog — keep the suite organized and know what's still true
@@ -29,6 +29,7 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. This child owns the organ
       "given": "...", "when": "...", "then": "...",
       "file": "history_test.go",
       "covers": ["history.go", "audio_device.go"],
+      "covers_source": "coverage",
       "validity": "valid",
       "last_validated_commit": "6f15ace",
       "last_validated": "<UTC>"
@@ -60,14 +61,23 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. This child owns the organ
    ```
 2. **drift** — only the drifted and orphaned entries, with the commits that caused the drift. This is the post-change question: *what did I just invalidate?*
 3. **coverage** — requirements with no cases, and cases with no test file. The gap list; hand it to `/testmaster-derive` (missing cases) or `/testmaster-maintain` (missing implementations).
-4. **link `<test-id> <files...>`** — record which source files a test covers. Drift detection is only as good as `covers`, so this is how it gets accurate.
+4. **link `<test-id> <files...>`** — record which source files a test covers, by hand (`covers_source: "manual"`). Drift detection is only as good as `covers`, so this is how it gets corrected.
+
+   To populate `covers` in bulk rather than one test at a time, that is `/testmaster-adopt` — it derives coverage from real per-test profiles. `link` is the correction, adoption is the feeder.
 5. **impact `<plan>`** — project a planned change against the catalog, for `/iterate-planner`'s plan presentation. Returns exactly four numbers:
    - **current total** — cases in the catalog now.
    - **plan adds** — cases derived for this plan (Step 5.9 of the planner tags each with `source: plan:<name>`); 0 when the plan states no testable behavior.
    - **new total** — current + adds.
    - **could affect** — existing cases whose `covers` intersects the files the plan's steps will touch. This is *prospective drift*: those cases will need re-running to stay valid, whether or not they fail. Predict the touched files from the plan's Steps (named paths, the subsystem each step edits); when a step's target is genuinely unknowable, say so rather than inflating the count.
+
+   **A nonzero `could affect` always means FFIV.** There is no "will not FFIV" branch: if this plan can put existing cases into drift, the plan sweeps them — Find the ones that actually drifted after the steps run, Fix them against current behavior, Iterate until the set is dry, Verify green. `could affect: 0` is the only case that skips it. The count is a *prediction*; which cases actually drifted is *derived* after execution from `git diff ∩ covers`, and the FFIV sweep acts on the derived set, not the prediction.
+
+   **Report the confidence with the count.** `could affect` inherits the trust of the `covers` it read, so state the mix — `7 (covers: 7 coverage)` is a measured blast radius; `7 (covers: 2 coverage, 5 convention)` is mostly a naming-convention guess; `0 (no covers recorded — blast radius unknown)` is *not* a safe plan, it is an unadopted project. Never render a bare `0` that came from an empty catalog as though it meant "nothing is affected": route to `/testmaster-adopt` and say so.
+
    Report as the block in `/iterate-planner`'s Step 7 — no prose around it.
 6. **rebuild** — re-derive the catalog from the test files' TESTMASTER headers plus registry.json, preserving existing requirement statements. Use after a big refactor or when the catalog and tree disagree.
+
+   **`rebuild` maintains a catalog; it cannot create one from nothing.** A project that has never run TESTMASTER has no headers to read, so rebuild produces an empty index. Route it to `/testmaster-adopt` instead — that is the onboarding pass, and it is what every other op here silently depends on.
 
 ## Steps for any invocation
 
@@ -81,5 +91,5 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. This child owns the organ
 1. **Never delete anything.** Orphaned entries are *reported* for `/testmaster-prune` to act on with its evidence standard. This child is the index, not the gardener.
 2. **Never write timing or results** — `avg_ms`, `runs`, and `last_result` belong to `/testmaster-run` alone.
 3. **Validity is recomputed, never trusted from the file.** A cached `valid` from three commits ago is exactly the lie this catalog exists to prevent.
-4. **A test with an empty `covers` cannot drift** — report it as such in `coverage` rather than silently calling it valid. Unknown coverage is a gap, not a pass.
+4. **A test with an empty `covers` cannot drift** — report it as such in `coverage` rather than silently calling it valid. Unknown coverage is a gap, not a pass. Likewise **never treat a `convention` cover as a measured one**: `covers_source` travels with every count this skill reports, and a whole-catalog answer built from convention guesses says so.
 5. **Requirement statements stay in the user's words**, verbatim from `/testmaster-derive`. Don't paraphrase them into implementation language.

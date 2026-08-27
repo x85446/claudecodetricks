@@ -410,9 +410,9 @@ plan written to owl
   -current total test cases: <x>
   -plan adds: <n>
   -new total: <z>
-  -plan could effect: <y> (will FFIV) | (will not FFIV)
+  -plan could effect: <y> (will FFIV)
 ```
-(Numbers come from `/testmaster-catalog impact <plan>` — never estimated here. `plan could effect` is how many EXISTING cases cover files this plan touches, i.e. what this plan will put into drift. The FFIV tag says whether those affected areas get an FFIV sweep in this plan: `will FFIV` when an FFIV macro covers that scope, `will not FFIV` otherwise — so the user can see at a glance whether the blast radius is being swept or merely re-run. No catalog yet → print `-current total test cases: 0 (no catalog — /testmaster will create one)`.)
+(Numbers come from `/testmaster-catalog impact <plan>` — never estimated here. `plan could effect` = EXISTING cases whose `covers` intersect this plan's files, i.e. what this plan puts into drift. **Nonzero always renders `(will FFIV)` and the plan must carry the sweep step** — there is no "will not FFIV" branch. Zero renders `(nothing to FFIV)`; an empty or unadopted catalog renders `unknown (no covers recorded — run /testmaster-adopt)`, never a bare `0`. Rendering contract, the FFIV step template, and the prediction-vs-derived rule: [procedures.md](procedures.md#the-testmaster-block).)
 
 **Oracle rules applied:**
 - Post-action: <entry> → added step <N>
@@ -505,6 +505,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 
 27.5. **Every plan carries the three standing finishers — dev-makefiles, then TESTMASTER, then product-docs — as its last agent steps.** Appended automatically at creation (Step 5.8), never waiting for the user to ask: a `/dev-makefiles` maintenance pass (targets for everything the plan made buildable/runnable/testable; dead targets removed), a fast+standard `/testmaster` pass, then a `/product-docs` sync. Refinement adds insert before them; only a human-gate follows them; the slow test tier never runs mid-plan. The docs finisher may be dropped only for projects with no end-user product (audit-trail note required); the test finisher is unconditional.
 27.6. **Every plan is scanned for testable requirements, and the user's own words become the test cases.** Step 5.9 runs on every plan: behavioral statements go to `/testmaster-derive`, whose derived cases (negative, every-path, restore-state, interrupted) land in the plan's validations and in the catalog. A stated behavior that ships with no case for it is the gap this closes — and an `AMBIGUOUS` case is resolved by the planner as a logged `Decision:` constraint, never bounced back as a question.
+27.7. **A nonzero `could effect` always FFIVs.** If `/testmaster-catalog impact` says this plan can put existing cases into drift, the plan carries the step that sweeps them (Step 7's testmaster block) — never merely reports the number. The sweep targets the *derived* drifted set after execution, not the predicted count. An `unknown` count (unadopted project, no `covers` recorded) is treated as nonzero: it means the blast radius is unmeasured, not empty, and the plan gets a `/testmaster-adopt` step before the sweep.
 ## Examples
 
 Two full worked examples (a plain restate-the-plan run with oracle merge, and a teamify + rapid-fire-adds streak) live in [examples.md](examples.md) — load that file when you need to see the exact output shape end to end, e.g. building a similar plan-writing skill from this one as a template, or checking an edge case in the operation router / auto-classify / rapid-fire terse-mode logic against a concrete run.
