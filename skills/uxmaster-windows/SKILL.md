@@ -1,8 +1,8 @@
 ---
 name: uxmaster-windows
-description: UXMASTER child — Windows desktop UX expert. Judges an interface against Windows 11 Fluent design and WinUI 3 conventions: navigation view, settings pages, content dialogs, title bar and Mica, keyboard and accelerator conventions, high contrast and Narrator support, MSIX packaging integration. Produces platform-convention findings only. Invoked by /uxmaster or directly ("is this right for Windows").
+description: UXMASTER child (invoked via /uxmaster): judges an interface against Windows 11 Fluent design and WinUI 3 conventions.
 argument-hint: <surface to review, e.g. "the settings page">
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /uxmaster-windows — does this feel like a Windows 11 app

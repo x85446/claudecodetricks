@@ -1,8 +1,8 @@
 ---
 name: uxmaster-web
-description: UXMASTER child — web UX expert. Judges a web interface against web platform conventions and WCAG 2.2 AA: responsive behavior, semantic HTML and landmarks, focus management, forms and validation, loading/empty/error states, Core Web Vitals, and browser-native affordances (back button, deep links, zoom). Produces web-convention findings only. Invoked by /uxmaster or directly ("review the web UI").
+description: UXMASTER child (invoked via /uxmaster): judges a web interface against web platform conventions and WCAG 2.2 AA.
 argument-hint: <page or flow to review, e.g. "the signup flow">
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /uxmaster-web — does this behave like the web

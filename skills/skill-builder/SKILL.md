@@ -40,6 +40,33 @@ Skills are organized into **families** by naming convention. This is how related
 
 **Decide the role for any skill:** Does it orchestrate others? → **meta** (plain name). Is it owned by/triggered as a stage of a meta? → **child** (`<meta>-<child>`, `disable-model-invocation` left OFF so the meta can delegate). Is that child big enough to own its own workers? → **sub-family** (`<meta>-<meta>-<child>`). None of the above / undecided? → **orphan** (`-<child>`) until it finds a home.
 
+## Description Budget (routing economics)
+
+Descriptions are the only part of a skill loaded at startup, so they are a shared, finite resource. Two separate limits apply, and both fail **silently** — nothing warns you:
+
+| Limit | Value | What happens when exceeded |
+|---|---|---|
+| **Per skill** | 1,536 chars for `description` + `when_to_use` **combined** | Truncated mid-sentence in the skill listing. Trigger phrases past the cut are invisible to routing. |
+| **All skills** | 2% of the context window (fallback 16,000 chars) | Skills beyond the budget stop being listed at all — they can't auto-fire. |
+
+Four facts that change how you write frontmatter:
+
+1. **Omitting `description` does not save budget.** If absent, the listing falls back to the *first paragraph of the markdown body* — usually longer and not routing-optimized. To spend less, write a *shorter* description, never no description.
+2. **`disable-model-invocation: true` skills cost zero budget.** Claude can't route to them, so their descriptions aren't loaded. They also don't appear in `/context`'s skill list — that absence is expected, not a bug.
+3. **`when_to_use` shares the same 1,536 cap.** It's the right home for a long trigger-phrase inventory, keeping `description` a clean one-or-two-sentence statement of what the skill does. Splitting improves readability; it does **not** buy extra room.
+4. **Put the key use case first.** Truncation takes the tail, so whatever routes most often must appear early.
+
+### Family convention: triggers live in the meta
+
+For a meta + children family, concentrate routing in the meta and keep children short:
+
+- **Meta description** carries the whole family's trigger phrases — every phrase that should reach *any* child. It is the family's front door.
+- **Child descriptions** stay to roughly one line (~60–150 chars): what this child does, in terms distinct from its siblings. Children are reached through the meta's `Skill()` call or by explicit `/command`, and **neither path needs a loaded description** — the Skill tool takes a name, not a description.
+
+This keeps N children from each spending a full description's worth of a shared budget to advertise a door the user is meant to enter through the meta. It also matches the routing you want: "prune the tests" should reach `/testmaster`, which then decides it means `testmaster-prune`.
+
+**Check it with real numbers, never by eye** — count `description` + `when_to_use` per skill against 1,536, sum across all model-invocable skills against 16,000, and run `/context` to confirm nothing is being dropped.
+
 ## Quick Start: What Is a Skill?
 
 A skill is a reusable set of instructions that tells Claude Code how to handle a specific task. Skills live in `.claude/skills/[skill-name]/SKILL.md` inside your project. When you type `/skill-name` or describe what you need in natural language, Claude loads the skill's instructions and follows them.
@@ -48,7 +75,7 @@ Think of skills as SOPs for Claude. Instead of re-explaining a workflow every co
 
 **How they work under the hood:**
 - Your project's `CLAUDE.md` instructions are always loaded, every conversation
-- Skill *descriptions* (from frontmatter) are always loaded so Claude knows what's available
+- Skill *descriptions* (from frontmatter) are loaded at startup so Claude knows what's available — but only for model-invocable skills, and only up to the budget (see "Description Budget" above)
 - The full skill content only loads when the skill is actually invoked
 - Once loaded, Claude follows the skill's instructions while still respecting your CLAUDE.md rules
 
@@ -142,6 +169,8 @@ Set these fields based on what you learned in discovery:
 - `name` -- Matches the directory name. Lowercase, hyphens, max 64 chars. **Exception:** orphan skills whose directory leads with a hyphen (`-renamer`) keep a hyphen-free `name:` (`renamer`) — YAML names can't lead with `-`, and the dir≠name mismatch is the intended "unhomed" signal. Family skills use the full prefixed dir name (`categorize-venue`) as both dir and `name`.
 - `description` -- Written as: "Use when someone asks to [action], [action], or [action]." Include natural keywords from the trigger phrases. For **children**, keep it narrowly scoped with distinct terms so it won't collide with its meta.
 - `disable-model-invocation: true` -- Set ONLY for user-only standalones that no meta delegates to (destructive/expensive skills meant to be typed by the user). **Never set it on a child/worker a meta delegates to** — it blocks the Skill tool and the meta's `Skill(child)` call will fail. Control child triggering with a narrow description instead. Metas leave this unset.
+- `when_to_use` -- Set when the skill has a long list of trigger phrases. Appended to `description` in the listing and shares its 1,536-char cap, so it organizes rather than extends. Keeps `description` readable.
+- `user-invocable: false` -- The inverse of `disable-model-invocation`: only Claude may invoke it, hidden from the `/` menu. Use for background knowledge users shouldn't run directly. Never set BOTH this and `disable-model-invocation: true` — that leaves the skill unreachable by anyone.
 - `argument-hint` -- Set if the skill accepts arguments. Shows in the `/` menu autocomplete.
 - `context: fork` + `agent` -- Set if the skill is self-contained and doesn't need conversation history.
 - `model` -- Set if a specific model capability is needed.
@@ -296,6 +325,9 @@ Use this checklist to audit any existing skill. Read the skill file first before
 - [ ] **`disable-model-invocation: true` is NOT set on any child/worker a meta delegates to** (it would break `Skill(child)` delegation) — reserve it for user-only standalones
 - [ ] `description` uses natural keywords someone would actually say when they need this skill
 - [ ] `description` is specific enough to avoid false triggers but broad enough to catch real requests
+- [ ] **`description` + `when_to_use` is under 1,536 chars** (measure it — over-cap text is silently truncated from the tail, taking its trigger phrases with it)
+- [ ] **Key use case appears first** in the description, since truncation drops the tail
+- [ ] For a family: trigger phrases live in the **meta's** description; children are one short line each
 - [ ] `disable-model-invocation: true` is set if the skill has side effects (generates files, calls APIs, sends messages, costs money) AND no meta delegates to it (if a meta delegates to it, leave the flag OFF — see the child rule above)
 - [ ] `argument-hint` is set if the skill accepts arguments via `/name`
 - [ ] `allowed-tools` is set if the skill should NOT have access to all tools

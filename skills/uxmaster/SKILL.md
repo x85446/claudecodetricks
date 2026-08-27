@@ -1,8 +1,9 @@
 ---
 name: uxmaster
-description: UXMASTER — the UX/UI design meta for any project. Orchestrates its children: analysis (platform-agnostic UX audit), five platform experts (macOS, Linux, Windows, web, command-line), and implement (writes the real UI code in the platform's framework — SwiftUI/AppKit, GTK4/libadwaita, WinUI 3/WPF, web, TUI). Triggers on "uxmaster", "review the UX", "design this screen", "is this UI right for macOS", "make the interface better", "implement this design". Detects the project's platform(s) and routes; findings land in ./.claude/uxmaster/findings.md in one shared format. Pairs with the FFIV macro's UX/UI enhancement sweep.
+description: UXMASTER — the UX/UI design meta. Detects the project's platform and routes to its children: analysis (platform-agnostic audit), the platform experts (macOS, Linux, Windows, web, command-line), and implement (writes the real framework code). Route ALL interface work here; the meta picks the child. Findings land in ./.claude/uxmaster/findings.md.
+when_to_use: Use for any UX/UI work: "uxmaster", "review the UX", "audit the UI", "what's wrong with this interface", "design this screen", "design the settings", "make the interface better", "is this right for macOS/Windows/GNOME/Linux", "does this feel native", "check accessibility", "WCAG audit", "review the CLI's UX", "review the web UI", "implement this design", "build the design", "implement F3". Pairs with the FFIV macro's UX/UI enhancement sweep.
 argument-hint: <analyze | review [platform] | design <what> | implement [finding-ids] | status>
-version: 1.0.0
+version: 1.1.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 

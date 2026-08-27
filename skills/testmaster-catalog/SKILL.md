@@ -1,8 +1,8 @@
 ---
 name: testmaster-catalog
-description: TESTMASTER child — the organizing index of the test suite. Maps every requirement to its test cases to the code they cover, and recomputes each test's VALIDITY as the codebase changes (valid / drifted / orphaned / unverified). Answers "what is untested", "what did this change invalidate", and "which tests no longer match any code". Read-mostly bookkeeping; deleting belongs to testmaster-prune, execution to testmaster-run.
+description: TESTMASTER child (invoked via /testmaster): the organizing index — requirement to cases to covered code — recomputing validity (valid/drifted/orphaned/unverified) as the code changes.
 argument-hint: <status | drift | coverage | link <test-id> <files...> | rebuild>
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /testmaster-catalog — keep the suite organized and know what's still true

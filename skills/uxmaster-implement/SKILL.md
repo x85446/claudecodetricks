@@ -1,8 +1,8 @@
 ---
 name: uxmaster-implement
-description: UXMASTER child — writes the actual UI code for an approved design or finding fix, in the platform's real framework (SwiftUI/AppKit for macOS, GTK4+libadwaita or Qt/Kirigami for Linux, WinUI 3/WPF for Windows, the project's web framework, or the CLI/TUI library in use). The only UXMASTER child that edits code. Invoked by /uxmaster with finding ids, or directly ("implement F3", "build this design").
+description: UXMASTER child (invoked via /uxmaster): writes the actual UI code for an approved design in the project's real framework. The only UXMASTER child that edits code.
 argument-hint: <finding ids (e.g. "F3 F7") or a design to implement; empty = all open findings>
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /uxmaster-implement — turn findings and designs into real UI code

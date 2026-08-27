@@ -1,8 +1,8 @@
 ---
 name: testmaster-derive
-description: TESTMASTER child — read a requirement in the user's own words (a plan prompt, a bug report, a feature ask) and derive the test cases it implies, including the negative and restore-state cases the wording leaves implicit. Produces test-case SPECS, not code (testmaster-maintain writes those) and not execution (testmaster-run). Invoked by /iterate-planner's test-case detection pass on every plan, and by /testmaster directly.
+description: TESTMASTER child (invoked via /testmaster): derives test-case specs from a stated requirement, including the negative, every-path, restore-state, and interrupted cases. Specs only, no code.
 argument-hint: <the requirement in the user's words, e.g. "hitting play mutes the device when mute-devices is on">
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /testmaster-derive — turn a stated requirement into the test cases it implies

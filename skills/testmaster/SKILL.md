@@ -1,8 +1,9 @@
 ---
 name: testmaster
-description: TESTMASTER — the SQA test-suite meta for any project. Owns the whole test lifecycle through its children — maintain (write/update cases), prune (consolidate, conform, keep the suite true), run (execute with real-world timing measurement), report (HTML report card). Triggers on "testmaster", "maintain the test suite", "run the tests through testmaster", "test report card", "prune the tests", "set up nightly tests". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). Timing registry at ./.claude/testmaster/registry.json is built from real measured runs, never estimates.
+description: TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Route ALL test-suite work here; the meta picks the child.
+when_to_use: Use for any test-suite work: "testmaster", "run the tests", "maintain the test suite", "add tests for <x>", "derive tests for <requirement>", "should this have a test", "what tests does this need", "prune the tests", "consolidate duplicate tests", "clean up the suite", "test report card", "how are the tests", "what's untested", "test coverage", "what did this change invalidate", "which tests drifted", "set up nightly tests". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates.
 argument-hint: <maintain | prune | run [tier] | report | nightly | status>
-version: 1.1.0
+version: 1.2.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 

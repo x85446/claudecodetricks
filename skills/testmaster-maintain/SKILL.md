@@ -1,8 +1,8 @@
 ---
 name: testmaster-maintain
-description: TESTMASTER child — write NEW test cases and update EXISTING ones so the suite matches current product behavior. Narrow scope; suite-wide cleanup belongs to testmaster-prune, execution to testmaster-run. Invoked by /testmaster or by iterate plan steps that add/change features needing test coverage.
+description: TESTMASTER child (invoked via /testmaster): writes new test cases and updates existing ones to match current product behavior.
 argument-hint: <what changed / what needs coverage, e.g. "cover the new export endpoint">
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /testmaster-maintain — keep test cases true to the product

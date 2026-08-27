@@ -1,8 +1,8 @@
 ---
 name: uxmaster-macos
-description: UXMASTER child — macOS/Apple-platform UX expert. Judges an interface against the Apple Human Interface Guidelines: menu bar structure, window and toolbar behavior, Settings window conventions, keyboard shortcuts, sheets vs alerts vs popovers, sidebar navigation, Dark Mode, Dynamic Type, VoiceOver. Produces platform-convention findings only. Invoked by /uxmaster or directly ("is this right for macOS").
+description: UXMASTER child (invoked via /uxmaster): judges an interface against the Apple Human Interface Guidelines for macOS.
 argument-hint: <surface to review, e.g. "the settings window">
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /uxmaster-macos — does this feel like a Mac app

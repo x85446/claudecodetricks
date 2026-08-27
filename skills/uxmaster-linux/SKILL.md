@@ -1,8 +1,8 @@
 ---
 name: uxmaster-linux
-description: UXMASTER child — Linux desktop UX expert. Judges an interface against the GNOME HIG (GTK4/libadwaita) or KDE HIG (Qt/Kirigami), whichever the project targets: header bars, adaptive layouts, preferences windows, dialogs, .desktop integration, portals/Flatpak permissions, Orca screen-reader support. Produces platform-convention findings only. Invoked by /uxmaster or directly ("is this right for GNOME/Linux").
+description: UXMASTER child (invoked via /uxmaster): judges an interface against the GNOME HIG (GTK4/libadwaita) or KDE HIG (Qt/Kirigami).
 argument-hint: <surface to review, optionally naming the toolkit, e.g. "settings, GTK4">
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /uxmaster-linux — does this feel native on the Linux desktop

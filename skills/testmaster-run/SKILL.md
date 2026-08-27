@@ -1,8 +1,8 @@
 ---
 name: testmaster-run
-description: TESTMASTER child — execute tests by tier or by id, measure REAL wall-clock durations, update the timing registry, and re-derive tiers from the measurements. The only writer of avg_ms/last_ms/runs. Invoked by /testmaster, by iterate plans' standing end-of-plan test step ("run" = fast+standard, never slow), and by the nightly schedule ("run all").
+description: TESTMASTER child (invoked via /testmaster): executes a tier or named tests, measures real wall-clock durations, and updates the timing registry.
 argument-hint: <fast | standard | slow | all | <test-id> — bare/empty = fast+standard>
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /testmaster-run — execute and measure

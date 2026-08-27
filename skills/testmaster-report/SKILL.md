@@ -1,8 +1,8 @@
 ---
 name: testmaster-report
-description: TESTMASTER child — regenerate the self-contained HTML report card for the project's test suite from registry.json + history.jsonl and open it in the browser. Read-only over test state; the maintainer's dashboard for durations, tiers, parallelism, and pass/fail health. Invoked by /testmaster ("report card") or directly.
+description: TESTMASTER child (invoked via /testmaster): regenerates the self-contained HTML report card from the registry and run history.
 argument-hint: (none — regenerates and opens the report)
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /testmaster-report — the HTML report card

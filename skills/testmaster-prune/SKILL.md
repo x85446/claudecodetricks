@@ -1,8 +1,8 @@
 ---
 name: testmaster-prune
-description: TESTMASTER child — prune dead tests, consolidate duplicates, and conform the suite (headers ↔ registry ↔ reality) so it stays true, primed, and executable. Narrow scope; writing new cases belongs to testmaster-maintain, execution to testmaster-run. Invoked by /testmaster or after feature-removal work.
+description: TESTMASTER child (invoked via /testmaster): deletes dead tests, consolidates duplicates, and conforms headers to the registry.
 argument-hint: <optional scope, e.g. "the export tests" — default whole suite>
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /testmaster-prune — keep the suite true

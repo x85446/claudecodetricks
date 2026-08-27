@@ -1,8 +1,8 @@
 ---
 name: uxmaster-cli
-description: UXMASTER child — command-line and TUI UX expert. Judges a CLI against POSIX/GNU conventions and modern CLI guidelines: subcommand and flag design, help output, errors that say what to do next, stdout-vs-stderr discipline, exit codes, piping and machine-readable output, progress and color behavior, plus TUI keybinding conventions. Produces CLI-convention findings only. Invoked by /uxmaster or directly ("review the CLI's UX").
+description: UXMASTER child (invoked via /uxmaster): judges a command-line tool or TUI against POSIX/GNU and modern CLI conventions.
 argument-hint: <command or subcommand to review, e.g. "the sync subcommand">
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /uxmaster-cli — does this command behave the way a terminal user expects

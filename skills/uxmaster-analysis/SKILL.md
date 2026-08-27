@@ -1,8 +1,8 @@
 ---
 name: uxmaster-analysis
-description: UXMASTER child — platform-agnostic UX audit of a product surface: task flows, information architecture, state/feedback/error handling, and accessibility fundamentals. Produces numbered findings, not platform-convention judgments (those belong to the platform experts) and not code (that's uxmaster-implement). Invoked by /uxmaster or directly for a flow-level review.
+description: UXMASTER child (invoked via /uxmaster): platform-agnostic UX audit — task flow, information architecture, state and error handling, accessibility fundamentals.
 argument-hint: <surface to analyze, e.g. "the settings screen" or "first-run onboarding">
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /uxmaster-analysis — is the experience right, regardless of platform

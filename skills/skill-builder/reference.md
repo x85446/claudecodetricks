@@ -378,7 +378,14 @@ If Claude uses your skill when you don't want it:
 
 ### Claude doesn't see all skills
 
-Skill descriptions are loaded into context. If you have many skills, they may exceed the character budget (2% of context window, fallback 16,000 chars total across ALL skills).
+Skill descriptions are loaded into context. Two independent limits apply, and both fail silently:
+
+- **Per skill: 1,536 characters** for `description` + `when_to_use` combined. Over-cap text is truncated from the tail in the skill listing — the trigger phrases it contained simply stop routing, with no warning. Put the key use case first.
+- **All skills: 2% of context window** (fallback 16,000 chars). Skills past the budget aren't listed at all.
+
+Skills with `disable-model-invocation: true` consume neither budget — Claude can't route to them, so their descriptions are never loaded, and they don't appear in `/context`'s skill list.
+
+Omitting `description` does NOT save budget: the listing falls back to the first paragraph of the markdown body, which is usually longer. Write a shorter description instead.
 
 - Check: Run `/context` to see if skills are being excluded.
 - Fix: Keep descriptions concise and keyword-rich. Override with `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var if needed.
