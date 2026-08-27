@@ -3,7 +3,7 @@ name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: <paragraph describing the work to do AND how to validate success>
 disable-model-invocation: true
-version: 3.2.0
+version: 3.3.0
 ---
 <!-- version: bump on EVERY behavioral change to this skill (minor for additions, major for schema/contract changes, patch for wording). Stamped into every plan this skill executes (executor-version:) at the moment phase flips to executing. -->
 
@@ -64,7 +64,7 @@ Every plan in a git repo runs on its own feature branch — `branch: feature/<na
 - Not a git repo → no branch anything; log `not a git repo — no feature branch` once and proceed. Every branch-related instruction in this file is a silent no-op for such plans.
 
 **On all-green completion — the merge flow** (runs in Step 5's success path, BEFORE archiving):
-1. Working tree clean? Commit any stragglers first (the git-committer hook usually has already).
+1. **Commit the work yourself — the hook will not have.** The auto-commit hook snapshots to `refs/snapshots/` and never moves HEAD, so nothing it does is on the branch: any uncommitted work is still uncommitted. Stage and commit it with a real message describing what the plan actually did (the reasoning belongs in history, not only in the run log). `snapshots.py list` in the project shows anything a dead session left behind.
 2. `/feature-branch finish` — pushes the branch and opens the PR/MR.
 3. **Merge it.** An all-green plan is standing approval to land: `gh pr merge --squash --delete-branch` (or `glab mr merge` + branch deletion on GitLab). Then confirm you're back on the default branch, pulled, with the feature branch gone local + remote.
 4. Report the merge in the success summary: PR URL, merge commit, branch deleted.

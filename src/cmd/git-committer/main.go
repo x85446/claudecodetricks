@@ -75,6 +75,13 @@ func handlePostToolUse(hookInput *hooks.HookInput) {
 	if git.MidGitOperation(hookInput.CWD) {
 		return
 	}
+	// Work landing unreviewed on the default branch is the failure this
+	// prevents: a timer has no idea whether a change is finished, and a
+	// generated message carries none of the reasoning a real commit would.
+	if git.OnDefaultBranch(hookInput.CWD) {
+		fmt.Fprintf(os.Stderr, "On the default branch — not auto-committing; use a feature branch\n")
+		return
+	}
 	if git.HasStagedChanges(hookInput.CWD) {
 		fmt.Fprintf(os.Stderr, "Changes already staged — leaving them for their author's own commit\n")
 		return

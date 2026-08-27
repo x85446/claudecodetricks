@@ -89,6 +89,43 @@ func MidGitOperation(dir string) bool {
 	return false
 }
 
+// CurrentBranch returns the checked-out branch, or "" when detached.
+func CurrentBranch(dir string) string {
+	cmd := exec.Command("git", "branch", "--show-current")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// OnDefaultBranch reports whether the checked-out branch is the repo default
+// (origin/HEAD when set, else main or master). Fails closed: an unknown repo
+// shape is treated as the default branch rather than risking a commit there.
+func OnDefaultBranch(dir string) bool {
+	branch := CurrentBranch(dir)
+	if branch == "" {
+		return false
+	}
+	cmd := exec.Command("git", "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD")
+	cmd.Dir = dir
+	if out, err := cmd.Output(); err == nil {
+		ref := strings.TrimSpace(string(out))
+		if i := strings.LastIndex(ref, "/"); i >= 0 {
+			return branch == ref[i+1:]
+		}
+	}
+	for _, name := range []string{"main", "master"} {
+		check := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+name)
+		check.Dir = dir
+		if check.Run() == nil {
+			return branch == name
+		}
+	}
+	return false
+}
+
 // Commit creates a git commit with the given message
 func Commit(dir, message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
