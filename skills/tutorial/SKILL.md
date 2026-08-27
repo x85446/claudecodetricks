@@ -3,7 +3,7 @@ name: tutorial
 description: Builds and maintains self-running bash tutorials that live in the codebase. A tutorial walks a human through a program by showing each real command pre-filled and editable, running it on Enter — no copy-paste, no setup, no thinking. Menu-driven and extensible; also updates, reorganizes, deletes, and audits existing tutorials as the code changes.
 argument-hint: <what to build a tutorial for, or: list | update <name> | audit | reorganize | delete <name>>
 disable-model-invocation: true
-version: 1.1.0
+version: 1.2.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -18,7 +18,7 @@ Builds a **bash tutorial the human drives with the Enter key**. Every step print
 Tutorials are **code**. They are checked in, they live beside what they teach, and they rot when the code moves — which is why this skill owns their whole lifecycle, not just creation.
 
 ```
-tutorials/
+docs/tutorials/
 ├── run.sh              # menu launcher (auto-discovers buckets; never hand-edited)
 ├── tutorial.sh         # shared runtime library
 ├── 01-cli-basics.sh    # a bucket: 5-10 minutes of steps
@@ -26,7 +26,7 @@ tutorials/
 └── 03-web-dashboard.sh
 ```
 
-Put `tutorials/` at the repo root unless the project has an obvious docs or scripts home already. Both `run.sh` and `tutorial.sh` are copied verbatim from this skill's [lib/](lib/) directory — **never rewrite them per project**; fix the skill's copies and re-deploy if they need changes.
+Tutorials always live at **`docs/tutorials/`** — never the repo root, never a per-project variant. They are documentation that executes, so they belong with the docs; a fixed location also means `make tutorial` and the audit pass are identical in every repo. Both `run.sh` and `tutorial.sh` are copied verbatim from this skill's [lib/](lib/) directory — **never rewrite them per project**; fix the skill's copies and re-deploy if they need changes.
 
 ## Buckets and steps
 
@@ -68,10 +68,10 @@ This is the whole point, so it is a rule, not a preference: **`tut_run` receives
 1. **Read the conversation first**, then the code: the CLI's own `--help` output, subcommands, the Makefile targets, the routes or screens. Prefer running `--help` for real over reading the arg parser.
 2. **Verify every command before it goes in a tutorial.** Run it. A tutorial that fails on step 3 in front of an audience is worse than no tutorial — this is the same exercise-don't-guess mandate the rest of the stack uses.
 3. **Group into 5–10 minute buckets** by subject, ordered so each builds on the last. Setup and data population come first.
-4. **Scaffold if absent**: create `tutorials/`, copy `run.sh` and `tutorial.sh` from this skill's `lib/`, `chmod +x` both.
+4. **Scaffold if absent**: create `docs/tutorials/`, copy `run.sh` and `tutorial.sh` from this skill's `lib/`, `chmod +x` both. If a project already has tutorials elsewhere (`tutorials/`, `scripts/tutorials/`), `git mv` them into `docs/tutorials/` and re-run `audit` — the move is part of the operation, not a follow-up.
 5. **Write each bucket** with the header comments, real pre-filled commands, and `tut_bulk_offer` around any multi-step setup.
-6. **Test it for real**: `./tutorials/run.sh --auto <n>` for each new bucket. Every command must exit 0 (or be a deliberate failure the tutorial explains). Fix and re-run until clean — do not hand over an unrun tutorial.
-7. **Report**: bucket list with titles and minutes, plus the one line the user types to start (`./tutorials/run.sh`).
+6. **Test it for real**: `./docs/tutorials/run.sh --auto <n>` for each new bucket. Every command must exit 0 (or be a deliberate failure the tutorial explains). Fix and re-run until clean — do not hand over an unrun tutorial.
+7. **Report**: bucket list with titles and minutes, plus the one line the user types to start (`./docs/tutorials/run.sh`).
 
 ### 2. `list` — what tutorials exist
 
@@ -85,7 +85,7 @@ Re-run the bucket in `--auto`, find what broke, fix the commands against current
 
 Run all buckets with `--auto` and report per bucket: pass, or the exact step and command that failed. This is the maintenance pass that keeps checked-in tutorials honest as the code moves; it belongs in the same category as a drifted test. Fix what's broken, or report precisely what needs a human decision.
 
-`./tutorials/run.sh --auto all` exits non-zero when any bucket had a failing step, so the same pass runs unattended as a build check. Wire it under the Makefile's `##@ Test` section (`[skill: /dev-makefiles]`), not `##@ Development` — it executes real commands and asserts. Pass `all` explicitly: `--auto` with no bucket argument falls through to the interactive menu and blocks.
+`./docs/tutorials/run.sh --auto all` exits non-zero when any bucket had a failing step, so the same pass runs unattended as a build check. Wire it under the Makefile's `##@ Test` section (`[skill: /dev-makefiles]`), not `##@ Development` — it executes real commands and asserts. Pass `all` explicitly: `--auto` with no bucket argument falls through to the interactive menu and blocks.
 
 ### 5. `reorganize` — buckets have grown lopsided
 
@@ -100,7 +100,7 @@ Confirm the subject is actually gone from the code (grep for the commands it run
 1. **Every command is verified before it ships.** Run it during authoring and re-run the bucket with `--auto` before handing over. Unverified steps are the one failure this skill cannot tolerate.
 2. **Pre-fill completely.** No placeholders, no blanks, nothing the human must know to type. Editing is an option they may take, never a requirement.
 3. **The human's only required input is Enter.** Anything that needs a real decision gets a `tut_bulk_offer` shortcut or a pre-chosen sensible default — never an open question mid-walkthrough.
-4. **`run.sh` and `tutorial.sh` are copied, never rewritten per project.** Improvements go back into this skill's `lib/` so every project's tutorials benefit. The menu auto-discovers buckets, so adding a file is the only way to add a menu entry.
+4. **Location is fixed at `docs/tutorials/`, and `run.sh` / `tutorial.sh` are copied there, never rewritten per project.** Improvements go back into this skill's `lib/` so every project's tutorials benefit. The menu auto-discovers buckets, so adding a file is the only way to add a menu entry.
 5. **A tutorial keeps going after a failed command** — it reports the non-zero exit and continues, so one broken step doesn't end the demo. It still **exits non-zero at the end** if anything failed: the demo survives, the exit code tells the truth. That is what makes `--auto` wireable as a build check.
 6. **Destructive commands use `tut_run_fixed`**, and anything that would delete real data, push, or deploy does not belong in a tutorial at all.
 7. **Tutorials are maintained like code**: they are checked in, they drift, and `audit` is how that gets caught. A tutorial nobody has run since the CLI changed is a liability, not documentation.
