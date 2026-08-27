@@ -187,11 +187,14 @@ tut_require() {
 
 # ── Wrap-up ─────────────────────────────────────────────────────────────────
 
+# Exits non-zero when any step failed, so `run.sh --auto` is usable as a build
+# check. The tutorial still ran to the end — this only reports the truth.
 tut_done() {
     local mins=$(( ($(date +%s) - TUT_START_TS) / 60 ))
     printf '\n%s╭─ done — %d steps in ~%d min%s\n' "$C_OK" "$TUT_STEP" "$mins" "$C_OFF"
     [ "$TUT_FAILED" -gt 0 ] && printf '%s│  %d command(s) exited non-zero%s\n' "$C_ERR" "$TUT_FAILED" "$C_OFF"
     [ $# -gt 0 ] && printf '%s│  next: %s%s\n' "$C_DIM" "$1" "$C_OFF"
     printf '%s╰────────────────────────────────────────────%s\n\n' "$C_OK" "$C_OFF"
+    [ "$TUT_FAILED" -gt 0 ] && return 1
     return 0
 }

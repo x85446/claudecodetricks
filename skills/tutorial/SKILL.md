@@ -3,7 +3,7 @@ name: tutorial
 description: Builds and maintains self-running bash tutorials that live in the codebase. A tutorial walks a human through a program by showing each real command pre-filled and editable, running it on Enter — no copy-paste, no setup, no thinking. Menu-driven and extensible; also updates, reorganizes, deletes, and audits existing tutorials as the code changes.
 argument-hint: <what to build a tutorial for, or: list | update <name> | audit | reorganize | delete <name>>
 disable-model-invocation: true
-version: 1.0.0
+version: 1.1.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -53,7 +53,7 @@ Source the library, then use only these:
 | `tut_open "http://localhost:8420/"` | Opens a Chrome tab (falls back to the default browser) |
 | `tut_bulk_offer "Populate the DB" fn_name` | Offers "walk each step" or "[a] just run it all" |
 | `tut_require cmd1 cmd2` | Fails early with a clear message if a prerequisite is missing |
-| `tut_done "what to do next"` | Summary: step count, elapsed minutes, failures |
+| `tut_done "what to do next"` | Summary: step count, elapsed minutes, failures. **Exits non-zero if any step failed** |
 
 `TUT_AUTO=1` (or `run.sh --auto`) runs a bucket unattended with no prompts — used for demos, recordings, and the audit pass.
 
@@ -85,6 +85,8 @@ Re-run the bucket in `--auto`, find what broke, fix the commands against current
 
 Run all buckets with `--auto` and report per bucket: pass, or the exact step and command that failed. This is the maintenance pass that keeps checked-in tutorials honest as the code moves; it belongs in the same category as a drifted test. Fix what's broken, or report precisely what needs a human decision.
 
+`./tutorials/run.sh --auto all` exits non-zero when any bucket had a failing step, so the same pass runs unattended as a build check. Wire it under the Makefile's `##@ Test` section (`[skill: /dev-makefiles]`), not `##@ Development` — it executes real commands and asserts. Pass `all` explicitly: `--auto` with no bucket argument falls through to the interactive menu and blocks.
+
 ### 5. `reorganize` — buckets have grown lopsided
 
 Re-split by the 5–10 minute rule: break up anything long, merge anything trivial, renumber files so order still reflects dependency. Renumbering renames files — use `git mv`, and re-run `audit` afterward since split buckets can lose setup their steps depended on.
@@ -99,6 +101,6 @@ Confirm the subject is actually gone from the code (grep for the commands it run
 2. **Pre-fill completely.** No placeholders, no blanks, nothing the human must know to type. Editing is an option they may take, never a requirement.
 3. **The human's only required input is Enter.** Anything that needs a real decision gets a `tut_bulk_offer` shortcut or a pre-chosen sensible default — never an open question mid-walkthrough.
 4. **`run.sh` and `tutorial.sh` are copied, never rewritten per project.** Improvements go back into this skill's `lib/` so every project's tutorials benefit. The menu auto-discovers buckets, so adding a file is the only way to add a menu entry.
-5. **A tutorial keeps going after a failed command** — it reports the non-zero exit and continues, so one broken step doesn't end the demo.
+5. **A tutorial keeps going after a failed command** — it reports the non-zero exit and continues, so one broken step doesn't end the demo. It still **exits non-zero at the end** if anything failed: the demo survives, the exit code tells the truth. That is what makes `--auto` wireable as a build check.
 6. **Destructive commands use `tut_run_fixed`**, and anything that would delete real data, push, or deploy does not belong in a tutorial at all.
 7. **Tutorials are maintained like code**: they are checked in, they drift, and `audit` is how that gets caught. A tutorial nobody has run since the CLI changed is a liability, not documentation.

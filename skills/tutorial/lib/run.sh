@@ -64,12 +64,14 @@ run_nth() {
     run_bucket "$f"
 }
 
+# Runs every bucket even if one fails, then reports whether any did.
 run_all() {
-    local f
+    local f rc=0
     while IFS= read -r f; do
         [ -z "$f" ] && continue
-        run_bucket "$f"
+        run_bucket "$f" || rc=1
     done <<< "$(list_buckets)"
+    return $rc
 }
 
 # ── Args ────────────────────────────────────────────────────────────────────
