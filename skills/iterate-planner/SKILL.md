@@ -405,6 +405,15 @@ plan written to owl
 
 (No external access dependencies detected.) <!-- use this line instead when the scan found nothing -->
 
+**testmaster:**
+```
+  -current total test cases: <x>
+  -plan adds: <n>
+  -new total: <z>
+  -plan could effect: <y> (will FFIV) | (will not FFIV)
+```
+(Numbers come from `/testmaster-catalog impact <plan>` — never estimated here. `plan could effect` is how many EXISTING cases cover files this plan touches, i.e. what this plan will put into drift. The FFIV tag says whether those affected areas get an FFIV sweep in this plan: `will FFIV` when an FFIV macro covers that scope, `will not FFIV` otherwise — so the user can see at a glance whether the blast radius is being swept or merely re-run. No catalog yet → print `-current total test cases: 0 (no catalog — /testmaster will create one)`.)
+
 **Oracle rules applied:**
 - Post-action: <entry> → added step <N>
 - Testing: <entry> → strengthened validation <N>

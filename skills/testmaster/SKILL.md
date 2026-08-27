@@ -45,7 +45,7 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 ## Router — parse `$1`
 
 0. **derive** ("derive tests for <requirement>", "should this have a test", "what tests does this need") → Skill tool: `testmaster-derive`, args verbatim. Also the entry point `/iterate-planner` uses on every plan.
-0.5. **catalog** ("catalog", "status", "drift", "coverage", "what did this change invalidate", "what's untested") → Skill tool: `testmaster-catalog`, args verbatim.
+0.5. **catalog** ("catalog", "status", "drift", "coverage", "impact <plan>", "what did this change invalidate", "what's untested") → Skill tool: `testmaster-catalog`, args verbatim.
 1. **maintain** ("maintain", "add/update tests for <x>") → Skill tool: `testmaster-maintain`, args verbatim.
 2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → Skill tool: `testmaster-prune`, args verbatim.
 3. **run** ("run", "run fast", "run standard", "run slow", "run <test-id>") → Skill tool: `testmaster-run`, args verbatim. Bare "run" = fast+standard (the iterate-safe set).

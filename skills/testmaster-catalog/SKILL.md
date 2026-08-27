@@ -1,8 +1,8 @@
 ---
 name: testmaster-catalog
 description: TESTMASTER child (invoked via /testmaster): the organizing index — requirement to cases to covered code — recomputing validity (valid/drifted/orphaned/unverified) as the code changes.
-argument-hint: <status | drift | coverage | link <test-id> <files...> | rebuild>
-version: 1.1.0
+argument-hint: <status | drift | coverage | impact <plan> | link <test-id> <files...> | rebuild>
+version: 1.2.0
 ---
 
 # /testmaster-catalog — keep the suite organized and know what's still true
@@ -61,7 +61,13 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. This child owns the organ
 2. **drift** — only the drifted and orphaned entries, with the commits that caused the drift. This is the post-change question: *what did I just invalidate?*
 3. **coverage** — requirements with no cases, and cases with no test file. The gap list; hand it to `/testmaster-derive` (missing cases) or `/testmaster-maintain` (missing implementations).
 4. **link `<test-id> <files...>`** — record which source files a test covers. Drift detection is only as good as `covers`, so this is how it gets accurate.
-5. **rebuild** — re-derive the catalog from the test files' TESTMASTER headers plus registry.json, preserving existing requirement statements. Use after a big refactor or when the catalog and tree disagree.
+5. **impact `<plan>`** — project a planned change against the catalog, for `/iterate-planner`'s plan presentation. Returns exactly four numbers:
+   - **current total** — cases in the catalog now.
+   - **plan adds** — cases derived for this plan (Step 5.9 of the planner tags each with `source: plan:<name>`); 0 when the plan states no testable behavior.
+   - **new total** — current + adds.
+   - **could affect** — existing cases whose `covers` intersects the files the plan's steps will touch. This is *prospective drift*: those cases will need re-running to stay valid, whether or not they fail. Predict the touched files from the plan's Steps (named paths, the subsystem each step edits); when a step's target is genuinely unknowable, say so rather than inflating the count.
+   Report as the block in `/iterate-planner`'s Step 7 — no prose around it.
+6. **rebuild** — re-derive the catalog from the test files' TESTMASTER headers plus registry.json, preserving existing requirement statements. Use after a big refactor or when the catalog and tree disagree.
 
 ## Steps for any invocation
 
