@@ -2,7 +2,7 @@
 name: dev-makefiles
 description: Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation. Use when creating or modifying a Makefile, adding make targets, setting up a build system, creating makehelp.sh, migrating to the 2-layer convention, or whenever a plan step builds, compiles, or scripts a repeatable dev task — that work goes through make targets per this skill, not ad-hoc shell commands.
 argument-hint: [action] [details]
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Building Makefiles
@@ -13,13 +13,28 @@ Create and maintain Makefiles using the 2-layer system. If `$ARGUMENTS` is provi
 
 Follow these steps in order. The first decision determines which path to take.
 
-### Step 1: Assess the situation
+### Step 1: Inventory EVERY Makefile in the repo
 
-1. Check if a `Makefile` already exists in the project root
-2. Check if a `makehelp.sh` already exists
-3. Identify the project's language/toolchain (inspect go.mod, package.json, Cargo.toml, pyproject.toml, etc.)
+**Never assume there is one Makefile.** Repos routinely carry several — a root build, an experiment, a subpackage — at different conformance levels. Finding one that already conforms is not a reason to stop looking.
 
-### Step 2: Choose the right path
+1. Discover them all:
+   ```bash
+   find . -name Makefile -not -path '*/vendor/*' -not -path '*/node_modules/*' -not -path '*/.git/*'
+   ```
+2. For each: does a sibling `makehelp.sh` exist, and how many `##@` section headers does it have?
+3. Identify the project's language/toolchain (go.mod, package.json, Cargo.toml, pyproject.toml, etc.)
+4. **Print the inventory with a path assigned to each, before changing anything:**
+
+   | Makefile | makehelp.sh | `##@` | Path |
+   |---|---|---|---|
+   | `./Makefile` | no | 0 | **C — migrate** |
+   | `./experiment/policing/Makefile` | yes | 7 | B — maintain |
+
+Every first-party Makefile gets a path. Vendored and third-party Makefiles are excluded — list them as excluded rather than omitting them silently.
+
+### Step 2: Apply the right path to EACH Makefile
+
+The path is chosen **per Makefile**, not per invocation. A repo with a non-conforming root and a conforming subproject needs Path C *and* Path B in the same run — they are independent, and a conforming Makefile elsewhere never excuses skipping a non-conforming one. Do the Path C migrations first, then the Path B maintenance.
 
 **Path A — New Makefile (no Makefile exists):**
 1. Identify the project's toolchain from existing config files
@@ -46,9 +61,13 @@ Follow these steps in order. The first decision determines which path to take.
 
 ### Step 3: Validate
 
+Validate **each** Makefile from the Step 1 inventory:
+
 - Run `make help` to verify help output renders correctly
 - Confirm all `##@` sections appear with their targets
 - If makehelp.sh was created/modified, verify it's executable and the dispatcher covers all delegated targets
+
+Then **re-print the Step 1 inventory with an outcome on every row** — `migrated`, `maintained`, `already conforming`, `excluded (vendored)`, or `untouched (<reason>)`. A Makefile that appeared in the inventory and has no outcome is an incomplete run, not a finished one.
 
 ## The 2-Layer System
 
@@ -407,6 +426,8 @@ target-name:  ## Short description  # Help text for this target
 
 ## What NOT to Do
 
+- **Don't stop at the first Makefile you find** — inventory the whole repo (Step 1). A conforming subproject Makefile does not mean the repo conforms.
+- **Don't silently leave a non-conforming Makefile untouched.** If you have been told not to modify one, honor that — then report it as non-conforming *and name where the constraint came from*: the user's instruction in this session, or the file and line that states it. An "off limits" you cannot source is not a constraint; verify it before letting it block a migration.
 - **Don't put runtime operations in make** — daemon start/stop, service management, and version queries belong in the CLI
 - **Don't inline complex shell in Makefile recipes** — if it's >10 lines or has `if/case`, move it to makehelp.sh
 - **Don't use tabs inconsistently** — Makefile recipes MUST use tabs, not spaces
