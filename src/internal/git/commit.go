@@ -29,17 +29,34 @@ func HasUncommittedChanges(dir string) (bool, error) {
 	return len(bytes.TrimSpace(output)) > 0, nil
 }
 
-// StageFiles stages the given files for commit
-func StageFiles(dir string, files []string) error {
-	args := append([]string{"add"}, files...)
+// StageFiles stages the given files for commit, screening out build output
+// first. Screening happens before `git add` deliberately: git hashes a file
+// into .git/objects the moment it is added, so a binary caught after staging
+// is already in the repository. Rejected paths are added to .gitignore and
+// returned so the caller can report them.
+func StageFiles(dir string, files []string) ([]Rejection, error) {
+	approved, rejected := ScreenFiles(dir, files)
+
+	if len(rejected) > 0 {
+		EnsureGitignored(dir, rejected)
+		if !IsInGitIgnore(dir, ".gitignore") {
+			approved = append(approved, ".gitignore")
+		}
+	}
+
+	if len(approved) == 0 {
+		return rejected, nil
+	}
+
+	args := append([]string{"add", "--"}, approved...)
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to stage files: %w", err)
+		return rejected, fmt.Errorf("failed to stage files: %w", err)
 	}
 
-	return nil
+	return rejected, nil
 }
 
 // Commit creates a git commit with the given message
