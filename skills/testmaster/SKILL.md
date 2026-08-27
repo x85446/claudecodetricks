@@ -2,7 +2,7 @@
 name: testmaster
 description: TESTMASTER — the SQA test-suite meta for any project. Owns the whole test lifecycle through its children — maintain (write/update cases), prune (consolidate, conform, keep the suite true), run (execute with real-world timing measurement), report (HTML report card). Triggers on "testmaster", "maintain the test suite", "run the tests through testmaster", "test report card", "prune the tests", "set up nightly tests". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). Timing registry at ./.claude/testmaster/registry.json is built from real measured runs, never estimates.
 argument-hint: <maintain | prune | run [tier] | report | nightly | status>
-version: 1.0.0
+version: 1.1.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -12,6 +12,8 @@ Meta skill. Routes to one child per concern and owns the shared contracts below.
 
 | Child | Job |
 |---|---|
+| `/testmaster-derive` | Read a requirement in the user's words and derive the test cases it implies |
+| `/testmaster-catalog` | The organizing index: requirement → cases → covered code, plus validity as code changes |
 | `/testmaster-maintain` | Write new test cases, update existing ones to match current behavior |
 | `/testmaster-prune` | Prune dead tests, consolidate duplicates, conform headers ↔ registry |
 | `/testmaster-run` | Execute a tier (or named tests), measure real durations, update the registry |
@@ -41,12 +43,14 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 
 ## Router — parse `$1`
 
+0. **derive** ("derive tests for <requirement>", "should this have a test", "what tests does this need") → Skill tool: `testmaster-derive`, args verbatim. Also the entry point `/iterate-planner` uses on every plan.
+0.5. **catalog** ("catalog", "status", "drift", "coverage", "what did this change invalidate", "what's untested") → Skill tool: `testmaster-catalog`, args verbatim.
 1. **maintain** ("maintain", "add/update tests for <x>") → Skill tool: `testmaster-maintain`, args verbatim.
 2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → Skill tool: `testmaster-prune`, args verbatim.
 3. **run** ("run", "run fast", "run standard", "run slow", "run <test-id>") → Skill tool: `testmaster-run`, args verbatim. Bare "run" = fast+standard (the iterate-safe set).
 4. **report** ("report", "report card", "how are the tests") → Skill tool: `testmaster-report`.
 5. **nightly** ("nightly", "set up nightly tests") → arm a scheduled full run (all tiers incl. slow) at local midnight via the harness's cron/schedule mechanism, prompt `/testmaster run all`. **Record the mechanism + job id in `./.claude/testmaster/nightly.json`** and tell the user the exact cancel command (a cron needs CronDelete — a /loop stop will NOT kill it). Never arm a second nightly if `nightly.json` already records a live one.
-6. **status** ("status") → one screen from `registry.json`: counts per tier, pass/fail split, slowest 5, last full-run date. Read-only.
+6. **status** ("status") → one screen from `registry.json`: counts per tier, pass/fail split, slowest 5, last full-run date. Read-only. For the *organized* view (by requirement, with validity) route to `catalog` instead.
 7. **default** (anything else describing test work) → decide maintain vs prune vs run by the work's nature and route as above.
 
 ## Rules
@@ -55,3 +59,5 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 2. **All timing claims trace to `history.jsonl`.** No estimated durations anywhere — a test with `runs: 0` reports "unmeasured", not a guess.
 3. **Registry writes go through the children.** The meta routes; it never edits state itself.
 4. **One nightly per project.** Check `nightly.json` before arming; canceling uses the exact recorded mechanism.
+5. **Every test traces to a requirement.** A case exists because something was asked for — `/testmaster-derive` records the ask in the user's words, `/testmaster-catalog` keeps the link, and a test that traces to nothing is a `coverage` gap to resolve, not a test to keep by default.
+6. **Green is not the same as valid.** A test that passed before the code it covers changed is `drifted`, not `valid` — only a green run against the current tree clears it. Report drift whenever asked for suite health.

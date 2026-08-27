@@ -2,7 +2,7 @@
 name: iterate-planner
 description: The planning half of the iterate stack. Formalizes a task into structured pair-format (1a task / 1b validation) BEFORE autonomous execution, and consults the project oracle (./.claude/data/oracle.md) to bake known checklists, testing requirements, gotchas, deployment rituals, and naming conventions into the plan (a no-op when no oracle exists). Triggers on "/iterate-planner" (or its alias "/ip"), "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle", and on managing saved plans ("status" for a fixed-format git + plans snapshot, "publish" / "show plan" to re-render the full current plan read-only, "list plans", "display our plans", "add to <name>", "delete <name>", "from <name> remove <x>", "close <name>" to archive an unfinished plan with its feature branch left unmerged, "roll <name>" to carry unfinished steps to a new plan on the same feature branch, "turn these notes into a plan" / "notes-to-plan" to build a new plan from an /iterate-notes brainstorm file). Recognizes the FFIV macro (Find, Fix, Iterate, Verify) — "FFIV <scope>" expands into a four-step quality sweep for mistakes and UX/UI enhancements over that scope. Every new plan in a git repo gets its own feature branch (via the feature-branch skill); /iterate merges it to the default branch only when the plan finishes all green. Every plan ends with three standing finisher steps — a /dev-makefiles Makefile maintenance pass, a TESTMASTER fast+standard test pass, then a /product-docs end-user documentation sync. New plans are teamed by default — grouped into named teams for parallel execution at /iterate time — unless the request says to stay flat. Triggers on explicit teamify requests ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams") to team an existing flat plan, and on flatify requests ("flat", "flatify", "make flat", "convert to flat", "un-team", "remove teams") to convert a teamed plan back to flat. Plans are saved, animal-named, and persistent under ./.claude/iterate/plans/. The user reviews, optionally refines in natural conversation, then runs /iterate (or /iterate <name>) to execute.
 argument-hint: <optional context, e.g. "restate the plan from above", "plan: 1. do X, 2. validate Y", or "flat" / "flatify" to un-team the current plan>
-version: 3.11.0
+version: 3.12.0
 ---
 <!-- version: bump on EVERY behavioral change to this skill (minor for additions, major for schema/contract changes, patch for wording). This value is stamped into every plan this skill writes (planner-version:) — it's how a plan records which era of the planner built it. -->
 
@@ -138,17 +138,7 @@ For ops 3–6 and 9–10, run the oracle merge (Step 4) AND the access preflight
 
 ### FFIV macro — recognized anywhere in `$1` or an added step
 
-**FFIV = Find, Fix, Iterate, Verify** — a quality sweep over a scope, hunting everything sweep-findable: mistakes (bugs, broken flows, errors, inconsistencies) AND UX/UI enhancement opportunities. When the planning request or an added step contains "FFIV" (any case — "FFIV the dashboard", "/ip FFIV", "add FFIV for the settings page"), expand it into these four paired steps scoped to what was named (unscoped = the whole project's user-facing surface):
-
-- **Find** — Na: Sweep `<scope>` by exercising it for real (load the pages, click the flows, run the commands) hunting mistakes and UX/UI enhancement opportunities; record each as a numbered finding in the plan's Status/Log. `[skill: /uxmaster]` when the scope is a user interface — its analysis + platform-expert children ARE this sweep, and their findings ledger is the record. Nb: findings list recorded, with the sweep's actual coverage named (which pages/flows/commands were exercised).
-- **Fix** — Na: Address every recorded finding. Nb: each finding is fixed, or carries a logged defer decision with reason — none silently dropped.
-- **Iterate** — Na: Re-sweep `<scope>`; fix anything new; repeat. Nb: the latest sweep produced ZERO new findings (dry), with the dry sweep's coverage logged.
-- **Verify** — Na: Exercise every fixed area end-to-end as a user would. Nb: each fix demonstrated live, no regressions in adjacent flows.
-
-**Standing FFIV finding rules** — patterns every FFIV sweep hunts by default, beyond ad-hoc mistakes (append here as the user declares new ones):
-- **Settings informational text** → any informational/help/explainer text sitting inline in a settings screen is a finding; the standard fix is relocating it under an **(i)** info affordance (tooltip, popover, or expandable) so the setting's control stands alone and the explanation is one tap away.
-
-The four steps get normal treatment — skill tags, provenance (`You asked for FFIV over <scope>.` on all four), team classification (they usually stay one team or unassigned: each phase needs the previous phase's context). Findings fixed during the sweep feed `## Changelog draft` like any other change. FFIV never replaces the standing finishers (Step 5.8) — TESTMASTER and product-docs still run after it.
+**FFIV = Find, Fix, Iterate, Verify** — a quality sweep hunting mistakes AND UX/UI enhancement opportunities over a named scope (unscoped = the whole user-facing surface). When "FFIV" appears in the request or an added step (any case), expand it into the four paired steps defined in [procedures.md](procedures.md), which also holds the standing finding rules. Find is tagged `[skill: /uxmaster]` for UI scopes; FFIV never displaces the standing finishers.
 
 ### On-demand procedures — status, flatify, close, roll (see procedures.md)
 
@@ -226,28 +216,7 @@ Oracle is a **buzzword glossary** (5W+H per registered term), not a categorical 
 
 #### Example
 
-User plan: "add a new metrics service to mgmt.gravhl.com".
-
-Oracle has an entry for **mgmt.gravhl.com new-service workflow** with:
-- How: (1) deploy normally, (2) edit `mgmt/web-ui/links.yaml`, (3) commit + push, (4) load mgmt.gravhl.com in browser and click the new link
-- Where: link tree at `~/workspace/gravhl/backend/mgmt/web-ui/links.yaml`
-- Why: link tree is hand-maintained; skipping = invisible service
-
-Iterate-planner folds in:
-
-```
-Na. Edit ~/workspace/gravhl/backend/mgmt/web-ui/links.yaml — add a "metrics" entry under the appropriate category.
-Nb. The file diff shows the new entry; `yq '.links[].name' links.yaml | grep metrics` returns a hit.
-
-Mb. Load https://mgmt.gravhl.com in a browser, click the new "metrics" link, confirm it routes to the metrics service AND the page renders without console errors.
-Nb. (interactive — operator's eyes on the live click-through)
-```
-
-And in Constraints:
-- Context: mgmt link tree is hand-maintained at `~/workspace/gravhl/backend/mgmt/web-ui/links.yaml`. No auto-discovery.
-
-And in the Oracle context audit trail:
-- Buzzword matched: "mgmt.gravhl.com" → loaded entry "mgmt.gravhl.com new-service workflow" from global → added 2 Steps, 1 Constraint.
+A full worked oracle-merge example (buzzword match → folded Steps, Constraints, and audit-trail lines) is in [examples.md](examples.md).
 
 #### When oracle has no matching entries
 
@@ -291,12 +260,22 @@ The available-skills list is already in context (descriptions are always loaded)
 
 This exists because plans reliably bypassed installed skills: executors built software with ad-hoc shell instead of the Makefile skill, because nothing at planning time forced the lookup. The tag converts an always-loaded description into an explicit instruction at the moment of action.
 
+### 5.9. Test-case detection (mandatory scan, every plan)
+
+A prompt that states behavior — a trigger, a condition, an expected effect ("when hitting play, if mute-devices is selected, mute the device; on stop, unmute") — is a testable requirement, and the moment to capture it is while the user's own words are still in front of you.
+
+1. **Scan the request + every step** for behavioral statements: something the user does, a state that gates it, an effect that must follow. Pure refactors, research, and config edits usually have none — that's a normal outcome.
+2. **For each one found, invoke `/testmaster-derive`** with the requirement in the user's own words. It returns the implied cases — including the negative case, each distinct path to the same end state, and the restore-state/interrupted cases the prose left out — and records them in `./.claude/testmaster/catalog.json`.
+3. **Fold the result into the plan**: list the derived case ids in the step's Validation (`Nb: ... and cases mute-1..mute-4 pass`), and add any `AMBIGUOUS` case as a `Decision:` Constraint resolving it (planner picks the most reasonable reading and logs it — never a question back to the user, per rule 11).
+4. **The standing test finisher then has something concrete to verify** — see Step 5.8, whose validation requires these specific cases to exist and pass, not just "the suite is green".
+5. Nothing found → note `test-case scan: no behavioral requirements` in the audit trail and move on.
+
 ### 5.8. Standing finisher tasks (mandatory, every plan — tests, then docs)
 
 Every plan ends with the same three finisher steps, appended automatically at creation — the user does not ask for them each time:
 
 0. **Makefile pass** — `Na: Maintain the project Makefile against this plan's work — add/update targets for anything this plan made buildable, runnable, or testable; remove targets whose subject this plan deleted; keep help output current. [skill: /dev-makefiles]` / `Nb: every repeatable dev task this plan introduced is reachable via a make target (run each new/changed target once, real invocation); no target references removed code; \`make help\` (or equivalent) lists them accurately.`
-1. **Test pass** — `Na: Run the project test suite via TESTMASTER — fast+standard tiers only, all green; maintain coverage first for behavior this plan added/changed. [skill: /testmaster]` / `Nb: /testmaster run reports 0 failures across fast+standard; every feature this plan added or changed has a registered, executed test (new tests show runs ≥ 1 in ./.claude/testmaster/registry.json).` The slow tier is NEVER part of this step — it belongs to the nightly schedule.
+1. **Test pass** — `Na: Run the project test suite via TESTMASTER — fast+standard tiers only, all green; maintain coverage first for behavior this plan added/changed. [skill: /testmaster]` / `Nb: /testmaster run reports 0 failures across fast+standard; every feature this plan added or changed has a registered, executed test (new tests show runs ≥ 1 in ./.claude/testmaster/registry.json), and every case derived in Step 5.9 is present and passing — `/testmaster-catalog status` shows none of this plan's requirements unverified or drifted.` The slow tier is NEVER part of this step — it belongs to the nightly schedule.
 2. **Docs pass** — `Na: Sync the end-user product documentation to the final state of this plan's work — add new features' operating instructions, update changed behavior, delete removed features' docs. [skill: /product-docs]` / `Nb: /product-docs reports docs synced (or "already true"); no doc section describes behavior absent from the final tree; new user-visible features each have an operating section.`
 
 Placement: **Makefile → tests → docs** (targets must exist before TESTMASTER runs them; docs describe what survived the tests), and all three are the **last agent steps** — only a `human-gate` (Step 5.5) may follow; refinement adds always insert before them, and they keep their end position through every renumbering. All stay team-unassigned (coordinator-run after all teams merge — they sweep the whole plan's work) with provenance `Standing rule: end-of-plan finisher (tests then docs).` A project with genuinely no end-user product may drop the docs finisher (audit-trail note: `docs finisher skipped: no end-user product`); the test finisher is never skipped.
@@ -515,6 +494,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 27. **Every step carries a skill tag — `[skill: /x]` or an explicit `[skill: none — why]`.** Written at step creation from the always-loaded skills list (Step 5.7), never left implicit. A prose-only step that silently implies tool usage is the failure mode this kills: the executor must see, inline, which installed skill governs the work. Tags renumber/carry exactly like provenance lines.
 
 27.5. **Every plan carries the three standing finishers — dev-makefiles, then TESTMASTER, then product-docs — as its last agent steps.** Appended automatically at creation (Step 5.8), never waiting for the user to ask: a `/dev-makefiles` maintenance pass (targets for everything the plan made buildable/runnable/testable; dead targets removed), a fast+standard `/testmaster` pass, then a `/product-docs` sync. Refinement adds insert before them; only a human-gate follows them; the slow test tier never runs mid-plan. The docs finisher may be dropped only for projects with no end-user product (audit-trail note required); the test finisher is unconditional.
+27.6. **Every plan is scanned for testable requirements, and the user's own words become the test cases.** Step 5.9 runs on every plan: behavioral statements go to `/testmaster-derive`, whose derived cases (negative, every-path, restore-state, interrupted) land in the plan's validations and in the catalog. A stated behavior that ships with no case for it is the gap this closes — and an `AMBIGUOUS` case is resolved by the planner as a logged `Decision:` constraint, never bounced back as a question.
 ## Examples
 
 Two full worked examples (a plain restate-the-plan run with oracle merge, and a teamify + rapid-fire-adds streak) live in [examples.md](examples.md) — load that file when you need to see the exact output shape end to end, e.g. building a similar plan-writing skill from this one as a template, or checking an edge case in the operation router / auto-classify / rapid-fire terse-mode logic against a concrete run.

@@ -84,3 +84,17 @@ The user wants the unfinished work to continue as a fresh plan without losing th
    ⚠ feature branch `<branch>` has NOT been merged — <new> continues on it; the merge happens when <new> finishes all green.
    Type /iterate (or /iterate <new>) to resume execution.
    ```
+
+## FFIV macro expansion (Find, Fix, Iterate, Verify)
+
+**FFIV = Find, Fix, Iterate, Verify** — a quality sweep over a scope, hunting everything sweep-findable: mistakes (bugs, broken flows, errors, inconsistencies) AND UX/UI enhancement opportunities. When the planning request or an added step contains "FFIV" (any case — "FFIV the dashboard", "/ip FFIV", "add FFIV for the settings page"), expand it into these four paired steps scoped to what was named (unscoped = the whole project's user-facing surface):
+
+- **Find** — Na: Sweep `<scope>` by exercising it for real (load the pages, click the flows, run the commands) hunting mistakes and UX/UI enhancement opportunities; record each as a numbered finding in the plan's Status/Log. `[skill: /uxmaster]` when the scope is a user interface — its analysis + platform-expert children ARE this sweep, and their findings ledger is the record. Nb: findings list recorded, with the sweep's actual coverage named (which pages/flows/commands were exercised).
+- **Fix** — Na: Address every recorded finding. Nb: each finding is fixed, or carries a logged defer decision with reason — none silently dropped.
+- **Iterate** — Na: Re-sweep `<scope>`; fix anything new; repeat. Nb: the latest sweep produced ZERO new findings (dry), with the dry sweep's coverage logged.
+- **Verify** — Na: Exercise every fixed area end-to-end as a user would. Nb: each fix demonstrated live, no regressions in adjacent flows.
+
+**Standing FFIV finding rules** — patterns every FFIV sweep hunts by default, beyond ad-hoc mistakes (append here as the user declares new ones):
+- **Settings informational text** → any informational/help/explainer text sitting inline in a settings screen is a finding; the standard fix is relocating it under an **(i)** info affordance (tooltip, popover, or expandable) so the setting's control stands alone and the explanation is one tap away.
+
+The four steps get normal treatment — skill tags, provenance (`You asked for FFIV over <scope>.` on all four), team classification (they usually stay one team or unassigned: each phase needs the previous phase's context). Findings fixed during the sweep feed `## Changelog draft` like any other change. FFIV never replaces the standing finishers (Step 5.8) — TESTMASTER and product-docs still run after it.
