@@ -59,6 +59,36 @@ func StageFiles(dir string, files []string) ([]Rejection, error) {
 	return rejected, nil
 }
 
+// HasStagedChanges reports whether anything is already staged. When something
+// is, someone is composing their own commit: an automated commit would land
+// their work under a generated message and discard the reasoning they were
+// about to write.
+func HasStagedChanges(dir string) bool {
+	cmd := exec.Command("git", "diff", "--cached", "--quiet")
+	cmd.Dir = dir
+	return cmd.Run() != nil
+}
+
+// MidGitOperation reports whether a merge, rebase or cherry-pick is in flight.
+func MidGitOperation(dir string) bool {
+	cmd := exec.Command("git", "rev-parse", "--git-dir")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	gitDir := strings.TrimSpace(string(out))
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(dir, gitDir)
+	}
+	for _, marker := range []string{"MERGE_HEAD", "REBASE_HEAD", "CHERRY_PICK_HEAD", "rebase-merge", "rebase-apply"} {
+		if _, err := os.Stat(filepath.Join(gitDir, marker)); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 // Commit creates a git commit with the given message
 func Commit(dir, message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)

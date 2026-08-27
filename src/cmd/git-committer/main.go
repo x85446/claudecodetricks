@@ -72,6 +72,14 @@ func handlePostToolUse(hookInput *hooks.HookInput) {
 		message = message[:47] + "..."
 	}
 
+	if git.MidGitOperation(hookInput.CWD) {
+		return
+	}
+	if git.HasStagedChanges(hookInput.CWD) {
+		fmt.Fprintf(os.Stderr, "Changes already staged — leaving them for their author's own commit\n")
+		return
+	}
+
 	// Stage and commit the file
 	rejected, err := git.StageFiles(hookInput.CWD, []string{filePath})
 	if err != nil {
