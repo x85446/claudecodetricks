@@ -286,6 +286,12 @@ do_install() {
         iterate-notes)
             install_skill iterate-notes "$USERGLOBAL"
             ;;
+        iterate-brainstorm)
+            install_skill iterate-brainstorm "$USERGLOBAL"
+            ;;
+        ibs)
+            install_skill ibs "$USERGLOBAL"
+            ;;
         vm)
             install_skill vm "$USERGLOBAL"
             ;;
@@ -294,6 +300,9 @@ do_install() {
             ;;
         pdf2name)
             install_skill pdf2name "$USERGLOBAL"
+            ;;
+        filemaster)
+            install_skill filemaster "$USERGLOBAL"
             ;;
         safedelete)
             install_skill safedelete "$USERGLOBAL"
