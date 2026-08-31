@@ -107,3 +107,28 @@ Third call: same streak continues → terse mode again. New step 6 ("slack notif
 ```
 
 The user's next message is "ok show me the plan" — full reprint, showing all 6 steps, both teams, and step 6 sitting unassigned (the `$iterate` coordinator will run it directly).
+
+## Oracle merge — worked example
+
+User plan: "add a new metrics service to mgmt.gravhl.com".
+
+Oracle has an entry for **mgmt.gravhl.com new-service workflow** with:
+- How: (1) deploy normally, (2) edit `mgmt/web-ui/links.yaml`, (3) commit + push, (4) load mgmt.gravhl.com in browser and click the new link
+- Where: link tree at `~/workspace/gravhl/backend/mgmt/web-ui/links.yaml`
+- Why: link tree is hand-maintained; skipping = invisible service
+
+Iterate-planner folds in:
+
+```
+Na. Edit ~/workspace/gravhl/backend/mgmt/web-ui/links.yaml — add a "metrics" entry under the appropriate category.
+Nb. The file diff shows the new entry; `yq '.links[].name' links.yaml | grep metrics` returns a hit.
+
+Mb. Load https://mgmt.gravhl.com in a browser, click the new "metrics" link, confirm it routes to the metrics service AND the page renders without console errors.
+Nb. (interactive — operator's eyes on the live click-through)
+```
+
+And in Constraints:
+- Context: mgmt link tree is hand-maintained at `~/workspace/gravhl/backend/mgmt/web-ui/links.yaml`. No auto-discovery.
+
+And in the Oracle context audit trail:
+- Buzzword matched: "mgmt.gravhl.com" → loaded entry "mgmt.gravhl.com new-service workflow" from global → added 2 Steps, 1 Constraint.

@@ -38,6 +38,18 @@ tr -d '\r' < "$SRC_SKILL_MD" > "$NORMALIZED"
 name=$(awk -F': *' '/^name:/{print $2; exit}' "$NORMALIZED")
 description=$(awk -F': *' '/^description:/{sub(/^description: */,""); print; exit}' "$NORMALIZED")
 
+# Codex has exactly one trigger field. Claude Code's `when_to_use` is a second
+# one; dropping it would silently discard every trigger phrase it holds, so it
+# is merged onto the end of `description` instead. Confirmed against the spec:
+# "Include all 'when to use' information here -- not in the body."
+when_to_use=""
+if grep -q '^when_to_use:' "$NORMALIZED"; then
+    when_to_use=$(awk '/^when_to_use:/{sub(/^when_to_use: */,""); print; exit}' "$NORMALIZED")
+    if [[ -n "$when_to_use" ]]; then
+        description="$description $when_to_use"
+    fi
+fi
+
 had_disable_invocation=false
 grep -q '^disable-model-invocation: *true' "$NORMALIZED" && had_disable_invocation=true
 
@@ -77,19 +89,60 @@ if [[ ${#ref_files[@]} -gt 0 ]]; then
     cp "${ref_files[@]}" "$OUT/references/"
 fi
 
-# --- scripts/ and assets/ carry over as-is ---------------------------------
-for d in scripts assets; do
+# --- scripts/, assets/, references/ carry over as-is ------------------------
+# references/ is included because a source skill may ALREADY be laid out in the
+# Codex shape (skill-2-codex itself is); without this its reference docs would
+# be silently dropped on the way through.
+for d in scripts assets references; do
     if [[ -d "$SRC/$d" ]]; then
         mkdir -p "$OUT/$d"
         cp -r "$SRC/$d/." "$OUT/$d/"
     fi
 done
 
+# --- any OTHER top-level subdirectory carries over verbatim -----------------
+# Codex names four blessed directories, but a skill can keep runtime code in a
+# directory of its own (tutorial/lib/ holds run.sh + tutorial.sh, referenced by
+# path from the body). Dropping it would produce a skill that reads correctly
+# and cannot run. Preserve the name rather than relocating it, so body paths
+# stay valid, and report it so the caller knows a non-standard dir came along.
+extra_dirs=()
+while IFS= read -r d; do
+    b="$(basename "$d")"
+    case "$b" in
+        scripts|assets|references|agents) continue ;;
+    esac
+    mkdir -p "$OUT/$b"
+    cp -r "$d/." "$OUT/$b/"
+    extra_dirs+=("$b")
+done < <(find "$SRC" -maxdepth 1 -mindepth 1 -type d)
+
+# --- agents/openai.yaml ----------------------------------------------------
+# Codex ignores a TOP-LEVEL allow_implicit_invocation; the key only takes
+# effect nested under `policy:`. Getting that wrong means the skill silently
+# keeps auto-firing, which is exactly what disable-model-invocation exists to
+# prevent -- so this is written mechanically here rather than left to a
+# judgment step that can be forgotten.
+if [[ "$had_disable_invocation" == true ]]; then
+    mkdir -p "$OUT/agents"
+    cat > "$OUT/agents/openai.yaml" <<YAML
+policy:
+  allow_implicit_invocation: false
+YAML
+fi
+
 # --- Report back to the calling model --------------------------------------
 echo "scaffolded: $OUT"
 echo "name: $name"
 echo "description: $description"
-echo "had disable-model-invocation:true -> $had_disable_invocation (if true: write agents/openai.yaml with allow_implicit_invocation: false)"
+if [[ "$had_disable_invocation" == true ]]; then
+    echo "had disable-model-invocation:true -> true; WROTE agents/openai.yaml (policy.allow_implicit_invocation: false)"
+else
+    echo "had disable-model-invocation:true -> false; no agents/openai.yaml needed"
+fi
+if [[ -n "$when_to_use" ]]; then
+    echo "when_to_use -> merged into description (Codex has no second trigger field)"
+fi
 echo "had argument-hint -> $had_argument_hint"
 if [[ -n "$argument_hint" ]]; then
     echo "  was: \"$argument_hint\" -- no frontmatter home in Codex; fold into the body's own usage text"
@@ -100,5 +153,9 @@ for f in "${ref_files[@]:-}"; do
 done
 [[ -d "$SRC/scripts" ]] && echo "scripts/ copied"
 [[ -d "$SRC/assets" ]] && echo "assets/ copied"
+[[ -d "$SRC/references" ]] && echo "references/ copied (source was already Codex-shaped)"
+if [[ ${#extra_dirs[@]} -gt 0 ]]; then
+    echo "non-standard dirs preserved verbatim: ${extra_dirs[*]}"
+fi
 echo ""
 echo "NEXT (manual — not done by this script): read $OUT/SKILL.md's body and rewrite Claude-Code-specific mechanism references per references/codex-format.md's mapping table."
