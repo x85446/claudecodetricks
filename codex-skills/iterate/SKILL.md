@@ -58,6 +58,14 @@ Resolve in this order:
 
    The keyword parses in **any position** — `$iterate owl permission`, `$iterate permission owl`, `$iterate permission` — and is stripped from the argument before the remaining rules read it, so it is never mistaken for a plan name or for task text. Most projects have no policy file; absent one, this rule is a silent no-op.
 
+1.6. **Launch window (only if this project set one).** If `policy.md` sets `launch-window: HH:MM-HH:MM`, get the real local time — run `date +%H:%M`, never estimate it from context — and refuse a fresh launch outside that window: print the policy's reason, the window, the current time, and **stop**.
+
+   **The window wraps midnight, and that is the normal case.** `22:00-06:00` means 22:00 through 05:59 the next morning. Compare by wrapping when `start > end`, never with a plain `start <= now <= end` — a naive comparison refuses 02:00 as "before 22:00", which is exactly backwards for the overnight block these windows exist to describe.
+
+   Independent of the keyword gate: **both must pass.** The keyword authorizes the expense, the window constrains the timing, and satisfying one says nothing about the other. There is deliberately no magic word that bypasses the window — you change your mind by editing `policy.md`, which is a decision you make while awake rather than one you make at the moment you want to skip your own rule.
+
+   Same placement logic as 1.5: this is below rule 1, so a run legitimately started at 23:00 keeps resuming at 07:00. Gating resumption on the window would kill every overnight run at dawn, which is the one thing an overnight window is for.
+
 2. **`$1` names an existing plan** (`$1` exactly matches a `plans/<name>.md`, e.g. `$iterate dog`): set `current` = that plan; if `phase: planned` → transition to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set up the auto-resume loop, begin; if already executing → resume it (leave `Executing:` untouched).
 3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** plan, named via `iterate-run name next`, with `phase: executing`, **`Executing:` set to the same UTC timestamp as `Started:`**, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
 4. **`$1` empty, exactly one plan exists** with `phase: planned`: transition it to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set `current`, set up the loop, begin.
@@ -73,6 +81,7 @@ Project-scoped knowledge for the iterate stack — things true of THIS project t
 ```markdown
 ---
 require-launch-keyword: permission
+launch-window: 22:00-06:00
 ---
 
 # Iterate policy — <project>
@@ -83,13 +92,23 @@ require-launch-keyword: permission
 the sentence you want to read when you are told no.>
 ```
 
-`require-launch-keyword: <word>` is the only key `$iterate` acts on today. It exists for projects where a run is expensive enough that starting one casually is the mistake — a long, resource-hungry session that should only begin when nobody needs the machine.
+Keys `$iterate` acts on today:
+
+| Key | Effect |
+|---|---|
+| `require-launch-keyword: <word>` | a fresh launch must carry `<word>` anywhere in its argument |
+| `launch-window: HH:MM-HH:MM` | a fresh launch is refused outside this local-time window; wraps midnight when start > end |
+
+Both exist for projects where a run is expensive enough that starting one casually is the mistake. Set either, both, or neither.
+
+**Adding a key is a skill change, not a config change.** A key this table does not list is silently ignored, so writing an invented key into `policy.md` produces a file that looks like a rule and enforces nothing.
 
 Rules:
 
 - **The gate is per-project, never global.** It lives in the project's own tree and applies only there. Never infer a gate for a project that has no policy file, and never carry one project's gate to another.
 - **State the reason, don't invent one.** The refusal quotes the file. If the file gives no reason, say only that this project requires the keyword.
 - **Refusing is not asking.** Print the refusal and stop — no picker, no "shall I proceed anyway?", no offer to bypass. The keyword IS the authorization; without it there is nothing to decide.
+- **Read the clock, never estimate it.** Any time comparison runs `date +%H:%M` for real. Context timestamps go stale within a session and a stale clock silently inverts the gate.
 - **One keyword authorizes one launch.** It is consumed by the launch it appears in, not remembered. This is deliberately unlike standing risk acceptance: the gate exists precisely because each run is expensive, so each run is authorized on its own.
 
 ## Auto-resume via cron
