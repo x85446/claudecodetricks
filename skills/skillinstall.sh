@@ -186,7 +186,8 @@ do_install() {
     # Deploy targets come from skillmap.tsv, not from a case statement here.
     #
     # This used to be ~250 lines of `name) install_skill name "$TARGET" ;;` —
-    # a second copy of knowledge that also lived in skill-mappings.toml, in
+    # a second copy of knowledge that also lived in the now-removed Rust TUI's
+    # skill-mappings.toml, in
     # per-entry .origin files, and in external-sources.conf. Four copies is
     # four chances to disagree, and they did: 21 globally-installed skills had
     # no case entry at all and were silently un-updatable for months.

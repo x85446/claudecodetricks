@@ -130,22 +130,7 @@ clean:
 	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(ITERATE_RUN_BIN)
 	$(Q)rm -f coverage.out coverage.html
 	$(Q)rm -rf $(SRC_DIR)/vendor
-	$(Q)rm -rf skills-tui/target
 	$(Q)echo -e "$(COLOR_GREEN)✓ Clean complete$(COLOR_RESET)"
-
-## tui: Build and launch the skills-tui (Rust) for managing skill→project mappings
-tui: tui-build
-	$(Q)./skills-tui/target/release/skills-tui
-
-## tui-build: Build the skills-tui release binary
-tui-build:
-	$(Q)echo -e "$(COLOR_BLUE)→ Building skills-tui (release)...$(COLOR_RESET)"
-	$(Q)cd skills-tui && cargo build --release
-	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) skills-tui → skills-tui/target/release/skills-tui"
-
-## tui-list: Print discovered skills + projects + mapping counts (no TUI)
-tui-list: tui-build
-	$(Q)./skills-tui/target/release/skills-tui --list
 
 ## rebuild: Clean and rebuild all binaries
 rebuild: clean build
