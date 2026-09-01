@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""
+skillctl — skills management sized for an agent's context, not a terminal.
+
+The tools this replaces were written to be read by a person: banners, colour,
+one line per success. Nearly half of skillinstall.sh's output was ANSI escape
+codes, which carry no information to a model and cost tokens in every call. And
+"where is X installed, and why" needed four files read to answer.
+
+So the contract here is inverted:
+
+  - SILENT ON SUCCESS. Nothing to report prints nothing; exit code carries it.
+  - ONE LINE PER FACT, tab-separated, no colour, no banners, no blank lines.
+  - SUMMARY FIRST. `status` answers the whole system in one line; detail is
+    opt-in with -v, so the common check costs a handful of tokens.
+  - ONE CALL ANSWERS THE QUESTION. No follow-up greps to interpret a result.
+
+Source of truth is skills/skillmap.tsv (name, targets, owner).
+
+Verbs:
+  status [-v]        one-line health; -v adds one line per problem
+  sync [--apply]     install every skill whose target copy is stale; refuses
+                     any target NEWER than its source unless --force
+  install <name>...  install named skills to their mapped targets
+  where <name>...    targets + owner
+  why <name>...      why it is installed where it is
+  targets            symbolic target -> path
+  audit [-v]         registry audit (unregistered / drifted first-party skills)
+"""
+import os, re, subprocess, sys, shutil, glob
+
+H = os.path.expanduser("~")
+REPO = os.path.dirname(os.path.abspath(__file__))
+REG = REPO
+MAP = f"{REG}/skillmap.tsv"
+SH = f"{REG}/skillinstall.sh"
+RUNTIME = {"known.md", "routing.md", "findings.md", "registry.json",
+           "catalog.json", "notes.md", "state.json", ".origin", ".portstamp",
+           ".DS_Store"}
+
+
+def targets_map():
+    """symbolic name -> absolute path, read from the installer's own vars."""
+    out = {}
+    if os.path.exists(SH):
+        for m in re.finditer(r'^([A-Z][A-Z0-9]*)=(~\S+)', open(SH).read(), re.M):
+            out[m.group(1).lower()] = os.path.expanduser(m.group(2))
+    out.setdefault("userglobal", f"{H}/.claude/skills")
+    return out
+
+
+def load():
+    rows = {}
+    for line in open(MAP):
+        line = line.rstrip("\n")
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) != 3:
+            continue
+        name, tgt, owner = parts
+        rows[name] = ([] if tgt == "-" else tgt.split(",")), owner
+    return rows
+
+
+def src_of(name, owner):
+    """Where the authoritative copy lives: the owning repo, else the registry."""
+    if owner != "self":
+        p = os.path.expanduser(owner)
+        if os.path.exists(f"{p}/SKILL.md"):
+            return p
+    return f"{REG}/{name}"
+
+
+def differs(src, dst):
+    """Tracked files only — runtime state living in dst alone is not drift."""
+    if not os.path.isdir(dst):
+        return True
+    for root, _, files in os.walk(src):
+        for f in files:
+            if f in RUNTIME:
+                continue
+            rel = os.path.relpath(os.path.join(root, f), src)
+            d = os.path.join(dst, rel)
+            if not os.path.exists(d) or subprocess.run(
+                    ["diff", "-q", os.path.join(root, f), d],
+                    capture_output=True).returncode:
+                return True
+    return False
+
+
+def install_one(name, src, dst_root):
+    """Atomic publish: stage outside the scanned root, rename SKILL.md in last.
+
+    A scanner reading dst mid-install must never see a directory without a
+    SKILL.md, or a truncated one — that is reported as a corrupt skill, not as
+    an absent one. Copy stays additive so runtime state in dst survives.
+    """
+    dst = f"{dst_root}/{name}"
+    stage = f"{dst_root}/../.skillctl-stage.{os.getpid()}"
+    shutil.rmtree(stage, ignore_errors=True)
+    os.makedirs(f"{stage}/{name}", exist_ok=True)
+    try:
+        shutil.copytree(src, f"{stage}/{name}", dirs_exist_ok=True,
+                        symlinks=True, ignore_dangling_symlinks=True)
+        if not os.path.exists(f"{stage}/{name}/SKILL.md"):
+            return "no-skill-md"
+        for junk in (".origin", ".portstamp"):
+            j = f"{stage}/{name}/{junk}"
+            if os.path.exists(j):
+                os.remove(j)
+        os.makedirs(dst_root, exist_ok=True)
+        if os.path.isdir(dst):
+            os.rename(f"{stage}/{name}/SKILL.md", f"{stage}/{name}.SKILL.md")
+            shutil.copytree(f"{stage}/{name}", dst, dirs_exist_ok=True, symlinks=True)
+            os.replace(f"{stage}/{name}.SKILL.md", f"{dst}/SKILL.md")
+        else:
+            os.rename(f"{stage}/{name}", dst)
+        return None
+    except Exception as e:
+        return str(e)[:80]
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
+
+
+def target_is_newer(src, dst):
+    """True when the installed copy's SKILL.md is newer than the source's.
+
+    Installing is a one-way push from source to target, so a target that is
+    NEWER means someone edited the installed copy directly and the source never
+    caught up. Pushing then destroys that edit silently. oracle was in exactly
+    this state -- its install had drifted ahead for weeks because it had no
+    installer entry and nothing could push it, so every edit landed on the
+    install side.
+    """
+    a, b = f"{src}/SKILL.md", f"{dst}/SKILL.md"
+    if not (os.path.exists(a) and os.path.exists(b)):
+        return False
+    return os.path.getmtime(b) > os.path.getmtime(a) + 2
+
+
+def stale(rows, tmap):
+    """[(name, target, path, src, newer)] for every mapped copy out of date."""
+    out = []
+    for name, (tgts, owner) in sorted(rows.items()):
+        src = src_of(name, owner)
+        if not os.path.exists(f"{src}/SKILL.md"):
+            continue
+        for t in tgts:
+            root = tmap.get(t)
+            if not root:
+                continue
+            dst = f"{root}/{name}"
+            if differs(src, dst):
+                out.append((name, t, root, src, target_is_newer(src, dst)))
+    return out
+
+
+def cmd_status(args):
+    rows, tmap = load(), targets_map()
+    v = "-v" in args
+    st = stale(rows, tmap)
+    broken = [d for d in glob.glob(f"{H}/.claude/skills/*/") + glob.glob(f"{H}/.agents/skills/*/")
+              if not os.access(f"{d}/SKILL.md", os.R_OK)]
+    missing_src = [n for n, (t, o) in rows.items()
+                   if not os.path.exists(f"{src_of(n, o)}/SKILL.md")]
+    print(f"skills\t{len(rows)}\tstale\t{len(st)}\tbroken\t{len(broken)}\tno-source\t{len(missing_src)}")
+    if v:
+        for n, t, _, _, newer in st:
+            print(f"{'CONFLICT' if newer else 'STALE'}\t{n}\t{t}" +
+                  ("\ttarget is newer — pushing would discard it" if newer else ""))
+        for d in broken:
+            print(f"BROKEN\t{os.path.basename(d.rstrip('/'))}\tno readable SKILL.md")
+        for n in missing_src:
+            print(f"NOSRC\t{n}\t{rows[n][1]}")
+    return 1 if (st or broken or missing_src) else 0
+
+
+def cmd_sync(args):
+    rows, tmap = load(), targets_map()
+    st = stale(rows, tmap)
+    if not st:
+        return 0                      # silent: nothing to do
+    if "--apply" not in args:
+        for n, t, _, _, newer in st:
+            print(f"{'CONFLICT' if newer else 'would-install'}\t{n}\t{t}" +
+                  ("\ttarget is newer — pushing would discard it" if newer else ""))
+        return 1
+    force = "--force" in args
+    bad = 0
+    for n, t, root, src, newer in st:
+        if newer and not force:
+            # Never resolve this automatically. Which side wins is a content
+            # call, and the losing side is unrecoverable once overwritten.
+            print(f"SKIP\t{n}\t{t}\ttarget is newer — pull it back or pass --force")
+            bad = 1
+            continue
+        err = install_one(n, src, root)
+        print(f"{'FAIL' if err else 'installed'}\t{n}\t{root.replace(H,'~')}"
+              + (f"\t{err}" if err else ""))
+        bad += bool(err)
+    return 1 if bad else 0
+
+
+def cmd_install(args):
+    rows, tmap = load(), targets_map()
+    bad = 0
+    for n in args:
+        if n not in rows:
+            print(f"FAIL\t{n}\tnot in skillmap.tsv"); bad = 1; continue
+        tgts, owner = rows[n]
+        if not tgts:
+            # Not a failure: most adopted skills are registered so they are
+            # backed up, and were never meant to be deployed anywhere.
+            print(f"skip\t{n}\tbackup-only"); continue
+        src = src_of(n, owner)
+        for t in tgts:
+            root = tmap.get(t)
+            if not root:
+                print(f"FAIL\t{n}\t{t}\tunknown target"); bad = 1; continue
+            err = install_one(n, src, root)
+            print(f"{'FAIL' if err else 'installed'}\t{n}\t{root.replace(H,'~')}"
+                  + (f"\t{err}" if err else ""))
+            bad += bool(err)
+    return 1 if bad else 0
+
+
+def cmd_where(args):
+    rows, tmap = load(), targets_map()
+    for n in args:
+        if n not in rows:
+            print(f"?\t{n}\tunmapped"); continue
+        tgts, owner = rows[n]
+        print(f"{n}\t{','.join(tgts) or 'backup-only'}\t{owner}")
+    return 0
+
+
+def cmd_why(args):
+    rows, tmap = load(), targets_map()
+    for n in args:
+        if n not in rows:
+            print(f"?\t{n}\tunmapped"); continue
+        tgts, owner = rows[n]
+        src = src_of(n, owner)
+        print(f"{n}\tsource\t{src.replace(H,'~')}")
+        print(f"{n}\towner\t" + ("authored here" if owner == "self"
+              else f"mirrored from {owner} — edit it there, not here"))
+        if not tgts:
+            print(f"{n}\tdeploy\tbackup-only (registered so it is backed up, never installed)")
+        for t in tgts:
+            print(f"{n}\tdeploy\t{t}\t{tmap.get(t,'UNKNOWN').replace(H,'~')}")
+    return 0
+
+
+def cmd_targets(args):
+    for k, v in sorted(targets_map().items()):
+        print(f"{k}\t{v.replace(H,'~')}")
+    return 0
+
+
+def cmd_audit(args):
+    a = [f"{REG}/skills-audit.py"] + (["--json"] if "--json" in args else [])
+    r = subprocess.run([sys.executable] + a, capture_output=True, text=True)
+    out = r.stdout
+    if "-v" in args or "--json" in args:
+        print(out.rstrip())
+    else:
+        m = re.search(r'^first-party:\s+(\d+) in sync\s+(\d+) drifted\s+(\d+) UNREGISTERED',
+                      out, re.M)
+        print(f"registry\tin-sync\t{m.group(1)}\tdrifted\t{m.group(2)}\tunregistered\t{m.group(3)}"
+              if m else "registry\tunparsed")
+    return 0
+
+
+CMDS = {"status": cmd_status, "sync": cmd_sync, "install": cmd_install,
+        "where": cmd_where, "why": cmd_why, "targets": cmd_targets,
+        "audit": cmd_audit}
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2 or sys.argv[1] not in CMDS:
+        print("usage: skillctl {" + "|".join(CMDS) + "} [args]", file=sys.stderr)
+        sys.exit(2)
+    sys.exit(CMDS[sys.argv[1]](sys.argv[2:]))

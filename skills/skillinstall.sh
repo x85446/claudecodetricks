@@ -183,260 +183,32 @@ install_pm_skills() {
 }
 
 do_install() {
+    # Deploy targets come from skillmap.tsv, not from a case statement here.
+    #
+    # This used to be ~250 lines of `name) install_skill name "$TARGET" ;;` —
+    # a second copy of knowledge that also lived in skill-mappings.toml, in
+    # per-entry .origin files, and in external-sources.conf. Four copies is
+    # four chances to disagree, and they did: 21 globally-installed skills had
+    # no case entry at all and were silently un-updatable for months.
+    #
+    # skillctl owns the install now. This stays as the human-facing CLI.
     local skill=$1
-    case "$skill" in
-        competitive-intel)
-            install_skill competitive-intel "$IMARKETING"
-            ;;
-        marketing-doc-formatter)
-            install_skill marketing-doc-formatter "$IMARKETING"
-            ;;
-        marketing-template-studio)
-            install_skill marketing-template-studio "$IMARKETING"
-            ;;
-        grant-scout)
-            install_skill grant-scout "$IMARKETING"
-            ;;
-        darpa-equipment-references)
-            install_skill darpa-equipment-references "$IMARKETING"
-            ;;
-        product-discovery)
-            install_skill product-discovery "$IMARKETING"
-            ;;
-        feature-tracker)
-            install_skill feature-tracker "$IMARKETING"
-            install_skill feature-tracker "$IMYRIPLAY"
-            ;;
-        pm)
-            install_pm_skills "$IMARKETING"
-            install_pm_skills "$IMYRIPLAY"
-            ;;
-        pm-*)
-            # Skip during install_all (pm handles the batch).
-            # But if called directly, install this one skill.
-            if [ -n "$DIRECT_INSTALL" ]; then
-                install_skill "$skill" "$IMARKETING"
-                install_skill "$skill" "$IMYRIPLAY"
-            fi
-            ;;
-        tax-organizer)
-            install_skill tax-organizer "$TAXES"
-            ;;
-        tax-doc-combiner)
-            install_skill tax-doc-combiner "$TAXES"
-            ;;
-        categorize)
-            install_skill categorize "$CCTRICKS"
-            ;;
-        categorizer)
-            install_skill categorizer "$PERSONALDB"
-            ;;
-        auditor)
-            install_skill auditor "$PERSONALDB"
-            ;;
-        importer-fix)
-            install_skill importer-fix "$PERSONALDB"
-            ;;
-        auditor-sourcetable-inspector)
-            install_skill auditor-sourcetable-inspector "$PERSONALDB"
-            ;;
-        categorize-linker)
-            install_skill categorize-linker "$PERSONALDB"
-            ;;
-        importer)
-            install_skill importer "$PERSONALDB"
-            ;;
-        downloader)
-            install_skill downloader "$PERSONALDB"
-            ;;
-        downloader-orderdocs)
-            install_skill downloader-orderdocs "$PERSONALDB"
-            ;;
-        -pdfify)
-            install_skill -pdfify "$PERSONALDB"
-            ;;
-        venue-classifier)
-            install_skill venue-classifier "$PERSONALDB"
-            ;;
-        dev-makefiles)
-            install_skill dev-makefiles "$USERGLOBAL"
-            ;;
-        hours-maker)
-            install_skill hours-maker "$FINANCE"
-            ;;
-        hours-researcher)
-            install_skill hours-researcher "$FINANCE"
-            ;;
-        docs-organizer)
-            install_to_all docs-organizer
-            ;;
-        monitor)
-            install_to_all monitor
-            ;;
-        pptx)
-            install_3p_skill pptx "$GRAVHL"
-            ;;
-        window-schedule)
-            install_skill window-schedule "$HOUSES"
-            ;;
-        iterate-planner)
-            install_skill iterate-planner "$USERGLOBAL"
-            ;;
-        ip)
-            install_skill ip "$USERGLOBAL"
-            ;;
-        i)
-            install_skill i "$USERGLOBAL"
-            ;;
-        in)
-            install_skill in "$USERGLOBAL"
-            ;;
-        iterate)
-            install_skill iterate "$USERGLOBAL"
-            ;;
-        testmaster)
-            for s in $TESTMASTER_SKILLS; do
-                install_skill "$s" "$USERGLOBAL"
-            done
-            ;;
-        testmaster-*)
-            # Skip during install_all (testmaster handles the batch).
-            if [ -n "$DIRECT_INSTALL" ]; then
-                install_skill "$skill" "$USERGLOBAL"
-            fi
-            ;;
-        uxmaster)
-            for s in $UXMASTER_SKILLS; do
-                install_skill "$s" "$USERGLOBAL"
-            done
-            ;;
-        uxmaster-*)
-            # Skip during install_all (uxmaster handles the batch).
-            if [ -n "$DIRECT_INSTALL" ]; then
-                install_skill "$skill" "$USERGLOBAL"
-            fi
-            ;;
-        product-docs)
-            install_skill product-docs "$USERGLOBAL"
-            ;;
-        iterate-notes)
-            install_skill iterate-notes "$USERGLOBAL"
-            ;;
-        accounts)
-            install_skill accounts "$USERGLOBAL"
-            ;;
-        feature-branch)
-            install_skill feature-branch "$USERGLOBAL"
-            ;;
-        incus)
-            install_skill incus "$USERGLOBAL"
-            ;;
-        izmachine)
-            install_skill izmachine "$USERGLOBAL"
-            ;;
-        oracle)
-            install_skill oracle "$USERGLOBAL"
-            ;;
-        profile-tools)
-            install_skill profile-tools "$USERGLOBAL"
-            ;;
-        ssh-config)
-            install_skill ssh-config "$USERGLOBAL"
-            ;;
-        testmaster-adopt)
-            install_skill testmaster-adopt "$USERGLOBAL"
-            ;;
-        testmaster-catalog)
-            install_skill testmaster-catalog "$USERGLOBAL"
-            ;;
-        testmaster-derive)
-            install_skill testmaster-derive "$USERGLOBAL"
-            ;;
-        testmaster-maintain)
-            install_skill testmaster-maintain "$USERGLOBAL"
-            ;;
-        testmaster-prune)
-            install_skill testmaster-prune "$USERGLOBAL"
-            ;;
-        testmaster-report)
-            install_skill testmaster-report "$USERGLOBAL"
-            ;;
-        testmaster-run)
-            install_skill testmaster-run "$USERGLOBAL"
-            ;;
-        uxmaster-analysis)
-            install_skill uxmaster-analysis "$USERGLOBAL"
-            ;;
-        uxmaster-cli)
-            install_skill uxmaster-cli "$USERGLOBAL"
-            ;;
-        uxmaster-implement)
-            install_skill uxmaster-implement "$USERGLOBAL"
-            ;;
-        uxmaster-linux)
-            install_skill uxmaster-linux "$USERGLOBAL"
-            ;;
-        uxmaster-macos)
-            install_skill uxmaster-macos "$USERGLOBAL"
-            ;;
-        uxmaster-web)
-            install_skill uxmaster-web "$USERGLOBAL"
-            ;;
-        uxmaster-windows)
-            install_skill uxmaster-windows "$USERGLOBAL"
-            ;;
-        iterate-rules)
-            install_skill iterate-rules "$USERGLOBAL"
-            ;;
-        iterate-brainstorm)
-            install_skill iterate-brainstorm "$USERGLOBAL"
-            ;;
-        ibs)
-            install_skill ibs "$USERGLOBAL"
-            ;;
-        vm)
-            install_skill vm "$USERGLOBAL"
-            ;;
-        source2pdf)
-            install_skill source2pdf "$USERGLOBAL"
-            ;;
-        pdf2name)
-            install_skill pdf2name "$USERGLOBAL"
-            ;;
-        filemaster)
-            install_skill filemaster "$USERGLOBAL"
-            ;;
-        safedelete)
-            install_skill safedelete "$USERGLOBAL"
-            ;;
-        fix-chrome-remote-desktop)
-            install_skill fix-chrome-remote-desktop "$USERGLOBAL"
-            ;;
-        tutorial)
-            install_skill tutorial "$USERGLOBAL"
-            ;;
-        skill-builder)
-            install_skill skill-builder "$USERGLOBAL"
-            ;;
-        skill-2-codex)
-            install_skill skill-2-codex "$USERGLOBAL"
-            ;;
-        codeconverter)
-            for s in $CODECONVERTER_SKILLS; do
-                install_skill "$s" "$RECODE"
-            done
-            ;;
-        codeconverter-*)
-            # Skip during install_all (codeconverter handles the batch).
-            # But if called directly, install this one skill.
-            if [ -n "$DIRECT_INSTALL" ]; then
-                install_skill "$skill" "$RECODE"
-            fi
-            ;;
-        *)
-            skip "$skill"
-            ;;
-    esac
+    local out rc
+    out="$(python3 "$SKILLHOME/skillctl" install "$skill" 2>&1)"; rc=$?
+    if [[ -z "$out" ]]; then
+        skip "$skill" "no deploy target"
+        return 0
+    fi
+    while IFS=$'\t' read -r verb name target rest; do
+        [[ -z "$verb" ]] && continue
+        case "$verb" in
+            installed) ok "$name" "$target" ;;
+            skip)      skip "$name" "${target:-backup-only}" ;;
+            FAIL)      fail "$name" "${rest:-$target}" ;;
+            *)         fail "$skill" "$verb $name $target $rest" ;;
+        esac
+    done <<< "$out"
+    return $rc
 }
 
 install_all() {

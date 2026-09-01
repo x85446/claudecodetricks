@@ -25,6 +25,38 @@ Aliases: `/ip` → iterate-planner, `/i` → iterate, `/in` → iterate-notes, `
 
 `/iterate`, `/iterate-brainstorm`, `/i`, `/in`, `/ip`, and `/ibs` carry `disable-model-invocation: true`. For `/iterate` it is side effects (autonomous execution, PR merges); for `/iterate-brainstorm` it is that a decision session is something the user opens deliberately, never something natural language trips into. `/iterate-planner` deliberately does NOT carry the flag: `/ip` delegates to it via the Skill tool, and that flag blocks Skill-tool delegation entirely. Plan state lives at `./.claude/iterate/plans/<name>.md` in whichever project they're run from; live status/dashboard for that state is `iterate-run` (`src/cmd/iterate-run/`, this repo's own Go binary — `iterate-run serve` for the web dashboard, `iterate-run status`/`timeline` for the CLI).
 
+## Skills management (`skills/skillctl`)
+
+`skillctl` is the agent-facing tool for skills. Machine-first output: silent on
+success, one tab-separated fact per line, no colour, no banners. A whole-system
+health check is one line and ~40 characters.
+
+```bash
+skills/skillctl status [-v]     # skills N stale N broken N no-source N
+skills/skillctl sync [--apply]  # install everything stale
+skills/skillctl install <name>… # install to mapped targets
+skills/skillctl where <name>…   # targets + owner
+skills/skillctl why <name>…     # source, ownership,each target and its path
+skills/skillctl audit [-v]      # registry audit, one line
+skills/skillctl targets         # symbolic target -> path
+```
+
+**`skills/skillmap.tsv` is the single source of truth** for "installed where and
+why" — `name`, `targets`, `owner`. It replaced four sources that could and did
+disagree: `skillinstall.sh`'s case statement, `skill-mappings.toml`, per-entry
+`.origin` files, and `external-sources.conf`. `skillinstall.sh` is now a thin
+human-facing shim over `skillctl` rather than a second implementation.
+
+`owner` is `self` when this repo authors the skill, or the path of the repo that
+does — those are **mirrored** here and must be edited at the owner (izmachine).
+`targets` of `-` means backup-only: registered so it is backed up, never
+deployed. That is the normal state for most adopted skills, not a problem.
+
+**`sync` refuses to push over a target that is newer than its source** unless
+`--force`. Installing is a one-way push, so a newer target means someone edited
+the installed copy directly — pushing would destroy that edit silently. oracle
+is in exactly that state today.
+
 ## Codex skill mirror
 
 Every globally-installed Claude Code skill is mirrored to Codex format under

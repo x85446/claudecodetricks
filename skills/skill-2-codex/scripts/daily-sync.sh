@@ -66,8 +66,9 @@ PY
     # side of a drift wins is a content call (a project copy can be an
     # authoritative edit or a stale install), so it is never auto-resolved.
     echo
-    echo "--- registry audit ---"
-    python3 "$REPO/skills/skills-audit.py" 2>&1 | sed -n '/^first-party:/,$p' | head -40
+    echo "--- skills state ---"
+    python3 "$REPO/skills/skillctl" status -v 2>&1 | head -30
+    python3 "$REPO/skills/skillctl" audit 2>&1
 
     echo "=== done $(date '+%H:%M:%S') ==="
 } >"$LOG" 2>&1
@@ -75,7 +76,7 @@ PY
 # One-line status, cheap to read.
 {
     date '+last run: %Y-%m-%d %H:%M:%S %Z'
-    grep -E '^(converted|unchanged|failed|source changed|residual|manifest|first-party)' "$LOG" | sed 's/^/  /'
+    grep -E '^(converted|unchanged|failed|source changed|residual|manifest|skills\t|registry\t|CONFLICT|BROKEN|NOSRC)' "$LOG" | sed 's/^/  /'
 } > "$STATUS"
 
 find "$LOG_DIR" -name 'sync-*.log' -mtime +14 -delete 2>/dev/null
