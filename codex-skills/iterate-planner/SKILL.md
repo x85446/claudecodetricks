@@ -161,6 +161,8 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 9. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below — this includes the now-default auto-Teamify pass unless `$1` also carries a flat trigger phrase, see Step 6 "Write the plan file", and the feature-branch creation per "One plan = one feature branch" above).
 
+9.5. **`skip` is a modifier, never an op.** If the argument contains a skip trigger, strip it from the request text, set the suppression per Step 5.8, and route the *remainder* through the ops above (a bare `skip` with nothing left routes to op 10). Never treat `skip` as the plan's subject matter.
+
 10. **default (the common case)** — anything else describing work:
    - a current plan exists → **add to / refine the current plan** (proceed through the Steps below, targeting the current plan file). If the current plan has `teamed: true`, also run the cheap single-step Team classification (see "Auto-classify on add" below) on each newly added step — this is O(1) per step, never a full re-teamify. If the current plan is flat, it stays flat on ordinary refinement (adding to a flat plan never auto-teamifies mid-stream — that would re-cluster on every add; use the explicit teamify trigger if the plan has grown enough to warrant it).
    - no plans exist → create the first plan (name from `iterate-run name next`, set current) — same auto-Teamify-by-default and feature-branch-creation path as op 9.
@@ -309,7 +311,33 @@ Every plan ends with the same three finisher steps, appended automatically at cr
 1. **Test pass** — `Na: Run the project test suite via TESTMASTER — fast+standard tiers only, all green; maintain coverage first for behavior this plan added/changed. [skill: $testmaster]` / `Nb: $testmaster run reports 0 failures across fast+standard; every feature this plan added or changed has a registered, executed test (new tests show runs ≥ 1 in ./.claude/testmaster/registry.json), and every case derived in Step 5.9 is present and passing — `$testmaster-catalog status` shows none of this plan's requirements unverified or drifted.` The slow tier is NEVER part of this step — it belongs to the nightly schedule.
 2. **Docs pass** — `Na: Sync the end-user product documentation to the final state of this plan's work — add new features' operating instructions, update changed behavior, delete removed features' docs. [skill: $product-docs]` / `Nb: $product-docs reports docs synced (or "already true"); no doc section describes behavior absent from the final tree; new user-visible features each have an operating section.`
 
-Placement: **Makefile → tests → docs** (targets must exist before TESTMASTER runs them; docs describe what survived the tests), and all three are the **last agent steps** — only a `human-gate` (Step 5.5) may follow; refinement adds always insert before them, and they keep their end position through every renumbering. All stay team-unassigned (coordinator-run after all teams merge — they sweep the whole plan's work) with provenance `Standing rule: end-of-plan finisher (tests then docs).` A project with genuinely no end-user product may drop the docs finisher (audit-trail note: `docs finisher skipped: no end-user product`); the test finisher is never skipped.
+Placement: **Makefile → tests → docs** (targets must exist before TESTMASTER runs them; docs describe what survived the tests), and all three are the **last agent steps** — only a `human-gate` (Step 5.5) may follow; refinement adds always insert before them, and they keep their end position through every renumbering. All stay team-unassigned (coordinator-run after all teams merge — they sweep the whole plan's work) with provenance `Standing rule: end-of-plan finisher (tests then docs).` A project with genuinely no end-user product may drop the docs finisher (audit-trail note: `docs finisher skipped: no end-user product`).
+
+#### Project launch gate — surface it when printing a plan
+
+If `./.claude/iterate/policy.md` exists and sets `require-launch-keyword: <word>`, the plan's closing line must say how to launch it: `launch with $iterate <name> <word>` rather than a bare `$iterate <name>`. The planner does not enforce the gate — `$iterate` does — but handing someone a plan whose documented launch command is the one that will be refused is a paper cut this avoids. No policy file means print the bare form as usual.
+
+#### The `skip` modifier — the user's explicit override
+
+**`skip` anywhere in the request suppresses the finishers.** It is a modifier, not an operation: it parses in **any position** (`skip`, `$ip skip`, `plan the migration, skip`) and combines with every op that writes a plan. A bare `$ip skip` is not ambiguous — the request itself comes from conversation context per op 10, and `skip` only says what not to append.
+
+Scope, narrowest match wins:
+
+| Request contains | Suppressed |
+|---|---|
+| `skip makefile` / `skip the makefile pass` | the Makefile finisher |
+| `skip tests` / `skip testmaster` / `skip the test pass` | the test finisher |
+| `skip docs` / `skip product-docs` | the docs finisher |
+| `skip` / `skip finishers` / `skip the canned steps` / `skip the pre-baked steps` | **all three** |
+
+Two behaviours, depending on what the target plan already has:
+
+1. **Creating or adding** — do not append the suppressed finishers at all.
+2. **The target plan already carries them** — remove the suppressed finisher steps, their paired Validations, and their Provenance lines, renumbering all three lists 1:1 exactly as op 3 does. `skip` said late means the same thing as `skip` said early.
+
+**Always record it.** Add one audit-trail line per suppressed finisher: `finisher skipped by explicit request: <makefile|tests|docs>`. A plan missing its finishers must be readable as a deliberate choice, not as a plan built by an older planner or one where the rule silently failed. The suppression applies to **that plan only** — it is not a standing setting, and the next plan gets all three back unless it also says `skip`.
+
+**Do not argue the point.** `skip` is the user telling you the pre-baked steps are not wanted this time. Suppress them, log the audit line, and carry on — no warning about untested work, no offer to add them back, no asking whether they are sure.
 
 ### 6. Write the plan file
 
