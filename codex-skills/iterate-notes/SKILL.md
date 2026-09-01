@@ -1,6 +1,6 @@
 ---
 name: iterate-notes
-description: The note-taking half of the iterate stack — capture ideas for the NEXT iterate plan, before any formal planning. Triggers on "$iterate-notes", "take a note", "note this", "add a note". Appends the ask to the current notes file in one synthesized line and acks in one line. Also "list notes", "show notes", "new notes <topic>", and the handoff "turn these notes into a plan" (routed to $iterate-planner). Notes live under ./.claude/iterate/notes/. This skill never brainstorms, never plans, never executes — deciding between options is $iterate-brainstorm, planning is $iterate-planner.
+description: Triggers on "$iterate-notes", "take a note", "note this", "add a note". Appends the ask to the current notes file in one synthesized line and acks in one line. Also "list notes", "show notes", "new notes <topic>", and the handoff "turn these notes into a plan" (routed to $iterate-planner). This skill never brainstorms, never plans, never executes — deciding between options is $iterate-brainstorm, planning is $iterate-planner.
 ---
 
 <!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
@@ -8,6 +8,12 @@ description: The note-taking half of the iterate stack — capture ideas for the
 # $iterate-notes — Write it down, don't work it out
 
 The capture skill for the iterate stack:
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+The note-taking half of the iterate stack — capture ideas for the NEXT iterate plan, before any formal planning. Notes live under ./.claude/iterate/notes/.
 
 
 | Skill | Role |

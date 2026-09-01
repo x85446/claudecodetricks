@@ -73,6 +73,18 @@ declare -a SKIP_SKILLS=(skill-2-codex skill-builder skill-maker)
 # front door the user routes to by natural language.
 declare -a FOLD_CHILDREN_OF=(testmaster uxmaster codeconverter categorize importer downloader auditor)
 
+EXT_CONF="$(dirname "$HERE")/external-sources.conf"
+ext_source_for() {
+    # Path to an externally-owned skill's canonical directory, or empty.
+    [[ -f "$EXT_CONF" ]] || return 0
+    local want="$1" n p
+    while read -r n p; do
+        [[ -z "$n" || "$n" == \#* ]] && continue
+        [[ "$n" == "$want" ]] || continue
+        echo "${p/#\~/$HOME}"; return 0
+    done < "$EXT_CONF"
+}
+
 sha_of() {
     # Digest of a directory's content, independent of where that directory
     # lives. shasum prints the path alongside the hash, so digesting absolute
@@ -98,7 +110,7 @@ else
 fi
 ALL_CSV="$(IFS=,; echo "${ALL[*]}")"
 
-declare -a R_CONVERTED=() R_SKIPPED=() R_MANUAL=() R_FAILED=() NO_BACKUP=()
+declare -a R_CONVERTED=() R_SKIPPED=() R_MANUAL=() R_FAILED=() NO_BACKUP=() EXTERNAL=()
 declare -A STAMP_SRC=()
 declare -a FLAGGED=()
 
@@ -112,7 +124,14 @@ for name in "${ALL[@]}"; do
     # sync exists to prevent.
     src="$SRC_ROOT/$name"
     if [[ ! -f "$src/SKILL.md" ]]; then
-        if [[ -f "$CLAUDE_GLOBAL/$name/SKILL.md" ]]; then
+        ext="$(ext_source_for "$name")"
+        if [[ -n "$ext" && -f "$ext/SKILL.md" ]]; then
+            src="$ext"
+            EXTERNAL+=("$name")
+        elif [[ -f "$CLAUDE_GLOBAL/$name/SKILL.md" ]]; then
+            # Last resort. The global install is a COPY of whatever its owning
+            # repo last pushed there, so porting from it silently inherits any
+            # staleness. Reported loudly rather than treated as normal.
             src="$CLAUDE_GLOBAL/$name"
             NO_BACKUP+=("$name")
         else
@@ -243,8 +262,12 @@ say "converted:  ${#R_CONVERTED[@]}"
 say "unchanged:  ${#R_SKIPPED[@]}"
 say "source changed, port protected (NOT overwritten): ${#R_MANUAL[@]} ${R_MANUAL[*]:-}"
 say "failed:     ${#R_FAILED[@]} ${R_FAILED[*]:-}"
+if [[ ${#EXTERNAL[@]} -gt 0 ]]; then
+    say "ported from their owning repo (external-sources.conf): ${EXTERNAL[*]}"
+fi
 if [[ ${#NO_BACKUP[@]} -gt 0 ]]; then
-    say "NO REPO BACKUP (ported from the live global install): ${NO_BACKUP[*]}"
+    say "WARNING — no canonical source, ported from the live global install: ${NO_BACKUP[*]}"
+    say "  that install is a copy and may be stale; add an entry to external-sources.conf"
 fi
 say "folded into their meta (explicit-only, free): ${#FOLDED[@]}"
 [[ -n "$DIET_OUT" ]] && say "manifest: $DIET_OUT"

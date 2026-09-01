@@ -196,6 +196,20 @@ scripts/sync-all.sh --force <skill>        # override port protection (see below
 scripts/sync-all.sh --all                  # whole backup repo, not just global
 ```
 
+### Skills owned by another repo
+
+Source resolution is: this repo's `skills/<name>/`, then an entry in
+`external-sources.conf`, then `~/.claude/skills/<name>/` as a last resort.
+
+That middle step exists because some skills are owned by their own project and
+installed from there (izmachine ships `make install-skill` in
+`~/workspace/izuma/izmachine`). Without an entry, such a skill falls through to
+the global install — which is a *copy*, refreshed only when the owning repo's
+installer is re-run. izmachine's install sat 3 days and 115 lines behind its
+own repo, and the first Codex port was built from that stale copy. Add an entry
+whenever a globally-installed skill has no backup here; the sync warns loudly
+when it has to fall through.
+
 **Scope is the globally-installed set** (`~/.claude/skills`), not the backup
 repo. The repo is the canonical backup for every project and holds
 project-scoped skills that were never globally available; porting those would
