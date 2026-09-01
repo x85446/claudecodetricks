@@ -80,13 +80,49 @@ summary() {
 }
 
 install_skill() {
+    # Publish SKILL.md atomically.
+    #
+    # The obvious `mkdir -p dest/name && cp -r src/* dest/name/` is racy in two
+    # ways, and a harness scanning the skills root mid-install reports both as
+    # "Skipped loading N skill(s) due to invalid SKILL.md files":
+    #   - for a NEW skill, mkdir publishes an empty directory before SKILL.md
+    #     lands in it, so the scan sees a directory with no SKILL.md;
+    #   - for an EXISTING one, cp truncates SKILL.md in place before rewriting
+    #     it, so the scan can read a partial file.
+    # Both windows are milliseconds, and both are hit eventually because the
+    # installer runs while sessions are open.
+    #
+    # Staging sits beside the destination root, not inside it, so nothing
+    # half-written is ever visible to a scan. SKILL.md is renamed into place
+    # LAST -- rename is atomic, so the file is only ever old-and-valid or
+    # new-and-valid, never in between.
+    #
+    # Copy stays ADDITIVE on purpose: a skill writes runtime state next to
+    # itself (oracle/known.md, accounts/known.md, incus/routing.md) that has no
+    # counterpart in the backup. A full replace would delete the user's data.
     local name=$1 dest=$2
-    mkdir -p "$dest/$name"
-    if cp -r "$SKILLHOME/$name/"* "$dest/$name/" 2>/dev/null; then
-        ok "$name" "$dest"
-    else
-        fail "$name" "copy failed"
+    local stage="$dest/../.skillinstall-staging.$$"
+
+    rm -rf "$stage"; mkdir -p "$stage/$name" || { fail "$name" "staging failed"; return; }
+    if ! cp -r "$SKILLHOME/$name/"* "$stage/$name/" 2>/dev/null; then
+        rm -rf "$stage"; fail "$name" "copy failed"; return
     fi
+    if [[ ! -f "$stage/$name/SKILL.md" ]]; then
+        rm -rf "$stage"; fail "$name" "no SKILL.md in source"; return
+    fi
+
+    if [[ -d "$dest/$name" ]]; then
+        # Existing install: everything except SKILL.md first, then SKILL.md by
+        # atomic rename, so the published file never appears truncated.
+        mv "$stage/$name/SKILL.md" "$stage/$name.SKILL.md"
+        cp -r "$stage/$name/." "$dest/$name/" 2>/dev/null
+        mv "$stage/$name.SKILL.md" "$dest/$name/SKILL.md"
+    else
+        mkdir -p "$dest"
+        mv "$stage/$name" "$dest/$name"
+    fi
+    rm -rf "$stage"
+    ok "$name" "$dest"
 }
 
 install_to_all() {
@@ -285,6 +321,69 @@ do_install() {
             ;;
         iterate-notes)
             install_skill iterate-notes "$USERGLOBAL"
+            ;;
+        accounts)
+            install_skill accounts "$USERGLOBAL"
+            ;;
+        feature-branch)
+            install_skill feature-branch "$USERGLOBAL"
+            ;;
+        incus)
+            install_skill incus "$USERGLOBAL"
+            ;;
+        izmachine)
+            install_skill izmachine "$USERGLOBAL"
+            ;;
+        oracle)
+            install_skill oracle "$USERGLOBAL"
+            ;;
+        profile-tools)
+            install_skill profile-tools "$USERGLOBAL"
+            ;;
+        ssh-config)
+            install_skill ssh-config "$USERGLOBAL"
+            ;;
+        testmaster-adopt)
+            install_skill testmaster-adopt "$USERGLOBAL"
+            ;;
+        testmaster-catalog)
+            install_skill testmaster-catalog "$USERGLOBAL"
+            ;;
+        testmaster-derive)
+            install_skill testmaster-derive "$USERGLOBAL"
+            ;;
+        testmaster-maintain)
+            install_skill testmaster-maintain "$USERGLOBAL"
+            ;;
+        testmaster-prune)
+            install_skill testmaster-prune "$USERGLOBAL"
+            ;;
+        testmaster-report)
+            install_skill testmaster-report "$USERGLOBAL"
+            ;;
+        testmaster-run)
+            install_skill testmaster-run "$USERGLOBAL"
+            ;;
+        uxmaster-analysis)
+            install_skill uxmaster-analysis "$USERGLOBAL"
+            ;;
+        uxmaster-cli)
+            install_skill uxmaster-cli "$USERGLOBAL"
+            ;;
+        uxmaster-implement)
+            install_skill uxmaster-implement "$USERGLOBAL"
+            ;;
+        uxmaster-linux)
+            install_skill uxmaster-linux "$USERGLOBAL"
+            ;;
+        uxmaster-macos)
+            install_skill uxmaster-macos "$USERGLOBAL"
+            ;;
+        uxmaster-web)
+            install_skill uxmaster-web "$USERGLOBAL"
+            ;;
+        uxmaster-windows)
+            install_skill uxmaster-windows "$USERGLOBAL"
             ;;
         iterate-rules)
             install_skill iterate-rules "$USERGLOBAL"

@@ -110,7 +110,7 @@ else
 fi
 ALL_CSV="$(IFS=,; echo "${ALL[*]}")"
 
-declare -a R_CONVERTED=() R_SKIPPED=() R_MANUAL=() R_FAILED=() NO_BACKUP=() EXTERNAL=()
+declare -a R_CONVERTED=() R_SKIPPED=() R_MANUAL=() R_FAILED=() NO_BACKUP=() EXTERNAL=() BROKEN=()
 declare -A STAMP_SRC=()
 declare -a FLAGGED=()
 
@@ -249,12 +249,46 @@ if $DO_INSTALL; then
             $keep || { rm -rf "$d"; say "pruned stale install: $b"; }
         done
     fi
+    # Install by atomic rename, never by rm-then-copy.
+    #
+    # `rm -rf dst && cp -R src dst` leaves a window -- the whole duration of the
+    # copy -- in which dst EXISTS as a directory but its SKILL.md does not. A
+    # harness scanning the skills root during that window does not see "no
+    # skill"; it sees a malformed one, and reports
+    #   "failed to read file: No such file or directory".
+    # Observed live on ~/.agents/skills/i. The window is milliseconds per skill,
+    # but this loop runs over 40+ of them and the daily job runs unattended
+    # while sessions are open, so it is hit eventually.
+    #
+    # Staging lives OUTSIDE the scanned root, so a half-copied directory is
+    # never visible there at all. The two renames are atomic on the same
+    # filesystem: the only transient state a scanner can observe is dst briefly
+    # absent, which is a skill that isn't there yet -- harmless -- rather than
+    # one that is there and broken.
+    STAGE="$HOME/.agents/.skill-staging"
+    rm -rf "$STAGE"; mkdir -p "$STAGE"
+    trap 'rm -rf "$STAGE"' EXIT
     for n in "${R_CONVERTED[@]:-}" "${R_MANUAL[@]:-}" "${R_SKIPPED[@]:-}"; do
         [[ -z "$n" ]] && continue
         [[ -d "$OUT_ROOT/$n" ]] || continue
-        rm -rf "${INSTALL_ROOT:?}/$n"
-        cp -R "$OUT_ROOT/$n" "$INSTALL_ROOT/$n"
-        rm -f "$INSTALL_ROOT/$n/.portstamp"
+        rm -rf "${STAGE:?}/$n" "${STAGE:?}/$n.old"
+        cp -R "$OUT_ROOT/$n" "$STAGE/$n" || { R_FAILED+=("$n"); continue; }
+        rm -f "$STAGE/$n/.portstamp"
+        # Never publish a directory without its SKILL.md -- that is the exact
+        # state this whole dance exists to avoid.
+        [[ -f "$STAGE/$n/SKILL.md" ]] || { R_FAILED+=("$n"); rm -rf "${STAGE:?}/$n"; continue; }
+        [[ -e "$INSTALL_ROOT/$n" ]] && mv "$INSTALL_ROOT/$n" "$STAGE/$n.old"
+        mv "$STAGE/$n" "$INSTALL_ROOT/$n"
+        rm -rf "${STAGE:?}/$n.old"
+    done
+    rm -rf "$STAGE"; trap - EXIT
+
+    # Post-install integrity: every installed directory must hold a readable
+    # SKILL.md. Cheap, and it is the check that would have caught the race
+    # instead of a harness warning doing it for us.
+    for d in "$INSTALL_ROOT"/*/; do
+        [[ -d "$d" ]] || continue
+        [[ -r "$d/SKILL.md" ]] || BROKEN+=("$(basename "$d")")
     done
 fi
 
@@ -273,8 +307,11 @@ say "folded into their meta (explicit-only, free): ${#FOLDED[@]}"
 [[ -n "$DIET_OUT" ]] && say "manifest: $DIET_OUT"
 say "needing a judgment pass: ${#FLAGGED[@]} ${FLAGGED[*]:-}"
 $DO_INSTALL && say "installed to $INSTALL_ROOT"
+if [[ ${#BROKEN[@]} -gt 0 ]]; then
+    say "BROKEN INSTALL — directory present with no readable SKILL.md: ${BROKEN[*]}"
+fi
 
 # Non-zero only for real breakage. A skill needing a judgment pass, or one
 # protected from overwrite, is normal steady-state -- not a failure the cron
 # job should alarm on every single night.
-[[ ${#R_FAILED[@]} -eq 0 ]]
+[[ ${#R_FAILED[@]} -eq 0 && ${#BROKEN[@]} -eq 0 ]]

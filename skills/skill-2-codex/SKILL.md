@@ -321,6 +321,33 @@ that same shape with its own `references/<target>-format.md` — write the
 mapping table from the target's official docs, and do not re-derive conversion
 rules ad hoc mid-run.
 
+### Installing atomically
+
+Both installers publish by **atomic rename**, never `rm -rf` + `cp`.
+
+`rm -rf dst && cp -R src dst` leaves a window — the whole duration of the copy —
+where `dst` exists as a directory but its `SKILL.md` does not. A harness
+scanning the skills root then does not see "no skill"; it sees a malformed one:
+
+```
+⚠ Skipped loading 1 skill(s) due to invalid SKILL.md files.
+⚠ ~/.agents/skills/i/SKILL.md: failed to read file: No such file or directory
+```
+
+Overwriting an existing `SKILL.md` in place has the same problem from the other
+side: `cp` truncates before it rewrites, so a scan can read a partial file.
+
+Both installers stage **outside** the scanned root and rename in, so the only
+transient state a scanner can observe is a skill briefly absent — harmless —
+rather than one present and broken. `sync-all.sh` also refuses to publish a
+staged directory with no `SKILL.md`, and ends with an integrity sweep that
+fails the run if any installed directory lacks a readable one.
+
+`skillinstall.sh` stays **additive** on an existing install: a skill writes
+runtime state next to itself (`oracle/known.md`, `accounts/known.md`,
+`incus/routing.md`) that has no counterpart in the backup, and a full replace
+would delete the user's data. Only `SKILL.md` is renamed into place.
+
 ### Daily automation (macOS)
 
 ```
