@@ -1,0 +1,16 @@
+[package]
+name = "read-bug-history"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "read-bug-history"
+path = "src/main.rs"
+
+[dependencies]
+agent-comms-core = { path = "../../../../crates/agent-comms-core" }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+clap             = { workspace = true }
+anyhow           = { workspace = true }

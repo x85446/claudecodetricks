@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "commandName": "bump",
+  "displayName": "Bump Version",
+  "description": "Automate version bumps, changelog generation, and git tagging for Gravhl Mobile releases",
+  "triggers": {
+    "userInvocable": true,
+    "keywords": ["bump", "version", "release", "changelog"]
+  },
+  "author": "Gravhl Team",
+  "version": "1.0.0"
+}

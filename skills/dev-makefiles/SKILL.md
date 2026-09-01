@@ -2,7 +2,7 @@
 name: dev-makefiles
 description: Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation. Use when creating or modifying a Makefile, adding make targets, setting up a build system, creating makehelp.sh, migrating to the 2-layer convention, or whenever a plan step builds, compiles, or scripts a repeatable dev task — that work goes through make targets per this skill, not ad-hoc shell commands.
 argument-hint: [action] [details]
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Building Makefiles
@@ -21,14 +21,16 @@ Follow these steps in order. The first decision determines which path to take.
    ```bash
    find . -name Makefile -not -path '*/vendor/*' -not -path '*/node_modules/*' -not -path '*/.git/*'
    ```
-2. For each: does a sibling `makehelp.sh` exist, and how many `##@` section headers does it have?
+2. For each: does a sibling `makehelp.sh` exist, how many `##@` section headers does it have, and **does it define `run`**?
 3. Identify the project's language/toolchain (go.mod, package.json, Cargo.toml, pyproject.toml, etc.)
 4. **Print the inventory with a path assigned to each, before changing anything:**
 
-   | Makefile | makehelp.sh | `##@` | Path |
-   |---|---|---|---|
-   | `./Makefile` | no | 0 | **C — migrate** |
-   | `./experiment/policing/Makefile` | yes | 7 | B — maintain |
+   | Makefile | makehelp.sh | `##@` | `run` | Path |
+   |---|---|---|---|---|
+   | `./Makefile` | no | 0 | no | **C — migrate** |
+   | `./experiment/policing/Makefile` | yes | 7 | no | B — maintain (**add `run`**) |
+
+   A missing `run` is a defect on every row it appears on, including rows that are otherwise conforming.
 
 Every first-party Makefile gets a path. Vendored and third-party Makefiles are excluded — list them as excluded rather than omitting them silently.
 
@@ -41,9 +43,11 @@ The path is chosen **per Makefile**, not per invocation. A repo with a non-confo
 2. Set the Variables section using the Toolchain Adaptation table below
 3. Generate both `Makefile` and `makehelp.sh` from the templates
 4. Replace all `myapp` placeholders with the actual binary/project name
-5. Make makehelp.sh executable: `chmod +x makehelp.sh`
+5. **Decide what `run` does** using the run ladder below, and write that into the target's help text
+6. Make makehelp.sh executable: `chmod +x makehelp.sh`
 
 **Path B — Add/modify targets (Makefile exists and follows 2-layer convention):**
+0. **If `run` is missing, adding it is part of this pass** — not a follow-up
 1. Read the existing Makefile and makehelp.sh
 2. Identify the correct `##@` section for the new target
 3. Add the target with `.PHONY`, `## help text`, and recipe
@@ -57,7 +61,8 @@ The path is chosen **per Makefile**, not per invocation. A repo with a non-confo
 4. Add the `help` target and awk recipe
 5. Extract any inline shell logic >10 lines into a new makehelp.sh
 6. Create makehelp.sh with dispatcher if any logic was extracted
-7. Verify: every original target still works the same way
+7. **Add `run` if the Makefile doesn't have one** — the run ladder below picks what it does
+8. Verify: every original target still works the same way
 
 ### Step 3: Validate
 
@@ -65,6 +70,8 @@ Validate **each** Makefile from the Step 1 inventory:
 
 - Run `make help` to verify help output renders correctly
 - Confirm all `##@` sections appear with their targets
+- **Confirm `run` appears in `make help`, and that its help text names the actual thing it runs** — "Run development version" is not a passing help line
+- **Actually run `make run`.** It must build and reach the software's working state. For a long-running process, start it under a timeout (`timeout 15 make run`) and confirm it reaches its ready line rather than waiting for it to exit; kill it and confirm the terminal is clean
 - If makehelp.sh was created/modified, verify it's executable and the dispatcher covers all delegated targets
 
 Then **re-print the Step 1 inventory with an outcome on every row** — `migrated`, `maintained`, `already conforming`, `excluded (vendored)`, or `untouched (<reason>)`. A Makefile that appeared in the inventory and has no outcome is an incomplete run, not a finished one.
@@ -89,6 +96,49 @@ Then **re-print the Step 1 inventory with an outcome on every row** — `migrate
 1. **"If it's a build-time operation, it's in make"** — compiling, testing, linting, formatting, installing dev tools
 2. **"If it's a runtime operation, it's in the CLI"** — daemon management, service lifecycle, version queries
 3. **"Complex shell logic belongs in makehelp.sh, not inline"** — anything >10 lines, OS branching, multi-step ops
+
+## `make run` — the target every Makefile ships
+
+Two commands tell a stranger what a repo is: `make help` lists what they *can* do, and **`make run` shows them
+the software doing its job**. `run` is therefore mandatory — in a new Makefile, in a migration, in a
+maintenance pass on a Makefile that somehow never had one.
+
+**The contract:**
+
+- `run` depends on `build`, so it always exercises current code.
+- `run` performs **the most common thing the software is designed to do** — the thing the README leads with,
+  the reason someone installed it. Not `--help`. Not `--version`. Not a test suite standing in for a demo.
+- `run` needs no arguments to be useful. `make run` with nothing after it does something real.
+- `run` accepts `ARGS` for everything else: `make run ARGS="vm list --json"`.
+- Its help text names the actual behavior: `## Run the dashboard at http://localhost:8080`, not
+  `## Run development version`.
+
+### The run ladder — pick the first row that matches the project
+
+| Project shape | `make run` does |
+|---|---|
+| Single app or CLI binary | Runs it with the invocation the README leads with |
+| Long-running service / server / daemon | Starts it in the foreground in dev mode, on its default port, printing the URL; `Ctrl-C` exits clean |
+| CLI with subcommands | The most common subcommand (`serve`, `status`, `list`), overridable via `ARGS` |
+| TUI / interactive app | Launches the interface |
+| Multiple binaries | The **primary** one — the binary named after the repo, or the one the README leads with; each other binary gets its own `run-<name>` |
+| Web frontend | The dev server (`npm run dev`), printing the URL |
+| Data pipeline / batch job | One representative run against sample or fixture data — never against production inputs |
+| Library with an example/demo | The canonical example program |
+| Library with nothing runnable | The smoke path that proves the library works (a doc example, an example test), with one line saying that's what it is |
+
+When two rows are arguable, pick the one a new contributor would want after `make build` — and record the
+choice in the target's help text so nobody re-litigates it.
+
+### Rules
+
+- **Never leave `run` out**, and never stub it with `@echo "nothing to run"`. Every project can demonstrate
+  itself; the bottom row of the ladder is the floor, not an excuse.
+- **Never make `run` destructive.** It must be safe to type blind — no production endpoints, no writes
+  outside the repo and its normal dev state, no `sudo`. Destructive work lives behind its own named target.
+- **`run` fails loudly and usefully.** Missing config, missing service, missing credential → say which one and
+  print the exact command that fixes it. Never a stack trace, never a silent exit 0.
+- **Keep `run` in `##@ Development`** alongside `dev` and `cycle`.
 
 ## Toolchain Adaptation
 
@@ -222,8 +272,8 @@ dev: fmt test build  ## Format, test, and build
 cycle: uninstall clean build install  ## Full clean rebuild and install
 
 .PHONY: run
-run: build  ## Detect OS, build, and run the development binary
-	@./makehelp.sh run
+run: build  ## Run <what this software actually does> (ARGS="..." to pass arguments)
+	@./makehelp.sh run $(ARGS)
 
 ##@ Cleanup
 
@@ -296,16 +346,18 @@ cmd_prereqs() {
 }
 
 cmd_run() {
-    local os arch binary
-    os="$(uname -s)"
-    arch="$(uname -m)"
-    echo "Detected OS: ${os} (${arch})"
-    binary="${BINARY_DIR}/myapp"
+    # `run` = the most common thing this software does (see the run ladder).
+    # Any ARGS the user passed arrive here as "$@" and replace the default invocation.
+    local binary="${BINARY_DIR}/myapp"
     if [[ ! -x "$binary" ]]; then
-        echo "Error: $binary not found or not executable (did the build step run?)" >&2
+        echo "Error: $binary not found (run 'make build' first)" >&2
         exit 1
     fi
-    exec "$binary"
+    if [[ $# -gt 0 ]]; then
+        exec "$binary" "$@"
+    fi
+    # Replace with this project's headline invocation — the one the README leads with.
+    exec "$binary" serve --port 8080
 }
 
 cmd_build_production() {
@@ -360,7 +412,7 @@ cmd_uninstall() {
 
 case "${1:-}" in
     prereqs)            cmd_prereqs ;;
-    run)                cmd_run ;;
+    run)                shift; cmd_run "$@" ;;
     build-production)   cmd_build_production "${2:-}" ;;
     install-dev)        cmd_install_dev ;;
     install-production) cmd_install_production ;;
@@ -396,6 +448,7 @@ target-name:  ## Short description  # Help text for this target
 - `install` is always an **alias** for `install-dev` (via dependency, no recipe)
 - `install-dev` depends on `build` (builds first, then symlinks)
 - `install-production` depends on `build-production` (builds optimized, then copies)
+- `run` depends on `build` (always runs current code) and is **mandatory in every Makefile**
 - `check` depends on `lint` and `test` (runs both)
 - `dev` depends on `fmt`, `test`, `build` (developer workflow chain)
 - `cycle` depends on `uninstall`, `clean`, `build`, `install` (full rebuild)
@@ -418,7 +471,11 @@ target-name:  ## Short description  # Help text for this target
 
 **Project has no installable binary**: Remove `install-dev`, `install-production`, and `uninstall` target *recipes* but keep stub targets with `@echo "Nothing to install"` so `cycle` doesn't break.
 
-**Multiple binaries**: Add one `build-<name>` target per binary under `##@` Build, and have the main `build` target depend on all of them: `build: build-foo build-bar`.
+**Multiple binaries**: Add one `build-<name>` target per binary under `##@` Build, and have the main `build` target depend on all of them: `build: build-foo build-bar`. `run` runs the primary binary; each other binary gets `run-<name>`.
+
+**Nothing obvious to run** (pure library, config repo, docs site): the run ladder's bottom rows still apply — the canonical example, or the smoke path that proves the thing works, with one line of output saying so. `run` is never omitted and never a no-op echo.
+
+**`run` needs a service or credential**: `run` checks for it first and fails with the exact fix (`Error: no database at $DATABASE_URL — start one with: make dev-db`). It never starts production dependencies and never prompts for a secret.
 
 **Makefile includes other Makefiles**: The help awk recipe uses `$(MAKEFILE_LIST)` so included targets will appear in help automatically. Ensure included files use the same `##@` and `##` conventions.
 
@@ -428,6 +485,8 @@ target-name:  ## Short description  # Help text for this target
 
 - **Don't stop at the first Makefile you find** — inventory the whole repo (Step 1). A conforming subproject Makefile does not mean the repo conforms.
 - **Don't silently leave a non-conforming Makefile untouched.** If you have been told not to modify one, honor that — then report it as non-conforming *and name where the constraint came from*: the user's instruction in this session, or the file and line that states it. An "off limits" you cannot source is not a constraint; verify it before letting it block a migration.
+- **Don't ship a Makefile without `run`** — it's mandatory, and a migration that leaves it out is unfinished
+- **Don't let `run` print a help screen or a version string** — it runs the software doing its actual job
 - **Don't put runtime operations in make** — daemon start/stop, service management, and version queries belong in the CLI
 - **Don't inline complex shell in Makefile recipes** — if it's >10 lines or has `if/case`, move it to makehelp.sh
 - **Don't use tabs inconsistently** — Makefile recipes MUST use tabs, not spaces

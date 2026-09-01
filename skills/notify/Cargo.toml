@@ -1,0 +1,18 @@
+[package]
+name = "chopper2-notify"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "notify"
+path = "src/main.rs"
+
+[dependencies]
+agent-comms-core = { path = "../../../../crates/agent-comms-core" }
+agent-comms-cfg  = { path = "../../../../crates/agent-comms-cfg" }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+clap             = { workspace = true }
+anyhow           = { workspace = true }
+jiff             = { workspace = true }
+indexmap         = { workspace = true }

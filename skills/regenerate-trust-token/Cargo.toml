@@ -1,0 +1,27 @@
+[package]
+name    = "regenerate-trust-token"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "regenerate_trust_token"
+path = "src/lib.rs"
+
+[[bin]]
+name = "regenerate-trust-token"
+path = "src/main.rs"
+
+[features]
+default = []
+test-support = []
+
+[dependencies]
+agent-comms-cfg = { path = "../../../../crates/agent-comms-cfg" }
+serde           = { workspace = true }
+serde_json      = { workspace = true }
+anyhow          = { workspace = true }
+clap            = { workspace = true }
+jiff            = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

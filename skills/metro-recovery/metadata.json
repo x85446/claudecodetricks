@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "commandName": "metro-recovery",
+  "displayName": "Metro Bundler Recovery",
+  "description": "Run the deep Metro/Watchman/Pods cache-recovery sequence when a plain restart + --reset-cache won't unblock the bundler. Use when Metro is stuck bundling, showing a stale red screen after a dependency change, or printing module-resolution errors that don't match current code.",
+  "triggers": {
+    "userInvocable": true,
+    "keywords": [
+      "metro stuck",
+      "metro frozen",
+      "red screen",
+      "stale module",
+      "bundler hung",
+      "watchman",
+      "haste-map",
+      "reset-cache",
+      "pod install"
+    ]
+  },
+  "author": "Gravhl Team",
+  "version": "1.0.0"
+}

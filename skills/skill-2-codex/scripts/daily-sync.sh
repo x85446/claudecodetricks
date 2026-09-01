@@ -60,13 +60,22 @@ for f in glob.glob(f"{ROOT}/*/SKILL.md"):
     tot += len(os.path.basename(os.path.dirname(f))) + len(m.group(1).strip() if m else "")
 print(f"manifest: {tot}/8000 chars" + (f"  OVER BY {tot-8000}" if tot > 8000 else "  ok"))
 PY
+    # Registry audit. claudecodetricks is the registry of record for every
+    # first-party skill on this machine; this reports what is unregistered or
+    # has drifted from its live copy. Report-only on purpose -- deciding which
+    # side of a drift wins is a content call (a project copy can be an
+    # authoritative edit or a stale install), so it is never auto-resolved.
+    echo
+    echo "--- registry audit ---"
+    python3 "$REPO/skills/skills-audit.py" 2>&1 | sed -n '/^first-party:/,$p' | head -40
+
     echo "=== done $(date '+%H:%M:%S') ==="
 } >"$LOG" 2>&1
 
 # One-line status, cheap to read.
 {
     date '+last run: %Y-%m-%d %H:%M:%S %Z'
-    grep -E '^(converted|unchanged|failed|source changed|residual|manifest)' "$LOG" | sed 's/^/  /'
+    grep -E '^(converted|unchanged|failed|source changed|residual|manifest|first-party)' "$LOG" | sed 's/^/  /'
 } > "$STATUS"
 
 find "$LOG_DIR" -name 'sync-*.log' -mtime +14 -delete 2>/dev/null

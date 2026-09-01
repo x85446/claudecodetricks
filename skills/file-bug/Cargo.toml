@@ -1,0 +1,21 @@
+[package]
+name = "file-bug"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "file-bug"
+path = "src/main.rs"
+
+[dependencies]
+agent-comms-core = { path = "../../../../crates/agent-comms-core" }
+agent-comms-cfg  = { path = "../../../../crates/agent-comms-cfg" }
+agent-comms-git  = { path = "../../../../crates/agent-comms-git" }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+clap             = { workspace = true }
+anyhow           = { workspace = true }
+jiff             = { workspace = true }
+sha2             = { workspace = true }
+hex              = { workspace = true }

@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "version": "1.3",
+    "description": "Maps keywords in Description (D) to site values (H)",
+    "last_updated": "2026-07-07"
+  },
+  "high_confidence": {
+    "1PASSWORD": "1password.com",
+    "ATLASSIAN": "Atlassian.com",
+    "CLOUDFLARE": "cloudflare.com",
+    "HEROKU": "heroku.com",
+    "INTUIT": "intuit",
+    "MICROSOFT": "microsoft.com",
+    "MSFT": "microsoft.com",
+    "SEMRUSH": "Semrush.Com",
+    "SLACK": "slack.com",
+    "CIRCLECI": "circleci",
+    "HUBSPOT": "hubspot.com",
+    "WEWORK": "wework",
+    "UBIQUITI": "ubiquiti",
+    "EBAY": "ebay.com",
+    "GOOGLE": "google",
+    "ADOBE": "adobe",
+    "AHREFS": "Ahrefs",
+    "OPENAI": "openai",
+    "AWS": "aws",
+    "COGENT": "cogentISP",
+    "POSITIVESSL": "postivessl",
+    "CHATGPT": "openai",
+    "CURSOR": "cursor.com",
+    "CRUNCHBASE": "crunchbase.com",
+    "FRESHDESK": "freshdesk.com",
+    "FRESHWORKS": "freshdesk.com",
+    "ALICAT": "alicat",
+    "ZENI": "zeni",
+    "EAGLE POINT FUNDING": "eagle",
+    "NISHIYAMA": "sales.jci",
+    "JOHNSON CONTROLS": "sales.jci",
+    "APIARYX": "apiaryx.com",
+    "DATAFOUNDRY": "switch",
+    "DATA FOUNDRY": "switch"
+  },
+  "context_dependent": {
+    "DEEL": {
+      "parent_site": "deel.com",
+      "child_sites": [
+        "deel.pete",
+        "deel.jenia",
+        "deel.janne",
+        "deel.gabi",
+        "deel.eran",
+        "deel.fee"
+      ],
+      "note": "Requires PDF analysis to determine employee"
+    },
+    "ONPAY": {
+      "parent_site": "onpay.split",
+      "child_sites": [
+        "onpay.ed",
+        "onpay.travis",
+        "onpay.yash",
+        "onpay.fee"
+      ],
+      "note": "Requires payroll record analysis"
+    },
+    "AMAZON": {
+      "possible_sites": [
+        "amazon.it.hw",
+        "aws",
+        "travel.marketing"
+      ],
+      "note": "Check context: AWS=cloud, IT.HW=equipment, travel=marketing"
+    },
+    "CHASE": {
+      "possible_sites": [
+        "chase.com",
+        "funding"
+      ],
+      "note": "chase.com for fees; internal transfers 'Online Transfer from/to CHK ...####' -> chase.#### (####=other Chase acct 7505/3839/3211/6557), link=XFER, sublink=X<YYMMDD>; external transfers -> funding"
+    },
+    "RAMP": {
+      "parent_site": "ramp.split",
+      "note": "Parent only - children use merchant sites"
+    }
+  },
+  "special_patterns": {
+    "SERVICE CHARGES": "chase.com",
+    "WIRE FEE": "chase.com",
+    "Online Transfer from CHK": "funding",
+    "Transfer from Izuma Checking": "ramp.split",
+    "MSPBNA BANK": "trial.deposits",
+    "Online ACH Payment": "requires_analysis",
+    "Online Transfer to CHK": "funding"
+  }
+}

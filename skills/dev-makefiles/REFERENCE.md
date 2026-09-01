@@ -83,7 +83,14 @@ test-e2e:  ## End-to-end workflow tests
 
 ### Development (optional)
 
+`run` itself is required (see SKILL.md), but a multi-binary repo adds one `run-<name>` per extra binary
+beside it, and `watch` is optional:
+
 ```makefile
+.PHONY: run-worker
+run-worker: build  ## Run the worker instead of the primary binary
+	@./makehelp.sh run-worker $(ARGS)
+
 .PHONY: watch
 watch:  ## Watch for changes and rebuild
 	@./makehelp.sh watch
@@ -204,7 +211,7 @@ cmd_uninstall_completions() {
 |                 | `uninstall`           | Remove all installed files            |
 | **Development** | `dev`                 | fmt -> test -> build workflow          |
 |                 | `cycle`               | uninstall -> clean -> build -> install |
-|                 | `run`                 | Run development version               |
+|                 | `run`                 | **Required** — run the headline use    |
 |                 | `watch`               | Watch for changes and rebuild         |
 | **Cleanup**     | `clean`               | Remove build artifacts                |
 |                 | `clean-all`           | Deep clean including vendor           |
