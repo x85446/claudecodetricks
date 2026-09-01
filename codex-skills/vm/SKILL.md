@@ -1,6 +1,6 @@
 ---
 name: vm
-description: Use when someone asks to run, build, test or debug something on a local macOS, Linux or Windows guest on this Mac, or to create, start, stop, ssh into, snapshot, restore, clone, tag or destroy one. Brings the machine up on demand through the `osvm` command on PATH, runs the work, then leaves it running or tears it down as instructed. Triggers on "run this on a linux box", "test it on windows", "check that on a mac VM", "spin up a VM", "make me a linux box", "I need a windows machine", "fresh mac VM", "give me a throwaway box to test on", "ssh into the VM", "snapshot this VM", "roll it back", "clone that VM", "destroy the test VM", "what VMs do I have".
+description: Use when someone asks to run, build, test or debug something on a local macOS, Linux or Windows guest on this Mac, or to create, start, stop, ssh into, snapshot, restore, clone, tag or destroy one. Triggers on "run this on a linux box", "test it on windows", "check that on a mac VM", "spin up a VM", "make me a linux box", "I need a windows machine", "fresh mac VM", "give me a throwaway box to test on", "ssh into the VM", "snapshot this VM", "roll it back", "clone that VM", "destroy the test VM", "what VMs do I have".
 ---
 
 
@@ -10,6 +10,12 @@ description: Use when someone asks to run, build, test or debug something on a l
 # $vm — local VMs on this Mac, through `osvm`
 
 The request: $ARGUMENTS
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+Brings the machine up on demand through the `osvm` command on PATH, runs the work, then leaves it running or tears it down as instructed.
 
 ## Usage
 

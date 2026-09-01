@@ -286,6 +286,9 @@ do_install() {
         iterate-notes)
             install_skill iterate-notes "$USERGLOBAL"
             ;;
+        iterate-rules)
+            install_skill iterate-rules "$USERGLOBAL"
+            ;;
         iterate-brainstorm)
             install_skill iterate-brainstorm "$USERGLOBAL"
             ;;

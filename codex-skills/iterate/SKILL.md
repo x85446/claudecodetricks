@@ -58,9 +58,13 @@ Resolve in this order:
 
    The keyword parses in **any position** — `$iterate owl permission`, `$iterate permission owl`, `$iterate permission` — and is stripped from the argument before the remaining rules read it, so it is never mistaken for a plan name or for task text. Most projects have no policy file; absent one, this rule is a silent no-op.
 
-1.6. **Launch window (only if this project set one).** If `policy.md` sets `launch-window: HH:MM-HH:MM`, get the real local time — run `date +%H:%M`, never estimate it from context — and refuse a fresh launch outside that window: print the policy's reason, the window, the current time, and **stop**.
+1.6. **Launch schedule (only if this project set one).** If `policy.md` sets `launch-schedule:` (or the `launch-window:` shorthand), get the real local date and time — run `date +'%F %H:%M %a'`, never estimate it from context — and evaluate. Outside the permitted set, refuse a fresh launch: print the policy's reason, the rule that decided it, the current time, and when the next window opens; then **stop**.
+
+   Evaluation order: any matching `deny` refuses; else any matching `allow` permits; else, if allow rules exist and none match, refuse; no schedule at all permits. Deny beats allow, and any allow rule makes the schedule default-deny — so editing policy can only narrow when runs happen, never accidentally widen it. `$iterate-rules` owns the full grammar and writes this file; read it there rather than inferring the syntax.
 
    **The window wraps midnight, and that is the normal case.** `22:00-06:00` means 22:00 through 05:59 the next morning. Compare by wrapping when `start > end`, never with a plain `start <= now <= end` — a naive comparison refuses 02:00 as "before 22:00", which is exactly backwards for the overnight block these windows exist to describe.
+
+   **A day label matches the day the window STARTED, not the current instant.** `allow mon-fri 22:00-06:00` includes Saturday 02:00, because that window opened Friday 22:00 — which is what "weeknights" means to a person. Matching the instant would silently truncate every such window at midnight.
 
    Independent of the keyword gate: **both must pass.** The keyword authorizes the expense, the window constrains the timing, and satisfying one says nothing about the other. There is deliberately no magic word that bypasses the window — you change your mind by editing `policy.md`, which is a decision you make while awake rather than one you make at the moment you want to skip your own rule.
 
@@ -97,7 +101,8 @@ Keys `$iterate` acts on today:
 | Key | Effect |
 |---|---|
 | `require-launch-keyword: <word>` | a fresh launch must carry `<word>` anywhere in its argument |
-| `launch-window: HH:MM-HH:MM` | a fresh launch is refused outside this local-time window; wraps midnight when start > end |
+| `launch-window: HH:MM-HH:MM` | shorthand for a single `allow daily <window>`; wraps midnight when start > end |
+| `launch-schedule:` | list of `<allow\|deny> [days] [HH:MM-HH:MM] [dates]` rules — the full grammar, owned by `$iterate-rules` |
 
 Both exist for projects where a run is expensive enough that starting one casually is the mistake. Set either, both, or neither.
 
