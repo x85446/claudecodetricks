@@ -2,7 +2,7 @@
 name: iterate-rules
 description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which /iterate enforces at launch. Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 argument-hint: <the rule in your own words, or "show" / "test" / "remove <rule>" / "clear">
-version: 1.0.0
+version: 1.1.0
 ---
 
 <!-- version: bump on EVERY behavioral change (minor for additions, major for schema changes, patch for wording). The schema here is the contract /iterate reads; changing it means changing /iterate too. -->
@@ -53,7 +53,8 @@ sentence the user wants to read when they are told no.>
 
 A fresh launch must carry `<word>` anywhere in its argument
 (`/iterate owl permission`). One keyword authorizes one launch; it is not
-remembered.
+remembered. **It also overrides the schedule** — see the evaluation order
+below.
 
 ### `launch-schedule:` — the cron-like ruleset
 
@@ -68,10 +69,22 @@ optional; an omitted component matches everything.
 
 **Evaluation, in this order:**
 
-1. any `deny` matches now → **refuse**
-2. else any `allow` matches now → **permit**
-3. else, allow rules exist but none match → **refuse**
-4. no `launch-schedule` at all → **permit** (no time gate)
+1. the launch keyword was required and supplied → **permit**, and report the
+   override (unless `launch-window-strict: true`)
+2. any `deny` matches now → **refuse**
+3. else any `allow` matches now → **permit**
+4. else, allow rules exist but none match → **refuse**
+5. no `launch-schedule` at all → **permit** (no time gate)
+
+Step 1 is the important one. Both gates answer the same question — *is the
+machine free to spend?* The schedule **guesses** at it from hours the user is
+usually away; the keyword is the **answer**, from the person who knows. When
+they disagree the answer wins. Refusing someone who has just said they are
+leaving for the afternoon is the gate mistaking its proxy for its purpose, and
+it is the one failure that makes people stop trusting the whole mechanism.
+
+`launch-window-strict: true` restores the hard behaviour for a project that
+really does want the hours enforced against an explicit keyword.
 
 Deny wins over allow, and the presence of any allow rule makes the schedule
 default-deny. Both so that adding a rule can only ever narrow when runs
@@ -141,12 +154,17 @@ Evaluate and explain, without writing anything. Name the deciding rule:
 ```
 test Sat 02:00 -> PERMITTED by: allow mon-fri 22:00-06:00
                   (window opened Fri 22:00 — weeknight windows carry past midnight)
-                  lock rule still applies: launch as /iterate <plan> permission
+                  lock rule applies: launch as /iterate <plan> permission
+
+test Sat 07:13 -> outside every allow window
+                  but "permission" overrides the schedule, so
+                  /iterate <plan> permission WILL launch
 ```
 
-Always report the lock rule alongside the schedule verdict. They are
-independent gates and both must pass; reporting one as "permitted" without the
-other is a half-truth that gets someone refused anyway.
+Always report both gates together, and always say whether the keyword would
+carry it. Reporting "outside the window" without adding that the keyword
+overrides is the answer that sends someone away believing they cannot run —
+which is exactly the failure this rule exists to prevent.
 
 ### 4. remove / clear — "remove the time rule", "drop the keyword", "clear the rules"
 

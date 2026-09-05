@@ -66,7 +66,11 @@ Resolve in this order:
 
    **A day label matches the day the window STARTED, not the current instant.** `allow mon-fri 22:00-06:00` includes Saturday 02:00, because that window opened Friday 22:00 — which is what "weeknights" means to a person. Matching the instant would silently truncate every such window at midnight.
 
-   Independent of the keyword gate: **both must pass.** The keyword authorizes the expense, the window constrains the timing, and satisfying one says nothing about the other. There is deliberately no magic word that bypasses the window — you change your mind by editing `policy.md`, which is a decision you make while awake rather than one you make at the moment you want to skip your own rule.
+   **The launch keyword overrides the schedule.** If `require-launch-keyword` is set and the user supplied it, launch regardless of the window — and say so in one line: `outside the launch window (<rule>); proceeding on explicit "<word>"`. Never refuse a launch the user explicitly authorized.
+
+   This is not a loophole, it is what the two gates actually mean. Both exist to answer one question — *is the machine free to spend?* The schedule is a **guess** at that, from hours when the user is usually away. The keyword is the **answer**, from the person who knows. When the guess and the answer disagree, the answer wins; refusing someone who just told you they are leaving for the afternoon is the gate mistaking its proxy for its purpose.
+
+   The schedule still gates hard when no keyword was required or supplied — that is the case where nobody has said anything and the clock is the only evidence there is. A project that genuinely wants the hours enforced even against an explicit keyword sets `launch-window-strict: true`, and then the refusal stands.
 
    Same placement logic as 1.5: this is below rule 1, so a run legitimately started at 23:00 keeps resuming at 07:00. Gating resumption on the window would kill every overnight run at dawn, which is the one thing an overnight window is for.
 
@@ -103,6 +107,7 @@ Keys `$iterate` acts on today:
 | `require-launch-keyword: <word>` | a fresh launch must carry `<word>` anywhere in its argument |
 | `launch-window: HH:MM-HH:MM` | shorthand for a single `allow daily <window>`; wraps midnight when start > end |
 | `launch-schedule:` | list of `<allow\|deny> [days] [HH:MM-HH:MM] [dates]` rules — the full grammar, owned by `$iterate-rules` |
+| `launch-window-strict: true` | the schedule refuses even when the launch keyword was given; off by default, because the keyword is the user stating the very thing the schedule is guessing at |
 
 Both exist for projects where a run is expensive enough that starting one casually is the mistake. Set either, both, or neither.
 
@@ -114,6 +119,7 @@ Rules:
 - **State the reason, don't invent one.** The refusal quotes the file. If the file gives no reason, say only that this project requires the keyword.
 - **Refusing is not asking.** Print the refusal and stop — no picker, no "shall I proceed anyway?", no offer to bypass. The keyword IS the authorization; without it there is nothing to decide.
 - **Read the clock, never estimate it.** Any time comparison runs `date +%H:%M` for real. Context timestamps go stale within a session and a stale clock silently inverts the gate.
+- **An explicit keyword beats the clock.** The schedule is a proxy for "the user is away"; the keyword is the user saying it directly. Report the override, never refuse over it, unless `launch-window-strict: true`.
 - **One keyword authorizes one launch.** It is consumed by the launch it appears in, not remembered. This is deliberately unlike standing risk acceptance: the gate exists precisely because each run is expensive, so each run is authorized on its own.
 
 ## Auto-resume via cron
