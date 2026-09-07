@@ -104,6 +104,7 @@ investigating-kilroy-runs	-	~/workspace/x85446/kilroy/skills/investigating-kilro
 ip	userglobal	self
 iterate	userglobal	self
 iterate-brainstorm	userglobal	self
+iterate-conductor	userglobal	self
 iterate-notes	userglobal	self
 iterate-plan	-	self
 iterate-planner	userglobal	self
