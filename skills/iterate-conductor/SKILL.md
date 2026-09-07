@@ -1,9 +1,9 @@
 ---
 name: iterate-conductor
-description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via /iterate, clears blockers by escalating to different approaches, and batches whatever it genuinely cannot solve into one shared blocked plan for a human session. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill; runs on its own cron tick while enabled.
-argument-hint: start | stop | pause | resume | run | status | kill
+description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via /iterate, clears blockers by escalating to different approaches, and batches whatever it genuinely cannot solve into one shared blocked plan for a human session. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
+argument-hint: start | stop | pause | resume | run | status | kill | schedule <rule>
 disable-model-invocation: true
-version: 1.0.0
+version: 1.1.0
 ---
 
 <!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
@@ -35,6 +35,8 @@ from here: two things owning execution is how a plan gets worked twice.
 enabled: true
 paused: false
 cron: <job-id>              # the tick this conductor armed; cleared on stop
+conductor-schedule:         # optional, same grammar as launch-schedule;
+  - allow daily 22:00-06:00 #   intersected with it, so it can only narrow
 current: <plan-name>        # plan handed to /iterate, empty between plans
 blocked-plan: <plan-name>   # the shared human-needed plan, empty if none open
 imported-issues: [12, 47]   # issue numbers already pulled in, never re-imported
@@ -80,6 +82,22 @@ Clear `paused`. Run a sweep immediately.
 One sweep, right now, regardless of `enabled:`. Does not arm anything and does
 not change enablement — the way to try the conductor without committing to it.
 
+### `schedule` / `rules`
+Delegate to `/iterate-rules`, passing the rest of the argument verbatim
+(`/ic schedule weeknights only` → `/iterate-rules weeknights only`).
+
+**The conductor does not own the launch schedule and must never write
+`policy.md`.** That file gates *every* launch, not just the conductor's — a
+human typing `/iterate owl` at 3pm is gated by it too. If it moved here,
+`/iterate` would have to read the supervisor's config to know whether it may
+run, which is backwards and breaks outright on a project where the conductor
+was never installed. Policy says what is *allowed*; the conductor says what is
+*running*. This verb exists so you can type the thought where you have it,
+not to move the ownership.
+
+To narrow *only* the conductor's own sweeping without touching what a human may
+launch, use `conductor-schedule:` below — that one is genuinely ours.
+
 ### `status`
 Read-only. Print, in this shape:
 
@@ -107,13 +125,27 @@ One tick. Do these in order and stop at the first that applies.
 1. **Not enabled, or paused, and no `current:`** → exit silently. A no-op tick
    prints nothing.
 
-2. **Launch window closed** → exit silently, logging one line the first time
-   only. Read `./.claude/iterate/policy.md` per `/iterate-rules` and honour the
-   `launch-schedule`. **Starting the conductor is the standing authorization
-   that `require-launch-keyword` asks for** — record `authorized by: conductor
+2. **Outside the permitted hours** → exit silently, logging one line the first
+   time only. Two schedules apply and a sweep needs **both**:
+
+   - `launch-schedule:` in `./.claude/iterate/policy.md`, owned by
+     `/iterate-rules` — governs every launch in this project, human or
+     conductor.
+   - `conductor-schedule:` in `conductor.md` (optional) — same grammar, but
+     scoped to the conductor's own sweeping.
+
+   Requiring both makes the conductor schedule **narrowing by construction**:
+   it can carve the conductor's hours down inside the launch window but can
+   never widen past it, with no validation needed to enforce that. This is what
+   expresses "I can launch by hand whenever I like, but the conductor only
+   works overnight" — a thing the launch schedule alone cannot say, because it
+   applies to both.
+
+   **Starting the conductor is the standing authorization that
+   `require-launch-keyword` asks for** — record `authorized by: conductor
    enablement` in the plan's log rather than skipping the check silently — but
-   the *schedule* still shapes when work happens. A conductor that ignored the
-   window would make the window meaningless.
+   the schedules still shape when work happens. A conductor that ignored them
+   would make them meaningless.
 
 3. **`current:` is set and that plan is still executing** → exit silently.
    `/iterate` owns it and has its own resumption loop; a conductor tick here has
@@ -213,8 +245,11 @@ When the plan queue is empty, import open issues from this repo's forge.
    gets throughput from never idling, not from parallelism.
 3. **Never ask a question.** Unattended by definition. An ambiguity is a
    decision to make and log; a thing needing a human is a blocked item to move.
-4. **Never bypass the launch schedule.** Enablement authorizes the *expense*
-   (standing in for the launch keyword); the schedule still governs *when*.
+4. **Never bypass either schedule, and never write `policy.md`.** Enablement
+   authorizes the *expense* (standing in for the launch keyword); the schedules
+   still govern *when*. `/iterate-rules` owns `policy.md` — the conductor reads
+   it and delegates edits, because a supervisor that rewrites the project's
+   launch policy has escaped the thing meant to contain it.
 5. **A no-op tick prints nothing and changes nothing.** Most ticks find a run in
    flight or an empty queue. Do not manufacture work — no audits, no status
    documents, no re-verifying a plan that is already terminal.

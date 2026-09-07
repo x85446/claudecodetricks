@@ -92,6 +92,7 @@ hours-researcher	finance	self
 house-fill	-	~/workspace/x85446/financeSheets/finance-project/.claude/skills/house-fill
 i	userglobal	self
 ibs	userglobal	self
+ic	userglobal	self
 importer	personaldb	self
 importer-audit	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/importer-audit
 importer-dedup	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/importer-dedup

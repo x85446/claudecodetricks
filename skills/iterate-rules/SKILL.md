@@ -2,7 +2,7 @@
 name: iterate-rules
 description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which /iterate enforces at launch. Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 argument-hint: <the rule in your own words, or "show" / "test" / "remove <rule>" / "clear">
-version: 1.1.0
+version: 1.2.0
 ---
 
 <!-- version: bump on EVERY behavioral change (minor for additions, major for schema changes, patch for wording). The schema here is the contract /iterate reads; changing it means changing /iterate too. -->
@@ -19,6 +19,14 @@ writes the schema `/iterate` actually enforces.
 | `/iterate-planner` (`/ip`) | **Plan** |
 | `/iterate-rules` | **Gate** — when a run may start |
 | `/iterate` (`/i`) | **Execute** |
+
+**`/iterate-conductor` delegates here.** `/ic schedule <rule>` routes to this
+skill — the conductor reads `policy.md` but never writes it. That separation is
+deliberate: this file gates every launch in the project, human or conductor, so
+a supervisor that could rewrite it would have escaped the thing meant to contain
+it. The conductor's own `conductor-schedule:` is separate, lives in
+`conductor.md`, and is intersected with the schedule here — it can narrow the
+conductor's hours but never widen them.
 
 **Scope, and it is narrow.** These rules gate *starting* a run. They never
 touch plans, never change what a run does, and — this one matters — never stop
