@@ -37,12 +37,12 @@ type Message struct {
 
 // Response represents a Claude API response
 type Response struct {
-	ID      string          `json:"id"`
-	Type    string          `json:"type"`
-	Role    string          `json:"role"`
-	Content []ContentBlock  `json:"content"`
-	Model   string          `json:"model"`
-	Error   *APIError       `json:"error,omitempty"`
+	ID      string         `json:"id"`
+	Type    string         `json:"type"`
+	Role    string         `json:"role"`
+	Content []ContentBlock `json:"content"`
+	Model   string         `json:"model"`
+	Error   *APIError      `json:"error,omitempty"`
 }
 
 // ContentBlock represents a content block in the response

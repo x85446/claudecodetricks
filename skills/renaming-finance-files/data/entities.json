@@ -1,0 +1,106 @@
+{
+  "entities": [
+    {
+      "name": "Deel",
+      "aliases": ["Deel Inc.", "Deel Inc", "letsdeel.com"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "ReevesSnyder",
+      "aliases": ["Reeves Snyder", "Reeves Snyder LLP", "Reeves Snyder, LLP"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "Murgitroyd",
+      "aliases": ["Murgitroyd & Company", "Murgitroyd & Company Limited", "MURGITROYD"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "Pimoroni",
+      "aliases": ["Pimoroni Ltd", "PIMORONI LTD", "PIMORONI", "pimoroni.com"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "BYGAdvantage",
+      "aliases": ["BYG Advantage Co. Limited", "BYG Advantage", "BYG ADVANTAGE"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "Synctix",
+      "aliases": ["Synctix G.K.", "SYNCTIX G.K.", "SYNCTIX"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "Ramp",
+      "aliases": ["Ramp Business Corporation", "Ramp Business Corp"],
+      "tags": null,
+      "rules": {
+        "date": {
+          "pdf": "Use 'Statement End' date from the header (not Statement Start or document date)",
+          "csv": "Use the last date found in the 'Transaction Date' or 'Date' column"
+        },
+        "amount": {
+          "pdf": "Use 'Current Balance' amount",
+          "csv": "Use the final 'Outstanding Balance' value from the last row"
+        }
+      }
+    },
+    {
+      "name": "ApiaryX",
+      "aliases": ["ApiaryX LLC", "APIARYX", "Apiaryx"],
+      "tags": {
+        "salary": ["Monthly Salary", "Full Time Employment"],
+        "eor": ["INV-COM"]
+      },
+      "rules": {
+        "tag": {
+          "pdf": "For salary invoices (single employee, Document # matches INV-25-XXXXX): extract the 'Employee Name' field from the PDF and use the employee's FIRST NAME only (lowercase) as the tag. Known employees: Abhishek Kumar Chaurasiya -> abhishek, Suprith Hatikal -> suprith, Utkarsh Yadav -> utkarsh, Anirudh Maheshwari -> anirudh. For commission/EOR invoices (Document # matches INV-COM-25-XXXXX, lists multiple employees): use 'eor' as the tag."
+        },
+        "amount": {
+          "pdf": "Use the 'Total (USD)' amount"
+        }
+      }
+    },
+    {
+      "name": "BLT",
+      "aliases": ["BLT LLC", "BLT LLC.", "blt-journey.com"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "ServerOrbit",
+      "aliases": ["ServerOrbit.com", "SERVERORBIT", "serverorbit.com"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "MITXPC",
+      "aliases": ["MITXPC", "mitxpc.com", "MiTAC"],
+      "tags": null,
+      "rules": null
+    },
+    {
+      "name": "xByte",
+      "aliases": ["xByte Technologies", "XBYTE", "xByte.com", "www.xByte.com"],
+      "tags": null,
+      "rules": null
+    }
+  ],
+  "metadata": {
+    "version": "1.4",
+    "last_updated": "2026-07-02",
+    "description": "Entity lookup table for finance file renaming. Entities are added incrementally as documents are processed."
+  },
+  "schema": {
+    "name": "string - Short canonical name with no spaces (e.g., 'Deel', 'ReevesSnyder')",
+    "aliases": "array - Alternative names to match in documents (e.g., ['ACME CORPORATION', 'Acme Inc'])",
+    "tags": "object|null - Tag definitions with keyword arrays, or null if no tags",
+    "rules": "object|null - Entity-specific extraction rules that override defaults. Keys: 'date', 'amount', 'invoice'. Values can be strings or objects with file-type-specific rules (pdf, csv, xlsx, etc.)"
+  }
+}

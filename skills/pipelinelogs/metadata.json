@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "commandName": "pipelinelogs",
+  "displayName": "Pipeline Logs",
+  "description": "Fetch GitLab CI pipeline results and save job logs to temp/pipelines/",
+  "triggers": {
+    "userInvocable": true,
+    "keywords": ["pipeline", "ci", "build logs", "pipeline logs"]
+  },
+  "author": "Gravhl Team",
+  "version": "1.0.0"
+}

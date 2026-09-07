@@ -10,6 +10,8 @@ Serves the review UI and exposes a REST API over the marketing.sqlite database.
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import sqlite3
 import webbrowser
 from contextlib import contextmanager
@@ -22,6 +24,12 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 import uvicorn
+
+try:
+    import anthropic
+    _anthropic_available = True
+except ImportError:
+    _anthropic_available = False
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -72,6 +80,24 @@ def _ensure_feedback_table(conn: sqlite3.Connection) -> None:
     """)
 
 
+def _ensure_product_brief_column(conn: sqlite3.Connection) -> None:
+    """Add product_brief column to our_products if missing."""
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(our_products)").fetchall()]
+    if "product_brief" not in cols:
+        conn.execute("ALTER TABLE our_products ADD COLUMN product_brief TEXT NOT NULL DEFAULT ''")
+        conn.commit()
+
+
+def _ensure_test_approval_columns(conn: sqlite3.Connection) -> None:
+    """Add human_approved and status columns to product_feature_tests if missing."""
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(product_feature_tests)").fetchall()]
+    if "human_approved" not in cols:
+        conn.execute("ALTER TABLE product_feature_tests ADD COLUMN human_approved INTEGER NOT NULL DEFAULT 0")
+    if "status" not in cols:
+        conn.execute("ALTER TABLE product_feature_tests ADD COLUMN status TEXT NOT NULL DEFAULT 'draft'")
+    conn.commit()
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -85,6 +111,47 @@ def list_products():
     with get_db() as conn:
         rows = conn.execute("SELECT id, code, name FROM our_products ORDER BY name").fetchall()
         return rows_to_dicts(rows)
+
+
+# ---------------------------------------------------------------------------
+# GET/PATCH /api/{product_code}/brief
+# ---------------------------------------------------------------------------
+
+@app.get("/api/{product_code}/brief")
+def get_product_brief(product_code: str):
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT id, code, name, description, product_brief FROM our_products WHERE code = ?",
+            (product_code,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, f"Product '{product_code}' not found")
+        return row_to_dict(row)
+
+
+@app.patch("/api/{product_code}/brief")
+async def update_product_brief(product_code: str, request: Request):
+    body = await request.json()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT id FROM our_products WHERE code = ?", (product_code,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, f"Product '{product_code}' not found")
+        allowed = {"description", "product_brief"}
+        updates = {k: v for k, v in body.items() if k in allowed}
+        if not updates:
+            raise HTTPException(400, "No valid fields")
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        conn.execute(
+            f"UPDATE our_products SET {set_clause} WHERE code = ?",
+            (*updates.values(), product_code),
+        )
+        conn.commit()
+        return row_to_dict(conn.execute(
+            "SELECT id, code, name, description, product_brief FROM our_products WHERE code = ?",
+            (product_code,),
+        ).fetchone())
 
 
 # ---------------------------------------------------------------------------
@@ -136,7 +203,8 @@ def product_tree(product_code: str):
         if req_ids:
             placeholders = ",".join("?" * len(req_ids))
             tests = rows_to_dicts(conn.execute(
-                f"""SELECT id, requirement_id, title, detailed_desc, version, base_version
+                f"""SELECT id, requirement_id, title, detailed_desc, version, base_version,
+                           human_approved, status
                     FROM product_feature_tests WHERE requirement_id IN ({placeholders})
                     ORDER BY title""",
                 req_ids,
@@ -444,6 +512,16 @@ def disapprove_requirement(uuid: str):
     return _set_approved("requirements", uuid, 0)
 
 
+@app.post("/api/tests/{uuid}/approve")
+def approve_test(uuid: str):
+    return _set_approved("product_feature_tests", uuid, 1)
+
+
+@app.post("/api/tests/{uuid}/disapprove")
+def disapprove_test(uuid: str):
+    return _set_approved("product_feature_tests", uuid, 0)
+
+
 # ---------------------------------------------------------------------------
 # Bulk approve
 # ---------------------------------------------------------------------------
@@ -488,8 +566,17 @@ def bulk_approve_epic(uuid: str):
                     [now, *req_ids],
                 )
 
-                # Tests don't have human_approved, but update base_version awareness
-                # Actually tests don't have human_approved column per schema, skip.
+                # Approve tests under those requirements
+                test_ids = [t["id"] for t in conn.execute(
+                    f"SELECT id FROM product_feature_tests WHERE requirement_id IN ({rph})",
+                    req_ids,
+                ).fetchall()]
+                if test_ids:
+                    tph = ",".join("?" * len(test_ids))
+                    conn.execute(
+                        f"UPDATE product_feature_tests SET human_approved = 1, updated_at = ? WHERE id IN ({tph})",
+                        [now, *test_ids],
+                    )
 
         conn.commit()
         count = 1 + len(feat_ids) + len(req_ids if feat_ids else [])
@@ -522,6 +609,18 @@ def bulk_approve_feature(uuid: str):
                 f"UPDATE requirements SET human_approved = 1, updated_at = ? WHERE id IN ({ph})",
                 [now, *req_ids],
             )
+
+            # Approve tests under those requirements
+            test_ids = [t["id"] for t in conn.execute(
+                f"SELECT id FROM product_feature_tests WHERE requirement_id IN ({ph})",
+                req_ids,
+            ).fetchall()]
+            if test_ids:
+                tph = ",".join("?" * len(test_ids))
+                conn.execute(
+                    f"UPDATE product_feature_tests SET human_approved = 1, updated_at = ? WHERE id IN ({tph})",
+                    [now, *test_ids],
+                )
 
         conn.commit()
         count = 1 + len(req_ids)
@@ -576,6 +675,383 @@ def remove_iterator_value(uuid: str, value: str):
 
 
 # ---------------------------------------------------------------------------
+# Iterator CRUD
+# ---------------------------------------------------------------------------
+
+@app.post("/api/{product_code}/iterators")
+async def create_iterator(product_code: str, request: Request):
+    body = await request.json()
+    name = body.get("name", "").strip()
+    description = body.get("description", "").strip()
+    if not name:
+        raise HTTPException(400, "Missing 'name' field")
+
+    with get_db() as conn:
+        pid_row = conn.execute(
+            "SELECT id FROM our_products WHERE code = ?", (product_code,)
+        ).fetchone()
+        if not pid_row:
+            raise HTTPException(404, f"Product '{product_code}' not found")
+
+        import uuid as _uuid
+        new_id = f"iter-{_uuid.uuid4().hex[:8]}"
+        conn.execute(
+            "INSERT INTO iterators (id, product_id, name, description) VALUES (?, ?, ?, ?)",
+            (new_id, pid_row["id"], name, description),
+        )
+        conn.commit()
+        return {"id": new_id, "name": name, "description": description, "values": []}
+
+
+@app.delete("/api/iterators/{uuid}")
+def delete_iterator(uuid: str):
+    with get_db() as conn:
+        row = conn.execute("SELECT id FROM iterators WHERE id = ?", (uuid,)).fetchone()
+        if not row:
+            raise HTTPException(404, "Iterator not found")
+        conn.execute("DELETE FROM iterator_values WHERE iterator_id = ?", (uuid,))
+        conn.execute("DELETE FROM iterators WHERE id = ?", (uuid,))
+        conn.commit()
+        return {"deleted": True}
+
+
+# ---------------------------------------------------------------------------
+# Claude AI regeneration
+# ---------------------------------------------------------------------------
+
+_ENTITY_TABLE = {
+    "epic": "epics",
+    "feature": "product_features",
+    "requirement": "requirements",
+    "test": "product_feature_tests",
+}
+
+_ENTITY_FIELDS = {
+    "epic": {"title": "name", "description": "description"},
+    "feature": {"title": "short_desc", "description": "detailed_desc"},
+    "requirement": {"title": "title", "description": "description",
+                     "acceptance_criteria": "acceptance_criteria"},
+    "test": {"title": "title", "description": "detailed_desc"},
+}
+
+
+def _get_api_key() -> str:
+    """Get API key from env var or Claude Code OAuth credentials."""
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if key:
+        return key
+    # Try Claude Code OAuth credentials
+    creds_path = Path.home() / ".claude" / ".credentials.json"
+    if creds_path.exists():
+        try:
+            creds = json.loads(creds_path.read_text())
+            token = creds.get("claudeAiOauth", {}).get("accessToken")
+            if token:
+                return token
+        except Exception:
+            pass
+    return ""
+
+
+def _build_entity_text(entity_type: str, row: dict) -> str:
+    """Format an entity's fields as readable text."""
+    field_map = _ENTITY_FIELDS[entity_type]
+    return "\n".join(f"  {label}: {row.get(col, '') or ''}" for label, col in field_map.items())
+
+
+def _build_context(conn, entity_type: str, entity_id: str, product_id: int,
+                   mode: str) -> str:
+    """Build context string based on the selected mode."""
+    if mode == "proofreader":
+        return ""
+
+    sections = []
+
+    # ── Product info (scoped+) ──
+    if mode in ("scoped", "informed", "deep", "max"):
+        prod = row_to_dict(conn.execute(
+            "SELECT name, description FROM our_products WHERE id = ?", (product_id,)
+        ).fetchone())
+        if prod:
+            sections.append(f"PRODUCT: {prod['name']}\n  {prod.get('description') or ''}")
+
+    # ── Parent chain (scoped+) ──
+    if mode in ("scoped", "informed", "deep", "max"):
+        if entity_type == "feature":
+            row = row_to_dict(conn.execute(
+                "SELECT * FROM product_features WHERE id = ?", (entity_id,)
+            ).fetchone())
+            if row and row.get("epic_id"):
+                epic = row_to_dict(conn.execute(
+                    "SELECT * FROM epics WHERE id = ?", (row["epic_id"],)
+                ).fetchone())
+                if epic:
+                    sections.append(f"PARENT EPIC:\n{_build_entity_text('epic', epic)}")
+
+        elif entity_type == "requirement":
+            row = row_to_dict(conn.execute(
+                "SELECT * FROM requirements WHERE id = ?", (entity_id,)
+            ).fetchone())
+            if row and row.get("feature_id"):
+                feat = row_to_dict(conn.execute(
+                    "SELECT * FROM product_features WHERE id = ?", (row["feature_id"],)
+                ).fetchone())
+                if feat:
+                    sections.append(f"PARENT FEATURE:\n{_build_entity_text('feature', feat)}")
+                    if feat.get("epic_id"):
+                        epic = row_to_dict(conn.execute(
+                            "SELECT * FROM epics WHERE id = ?", (feat["epic_id"],)
+                        ).fetchone())
+                        if epic:
+                            sections.append(f"GRANDPARENT EPIC:\n{_build_entity_text('epic', epic)}")
+
+        elif entity_type == "test":
+            row = row_to_dict(conn.execute(
+                "SELECT * FROM product_feature_tests WHERE id = ?", (entity_id,)
+            ).fetchone())
+            if row and row.get("requirement_id"):
+                req = row_to_dict(conn.execute(
+                    "SELECT * FROM requirements WHERE id = ?", (row["requirement_id"],)
+                ).fetchone())
+                if req:
+                    sections.append(f"PARENT REQUIREMENT:\n{_build_entity_text('requirement', req)}")
+
+    # ── Siblings (informed+) ──
+    if mode in ("informed", "deep", "max"):
+        if entity_type == "epic":
+            sibs = rows_to_dicts(conn.execute(
+                "SELECT * FROM epics WHERE product_id = ? AND id != ? ORDER BY name",
+                (product_id, entity_id),
+            ).fetchall())
+            if sibs:
+                lines = [f"  - {s['name']}: {s.get('description', '')[:100]}" for s in sibs]
+                sections.append("SIBLING EPICS:\n" + "\n".join(lines))
+
+        elif entity_type == "feature":
+            row = row_to_dict(conn.execute(
+                "SELECT * FROM product_features WHERE id = ?", (entity_id,)
+            ).fetchone())
+            if row and row.get("epic_id"):
+                sibs = rows_to_dicts(conn.execute(
+                    "SELECT * FROM product_features WHERE epic_id = ? AND id != ? ORDER BY short_desc",
+                    (row["epic_id"], entity_id),
+                ).fetchall())
+                if sibs:
+                    lines = [f"  - {s['short_desc']}: {s.get('detailed_desc', '')[:100]}" for s in sibs]
+                    sections.append("SIBLING FEATURES:\n" + "\n".join(lines))
+
+        elif entity_type == "requirement":
+            row = row_to_dict(conn.execute(
+                "SELECT * FROM requirements WHERE id = ?", (entity_id,)
+            ).fetchone())
+            if row and row.get("feature_id"):
+                sibs = rows_to_dicts(conn.execute(
+                    "SELECT * FROM requirements WHERE feature_id = ? AND id != ? ORDER BY title",
+                    (row["feature_id"], entity_id),
+                ).fetchall())
+                if sibs:
+                    lines = [f"  - {s['title']}: {s.get('description', '')[:100]}" for s in sibs]
+                    sections.append("SIBLING REQUIREMENTS:\n" + "\n".join(lines))
+
+        elif entity_type == "test":
+            row = row_to_dict(conn.execute(
+                "SELECT * FROM product_feature_tests WHERE id = ?", (entity_id,)
+            ).fetchone())
+            if row and row.get("requirement_id"):
+                sibs = rows_to_dicts(conn.execute(
+                    "SELECT * FROM product_feature_tests WHERE requirement_id = ? AND id != ? ORDER BY title",
+                    (row["requirement_id"], entity_id),
+                ).fetchall())
+                if sibs:
+                    lines = [f"  - {s['title']}: {s.get('detailed_desc', '')[:100]}" for s in sibs]
+                    sections.append("SIBLING TESTS:\n" + "\n".join(lines))
+
+    # ── Children (deep+) ──
+    if mode in ("deep", "max"):
+        if entity_type == "epic":
+            feats = rows_to_dicts(conn.execute(
+                "SELECT * FROM product_features WHERE epic_id = ? ORDER BY short_desc",
+                (entity_id,),
+            ).fetchall())
+            if feats:
+                lines = [f"  - {f['short_desc']}: {f.get('detailed_desc', '')[:100]}" for f in feats]
+                sections.append("CHILD FEATURES:\n" + "\n".join(lines))
+
+        elif entity_type == "feature":
+            reqs = rows_to_dicts(conn.execute(
+                "SELECT * FROM requirements WHERE feature_id = ? ORDER BY title",
+                (entity_id,),
+            ).fetchall())
+            if reqs:
+                lines = [f"  - {r['title']}: {r.get('description', '')[:100]}" for r in reqs]
+                sections.append("CHILD REQUIREMENTS:\n" + "\n".join(lines))
+
+        elif entity_type == "requirement":
+            tests = rows_to_dicts(conn.execute(
+                "SELECT * FROM product_feature_tests WHERE requirement_id = ? ORDER BY title",
+                (entity_id,),
+            ).fetchall())
+            if tests:
+                lines = [f"  - {t['title']}: {t.get('detailed_desc', '')[:100]}" for t in tests]
+                sections.append("CHILD TESTS:\n" + "\n".join(lines))
+
+    # ── Product brief + full tree + iterators (product mode) ──
+    if mode == "product":
+        # Product brief
+        prod = row_to_dict(conn.execute(
+            "SELECT name, description, product_brief FROM our_products WHERE id = ?",
+            (product_id,),
+        ).fetchone())
+        if prod and prod.get("product_brief"):
+            sections.append(f"PRODUCT BRIEF:\n{prod['product_brief']}")
+
+        # All epics with their features
+        epics = rows_to_dicts(conn.execute(
+            "SELECT * FROM epics WHERE product_id = ? ORDER BY name", (product_id,)
+        ).fetchall())
+        all_feats = rows_to_dicts(conn.execute(
+            "SELECT * FROM product_features WHERE product_id = ? ORDER BY short_desc", (product_id,)
+        ).fetchall())
+        feats_by_epic = {}
+        for f in all_feats:
+            feats_by_epic.setdefault(f.get("epic_id", ""), []).append(f)
+
+        tree_lines = ["FULL PRODUCT TREE:"]
+        for e in epics:
+            tree_lines.append(f"  Epic: {e['name']} — {(e.get('description') or '')[:80]}")
+            for f in feats_by_epic.get(e["id"], []):
+                tree_lines.append(f"    Feature: {f['short_desc']} — {(f.get('detailed_desc') or '')[:60]}")
+        sections.append("\n".join(tree_lines))
+
+        # Iterators
+        its = rows_to_dicts(conn.execute(
+            "SELECT i.name, i.description FROM iterators i WHERE i.product_id = ? ORDER BY i.name",
+            (product_id,),
+        ).fetchall())
+        if its:
+            lines = [f"  - {it['name']}: {it.get('description', '')}" for it in its]
+            sections.append("ITERATORS:\n" + "\n".join(lines))
+
+    return "\n\n".join(sections)
+
+
+def _regenerate_with_claude(conn, entity_type: str, entity_id: str,
+                            product_id: int, current: dict, feedback: str,
+                            mode: str = "proofreader") -> dict:
+    """Call Claude to regenerate entity fields based on feedback."""
+    if not _anthropic_available:
+        raise HTTPException(501, "anthropic SDK not installed")
+
+    api_key = _get_api_key()
+    if not api_key:
+        raise HTTPException(501, "No API key: set ANTHROPIC_API_KEY or log in to Claude Code")
+
+    field_map = _ENTITY_FIELDS[entity_type]
+    current_fields = {}
+    for label, col in field_map.items():
+        current_fields[label] = current.get(col, "") or ""
+
+    fields_text = "\n".join(f"  {k}: {v}" for k, v in current_fields.items())
+    field_names = ", ".join(current_fields.keys())
+
+    # Build context based on mode
+    context = _build_context(conn, entity_type, entity_id, product_id, mode)
+    context_block = f"\n\nCONTEXT:\n{context}" if context else ""
+
+    prompt = f"""You are a product manager refining a {entity_type}.{context_block}
+
+CURRENT {entity_type.upper()}:
+{fields_text}
+
+REVIEWER FEEDBACK:
+  {feedback}
+
+Rewrite the fields ({field_names}) incorporating the feedback. Use the context to ensure consistency.
+Respond with ONLY a JSON object with keys: {field_names}. No markdown, no explanation."""
+
+    client = anthropic.Anthropic(api_key=api_key)
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    raw = message.content[0].text.strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1]
+        if raw.endswith("```"):
+            raw = raw[:-3].strip()
+
+    result = json.loads(raw)
+
+    updates = {}
+    for label, col in field_map.items():
+        if label in result:
+            updates[col] = result[label]
+
+    return {"updates": updates, "prompt_sent": prompt, "raw_response": raw}
+
+
+async def _regenerate_with_agent_sdk(entity_type: str, entity_id: str,
+                                     current: dict, feedback: str,
+                                     project_path: str) -> dict:
+    """Use Claude Agent SDK with PM skill for deep regeneration."""
+    from claude_agent_sdk import query as agent_query, ClaudeAgentOptions
+
+    field_map = _ENTITY_FIELDS[entity_type]
+    current_fields = {}
+    for label, col in field_map.items():
+        current_fields[label] = current.get(col, "") or ""
+
+    fields_text = "\n".join(f"  {k}: {v}" for k, v in current_fields.items())
+    field_names = ", ".join(current_fields.keys())
+
+    prompt = f"""Rewrite this {entity_type} based on feedback. Do NOT use any tools — just respond directly.
+
+CURRENT {entity_type.upper()}:
+{fields_text}
+
+FEEDBACK: {feedback}
+
+Use your PM knowledge of product requirements, traceability, and best practices.
+Respond with ONLY a JSON object with keys: {field_names}. No markdown, no explanation."""
+
+    options = ClaudeAgentOptions(
+        cwd=project_path,
+        setting_sources=["user", "project"],
+        allowed_tools=["Skill"],
+        max_turns=2,
+    )
+
+    result_text = ""
+    async for message in agent_query(prompt=prompt, options=options):
+        if hasattr(message, 'result'):
+            result_text = str(message.result)
+        elif hasattr(message, 'content') and isinstance(message.content, list):
+            for block in message.content:
+                if hasattr(block, 'text'):
+                    result_text = block.text
+
+    if not result_text:
+        raise Exception("Agent SDK returned no text output")
+
+    raw = result_text.strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1]
+        if raw.endswith("```"):
+            raw = raw[:-3].strip()
+
+    result = json.loads(raw)
+
+    updates = {}
+    for label, col in field_map.items():
+        if label in result:
+            updates[col] = result[label]
+
+    return {"updates": updates, "prompt_sent": prompt, "raw_response": raw}
+
+
+# ---------------------------------------------------------------------------
 # POST /api/{product_code}/feedback
 # ---------------------------------------------------------------------------
 
@@ -585,9 +1061,15 @@ async def submit_feedback(product_code: str, request: Request):
     entity_type = body.get("entity_type")
     entity_id = body.get("entity_id")
     feedback_text = body.get("feedback_text")
+    context_mode = body.get("context_mode", "proofreader")
 
     if not all([entity_type, entity_id, feedback_text]):
         raise HTTPException(400, "Missing required fields: entity_type, entity_id, feedback_text")
+
+    if entity_type not in _ENTITY_TABLE:
+        raise HTTPException(400, f"Unknown entity type: {entity_type}")
+
+    table = _ENTITY_TABLE[entity_type]
 
     with get_db() as conn:
         pid_row = conn.execute(
@@ -596,15 +1078,73 @@ async def submit_feedback(product_code: str, request: Request):
         if not pid_row:
             raise HTTPException(404, f"Product '{product_code}' not found")
 
+        # Store feedback
         _ensure_feedback_table(conn)
-
         conn.execute(
             """INSERT INTO feedback (product_id, entity_type, entity_id, feedback_text)
                VALUES (?, ?, ?, ?)""",
             (pid_row["id"], entity_type, entity_id, feedback_text),
         )
+
+        # Fetch current entity
+        row = row_to_dict(conn.execute(
+            f"SELECT * FROM {table} WHERE id = ?", (entity_id,)
+        ).fetchone())
+        if not row:
+            conn.commit()
+            raise HTTPException(404, f"{entity_type} not found")
+
+        # Route: fast API for light modes, Agent SDK for deep modes
+        use_agent_sdk = context_mode == "pm"
+
+        prompt_sent = ""
+        raw_response = ""
+
+        try:
+            if use_agent_sdk:
+                project_path = str(DB_PATH.parent.parent.parent)
+                conn.commit()
+                regen = await _regenerate_with_agent_sdk(
+                    entity_type, entity_id, row, feedback_text, project_path
+                )
+            else:
+                regen = _regenerate_with_claude(
+                    conn, entity_type, entity_id, pid_row["id"],
+                    row, feedback_text, context_mode
+                )
+            updates = regen["updates"]
+            prompt_sent = regen.get("prompt_sent", "")
+            raw_response = regen.get("raw_response", "")
+        except HTTPException:
+            conn.commit()
+            raise
+        except Exception as e:
+            conn.commit()
+            raise HTTPException(502, f"AI regeneration failed: {e}")
+
+        if not updates:
+            conn.commit()
+            return {"stored": True, "regenerated": False,
+                    "debug": {"prompt": prompt_sent, "response": raw_response}}
+
+        # Save updates to DB with version bump
+        new_version = row.get("version", 0) + 1
+        fields = {**updates, "version": new_version, "updated_at": _now()}
+        set_clause = ", ".join(f"{k} = ?" for k in fields)
+        conn.execute(
+            f"UPDATE {table} SET {set_clause} WHERE id = ?",
+            (*fields.values(), entity_id),
+        )
         conn.commit()
-        return {"stored": True}
+
+        updated = row_to_dict(conn.execute(
+            f"SELECT * FROM {table} WHERE id = ?", (entity_id,)
+        ).fetchone())
+
+        return {"stored": True, "regenerated": True, "updated": updated,
+                "debug": {"prompt": prompt_sent, "response": raw_response,
+                          "mode": context_mode,
+                          "engine": "agent-sdk" if use_agent_sdk else "haiku-api"}}
 
 
 # ---------------------------------------------------------------------------
@@ -640,6 +1180,11 @@ def main():
 
     if not STATIC_DIR.exists():
         print(f"Warning: Static directory not found at {STATIC_DIR}, API-only mode")
+
+    # Run migrations
+    with get_db() as conn:
+        _ensure_test_approval_columns(conn)
+        _ensure_product_brief_column(conn)
 
     print(f"Database: {DB_PATH}")
     print(f"Static:   {STATIC_DIR}")

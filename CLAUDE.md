@@ -6,6 +6,89 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Claude Code marketplace providing session hooks for voice announcements, AI-powered logging, and automatic git commits. Written in Go, this repository implements three integrated binaries that enhance Claude Code workflow through the hooks system.
 
+## Skills
+
+This repo is also the canonical backup/source for globally-installed Claude Code skills (deployed via `skills/skillinstall.sh`). Two work together as the iterate stack:
+
+- **`/tutorial`** (`skills/tutorial/`) — builds and maintains self-running bash tutorials that live in the codebase at `docs/tutorials/` (fixed location, every repo): menu-driven buckets of 5-10 min, each step showing the real command pre-filled and editable, running it on Enter. Also `list`/`update`/`audit`/`reorganize`/`delete` as the code drifts. Runtime library in `skills/tutorial/lib/` is copied into projects, never rewritten per project.
+- **`/uxmaster`** (`skills/uxmaster*/`) — UXMASTER, the UX/UI design meta: children are `analysis` (platform-agnostic audit), five platform experts (`macos`, `linux`, `windows`, `web`, `cli`), and `implement` (writes the real framework code — SwiftUI, GTK4/libadwaita, WinUI 3, web, TUI). Shared findings ledger at `./.claude/uxmaster/findings.md`; FFIV's Find step routes here for UI scopes. `cli` is the command-line authority and carries two references the implementer codes against: `skills/uxmaster-cli/grammar.md` (the house grammar `<tool> <noun> <verb> … [operands] [--flags anywhere]`, flag vocabulary, help layout, error shape, exit codes, session flow) and `skills/uxmaster-cli/color.md` (the color detection ladder, ANSI-16 semantic roles, contrast, and the six-invocation verification matrix). Flags parse in every position — a parser that can't (Go stdlib `flag`, shell `getopts`) is itself a finding.
+- **`/testmaster`** (`skills/testmaster*/`) — TESTMASTER, the SQA suite meta with children adopt/derive/catalog/maintain/prune/run/report. `adopt` is the one-time onboarding pass every project runs first: it discovers an existing suite, seeds `catalog.json`, and computes each test's `covers` from real per-test coverage profiles (`covers_source: coverage | convention | manual` — a convention guess is never reported as measured). Nothing else in TESTMASTER means anything until it runs: drift is `git diff ∩ covers`, so an unadopted project reports zero drift and zero impact forever. `derive` turns a requirement in your own words into the cases it implies (negative, every-path, restore-state, interrupted); `catalog` is the organizing index — requirement → cases → covered code — and recomputes validity (valid/drifted/orphaned/unverified) as the code changes, so a green-but-drifted suite can't read as trustworthy. Real-world-measured timing registry at `./.claude/testmaster/registry.json` drives tiers (fast ≤10s, standard ≤2min, slow >2min — slow is nightly-only, never mid-plan); `testmaster-report` renders a self-contained HTML report card.
+- **`/product-docs`** (`skills/product-docs/`) — keeps end-user product documentation true each iteration: adds new features' operating instructions, updates changed behavior, deletes removed features' docs.
+- Every iterate plan ends with three standing finisher steps appended by the planner: `/dev-makefiles` maintenance, `/testmaster` run (fast+standard), then `/product-docs` sync. The planner also scans every plan for testable behavior and routes it through `/testmaster-derive` before writing validations.
+- **`/iterate-notes`** (`skills/iterate-notes/`) — the notepad: "take a note" captures an idea for the next plan as one synthesized line and acks in one line; a stated decision lands in `## Decisions`. Two sections only, no discussion mode and no research appendix. Notes live at `./.claude/iterate/notes/`; "turn these notes into a plan" hands off to the planner's notes-to-plan op.
+- **`/iterate-brainstorm`** (`skills/iterate-brainstorm/`) — the decision stage: investigates the project, its current implementation, and its toolsets, then presents 3 label-locked options (comparison table first, then a ~150-word paragraph each covering what it is, how to implement it, pros, cons) with one marked `★ Recommended`. The user interrogates and chooses; on request it emits `**Summary N**` (monotonic, never reused) which the user hands to `/ip` ("absorb the last summary" / "absorb summary 2"). Chat-only — writes no files, no notes, no plans, no branches.
+- **`/iterate-planner`** (`skills/iterate-planner/`) — formalizes a task into a saved, oracle-aware plan (paired Step/Validation, optionally teamed for parallel execution). Plans, never executes. `/ip` (`skills/ip/`) is a pure alias for it.
+- **`/iterate-rules`** (`skills/iterate-rules/`) — the gate: says when a run may *start*, in plain language ("don't run before 10pm", "weeknights only", "require a keyword"). Writes `./.claude/iterate/policy.md`, which `/iterate` enforces at launch. Two keys: `require-launch-keyword: <word>` (lock) and `launch-schedule:` — a cron-like list of `<allow|deny> [days] [HH:MM-HH:MM] [dates]` rules where deny beats allow and any allow makes it default-deny, so a policy edit can only ever narrow when runs happen. Two semantics that are easy to get wrong and are written into both skills: a time window **wraps midnight** when start > end, and a **day label matches the day the window opened**, so `allow mon-fri 22:00-06:00` includes Saturday 02:00. Rules gate starting only — never a run already in flight, which is why the gate sits below `/iterate`'s resume rule. newcorder is the first project with one.
+- **`/iterate`** (`skills/iterate/`) — executes a saved plan autonomously to completion, looping via `/loop` until every validation passes or it hits a genuine blocker. Dispatches one subagent per team on teamed plans.
+
+Aliases: `/ip` → iterate-planner, `/i` → iterate, `/in` → iterate-notes, `/ibs` → iterate-brainstorm (all in `skills/`). `/ip` and `/in` delegate via the Skill tool; `/i` and `/ibs` cannot (their targets' flags block the Skill tool), so they read and follow the target's SKILL.md directly — the user typing `/i` or `/ibs` is the explicit invocation the flag reserves.
+
+`/iterate`, `/iterate-brainstorm`, `/i`, `/in`, `/ip`, and `/ibs` carry `disable-model-invocation: true`. For `/iterate` it is side effects (autonomous execution, PR merges); for `/iterate-brainstorm` it is that a decision session is something the user opens deliberately, never something natural language trips into. `/iterate-planner` deliberately does NOT carry the flag: `/ip` delegates to it via the Skill tool, and that flag blocks Skill-tool delegation entirely. Plan state lives at `./.claude/iterate/plans/<name>.md` in whichever project they're run from; live status/dashboard for that state is `iterate-run` (`src/cmd/iterate-run/`, this repo's own Go binary — `iterate-run serve` for the web dashboard, `iterate-run status`/`timeline` for the CLI).
+
+## Skills management (`skills/skillctl`)
+
+`skillctl` is the agent-facing tool for skills. Machine-first output: silent on
+success, one tab-separated fact per line, no colour, no banners. A whole-system
+health check is one line and ~40 characters.
+
+```bash
+skills/skillctl status [-v]     # skills N stale N broken N no-source N
+skills/skillctl sync [--apply]  # install everything stale
+skills/skillctl install <name>… # install to mapped targets
+skills/skillctl where <name>…   # targets + owner
+skills/skillctl why <name>…     # source, ownership,each target and its path
+skills/skillctl audit [-v]      # registry audit, one line
+skills/skillctl targets         # symbolic target -> path
+```
+
+**`skills/skillmap.tsv` is the single source of truth** for "installed where and
+why" — `name`, `targets`, `owner`. It replaced four sources that could and did
+disagree: `skillinstall.sh`'s case statement, the Rust TUI's `skill-mappings.toml`
+(both since removed), per-entry `.origin` files, and `external-sources.conf`. `skillinstall.sh` is now a thin
+human-facing shim over `skillctl` rather than a second implementation.
+
+`owner` is `self` when this repo authors the skill, or the path of the repo that
+does — those are **mirrored** here and must be edited at the owner (izmachine).
+`targets` of `-` means backup-only: registered so it is backed up, never
+deployed. That is the normal state for most adopted skills, not a problem.
+
+**`sync` refuses to push over a target that is newer than its source** unless
+`--force`. Installing is a one-way push, so a newer target means someone edited
+the installed copy directly — pushing would destroy that edit silently. oracle
+is in exactly that state today.
+
+## Codex skill mirror
+
+Every globally-installed Claude Code skill is mirrored to Codex format under
+`~/.agents/skills/`, generated from `skills/` into `codex-skills/` by
+`/skill-2-codex`. The mirror is one-directional (Claude Code → Codex) and fully
+regenerated, never diffed back.
+
+```bash
+skills/skill-2-codex/scripts/sync-all.sh --install --prune   # port every global skill
+skills/skill-2-codex/scripts/install-daily.sh --status       # daily job state + last run
+```
+
+A launchd LaunchAgent (`com.x85446.codex-skill-sync`) runs the sync nightly at
+03:15; logs land in `~/.claude/log/codex-sync/`, with a one-line `status.txt`.
+Steady state is a 2-second no-op.
+
+Two rules matter when editing a ported skill:
+
+- **`.portstamp` protects judgment work.** A port marked `manual=true` (the
+  whole iterate family) is never regenerated when its Claude source changes —
+  the run reports it instead. `--force <skill>` is the deliberate override.
+- **Codex's manifest budget is 8,000 chars, half Claude Code's.** Only
+  implicitly-invocable skills spend it, and in Codex disabling implicit
+  invocation does *not* block delegation — so children of a meta are folded to
+  explicit-only for free (`FOLD_CHILDREN_OF` in `sync-all.sh`).
+- **The description can never move to another file** — it is Codex's only
+  routing signal. `scripts/diet.py` instead relocates the non-routing prose in a
+  description (what the skill does, where it stores state) into a
+  `## What this skill does` body section, which loads on trigger. Trigger
+  phrases and negative scope always stay. Runs automatically at
+  `MANIFEST_BUDGET=7600`.
+
 ## Build & Development Commands
 
 ### Core Commands

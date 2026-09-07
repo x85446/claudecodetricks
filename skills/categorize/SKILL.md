@@ -1,377 +1,187 @@
 ---
 name: categorize
-description: Use when categorizing transactions, finding miscategorizations, auditing category hierarchy, fixing uncategorized entries, recovering #NAME? data, or managing category rules in the personaldb database.
-argument-hint: [action] [scope]
+description: "Primary categorization orchestrator. Use when someone asks to categorize transactions, fix a merchant, classify descriptions, run categorization on a date range, find miscategorizations, or says 'categorize', 'fix all <merchant>', 'merchantify', 'clean up June', or 'run the categorize'."
+argument-hint: "<instruction: date range | merchant name | 'all' | free text>"
 disable-model-invocation: false
 ---
 
-# Transaction Categorizer
+# Categorizer — the one entry point for merchant, venue, and category assignment
 
-Maintain, audit, and fix categorizations in the personaldb SQLite database. All changes are presented as recommendations for approval before applying.
+Takes any instruction and drives every in-scope transaction through the full
+pipeline: **description → merchant → venue → category**. Python tools do the
+mechanical bulk work; **AI reviews every write and owns the final call**. AI may
+verify, override, or entirely replace a Python proposal at any time.
 
-If `$ARGUMENTS` is provided, interpret it as the action and scope (e.g., "audit personal", "uncategorized amex", "hierarchy cleanup", "recover").
+**Database:** `db/personaldb.sqlite` (FK columns only: `tier1_id/tier2_id/tier3_id/company_id`;
+names resolve via JOIN; `updated_at = datetime('now')` on every UPDATE).
 
-## Database Location
+**Child skill routing:** if the instruction mentions links, linking, chains,
+link_group, or orphans (e.g. "links for 2026", "my links are needed for 2026
+paypal"), invoke `/categorize-linker` via the Skill tool with the remaining
+scope as its arguments — do not run the categorization pipeline for a linking
+request. `/categorize-linker` builds chain-of-custody links, enforces the PB
+invariant, and handles paypal/venmo 3-leg chains and paypal→ebay quad chains.
 
-```
-db/personaldb.sqlite
-```
+**Supporting files (read when needed):**
+- `rules.md` (next to this file) — the learned rule book. Read it at the START of every run.
+- `reference.md` (next to this file) — category tables, cost centers, lookup SQL.
 
-Always use sqlite3 CLI via Bash. Enable foreign keys and column headers in every query:
-```bash
-sqlite3 db/personaldb.sqlite "PRAGMA foreign_keys=ON; .headers on; .mode column; <QUERY>"
-```
+## Interpreting $ARGUMENTS
 
-## Critical Rule: Dual-Column Sync
+| Instruction looks like | Scope WHERE clause |
+|---|---|
+| `2026-06` or `June 2026` or `2026-06-01 to 2026-06-30` | `date BETWEEN ...` |
+| `fix all Exxon` / a merchant name | rows whose description matches that merchant's patterns OR merchant_id = that merchant |
+| `all` | every row with missing merchant_id, venue, or tier1_id |
+| free text | interpret; default to unfinished rows matching the text |
+| *(empty)* | all unfinished rows, newest first |
 
-The database stores categories in TWO forms that MUST stay in sync:
-- **Text columns**: `category`, `sub_category`, `sub_sub` (human-readable, denormalized)
-- **FK columns**: `tier1_id`, `tier2_id`, `tier3_id` (normalized references)
+"Unfinished" = `merchant_id IS NULL OR tier1_id IS NULL OR tier1_id = 0` (or the
+merchant lacks venue_type). Always exclude nothing by default — but **never modify
+a row where `human_verified = 1`** (Stage 5 may flag them, only).
 
-Every UPDATE must set BOTH forms. Use this pattern:
-```sql
-UPDATE transactions SET
-  category = '<tier1_name>',  sub_category = '<tier2_name>',  sub_sub = '<tier3_name>',
-  tier1_id = <id>,            tier2_id = <id>,                tier3_id = <id>,
-  updated_at = datetime('now')
-WHERE id = <txn_id>;
-```
+## Pipeline (run stages in order; skip a stage only if its scope is empty)
 
-## Company Context
+### Stage 0 — Setup
 
-Transactions belong to either personal or a business entity:
-- **Personal**: `company = '-'`, `company_id = 1`
-- **Business**: `company = 'TMCTECH'|'GRAVHL'|'1913'|...` with corresponding `company_id`
+1. Read `rules.md`.
+2. Confirm the app is not writing: this skill writes the live DB. If >50 rows will
+   change, back up first: `sqlite3 db/personaldb.sqlite "VACUUM INTO 'db/personaldb.pre-categorize.$(date -u +%Y%m%dT%H%M%SZ).sqlite'"`.
+3. Pick one free A-column (`python3 scripts/ai_flag.py count`) and set it on every
+   row you touch this run. Report which column at the end.
 
-The `company_category_rules` table defines which tier1 categories are valid per company. Always validate against it before recommending a category.
+### Stage 1 — Merchant (normalize descriptions to one true merchant)
 
-## Actions
+The goal: every description variant collapses to a single merchant. "EXXON BURPY
+MARKET AUSTIN TX", "EXXON NEIGHBORHOOD C-STOR", "EXXON TIME WISE # 835" are all
+**Exxon**.
 
-### 1. `audit` — Find Inconsistencies
+1. Survey: `python3 scripts/merchant_hunter.py stats`, then
+   `python3 scripts/merchant_hunter.py discover --min-count 1 --limit 50` (scoped
+   to the instruction when possible; for small scopes query the rows directly).
+2. For each unmatched cluster, AI decides the true merchant:
+   - **Existing merchant?** `SELECT id, name FROM merchants WHERE name LIKE '%kw%'` — reuse, never duplicate.
+   - **Dwindling-word search** for one-offs: strip words from the description and
+     search the DB with fewer and fewer words ("TAQUERIA EL TROMPO MAYOR" → "TAQUERIA")
+     to find kin rows and any already-classified precedent.
+   - **WebSearch** when the name is still opaque — find what the business actually is.
+   - **Franchise vs location**: brand is the merchant (Exxon), not the site (Burpy Market).
+3. Apply: `python3 scripts/merchant_hunter.py tag --name "Exxon" --pattern "%EXXON%" [--tier1 N --tier2 N]`
+   — prefer broad LIKE patterns; give specific patterns higher priority than general ones.
+4. Consolidate duplicates when found: `python3 scripts/merchant_hunter.py consolidate` (review, then `--fix`).
+5. **PayPal merchant law (2021+): exactly two paypal merchants exist —
+   `PayPal` and `PayPal-internal`.** `PayPal` goes on any card/bank leg paying
+   the platform (`PAYPAL *X`, `PAYPAL INST XFER`, `PAYPAL PURCHASE` — the `*X`
+   suffix is a link hint, never a merchant). `PayPal-internal` goes on
+   paypal-site internal legs (`Ref ID:` rows, General Card/Credit Card
+   Deposits, Bank Deposit to PP Account, currency conversions, funding
+   credits). Never create or keep `PayPal *Vendor` / `PayPal Instant Transfer`
+   style merchants — rename or merge them on sight. The end vendor's merchant
+   belongs on the real leg only (the paypal payout row, or the tracked site's
+   line items). Same principle for venmo.
+   **Merchant PayPal-internal ⇒ category `Finance / transfer-out /
+   paypal-internal`** (dash tree `- paypal-internal` for non-Personal) and item
+   = the statement's own description ("General Credit Card Deposit"), never the
+   funded purchase's product title.
 
-Scope: `personal`, `<company_code>`, or `all` (default: `personal`)
+### Stage 2 — Venue
 
-**Step 1: Query for conflicts**
-Find items where the same description maps to different categories:
-```sql
-SELECT item, COUNT(DISTINCT category) as cat_count,
-       GROUP_CONCAT(DISTINCT category) as categories,
-       COUNT(*) as txn_count
-FROM transactions
-WHERE company = '-'  -- adjust for scope
-  AND item != '#NAME?' AND item != ''
-GROUP BY LOWER(TRIM(item))
-HAVING COUNT(DISTINCT category) > 1
-ORDER BY txn_count DESC
-LIMIT 30;
-```
+For every merchant in scope with `venue_type IS NULL`, invoke the
+**`categorize-venue`** skill (Skill tool) scoped to those merchants. Its vocabulary
+is `../categorize-venue/classification_map.json`; it is idempotent and only fills NULLs.
+Venue is the keystone: merchant + venue makes categorization mostly mechanical.
 
-**Step 2: For each conflict, show the breakdown**
-```sql
-SELECT item, category, sub_category, COUNT(*) as count
-FROM transactions
-WHERE LOWER(TRIM(item)) = LOWER(TRIM('<item>'))
-GROUP BY category, sub_category
-ORDER BY count DESC;
-```
+### Stage 3 — Category (AI judgment is the mechanism; Python is a draft)
 
-**Step 3: Present findings**
-Format as a table showing:
-- Item description
-- Most common categorization (likely correct)
-- Minority categorizations (likely wrong)
-- Transaction count affected
+Tool output is a DRAFT, never a result. Nothing lands without an AI decision.
 
-**Step 4: Recommend fixes**
-For each conflict, recommend aligning to the majority categorization. Present as:
-```
-RECOMMENDATION: Recategorize "<item>" → <majority_category> / <majority_subcategory>
-  Affects: N transactions currently categorized as <minority_category>
-  IDs: [list of transaction IDs to update]
-```
+1. Run the pattern engine: `python3 scripts/suggest_categories.py` (writes
+   suggestions to the transactions table).
+2. Apply deterministic rules from `rules.md` — e.g. the gas-station price split
+   (`python3 scripts/gas_or_food.py --dry-run`, review, then run for real).
+3. **AI reviews EVERY write** — read the actual item text of every row (or
+   every cluster of literally-identical rows) before accepting a tool
+   suggestion. At scale, batch by cluster, but never bulk-accept a tool pass
+   unread. Track and report the split: N tool-suggested-and-AI-approved,
+   M AI-overridden, K AI-direct.
+4. **Cost-center resolution** (in order):
+   - Merchant `pinned_company_id` set → that cost center, always (pins are for
+     merchants whose identity IS the cost center, e.g. GoDaddy-tmctech).
+   - NEVER generalize a cost center from isolated charges at a consumer venue.
+     One McDonald's charge marked IZUMA was a business trip — the signal is
+     row-level (card, ER flag, trip dates), not the merchant. Future
+     McDonald's rows stay Personal unless their own row context says otherwise.
+   - Recurring business-shaped entries (annual renewals, SaaS, registrations)
+     follow their verified recurring precedent even across years.
+5. **AI-direct pass over EVERY remaining unfinished row — this is the core of
+   the skill, not cleanup.** Item descriptions (Home Depot/Lowe's/eBay product
+   text), Venmo memos ("… : groceries", "… : bball"), payees, amounts, dates,
+   accounts are all evidence. WebSearch what you don't recognize. A row is only
+   left uncategorized when evidence genuinely runs out — and then it is LISTED
+   individually in the report with why.
+6. Weight precedent from `human_verified = 1` rows; validate tree + formation
+   dates; FK columns only; A-flag + `confidence` on every write.
 
-Wait for approval before generating UPDATE statements.
+### Stage 4 — Rule discovery
 
-### 2. `uncategorized` — Categorize Missing Entries
+While reviewing, actively hunt for generalizable patterns ("every X at venue Y is
+category Z"). When one holds across ≥5 rows with no counterexamples, **append it to
+`rules.md`** under Learned rules with a date and the evidence count. Rules make the
+next run cheaper — this is the skill's memory.
 
-Scope: `personal`, `<company_code>`, `<source>` (e.g., `mint`, `amex`), or `all`
+### Stage 5 — Mistake detection (suggest, never overwrite)
 
-**Step 1: Survey uncategorized transactions**
-```sql
-SELECT site, company, COUNT(*) as count
-FROM transactions
-WHERE (tier1_id IS NULL OR category IS NULL OR category = '')
-GROUP BY site, company
-ORDER BY count DESC;
-```
+Travis's verified rows are the weights, but he makes mistakes too. Scan in-scope
+`human_verified = 1` rows for:
+- category conflicting with the merchant/venue majority (e.g. verified "Groceries" at a gas station for $60)
+- cost-center formation-date violations
+- rule violations from `rules.md`
 
-**Step 2: Group by similar descriptions**
-```sql
-SELECT LOWER(TRIM(item)) as normalized_item,
-       COUNT(*) as count, site, company,
-       GROUP_CONCAT(DISTINCT id) as ids
-FROM transactions
-WHERE (tier1_id IS NULL OR category IS NULL OR category = '')
-  AND company = '-'  -- adjust for scope
-GROUP BY normalized_item, site
-ORDER BY count DESC
-LIMIT 30;
-```
+For business-expense detection in Personal rows, invoke the **`categorize-cost-center`**
+skill (Skill tool) scoped to the run's years — it writes suggestions to the
+`cc_suggestions` table for review in the app (Tools → Cost Center Review) and
+never edits transactions directly.
 
-**Step 3: Look for existing categorization patterns**
-For each uncategorized group, check if the same item has been categorized elsewhere:
-```sql
-SELECT category, sub_category, sub_sub, COUNT(*) as count
-FROM transactions
-WHERE LOWER(TRIM(item)) = LOWER(TRIM('<item>'))
-  AND tier1_id IS NOT NULL
-GROUP BY category, sub_category, sub_sub
-ORDER BY count DESC;
-```
+**Never change these rows.** Set the run's A-flag on them and list each in the
+report as: row, current value, suggested value, why.
 
-**Step 4: Check source-table metadata**
-Some sources have their own categories that can inform the decision:
-- `src_amex.amex_category`
-- `src_chase.chase_category`
-- `src_mint.mint_category`
-- `src_amazon.amazon_category`
-
-```sql
-SELECT s.amex_category, COUNT(*) as count
-FROM src_amex s
-JOIN transactions t ON s.transaction_id = t.id
-WHERE t.tier1_id IS NULL
-GROUP BY s.amex_category
-ORDER BY count DESC;
-```
-
-**Step 5: Recommend categories**
-For each group, recommend a category based on:
-1. Existing patterns for the same item (highest priority)
-2. Source-specific category mapping
-3. Description keyword matching against the category hierarchy
-4. Company-category rules validation
-
-Present recommendations grouped by confidence:
-- **High confidence**: Same item categorized consistently elsewhere
-- **Medium confidence**: Source category or keyword match
-- **Low confidence**: Best guess, needs human review
-
-Wait for approval before applying.
-
-### 3. `hierarchy` — Audit Category Structure
-
-**Step 1: Find orphaned categories (no transactions)**
-```sql
-SELECT t1.id, t1.name as tier1, 'tier1' as level, 0 as txn_count
-FROM categories_tier1 t1
-LEFT JOIN transactions tx ON tx.tier1_id = t1.id
-WHERE tx.id IS NULL
-UNION ALL
-SELECT t2.id, t2.name, 'tier2', 0
-FROM categories_tier2 t2
-LEFT JOIN transactions tx ON tx.tier2_id = t2.id
-WHERE tx.id IS NULL
-UNION ALL
-SELECT t3.id, t3.name, 'tier3', 0
-FROM categories_tier3 t3
-LEFT JOIN transactions tx ON tx.tier3_id = t3.id
-WHERE tx.id IS NULL;
-```
-
-**Step 2: Find near-duplicate categories**
-Look for categories with similar names (potential merges):
-```sql
-SELECT a.name as cat_a, b.name as cat_b, a.id as id_a, b.id as id_b
-FROM categories_tier2 a, categories_tier2 b
-WHERE a.id < b.id
-  AND (LOWER(a.name) = LOWER(b.name)
-    OR a.name LIKE '%' || b.name || '%'
-    OR b.name LIKE '%' || a.name || '%');
-```
-
-**Step 3: Find hierarchy mismatches**
-Categories that seem personal but are assigned to business, or vice versa:
-```sql
-SELECT c.code as company, t1.name as tier1,
-       COUNT(*) as txn_count
-FROM transactions tx
-JOIN companies c ON tx.company_id = c.id
-JOIN categories_tier1 t1 ON tx.tier1_id = t1.id
-LEFT JOIN company_category_rules ccr
-  ON ccr.company_id = c.id AND ccr.tier1_id = t1.id
-WHERE ccr.id IS NULL
-GROUP BY c.code, t1.name
-ORDER BY txn_count DESC;
-```
-
-**Step 4: Show category usage stats**
-```sql
-SELECT t1.name as tier1,
-       COUNT(DISTINCT t2.id) as tier2_count,
-       COUNT(DISTINCT t3.id) as tier3_count,
-       COUNT(tx.id) as txn_count
-FROM categories_tier1 t1
-LEFT JOIN categories_tier2 t2 ON t2.tier1_id = t1.id
-LEFT JOIN categories_tier3 t3 ON t3.tier2_id = t2.id
-LEFT JOIN transactions tx ON tx.tier1_id = t1.id
-GROUP BY t1.id, t1.name
-ORDER BY txn_count DESC;
-```
-
-**Step 5: Present findings and recommendations**
-Group proposals as:
-- **Merge**: Two categories that should be one (present which to keep)
-- **Rename**: Category name is unclear or inconsistent
-- **Move**: Category is under the wrong parent
-- **Delete**: Orphaned category with no transactions
-- **Add rule**: Missing company_category_rules entry
-
-Wait for approval. For merges, generate both the category UPDATE and the transaction re-mapping.
-
-### 4. `recover` — Fix #NAME? Entries
-
-**Step 1: Count and survey**
-```sql
-SELECT site, company, COUNT(*) as count
-FROM transactions
-WHERE item = '#NAME?'
-GROUP BY site, company;
-```
-
-**Step 2: Attempt recovery from source tables**
-Try to replace #NAME? with real descriptions from source-specific tables:
-```sql
--- For amex source
-SELECT t.id, t.item, s.description as recovered_item,
-       s.amex_category as source_category
-FROM transactions t
-JOIN src_amex s ON s.transaction_id = t.id
-WHERE t.item = '#NAME?';
-
--- For chase source
-SELECT t.id, t.item, s.description as recovered_item,
-       s.chase_category as source_category
-FROM transactions t
-JOIN src_chase s ON s.transaction_id = t.id
-WHERE t.item = '#NAME?';
-
--- For amazon source
-SELECT t.id, t.item, s.title as recovered_item,
-       s.amazon_category as source_category
-FROM transactions t
-JOIN src_amazon s ON s.transaction_id = t.id
-WHERE t.item = '#NAME?';
-
--- For mint source
-SELECT t.id, t.item, s.description as recovered_item,
-       s.original_description, s.mint_category as source_category
-FROM transactions t
-JOIN src_mint s ON s.transaction_id = t.id
-WHERE t.item = '#NAME?';
-```
-
-Repeat for all source tables that have a description/title column.
-
-**Step 3: Present recovery results**
-Group into:
-- **Recoverable**: Source table has a real description (show it)
-- **Unrecoverable**: Source table also has no useful description
-
-For recoverable entries:
-```
-RECOMMENDATION: Recover item description
-  Transaction ID: <id>
-  Current: #NAME?
-  Recovered: "<description from source>"
-  Source category hint: <source_category>
-```
-
-**Step 4: After recovery, re-run categorization**
-Once item descriptions are restored, the recovered transactions become candidates for `uncategorized` action (since many likely have broken categories too).
-
-Wait for approval before applying UPDATEs.
-
-### 5. `rules` — Manage Category Rules
-
-**Step 1: Show current rules**
-```sql
-SELECT c.code as company, t1.name as allowed_category
-FROM company_category_rules ccr
-JOIN companies c ON ccr.company_id = c.id
-JOIN categories_tier1 t1 ON ccr.tier1_id = t1.id
-ORDER BY c.code, t1.name;
-```
-
-**Step 2: Find transactions violating rules**
-```sql
-SELECT t.id, c.code as company, t1.name as category, t.item
-FROM transactions t
-JOIN companies c ON t.company_id = c.id
-JOIN categories_tier1 t1 ON t.tier1_id = t1.id
-LEFT JOIN company_category_rules ccr
-  ON ccr.company_id = c.id AND ccr.tier1_id = t1.id
-WHERE ccr.id IS NULL AND t.company_id IS NOT NULL
-ORDER BY c.code, t1.name;
-```
-
-**Step 3: Recommend either**
-- Add a new rule (if the category is legitimately used by that company)
-- Recategorize the transactions (if they were misassigned)
-
-Present both options and wait for the user to choose.
-
-## Presentation Format
-
-Always present recommendations in this format:
+### Stage 6 — Report
 
 ```
-## Findings: [Action] [Scope]
-
-### Summary
-- Transactions analyzed: N
-- Issues found: N
-- Estimated fixes: N
-
-### Recommendations
-
-#### Group 1: [Description]
-| ID | Item | Current Category | Recommended Category | Confidence |
-|----|------|-----------------|---------------------|------------|
-| ...| ...  | ...             | ...                 | High/Med/Low|
-
-**Apply this group?** (yes/no/skip)
+== Categorizer run: <scope> ==
+Stage 1 merchants:  N tagged, M consolidated, K new merchants
+Stage 2 venues:     N classified (X via websearch, Y unknown)
+Stage 3 categories: N python-applied + AI-approved, M AI-overridden, K AI-direct
+Stage 4 rules:      N new rules appended to rules.md
+Stage 5 flags:      N suspected mistakes in verified rows (listed above)
+A-flag: A<n> set on N rows — review in app, then `python3 scripts/ai_flag.py clear A<n>`
+Remaining unfinished in scope: N
 ```
 
-After approval, generate and execute the UPDATE statements, then show a summary of changes made.
+## Toolset
+
+| Tool | Role |
+|---|---|
+| `scripts/merchant_hunter.py` | discover / consolidate / audit / tag / stats for merchants |
+| `categorize-venue` skill | fill merchants.venue_type (controlled vocabulary) |
+| `categorize-cost-center` skill | suggest business cost centers for Personal rows (cc_suggestions) |
+| `scripts/suggest_categories.py` | pattern-matched category suggestions |
+| `scripts/gas_or_food.py` | gas-station $25 fuel/snacks split |
+| `scripts/ai_flag.py` | A-column management |
+| WebSearch | identify unknown businesses |
+| AI (you) | verify, override, or replace ALL of the above; final authority |
 
 ## Guardrails
 
-- **Never delete transactions** — only update categorization columns
-- **Never modify source tables** (src_amex, src_amazon, etc.) — they are immutable import records
-- **Always validate** tier1_id against company_category_rules before recommending
-- **Always update both** text columns AND FK columns in the same UPDATE
-- **Back up before bulk changes**: suggest `cp db/personaldb.sqlite db/personaldb.sqlite.bak` before applying >50 changes
-- **FIXME category** (tier1): Use this as a temporary marker when no clear category exists, never as a final answer
-- **Log changes**: After applying, query the updated rows to confirm the changes took effect
-
-## Quick Reference: Category Lookup
-
-To find the correct FK IDs for a category path:
-```sql
-SELECT t1.id as t1_id, t1.name as tier1,
-       t2.id as t2_id, t2.name as tier2,
-       t3.id as t3_id, t3.name as tier3
-FROM categories_tier1 t1
-LEFT JOIN categories_tier2 t2 ON t2.tier1_id = t1.id
-LEFT JOIN categories_tier3 t3 ON t3.tier2_id = t2.id
-WHERE t1.name LIKE '%<search>%'
-   OR t2.name LIKE '%<search>%'
-   OR t3.name LIKE '%<search>%';
-```
-
-## See Also
-
-- `schema.sql` — Full database schema definition
-- `import_db.py` — Import script with category mapping logic
-- Views: `v_uncategorized`, `v_valid_categories`, `v_spending_by_category`
+- **Never modify `human_verified = 1` rows** — flag and suggest only.
+- **Never delete transactions; never modify src_* tables.**
+- FK columns only; tier1+tier2+tier3 is an atomic triple — never change one alone.
+- Category must belong to the row's cost center's tree; respect formation dates
+  (see reference.md).
+- Never use retired categories (FIXME, Payment, Household, Debt, Fitness & Sports,
+  Pet-as-tier1, transfers).
+- Venue vocabulary comes from classification_map.json only.
+- A-flag every touched row; one A-column per run.
+- Backup before >50 changes (Stage 0).
+- The old `fox_categorize.py` emit/apply flow is retired — the AI is in-session; do
+  the review directly.

@@ -11,10 +11,18 @@ SHELL := /bin/bash
 # Binary output directory
 BIN_DIR := plugins/session-hooks/hooks
 
+# Standalone tool output directory (not a Claude Code hook, just a CLI)
+TOOLS_BIN_DIR := bin
+
 # Binary names
 VOICE_BIN := $(BIN_DIR)/voice-announcer
 LOGGER_BIN := $(BIN_DIR)/session-logger
 GIT_BIN := $(BIN_DIR)/git-committer
+ITERATE_RUN_BIN := $(TOOLS_BIN_DIR)/iterate-run
+
+# Where standalone tools (as opposed to hooks) get installed — already on
+# PATH for a standard Go setup, unlike INSTALL_DIR below.
+TOOLS_INSTALL_DIR := $(HOME)/go/bin
 
 # Source directories
 SRC_DIR := src
@@ -32,8 +40,8 @@ GOFMT := gofmt
 GOVET := $(GO) vet
 GOTEST := $(GO) test
 GOLINT := golangci-lint
-GO_FILES := $(shell find $(SRC_DIR) -name '*.go' -type f)
-GO_PACKAGES := $(shell cd $(SRC_DIR) && $(GO) list ./...)
+GO_FILES = $(shell find $(SRC_DIR) -name '*.go' -type f)
+GO_PACKAGES = $(shell cd $(SRC_DIR) && $(GO) list ./...)
 
 # Version information from git
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -88,7 +96,7 @@ endif
 all: check-tools build
 
 ## build: Build all binaries
-build: $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN)
+build: $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(ITERATE_RUN_BIN)
 	$(Q)echo -e "$(COLOR_GREEN)✓ Build complete$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)Version: $(VERSION) ($(GIT_COMMIT))$(COLOR_RESET)"
 
@@ -110,10 +118,16 @@ $(GIT_BIN): $(wildcard $(CMD_DIR)/git-committer/*.go) $(GO_FILES)
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/git-committer
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) git-committer → $@"
 
+$(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(wildcard $(INTERNAL_DIR)/iterrun/*.go)
+	$(Q)echo -e "$(COLOR_BLUE)→ Building iterate-run...$(COLOR_RESET)"
+	$(Q)mkdir -p $(TOOLS_BIN_DIR)
+	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/iterate-run
+	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) iterate-run → $@"
+
 ## clean: Remove built binaries and test artifacts
 clean:
 	$(Q)echo -e "$(COLOR_YELLOW)→ Cleaning build artifacts...$(COLOR_RESET)"
-	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN)
+	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(ITERATE_RUN_BIN)
 	$(Q)rm -f coverage.out coverage.html
 	$(Q)rm -rf $(SRC_DIR)/vendor
 	$(Q)echo -e "$(COLOR_GREEN)✓ Clean complete$(COLOR_RESET)"
@@ -235,7 +249,15 @@ deps-update:
 # INSTALLATION TARGETS
 # ==================================================================================== #
 
-## install: Install hooks to Claude Code directory
+## install: Install hooks to Claude Code directory, and tools onto PATH
+# codesign --force --sign - after each cp is required on macOS: cp -f onto
+# an existing file leaves the copy's ad-hoc signature invalid on some
+# macOS/filesystem combinations (confirmed live — the resulting binary
+# still runs fine from the build directory, but launched from its
+# installed path it's SIGKILLed on every invocation with
+# "Taskgated Invalid Signature", CODESIGNING/1, no error message at all).
+# Re-signing after the copy fixes it. No-op (skipped) where codesign isn't
+# on PATH, i.e. Linux.
 install: build
 	$(Q)echo -e "$(COLOR_BLUE)→ Installing hooks...$(COLOR_RESET)"
 	$(Q)mkdir -p $(INSTALL_DIR)
@@ -246,16 +268,28 @@ install: build
 	$(Q)chmod +x $(INSTALL_DIR)/voice-announcer
 	$(Q)chmod +x $(INSTALL_DIR)/session-logger
 	$(Q)chmod +x $(INSTALL_DIR)/git-committer
+	$(Q)if command -v codesign >/dev/null 2>&1; then \
+		codesign --force --sign - $(INSTALL_DIR)/voice-announcer $(INSTALL_DIR)/session-logger $(INSTALL_DIR)/git-committer; \
+	fi
 	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks installed to $(INSTALL_DIR)$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)  Note: Update ~/.claude/settings.json to enable hooks$(COLOR_RESET)"
+	$(Q)echo -e "$(COLOR_BLUE)→ Installing tools...$(COLOR_RESET)"
+	$(Q)mkdir -p $(TOOLS_INSTALL_DIR)
+	$(Q)cp -f $(ITERATE_RUN_BIN) $(TOOLS_INSTALL_DIR)/
+	$(Q)chmod +x $(TOOLS_INSTALL_DIR)/iterate-run
+	$(Q)if command -v codesign >/dev/null 2>&1; then \
+		codesign --force --sign - $(TOOLS_INSTALL_DIR)/iterate-run; \
+	fi
+	$(Q)echo -e "$(COLOR_GREEN)✓ iterate-run installed to $(TOOLS_INSTALL_DIR)$(COLOR_RESET)"
 
-## uninstall: Remove installed hooks
+## uninstall: Remove installed hooks and tools
 uninstall:
 	$(Q)echo -e "$(COLOR_YELLOW)→ Uninstalling hooks...$(COLOR_RESET)"
 	$(Q)rm -f $(INSTALL_DIR)/voice-announcer
 	$(Q)rm -f $(INSTALL_DIR)/session-logger
 	$(Q)rm -f $(INSTALL_DIR)/git-committer
-	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks uninstalled$(COLOR_RESET)"
+	$(Q)rm -f $(TOOLS_INSTALL_DIR)/iterate-run
+	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks and tools uninstalled$(COLOR_RESET)"
 
 # ==================================================================================== #
 # DEVELOPMENT TARGETS

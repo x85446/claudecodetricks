@@ -29,17 +29,101 @@ func HasUncommittedChanges(dir string) (bool, error) {
 	return len(bytes.TrimSpace(output)) > 0, nil
 }
 
-// StageFiles stages the given files for commit
-func StageFiles(dir string, files []string) error {
-	args := append([]string{"add"}, files...)
+// StageFiles stages the given files for commit, screening out build output
+// first. Screening happens before `git add` deliberately: git hashes a file
+// into .git/objects the moment it is added, so a binary caught after staging
+// is already in the repository. Rejected paths are added to .gitignore and
+// returned so the caller can report them.
+func StageFiles(dir string, files []string) ([]Rejection, error) {
+	approved, rejected := ScreenFiles(dir, files)
+
+	if len(rejected) > 0 {
+		EnsureGitignored(dir, rejected)
+		if !IsInGitIgnore(dir, ".gitignore") {
+			approved = append(approved, ".gitignore")
+		}
+	}
+
+	if len(approved) == 0 {
+		return rejected, nil
+	}
+
+	args := append([]string{"add", "--"}, approved...)
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to stage files: %w", err)
+		return rejected, fmt.Errorf("failed to stage files: %w", err)
 	}
 
-	return nil
+	return rejected, nil
+}
+
+// HasStagedChanges reports whether anything is already staged. When something
+// is, someone is composing their own commit: an automated commit would land
+// their work under a generated message and discard the reasoning they were
+// about to write.
+func HasStagedChanges(dir string) bool {
+	cmd := exec.Command("git", "diff", "--cached", "--quiet")
+	cmd.Dir = dir
+	return cmd.Run() != nil
+}
+
+// MidGitOperation reports whether a merge, rebase or cherry-pick is in flight.
+func MidGitOperation(dir string) bool {
+	cmd := exec.Command("git", "rev-parse", "--git-dir")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	gitDir := strings.TrimSpace(string(out))
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(dir, gitDir)
+	}
+	for _, marker := range []string{"MERGE_HEAD", "REBASE_HEAD", "CHERRY_PICK_HEAD", "rebase-merge", "rebase-apply"} {
+		if _, err := os.Stat(filepath.Join(gitDir, marker)); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// CurrentBranch returns the checked-out branch, or "" when detached.
+func CurrentBranch(dir string) string {
+	cmd := exec.Command("git", "branch", "--show-current")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// OnDefaultBranch reports whether the checked-out branch is the repo default
+// (origin/HEAD when set, else main or master). Fails closed: an unknown repo
+// shape is treated as the default branch rather than risking a commit there.
+func OnDefaultBranch(dir string) bool {
+	branch := CurrentBranch(dir)
+	if branch == "" {
+		return false
+	}
+	cmd := exec.Command("git", "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD")
+	cmd.Dir = dir
+	if out, err := cmd.Output(); err == nil {
+		ref := strings.TrimSpace(string(out))
+		if i := strings.LastIndex(ref, "/"); i >= 0 {
+			return branch == ref[i+1:]
+		}
+	}
+	for _, name := range []string{"main", "master"} {
+		check := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+name)
+		check.Dir = dir
+		if check.Run() == nil {
+			return branch == name
+		}
+	}
+	return false
 }
 
 // Commit creates a git commit with the given message

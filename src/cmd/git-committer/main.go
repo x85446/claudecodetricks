@@ -72,9 +72,29 @@ func handlePostToolUse(hookInput *hooks.HookInput) {
 		message = message[:47] + "..."
 	}
 
+	if git.MidGitOperation(hookInput.CWD) {
+		return
+	}
+	// Work landing unreviewed on the default branch is the failure this
+	// prevents: a timer has no idea whether a change is finished, and a
+	// generated message carries none of the reasoning a real commit would.
+	if git.OnDefaultBranch(hookInput.CWD) {
+		fmt.Fprintf(os.Stderr, "On the default branch — not auto-committing; use a feature branch\n")
+		return
+	}
+	if git.HasStagedChanges(hookInput.CWD) {
+		fmt.Fprintf(os.Stderr, "Changes already staged — leaving them for their author's own commit\n")
+		return
+	}
+
 	// Stage and commit the file
-	if err := git.StageFiles(hookInput.CWD, []string{filePath}); err != nil {
+	rejected, err := git.StageFiles(hookInput.CWD, []string{filePath})
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to stage file: %v\n", err)
+		return
+	}
+	reportRejected(rejected)
+	if len(rejected) > 0 {
 		return
 	}
 
@@ -124,10 +144,12 @@ func handleStop(hookInput *hooks.HookInput) {
 	}
 
 	// Stage all files
-	if err := git.StageFiles(hookInput.CWD, files); err != nil {
+	rejected, err := git.StageFiles(hookInput.CWD, files)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to stage files: %v\n", err)
 		return
 	}
+	reportRejected(rejected)
 
 	// Commit
 	if err := git.Commit(hookInput.CWD, message); err != nil {
@@ -163,5 +185,16 @@ func generateStopCommitMessage(files []string, projectName string) string {
 			return fmt.Sprintf("chore: update %s", base)
 		}
 		return fmt.Sprintf("chore: update %d files", len(files))
+	}
+}
+
+// reportRejected tells the user what the screen kept out of the commit, and
+// what to do about anything already tracked.
+func reportRejected(rejected []git.Rejection) {
+	for _, r := range rejected {
+		fmt.Fprintf(os.Stderr, "Not committing %s — %s (added to .gitignore)\n", r.Path, r.Reason)
+	}
+	if len(rejected) > 0 {
+		fmt.Fprintf(os.Stderr, "Run `make clean` to clear build output from the tree.\n")
 	}
 }

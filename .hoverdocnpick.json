@@ -1,0 +1,38 @@
+{
+  "filePatterns": [
+    "*_vars.yml",
+    "**/group_vars/*.yml",
+    "**/host_vars/*.yml"
+  ],
+  "definitions": [
+    {
+      "property": "example_config",
+      "description": "Example configuration block",
+      "properties": {
+        "mode": {
+          "description": "Operating mode for this configuration",
+          "type": "string",
+          "required": true,
+          "default": "auto"
+        },
+        "enabled": {
+          "description": "Whether this configuration is enabled",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "modes": {
+        "auto": {
+          "description": "Automatic configuration",
+          "icon": "🤖",
+          "tooltip": "System will automatically configure this setting"
+        },
+        "manual": {
+          "description": "Manual configuration required",
+          "icon": "👤",
+          "tooltip": "User must manually configure this setting"
+        }
+      }
+    }
+  ]
+}

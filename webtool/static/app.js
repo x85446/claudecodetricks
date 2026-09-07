@@ -8,6 +8,10 @@
   let iteratorMap = {};       // name → {description, values}
   let openEditId = null;
   let speechRecognition = null;
+  let aiContextMode = 'proofreader';
+  let saveMode = 'manual'; // 'manual' or 'autosave'
+  let autosaveTimers = {};  // keyed by node id
+  let feedbackLog = [];     // { timestamp, entity, level, mode, engine, feedback, prompt, response }
 
   // ── DOM refs ───────────────────────────────────────────────────────────
   const productSelect = document.getElementById('product-select');
@@ -114,20 +118,20 @@
 
   // ── Expand / Collapse All ─────────────────────────────────────────────
   function expandAll() {
-    treeContainer.querySelectorAll('.tree-node').forEach(function (node) {
-      var children = node.querySelector('.node-children');
-      var toggle = node.querySelector('.node-toggle');
-      if (children) { children.classList.remove('hidden'); }
-      if (toggle && !toggle.classList.contains('leaf')) { toggle.classList.add('open'); }
+    treeContainer.querySelectorAll('.node-body').forEach(function (body) {
+      body.classList.remove('collapsed');
+    });
+    treeContainer.querySelectorAll('.node-toggle').forEach(function (t) {
+      t.classList.add('expanded');
     });
   }
 
   function collapseAll() {
-    treeContainer.querySelectorAll('.tree-node').forEach(function (node) {
-      var children = node.querySelector('.node-children');
-      var toggle = node.querySelector('.node-toggle');
-      if (children) { children.classList.add('hidden'); }
-      if (toggle) { toggle.classList.remove('open'); }
+    treeContainer.querySelectorAll('.node-body').forEach(function (body) {
+      body.classList.add('collapsed');
+    });
+    treeContainer.querySelectorAll('.node-toggle').forEach(function (t) {
+      t.classList.remove('expanded');
     });
   }
 
@@ -160,13 +164,13 @@
     wrapper.setAttribute('data-id', node.id);
     if (node.stale) wrapper.classList.add('stale');
 
-    // Header row
+    // Header row (always visible — collapsed summary)
     var header = document.createElement('div');
     header.className = 'node-header';
 
     // Toggle arrow
     var toggle = document.createElement('span');
-    toggle.className = 'node-toggle' + (hasChildren ? '' : ' leaf');
+    toggle.className = 'node-toggle';
     toggle.textContent = '\u25B6';
     header.appendChild(toggle);
 
@@ -176,16 +180,12 @@
     typeLabel.textContent = level.charAt(0).toUpperCase() + level.slice(1);
     header.appendChild(typeLabel);
 
-    // Name — features use short_desc, requirements and tests use title, epics use name
-    var displayName = node.name || node.short_desc || node.title || '(untitled)';
-    var name = document.createElement('span');
-    name.className = 'node-name';
-    name.textContent = displayName;
-    name.addEventListener('click', function (e) {
-      e.stopPropagation();
-      toggleEditPanel(wrapper, node, level);
-    });
-    header.appendChild(name);
+    // Display name (read-only title in header)
+    var displayName = node.name || node.title || node.short_desc || '(untitled)';
+    var nameEl = document.createElement('span');
+    nameEl.className = 'node-name';
+    nameEl.textContent = displayName;
+    header.appendChild(nameEl);
 
     // Version badge
     if (node.version !== undefined && node.version !== null) {
@@ -238,27 +238,138 @@
 
     wrapper.appendChild(header);
 
-    // Children container
+    // ── Expandable body (hidden when collapsed) ──
+    var body = document.createElement('div');
+    body.className = 'node-body collapsed';
+
+    // Editable fields
+    var fields = getEditableFields(node, level);
+    fields.forEach(function (f) {
+      var group = document.createElement('div');
+      group.className = 'field-group';
+      var label = document.createElement('label');
+      label.textContent = f.label;
+      group.appendChild(label);
+
+      if (f.multiline) {
+        var ta = document.createElement('textarea');
+        ta.setAttribute('data-field', f.key);
+        ta.value = f.value || '';
+        group.appendChild(ta);
+      } else {
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.setAttribute('data-field', f.key);
+        inp.value = f.value || '';
+        group.appendChild(inp);
+      }
+      body.appendChild(group);
+    });
+
+    // Save button (hidden in autosave mode)
+    var saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-save';
+    saveBtn.textContent = 'Save';
+    if (saveMode === 'autosave') saveBtn.classList.add('hidden');
+    saveBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      saveNode(body, node, level, wrapper);
+    });
+    body.appendChild(saveBtn);
+
+    // Autosave: debounced save on field change
+    var fieldInputs = body.querySelectorAll(':scope > .field-group [data-field]');
+    fieldInputs.forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        if (saveMode !== 'autosave') return;
+        clearTimeout(autosaveTimers[node.id]);
+        autosaveTimers[node.id] = setTimeout(function () {
+          saveNode(body, node, level, wrapper);
+        }, 1500);
+      });
+    });
+
+    // AI Feedback row
+    var fbGroup = document.createElement('div');
+    fbGroup.className = 'field-group feedback-section';
+    var fbLabel = document.createElement('label');
+    fbLabel.textContent = 'AI Feedback';
+    fbGroup.appendChild(fbLabel);
+
+    var fbRow = document.createElement('div');
+    fbRow.className = 'feedback-input-row';
+    var fbTextarea = document.createElement('textarea');
+    fbTextarea.placeholder = 'Enter feedback for AI regeneration...';
+    fbTextarea.setAttribute('data-feedback', 'true');
+    fbRow.appendChild(fbTextarea);
+
+    var micBtn = document.createElement('button');
+    micBtn.className = 'btn-mic';
+    micBtn.textContent = '\uD83C\uDF99';
+    micBtn.title = 'Voice input (click to start/stop)';
+    micBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleVoiceInput(micBtn, fbTextarea);
+    });
+    fbRow.appendChild(micBtn);
+    fbGroup.appendChild(fbRow);
+
+    // Context-level send buttons
+    var contextRow = document.createElement('div');
+    contextRow.className = 'feedback-context-row';
+    var contextLabel = document.createElement('label');
+    contextLabel.textContent = 'Send feedback with context:';
+    contextRow.appendChild(contextLabel);
+
+    var contextBtns = document.createElement('div');
+    contextBtns.className = 'feedback-context-buttons';
+    var contextLevels = getContextLevels(level);
+    contextLevels.forEach(function (cl) {
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-context-level' + (cl.agent ? ' btn-context-agent' : '');
+      btn.textContent = cl.label;
+      btn.title = cl.hint;
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        sendFeedback(node, level, fbTextarea.value, body, wrapper, cl.mode);
+      });
+      contextBtns.appendChild(btn);
+    });
+    contextRow.appendChild(contextBtns);
+    fbGroup.appendChild(contextRow);
+    body.appendChild(fbGroup);
+
+    // Children inside the body
     if (hasChildren) {
       var childContainer = document.createElement('div');
-      childContainer.className = 'node-children collapsed';
+      childContainer.className = 'node-children';
       children.forEach(function (child) {
         var childNode = buildNode(child, childLevel[level]);
-        // Cascade stale
         if (node.stale && !child.stale) {
           childNode.classList.add('cascade-stale');
         }
         childContainer.appendChild(childNode);
       });
-      wrapper.appendChild(childContainer);
-
-      // Toggle expand/collapse on header click (but not on name or buttons)
-      header.addEventListener('click', function (e) {
-        if (e.target.closest('.node-name') || e.target.closest('button')) return;
-        childContainer.classList.toggle('collapsed');
-        toggle.classList.toggle('expanded');
-      });
+      body.appendChild(childContainer);
     }
+
+    wrapper.appendChild(body);
+
+    // Toggle expand/collapse on header click (not on buttons)
+    header.addEventListener('click', function (e) {
+      if (e.target.closest('button')) return;
+      var isCollapsed = body.classList.toggle('collapsed');
+      toggle.classList.toggle('expanded', !isCollapsed);
+      // When collapsing, also collapse all descendants
+      if (isCollapsed) {
+        body.querySelectorAll('.node-body').forEach(function (b) {
+          b.classList.add('collapsed');
+        });
+        body.querySelectorAll('.node-toggle').forEach(function (t) {
+          t.classList.remove('expanded');
+        });
+      }
+    });
 
     return wrapper;
   }
@@ -339,8 +450,8 @@
       sBadge.className = 'badge badge-status approved';
       sBadge.textContent = 'approved';
     }
-    // Recurse into children
-    var childContainer = wrapper.querySelector(':scope > .node-children');
+    // Recurse into children (now inside .node-body)
+    var childContainer = wrapper.querySelector(':scope > .node-body > .node-children');
     if (!childContainer) return;
     var childKey = { epic: 'features', feature: 'requirements', requirement: 'tests' };
     var childLevel = { epic: 'feature', feature: 'requirement', requirement: 'test' };
@@ -353,203 +464,168 @@
     });
   }
 
-  // ── Inline edit panel ──────────────────────────────────────────────────
-  function toggleEditPanel(wrapper, node, level) {
-    var existing = wrapper.querySelector(':scope > .edit-panel');
-    if (existing) {
-      existing.remove();
-      openEditId = null;
-      return;
-    }
-    // Close any other open panel
-    var prev = document.querySelector('.edit-panel');
-    if (prev) prev.remove();
+  // toggleEditPanel removed — editing is now inline in the expandable node body
 
-    openEditId = node.id;
-    var panel = document.createElement('div');
-    panel.className = 'edit-panel';
-
-    // Editable fields
-    var fields = getEditableFields(node, level);
-    fields.forEach(function (f) {
-      var group = document.createElement('div');
-      group.className = 'field-group';
-      var label = document.createElement('label');
-      label.textContent = f.label;
-      group.appendChild(label);
-
-      if (f.multiline) {
-        var ta = document.createElement('textarea');
-        ta.setAttribute('data-field', f.key);
-        ta.value = f.value || '';
-        // Highlight iterators in description
-        group.appendChild(ta);
-      } else {
-        var inp = document.createElement('input');
-        inp.type = 'text';
-        inp.setAttribute('data-field', f.key);
-        inp.value = f.value || '';
-        group.appendChild(inp);
-      }
-      panel.appendChild(group);
-    });
-
-    // If description field exists, show a preview with iterator highlights
-    var descField = node.description || '';
-    if (descField && Object.keys(iteratorMap).length > 0) {
-      var preview = document.createElement('div');
-      preview.className = 'field-group';
-      var previewLabel = document.createElement('label');
-      previewLabel.textContent = 'Description Preview';
-      preview.appendChild(previewLabel);
-      var previewContent = document.createElement('div');
-      previewContent.style.fontSize = '13px';
-      previewContent.style.lineHeight = '1.6';
-      previewContent.innerHTML = highlightIterators(descField);
-      preview.appendChild(previewContent);
-      panel.appendChild(preview);
-    }
-
-    // Actions row
-    var actions = document.createElement('div');
-    actions.className = 'edit-actions';
-
-    var saveBtn = document.createElement('button');
-    saveBtn.className = 'btn btn-save';
-    saveBtn.textContent = 'Save';
-    saveBtn.addEventListener('click', function () {
-      saveNode(panel, node, level, wrapper);
-    });
-    actions.appendChild(saveBtn);
-
-    var cancelBtn = document.createElement('button');
-    cancelBtn.className = 'btn btn-cancel';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', function () {
-      panel.remove();
-      openEditId = null;
-    });
-    actions.appendChild(cancelBtn);
-
-    panel.appendChild(actions);
-
-    // Feedback section
-    var feedbackSection = document.createElement('div');
-    feedbackSection.className = 'feedback-section';
-
-    var fbLabel = document.createElement('label');
-    fbLabel.textContent = 'AI Feedback';
-    feedbackSection.appendChild(fbLabel);
-
-    var fbRow = document.createElement('div');
-    fbRow.className = 'feedback-input-row';
-
-    var fbTextarea = document.createElement('textarea');
-    fbTextarea.placeholder = 'Enter feedback for AI regeneration...';
-    fbTextarea.setAttribute('data-feedback', 'true');
-    fbRow.appendChild(fbTextarea);
-
-    var micBtn = document.createElement('button');
-    micBtn.className = 'btn-mic';
-    micBtn.textContent = '\uD83C\uDF99';
-    micBtn.title = 'Voice input (click to start/stop)';
-    micBtn.addEventListener('click', function () {
-      toggleVoiceInput(micBtn, fbTextarea);
-    });
-    fbRow.appendChild(micBtn);
-
-    feedbackSection.appendChild(fbRow);
-
-    var fbActions = document.createElement('div');
-    fbActions.className = 'feedback-actions';
-
-    var sendFbBtn = document.createElement('button');
-    sendFbBtn.className = 'btn btn-feedback';
-    sendFbBtn.textContent = 'Send Feedback';
-    sendFbBtn.addEventListener('click', function () {
-      sendFeedback(node, level, fbTextarea.value);
-    });
-    fbActions.appendChild(sendFbBtn);
-
-    feedbackSection.appendChild(fbActions);
-    panel.appendChild(feedbackSection);
-
-    // Insert after header
-    var header = wrapper.querySelector(':scope > .node-header');
-    header.insertAdjacentElement('afterend', panel);
+  function getContextLevels(level) {
+    // Returns buttons from narrowest (fast API) to broadest, plus /PM (Agent SDK)
+    if (level === 'test') return [
+      { label: 'Test', mode: 'proofreader', hint: 'Just this test — fast rewrite' },
+      { label: 'Tests', mode: 'informed', hint: '+ sibling tests' },
+      { label: 'Requirement', mode: 'scoped', hint: '+ parent requirement' },
+      { label: 'Requirements', mode: 'deep', hint: '+ sibling requirements & feature' },
+      { label: 'Product', mode: 'product', hint: 'Full product brief + tree + iterators' },
+      { label: '/PM', mode: 'pm', hint: 'Agent SDK — invoke PM skill', agent: true },
+    ];
+    if (level === 'requirement') return [
+      { label: 'Requirement', mode: 'proofreader', hint: 'Just this requirement — fast rewrite' },
+      { label: 'Requirements', mode: 'informed', hint: '+ sibling requirements' },
+      { label: 'Feature', mode: 'scoped', hint: '+ parent feature' },
+      { label: 'Features', mode: 'deep', hint: '+ sibling features & epic' },
+      { label: 'Product', mode: 'product', hint: 'Full product brief + tree + iterators' },
+      { label: '/PM', mode: 'pm', hint: 'Agent SDK — invoke PM skill', agent: true },
+    ];
+    if (level === 'feature') return [
+      { label: 'Feature', mode: 'proofreader', hint: 'Just this feature — fast rewrite' },
+      { label: 'Features', mode: 'informed', hint: '+ sibling features' },
+      { label: 'Epic', mode: 'scoped', hint: '+ parent epic' },
+      { label: 'Product', mode: 'product', hint: 'Full product brief + tree + iterators' },
+      { label: '/PM', mode: 'pm', hint: 'Agent SDK — invoke PM skill', agent: true },
+    ];
+    // epic
+    return [
+      { label: 'Epic', mode: 'proofreader', hint: 'Just this epic — fast rewrite' },
+      { label: 'Epics', mode: 'informed', hint: '+ sibling epics' },
+      { label: 'Product', mode: 'product', hint: 'Full product brief + tree + iterators' },
+      { label: '/PM', mode: 'pm', hint: 'Agent SDK — invoke PM skill', agent: true },
+    ];
   }
 
   function getEditableFields(node, level) {
     var fields = [];
-    if (node.name !== undefined) fields.push({ key: 'name', label: 'Name', value: node.name, multiline: false });
-    if (node.title !== undefined) fields.push({ key: 'title', label: 'Title', value: node.title, multiline: false });
-    if (node.description !== undefined) fields.push({ key: 'description', label: 'Description', value: node.description, multiline: true });
-    if (node.acceptance_criteria !== undefined) fields.push({ key: 'acceptance_criteria', label: 'Acceptance Criteria', value: node.acceptance_criteria, multiline: true });
-    if (node.test_steps !== undefined) fields.push({ key: 'test_steps', label: 'Test Steps', value: node.test_steps, multiline: true });
-    if (node.expected_result !== undefined) fields.push({ key: 'expected_result', label: 'Expected Result', value: node.expected_result, multiline: true });
-    // Fallback: at minimum allow name/title editing
-    if (fields.length === 0) {
-      fields.push({ key: 'name', label: 'Name', value: node.name || node.title || '', multiline: false });
+    if (level === 'epic') {
+      fields.push({ key: 'name', label: 'Title', value: node.name || '', multiline: false });
+      fields.push({ key: 'description', label: 'Description', value: node.description || '', multiline: true });
+    } else if (level === 'feature') {
+      fields.push({ key: 'short_desc', label: 'Title', value: node.short_desc || '', multiline: false });
+      fields.push({ key: 'detailed_desc', label: 'Description', value: node.detailed_desc || '', multiline: true });
+    } else if (level === 'requirement') {
+      fields.push({ key: 'title', label: 'Title', value: node.title || '', multiline: false });
+      fields.push({ key: 'description', label: 'Description', value: node.description || '', multiline: true });
+      fields.push({ key: 'acceptance_criteria', label: 'Acceptance Criteria', value: node.acceptance_criteria || '', multiline: true });
+    } else if (level === 'test') {
+      fields.push({ key: 'title', label: 'Title', value: node.title || '', multiline: false });
+      fields.push({ key: 'detailed_desc', label: 'Description', value: node.detailed_desc || '', multiline: true });
     }
     return fields;
   }
 
-  async function saveNode(panel, node, level, wrapper) {
+  async function saveNode(bodyEl, node, level, wrapper) {
     var endpoint = entityEndpoint[level];
-    var body = {};
-    var inputs = panel.querySelectorAll('[data-field]');
-    inputs.forEach(function (inp) {
+    var payload = {};
+    // Only select this node's direct fields, not descendant node fields
+    var fields = bodyEl.querySelectorAll(':scope > .field-group [data-field]');
+    fields.forEach(function (inp) {
       var key = inp.getAttribute('data-field');
-      var val = inp.value;
-      if (val !== (node[key] || '')) {
-        body[key] = val;
-      }
+      payload[key] = inp.value;
     });
 
-    if (Object.keys(body).length === 0) {
+    if (Object.keys(payload).length === 0) {
       toast('No changes to save', 'error');
       return;
     }
 
     try {
-      var updated = await api('PATCH', '/api/' + endpoint + '/' + node.id, body);
+      var updated = await api('PATCH', '/api/' + endpoint + '/' + node.id, payload);
       // Merge updated fields back
       if (updated) {
         Object.keys(updated).forEach(function (k) { node[k] = updated[k]; });
       } else {
-        Object.keys(body).forEach(function (k) { node[k] = body[k]; });
+        Object.keys(payload).forEach(function (k) { node[k] = payload[k]; });
       }
       // Update header name
       var nameEl = wrapper.querySelector(':scope > .node-header .node-name');
-      if (nameEl) nameEl.textContent = node.name || node.title || '(untitled)';
+      if (nameEl) nameEl.textContent = node.name || node.title || node.short_desc || '(untitled)';
       // Update version badge
       if (updated && updated.version !== undefined) {
         var vBadge = wrapper.querySelector(':scope > .node-header .badge-version');
         if (vBadge) vBadge.textContent = 'v' + updated.version;
       }
-      panel.remove();
-      openEditId = null;
       toast('Saved successfully', 'success');
     } catch (err) {
       toast('Save failed: ' + err.message, 'error');
     }
   }
 
-  async function sendFeedback(node, level, text) {
+  async function sendFeedback(node, level, text, bodyEl, wrapper, mode) {
     if (!text || !text.trim()) {
       toast('Please enter feedback text', 'error');
       return;
     }
     if (!currentProduct) return;
+
+    // Show loading state on all context buttons
+    var ctxButtons = bodyEl.querySelectorAll('.btn-context-level');
+    ctxButtons.forEach(function (b) { b.disabled = true; });
+    var clickedBtn = Array.from(ctxButtons).find(function (b) { return !b.disabled; }) || ctxButtons[0];
+    // Find which button was clicked based on mode
+    ctxButtons.forEach(function (b) {
+      if (b.textContent === (mode || 'proofreader')) b.textContent = 'Regenerating...';
+    });
+
     try {
-      await api('POST', '/api/' + encodeURIComponent(currentProduct) + '/feedback', {
+      var result = await api('POST', '/api/' + encodeURIComponent(currentProduct) + '/feedback', {
         entity_type: level,
         entity_id: node.id,
-        feedback_text: text.trim()
+        feedback_text: text.trim(),
+        context_mode: mode || 'proofreader'
       });
-      toast('Feedback sent', 'success');
+
+      // Log the debug info
+      if (result.debug) {
+        addLogEntry({
+          entity: node.name || node.title || node.short_desc || node.id,
+          level: level,
+          mode: mode || 'proofreader',
+          engine: result.debug.engine || 'unknown',
+          feedback: text.trim(),
+          prompt: result.debug.prompt || '',
+          response: result.debug.response || ''
+        });
+      }
+
+      if (result.regenerated && result.updated) {
+        Object.keys(result.updated).forEach(function (k) { node[k] = result.updated[k]; });
+
+        var fields = bodyEl.querySelectorAll(':scope > .field-group [data-field]');
+        fields.forEach(function (inp) {
+          var key = inp.getAttribute('data-field');
+          if (node[key] !== undefined) {
+            inp.value = node[key];
+          }
+        });
+
+        var nameEl = wrapper.querySelector(':scope > .node-header .node-name');
+        if (nameEl) nameEl.textContent = node.name || node.title || node.short_desc || '(untitled)';
+
+        var vBadge = wrapper.querySelector(':scope > .node-header .badge-version');
+        if (vBadge && node.version !== undefined) vBadge.textContent = 'v' + node.version;
+
+        var fbTextarea = bodyEl.querySelector('[data-feedback]');
+        if (fbTextarea) fbTextarea.value = '';
+
+        toast('AI regenerated content', 'success');
+      } else {
+        toast('Feedback stored (no AI key configured)', 'success');
+      }
     } catch (err) {
       toast('Feedback failed: ' + err.message, 'error');
+    } finally {
+      // Restore context buttons
+      var levels = getContextLevels(level);
+      ctxButtons.forEach(function (b, i) {
+        b.textContent = levels[i] ? levels[i].label : b.textContent;
+        b.disabled = false;
+      });
     }
   }
 
@@ -646,18 +722,25 @@
 
   function renderGlossary() {
     modalBody.innerHTML = '';
-    if (!iterators || iterators.length === 0) {
-      modalBody.innerHTML = '<p style="color:var(--text-muted)">No iterators found for this product.</p>';
-      return;
-    }
 
     iterators.forEach(function (it) {
       var card = document.createElement('div');
       card.className = 'iterator-card';
 
+      // Header with name and delete button
+      var cardHeader = document.createElement('div');
+      cardHeader.className = 'iterator-card-header';
       var h3 = document.createElement('h3');
       h3.textContent = it.name;
-      card.appendChild(h3);
+      cardHeader.appendChild(h3);
+      var deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn btn-delete-iterator';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', function () {
+        deleteIterator(it, card);
+      });
+      cardHeader.appendChild(deleteBtn);
+      card.appendChild(cardHeader);
 
       if (it.description) {
         var desc = document.createElement('div');
@@ -705,6 +788,71 @@
 
       modalBody.appendChild(card);
     });
+
+    // Add new iterator form
+    var addCard = document.createElement('div');
+    addCard.className = 'iterator-card iterator-add-card';
+    var addTitle = document.createElement('h3');
+    addTitle.textContent = 'Add Iterator';
+    addCard.appendChild(addTitle);
+
+    var nameRow = document.createElement('div');
+    nameRow.className = 'iterator-add-row';
+    var nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = 'Iterator name...';
+    nameRow.appendChild(nameInput);
+    addCard.appendChild(nameRow);
+
+    var descRow = document.createElement('div');
+    descRow.className = 'iterator-add-row';
+    var descInput = document.createElement('input');
+    descInput.type = 'text';
+    descInput.placeholder = 'Description (optional)...';
+    descRow.appendChild(descInput);
+    addCard.appendChild(descRow);
+
+    var createBtn = document.createElement('button');
+    createBtn.className = 'btn btn-save';
+    createBtn.textContent = 'Create Iterator';
+    createBtn.addEventListener('click', function () {
+      var name = nameInput.value.trim();
+      if (!name) { toast('Enter an iterator name', 'error'); return; }
+      createIterator(name, descInput.value.trim());
+    });
+    nameInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') createBtn.click();
+    });
+    addCard.appendChild(createBtn);
+    modalBody.appendChild(addCard);
+  }
+
+  async function deleteIterator(iterator, cardEl) {
+    try {
+      await api('DELETE', '/api/iterators/' + iterator.id);
+      iterators = iterators.filter(function (it) { return it.id !== iterator.id; });
+      delete iteratorMap[iterator.name];
+      cardEl.remove();
+      toast('Deleted iterator "' + iterator.name + '"', 'success');
+    } catch (err) {
+      toast('Delete failed: ' + err.message, 'error');
+    }
+  }
+
+  async function createIterator(name, description) {
+    if (!currentProduct) return;
+    try {
+      var created = await api('POST', '/api/' + encodeURIComponent(currentProduct) + '/iterators', {
+        name: name, description: description
+      });
+      created.values = [];
+      iterators.push(created);
+      iteratorMap[created.name] = created;
+      renderGlossary();
+      toast('Created iterator "' + name + '"', 'success');
+    } catch (err) {
+      toast('Create failed: ' + err.message, 'error');
+    }
   }
 
   async function removeIteratorValue(iterator, value, tagEl, container) {
@@ -745,19 +893,203 @@
     }
   }
 
+  // ── Log panel ──────────────────────────────────────────────────────
+  var logBtn = document.getElementById('log-btn');
+  var logCount = document.getElementById('log-count');
+  var logPanel = document.getElementById('log-panel');
+  var logPanelClose = document.getElementById('log-panel-close');
+  var logPanelBody = document.getElementById('log-panel-body');
+
+  logBtn.addEventListener('click', function () {
+    logPanel.classList.toggle('hidden');
+  });
+
+  logPanelClose.addEventListener('click', function () {
+    logPanel.classList.add('hidden');
+  });
+
+  function addLogEntry(entry) {
+    entry.timestamp = new Date();
+    feedbackLog.unshift(entry);
+    logCount.textContent = feedbackLog.length;
+    logCount.classList.remove('hidden');
+    renderLog();
+  }
+
+  function renderLog() {
+    logPanelBody.innerHTML = '';
+    if (feedbackLog.length === 0) {
+      logPanelBody.innerHTML = '<p class="log-empty">No feedback sent yet.</p>';
+      return;
+    }
+    feedbackLog.forEach(function (entry, idx) {
+      var el = document.createElement('div');
+      el.className = 'log-entry';
+
+      var header = document.createElement('div');
+      header.className = 'log-entry-header';
+
+      var summary = document.createElement('div');
+      summary.className = 'log-entry-summary';
+
+      var entitySpan = document.createElement('span');
+      entitySpan.className = 'log-entity';
+      entitySpan.textContent = entry.entity;
+      summary.appendChild(entitySpan);
+
+      var modeSpan = document.createElement('span');
+      modeSpan.className = 'log-mode';
+      modeSpan.textContent = entry.mode;
+      summary.appendChild(modeSpan);
+
+      var engineSpan = document.createElement('span');
+      engineSpan.className = 'log-engine ' + (entry.engine === 'agent-sdk' ? 'log-engine-agent' : 'log-engine-fast');
+      engineSpan.textContent = entry.engine === 'agent-sdk' ? 'SDK' : 'API';
+      summary.appendChild(engineSpan);
+
+      header.appendChild(summary);
+
+      var timeSpan = document.createElement('span');
+      timeSpan.className = 'log-entry-time';
+      timeSpan.textContent = entry.timestamp.toLocaleTimeString();
+      header.appendChild(timeSpan);
+
+      var toggle = document.createElement('span');
+      toggle.className = 'log-entry-toggle';
+      toggle.textContent = '\u25B6';
+      header.appendChild(toggle);
+
+      header.addEventListener('click', function () {
+        el.classList.toggle('open');
+      });
+
+      el.appendChild(header);
+
+      var body = document.createElement('div');
+      body.className = 'log-entry-body';
+
+      var fbLabel = document.createElement('div');
+      fbLabel.className = 'log-section-label';
+      fbLabel.textContent = 'Feedback';
+      body.appendChild(fbLabel);
+      var fbCode = document.createElement('div');
+      fbCode.className = 'log-code';
+      fbCode.textContent = entry.feedback;
+      body.appendChild(fbCode);
+
+      var promptLabel = document.createElement('div');
+      promptLabel.className = 'log-section-label';
+      promptLabel.textContent = 'Prompt Sent';
+      body.appendChild(promptLabel);
+      var promptCode = document.createElement('div');
+      promptCode.className = 'log-code';
+      promptCode.textContent = entry.prompt;
+      body.appendChild(promptCode);
+
+      var respLabel = document.createElement('div');
+      respLabel.className = 'log-section-label';
+      respLabel.textContent = 'Response';
+      body.appendChild(respLabel);
+      var respCode = document.createElement('div');
+      respCode.className = 'log-code';
+      respCode.textContent = entry.response;
+      body.appendChild(respCode);
+
+      el.appendChild(body);
+      logPanelBody.appendChild(el);
+    });
+  }
+
+  // ── Product Brief modal ──────────────────────────────────────────────
+  var productBriefBtn = document.getElementById('product-brief-btn');
+  var productBriefModal = document.getElementById('product-brief-modal');
+  var productBriefClose = document.getElementById('product-brief-close');
+  var productBriefTextarea = document.getElementById('product-brief-textarea');
+  var productBriefSave = document.getElementById('product-brief-save');
+
+  productBriefBtn.addEventListener('click', async function () {
+    if (!currentProduct) { toast('Select a product first', 'error'); return; }
+    try {
+      var data = await api('GET', '/api/' + encodeURIComponent(currentProduct) + '/brief');
+      productBriefTextarea.value = data.product_brief || '';
+      productBriefModal.classList.remove('hidden');
+    } catch (err) {
+      toast('Failed to load brief: ' + err.message, 'error');
+    }
+  });
+
+  productBriefClose.addEventListener('click', function () {
+    productBriefModal.classList.add('hidden');
+  });
+
+  productBriefModal.addEventListener('click', function (e) {
+    if (e.target === productBriefModal) productBriefModal.classList.add('hidden');
+  });
+
+  productBriefSave.addEventListener('click', async function () {
+    if (!currentProduct) return;
+    try {
+      await api('PATCH', '/api/' + encodeURIComponent(currentProduct) + '/brief', {
+        product_brief: productBriefTextarea.value
+      });
+      productBriefModal.classList.add('hidden');
+      toast('Product brief saved', 'success');
+    } catch (err) {
+      toast('Save failed: ' + err.message, 'error');
+    }
+  });
+
+  // ── Settings modal ───────────────────────────────────────────────────
+  var settingsBtn = document.getElementById('settings-btn');
+  var settingsModal = document.getElementById('settings-modal');
+  var settingsClose = document.getElementById('settings-modal-close');
+
+  settingsBtn.addEventListener('click', function () {
+    settingsModal.classList.remove('hidden');
+  });
+
+  settingsClose.addEventListener('click', function () {
+    settingsModal.classList.add('hidden');
+  });
+
+  settingsModal.addEventListener('click', function (e) {
+    if (e.target === settingsModal) settingsModal.classList.add('hidden');
+  });
+
+  settingsModal.querySelectorAll('input[name="save-mode"]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      saveMode = this.value;
+      // Toggle save buttons visibility across the tree
+      document.querySelectorAll('.node-body > .btn-save').forEach(function (btn) {
+        if (saveMode === 'autosave') {
+          btn.classList.add('hidden');
+        } else {
+          btn.classList.remove('hidden');
+        }
+      });
+      settingsModal.classList.add('hidden');
+      toast('Save mode: ' + (saveMode === 'autosave' ? 'Auto Save' : 'Save Buttons'), 'success');
+    });
+  });
+
   // ── Keyboard shortcuts ─────────────────────────────────────────────────
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      // Close modal
-      if (!modalOverlay.classList.contains('hidden')) {
-        modalOverlay.classList.add('hidden');
+      // Close modals
+      if (!productBriefModal.classList.contains('hidden')) {
+        productBriefModal.classList.add('hidden');
         return;
       }
-      // Close edit panel
-      var panel = document.querySelector('.edit-panel');
-      if (panel) {
-        panel.remove();
-        openEditId = null;
+      if (!logPanel.classList.contains('hidden')) {
+        logPanel.classList.add('hidden');
+        return;
+      }
+      if (!settingsModal.classList.contains('hidden')) {
+        settingsModal.classList.add('hidden');
+        return;
+      }
+      if (!modalOverlay.classList.contains('hidden')) {
+        modalOverlay.classList.add('hidden');
       }
     }
   });

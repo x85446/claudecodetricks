@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Izuma Device Management</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Raleway:wght@400;500;600&display=swap');
+@page { size: letter; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Raleway","Arial",sans-serif; font-size: 8.75pt; line-height: 1.25; color: #2D2D2D; }
+.banner { background: #205388; padding: 8px 20px; text-align: center; border-bottom: 3px solid #FF9C2B; margin: 0 0 6px 0; border-radius: 2px; }
+.banner img { height: 28px; filter: brightness(0) invert(1); }
+h1 { font-family: "Poppins",sans-serif; font-size: 17pt; color: #205388; font-weight: 700; margin: 0 0 2px 0; }
+.subtitle { font-size: 11pt; color: #3684F5; font-weight: 500; margin-bottom: 6px; }
+h2 { font-family: "Poppins",sans-serif; font-size: 11pt; color: #3684F5; font-weight: 600; margin: 5px 0 3px 0; padding-left: 8px; border-left: 3px solid #3684F5; }
+h3 { font-family: "Poppins",sans-serif; font-size: 9.5pt; color: #205388; font-weight: 600; margin: 3px 0 2px 0; }
+p { margin: 0 0 3px 0; }
+.two-col { display: flex; gap: 14px; margin-top: 4px; }
+.two-col .col { flex: 1; }
+.card { background: #F8FAFD; border: 1px solid #E0E0E0; border-radius: 3px; padding: 3px 7px; margin-bottom: 3px; }
+.card h3 { margin-top: 0; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 8.5pt; }
+thead th { background-color: #205388; color: #FFF; font-family: "Poppins",sans-serif; font-weight: 600; padding: 5px 7px; text-align: left; border-bottom: 3px solid #FF9C2B; }
+tbody tr:nth-child(even) { background-color: #F0F4FA; }
+tbody td { padding: 4px 7px; border-bottom: 1px solid #E0E0E0; vertical-align: top; }
+tbody td:first-child { font-weight: 600; color: #205388; }
+.gradient-bar { background: linear-gradient(90deg, #205388, #3684F5); color: white; padding: 5px 12px; border-radius: 3px; margin: 4px 0; font-size: 8.25pt; text-align: center; }
+.accent-box { background: #FFF8F0; border-left: 4px solid #FF9C2B; padding: 5px 9px; margin: 5px 0 3px 0; font-size: 8.5pt; }
+.accent-box strong { color: #205388; }
+.footer { text-align: center; padding-top: 2px; margin-top: 2px; font-size: 7.5pt; color: #888; }
+</style></head><body>
+
+<div class="banner">
+<img src="/Users/travis/Library/CloudStorage/OneDrive-izumanet/Marketing/Logo-Branding/izuma-logo-horizontal.svg" alt="Izuma Networks">
+</div>
+
+<h1>Izuma Device Management</h1>
+<div class="subtitle">Chip-to-Cloud IoT at Scale</div>
+
+<p>Building custom IoT device management infrastructure takes months to years. Izuma Device Management compresses that timeline to days — a proven platform with over a decade of evolution (originally Arm Pelion / mbed Cloud) handling secure connectivity, firmware updates, and fleet operations from ultra-constrained MCUs to edge servers. <strong>SOC 2 certified.</strong></p>
+
+<div class="two-col">
+<div class="col">
+<h2>Core Capabilities</h2>
+<div class="card"><h3>Secure Device Connectivity</h3><p>LwM2M/CoAP with DTLS. X.509 mTLS. Hardware root of trust (TPM 2.0, TrustZone, PARSEC). Protocol translation for legacy devices.</p></div>
+<div class="card"><h3>Firmware Updates (FOTA)</h3><p>One-shot, continuous, mesh campaigns. Delta updates. Encrypted and signed images. Resume after disconnect.</p></div>
+<div class="card"><h3>Fleet Management</h3><p>Directory scales from dozens to millions. Filter, group, suspend, bulk-operate. Custom attributes.</p></div>
+<div class="card"><h3>Edge Computing &amp; Monitoring</h3><p>True Kubernetes. Offline containers. SD-WAN. Device Sentry threshold-based incidents. Remote terminal.</p></div>
+</div>
+<div class="col">
+<h2>Device Spectrum</h2>
+<table>
+<thead><tr><th>Device Class</th><th>Stack</th></tr></thead>
+<tbody>
+<tr><td>Constrained MCUs</td><td>Izuma Connect (Lite)</td></tr>
+<tr><td>Mainstream MCUs / MPUs</td><td>Izuma Connect</td></tr>
+<tr><td>Rich nodes (Linux)</td><td>Izuma Connect</td></tr>
+<tr><td>Gateways</td><td>Izuma Edge</td></tr>
+<tr><td>Edge servers (k8s)</td><td>Izuma Edge</td></tr>
+</tbody></table>
+<h2>Deployment</h2>
+<table>
+<thead><tr><th>Model</th><th>Infrastructure</th></tr></thead>
+<tbody>
+<tr><td>Fully Managed</td><td>SaaS on AWS (NoOps)</td></tr>
+<tr><td>Any Cloud</td><td>AWS, Azure, GKE</td></tr>
+<tr><td>Bare Metal</td><td>On-premises</td></tr>
+</tbody></table>
+</div>
+</div>
+
+<h2>Why Not Build It Yourself?</h2>
+<table>
+<thead><tr><th>Consideration</th><th>Build In-House</th><th>Izuma Device Management</th></tr></thead>
+<tbody>
+<tr><td>Time to production</td><td>Months to years</td><td>Days</td></tr>
+<tr><td>Security architecture</td><td>Design from scratch</td><td>Chip-to-cloud, SOC 2 certified</td></tr>
+<tr><td>Protocol support</td><td>Implement each protocol</td><td>LwM2M, CoAP, BLE, Zigbee, Modbus built in</td></tr>
+<tr><td>Firmware &amp; edge</td><td>Build pipeline + k8s integration</td><td>Delta/mesh campaigns, native k8s, SD-WAN</td></tr>
+<tr><td>Factory provisioning</td><td>Custom tooling required</td><td>Factory Flow — works offline</td></tr>
+<tr><td>Ongoing maintenance</td><td>Permanent engineering team</td><td>Managed service option (NoOps)</td></tr>
+</tbody></table>
+
+<div class="gradient-bar"><strong>Key Differentiators:</strong> No vendor lock-in (Apache 2.0, standard k8s) · Single pane of glass across MCUs and edge servers · Factory Flow offline provisioning · SoftBank-backed · Free tier available</div>
+
+<div class="footer">Izuma Networks Inc. &middot; izumanetworks.com</div>
+</body></html>

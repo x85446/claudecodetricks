@@ -1,0 +1,37 @@
+{
+ "_README": "Maps real activity sources to NEDO task names. Keys are matched as case-insensitive SUBSTRINGS of (projects) the Claude-session cwd path, or (domains) a browser hostname. Longest match wins. Anything unmatched is reported as UNMAPPED \u2014 never auto-assigned. EDIT THIS to reflect how you actually attribute work; it is the only place project->task judgement lives. Task names are written verbatim into the sheet (generic NEDO form, no machine names/IPs).",
+ "projects": {
+  "iz-classic-OS": "AlmaLinux9 Wrangler maintenance",
+  "mbed-edge-examples": "AlmaLinux9 Wrangler maintenance",
+  "pe-utils": "AlmaLinux9 Wrangler maintenance",
+  "meta-edge": "edge-kubelet Yocto recipe research",
+  "distro-pelion-edge": "AlmaLinux9 Wrangler maintenance",
+  "cloud-setup": "CAPI cluster migration research",
+  "gravhl/backend": "CAPI cluster migration research",
+  "tmctech/sites": "CAPI cluster migration research",
+  "x85446/creds": "CAPI cluster migration research",
+  "gravhl-media": "CAPI cluster migration research",
+  "site-infra": "bare-metal boot research for cluster node attachment",
+  "incusHost": "bare-metal boot research for cluster node attachment",
+  "myriplane": "Myriplane CAPI work",
+  "izuma/iws": "Myriplane density research",
+  "izuma/izdc": "datacenter requirements planning for cluster deployment",
+  "izuma/izuma-cloud-platform": "cloud platform cluster work",
+  "tmctech/gitrunners": "CI runner cluster infrastructure"
+ },
+ "domains": {
+  "argocd-mgmt.gravhl.com": "Myriplane CAPI with ArgoCD",
+  "mgmt.gravhl.com": "Myriplane CAPI with ArgoCD",
+  "10.7.160.9:5240": "bare-metal boot research for cluster node attachment",
+  "developer.izumanetworks.com": "AlmaLinux9 Wrangler maintenance",
+  "discuss.linuxcontainers.org": "myriplane Entra / OIDC exploration",
+  "entra.microsoft.com": "myriplane Entra / OIDC exploration",
+  "github.com": "Myriplane CAPI work",
+  "dash.cloudflare.com": "cluster DNS / network configuration",
+  "unifi.ui.com": "cluster network configuration (UniFi)",
+  "maas.evant.maas.lan": "bare-metal boot research for cluster node attachment",
+  "gitlab.com": "GitHub runner work",
+  "alibaba.com": "server procurement for cluster nodes",
+  "main.gravhl.com": "CAPI cluster migration research"
+ }
+}

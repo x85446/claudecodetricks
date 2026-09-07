@@ -1,0 +1,2803 @@
+#!/usr/bin/env bash
+# ============================================================
+# incusmagic - Incus host management CLI
+# ============================================================
+# Replaces the old incus-magic.sh sourced profile.d script.
+# Install: /usr/local/bin/incusmagic  (symlink: /usr/local/bin/im)
+# ============================================================
+
+# On macOS with old bash, re-exec under Homebrew bash if available
+if [[ "${BASH_VERSINFO[0]}" -lt 4 ]] && [[ -z "${_INCUSMAGIC_REEXEC:-}" ]]; then
+    for _brew_bash in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+        if [[ -x "${_brew_bash}" ]]; then
+            export _INCUSMAGIC_REEXEC=1
+            exec "${_brew_bash}" "$0" "$@"
+        fi
+    done
+    unset _brew_bash
+fi
+unset _INCUSMAGIC_REEXEC 2>/dev/null || true
+
+set -euo pipefail
+
+readonly VERSION="1.3.0"
+readonly PROG="${0##*/}"
+readonly OPT_DIR="/opt/incus/customization"
+
+# Project context: when set, exported INCUS_PROJECT is honored by the incus CLI,
+# so every `incus ...` invocation in this script automatically scopes to it.
+# Set via top-level `--project NAME` / `-P NAME`, inherited from the environment,
+# or auto-detected by _is_container() when a container is found in a non-default project.
+INCUS_PROJECT="${INCUS_PROJECT:-}"
+export INCUS_PROJECT
+
+# Remote context: when set, every `incus` invocation that targets a container/VM
+# is automatically prefixed with `${INCUS_REMOTE}:`. Set via top-level
+# `--remote NAME` / `-R NAME`, inherited from the environment, or specified
+# inline as `remote:name` on any subcommand that accepts a name. Inline
+# `remote:name` always wins over the default INCUS_REMOTE.
+INCUS_REMOTE="${INCUS_REMOTE:-}"
+export INCUS_REMOTE
+
+# Apply the active INCUS_REMOTE to a bare container/VM name. If the name
+# already contains a colon (already qualified with a remote), pass through
+# unchanged. If INCUS_REMOTE is empty, also pass through unchanged.
+_apply_remote() {
+    local name="$1"
+    if [[ "${name}" == *:* ]]; then
+        echo "${name}"
+    elif [[ -n "${INCUS_REMOTE}" ]]; then
+        echo "${INCUS_REMOTE}:${name}"
+    else
+        echo "${name}"
+    fi
+}
+
+# Split a "remote:name" or bare "name" into REMOTE_PREFIX and BARE_NAME globals.
+# REMOTE_PREFIX is "remote:" (with the colon) or empty.
+# BARE_NAME is the name without any remote prefix.
+_split_target() {
+    local input="$1"
+    if [[ "${input}" == *:* ]]; then
+        REMOTE_PREFIX="${input%%:*}:"
+        BARE_NAME="${input#*:}"
+    elif [[ -n "${INCUS_REMOTE}" ]]; then
+        REMOTE_PREFIX="${INCUS_REMOTE}:"
+        BARE_NAME="${input}"
+    else
+        REMOTE_PREFIX=""
+        BARE_NAME="${input}"
+    fi
+}
+
+# --- 1. Colors & Terminal Helpers -------------------------------------------
+
+if [[ -t 1 ]]; then
+    NORM="$(tput sgr0)"
+    BOLD="$(tput bold)"
+    UND="$(tput smul)"
+    RED="$(tput setaf 1)"
+    GREEN="$(tput setaf 2)"
+    YELLOW="$(tput setaf 3)"
+    BLUE="$(tput setaf 4)"
+    CYAN="$(tput setaf 6)"
+    WHITE="$(tput setaf 7)"
+else
+    NORM="" BOLD="" UND="" RED="" GREEN="" YELLOW="" BLUE="" CYAN="" WHITE=""
+fi
+
+DISPLAY_ALL_CMDS=1
+
+# --- Source environment vars (same files the old script sourced) ---
+# Disable nounset while sourcing: legacy vars files on some hosts contain
+# unquoted "$container" placeholders that the file's author intended to be
+# literal but which bash expands at assignment time.
+set +u
+[[ -f /etc/profile.d/10-incus-magic-vars.sh ]] && source /etc/profile.d/10-incus-magic-vars.sh
+[[ -f "${HOME}/.usermagic" ]] && source "${HOME}/.usermagic"
+set -u
+
+# ============================================================
+# 2. Utility Functions (all prefixed with _)
+# ============================================================
+
+_confirm() {
+    local msg="${1:-Continue?}"
+    echo -ne "${WHITE}${msg} ${NORM}"
+    echo -en "${YELLOW}Press (y|n): ${RED}"
+    read -r -n 1 ynres || true
+    echo -en "${NORM}"
+    if [[ "${ynres}" == "Y" || "${ynres}" == "y" ]]; then
+        echo " yes"
+        return 0
+    else
+        echo " no"
+        return 1
+    fi
+}
+
+_run() {
+    if [[ ${DISPLAY_ALL_CMDS} -eq 1 ]]; then
+        echo -en "  cmd: "
+        echo "${YELLOW}$1${NORM}"
+    fi
+    if [[ "${2:-}" == "" ]]; then
+        eval "$1"
+    fi
+}
+
+_die() {
+    echo "${RED}Error:${NORM} $*" >&2
+    exit 1
+}
+
+_need_args() {
+    local min="$1"
+    local actual="$2"
+    local usage="$3"
+    if [[ "${actual}" -lt "${min}" ]]; then
+        echo "Usage: ${PROG} ${usage}" >&2
+        return 1
+    fi
+}
+
+# Execute a command template against each item in a variadic list.
+# Usage: _variadic_exec [--verify|--no-verify] "cmd template with {item}" item1 item2 ...
+# The template can also use {one} for a leading fixed arg:
+#   _variadic_exec --no-verify --fixed "VALUE" "incus config set {item} limits.memory {one}" c1 c2
+_variadic_exec() {
+    local verify=false
+    local fixed_val=""
+    # Whether to apply the active INCUS_REMOTE prefix to each {item}. Defaults
+    # to true (most callers iterate over container/VM names). Pass --no-remote
+    # for callers whose items are NOT containers (e.g. profile names, image
+    # fingerprints, network names).
+    local apply_remote=true
+    while true; do
+        case "${1:-}" in
+            --verify)    verify=true;  shift ;;
+            --no-verify) verify=false; shift ;;
+            --fixed)     fixed_val="$2"; shift 2 ;;
+            --remote)    apply_remote=true;  shift ;;
+            --no-remote) apply_remote=false; shift ;;
+            *) break ;;
+        esac
+    done
+    local cmd_template="$1"; shift
+
+    [[ $# -eq 0 ]] && { echo "Error: No items specified" >&2; return 1; }
+
+    # Replace {one} with the fixed value
+    cmd_template="${cmd_template//\{one\}/${fixed_val}}"
+
+    if $verify; then
+        echo "This will affect: ${CYAN}$*${NORM}"
+        _confirm "Would you like to continue?" || return 0
+    fi
+
+    for item in "$@"; do
+        if $apply_remote; then
+            item="$(_apply_remote "${item}")"
+        fi
+        local cmd="${cmd_template//\{item\}/$item}"
+        IFS=';' read -ra subcmds <<< "$cmd"
+        for subcmd in "${subcmds[@]}"; do
+            subcmd="${subcmd## }"; subcmd="${subcmd%% }"
+            _run "$subcmd"
+        done
+    done
+}
+
+# --- Data getters ---
+
+_get_all_container_names() {
+    # Optional arg: explicit remote prefix override (e.g. "H91:"). When unset,
+    # uses INCUS_REMOTE if exported, else the default local remote.
+    local _rp="${1:-}"
+    [[ -z "${_rp}" && -n "${INCUS_REMOTE}" ]] && _rp="${INCUS_REMOTE}:"
+    incus list "${_rp}" -c n -f csv 2>/dev/null | awk -F ',' '{print $1}' | xargs
+}
+_get_running_container_names() {
+    local _rp="${1:-}"
+    [[ -z "${_rp}" && -n "${INCUS_REMOTE}" ]] && _rp="${INCUS_REMOTE}:"
+    incus list "${_rp}" status=RUNNING -c n -f csv 2>/dev/null | awk -F ',' '{print $1}' | xargs
+}
+_get_stopped_container_names() {
+    local _rp="${1:-}"
+    [[ -z "${_rp}" && -n "${INCUS_REMOTE}" ]] && _rp="${INCUS_REMOTE}:"
+    incus list "${_rp}" status=STOPPED -c n -f csv 2>/dev/null | awk -F ',' '{print $1}' | xargs
+}
+_get_all_image_fingerprints() {
+    local _rp="${1:-}"
+    [[ -z "${_rp}" && -n "${INCUS_REMOTE}" ]] && _rp="${INCUS_REMOTE}:"
+    incus image list "${_rp}" -f csv -c f 2>/dev/null | xargs
+}
+_get_all_profiles() {
+    local _rp="${1:-}"
+    [[ -z "${_rp}" && -n "${INCUS_REMOTE}" ]] && _rp="${INCUS_REMOTE}:"
+    incus profile list "${_rp}" -f csv 2>/dev/null | awk -F ',' '{print $1}' | grep -v -e '^default$' -e '^disk-default$' | xargs
+}
+_get_container_profiles() {
+    local container; container="$(_apply_remote "$1")"
+    incus list -c P -f csv "${container}" 2>/dev/null | awk -F ',' '{gsub("\"", "", $0); print}' | xargs
+}
+_get_all_networks() {
+    local _rp="${1:-}"
+    [[ -z "${_rp}" && -n "${INCUS_REMOTE}" ]] && _rp="${INCUS_REMOTE}:"
+    incus network list "${_rp}" -f csv 2>/dev/null | grep ',CREATED$' | awk -F ',' '{print $1}' | xargs
+}
+# Find which project a container lives in by searching across all projects.
+# Echoes the project name on stdout, or nothing if not found.
+_find_container_project() {
+    local target; target="$(_apply_remote "$1")"
+    local rp=""
+    if [[ "${target}" == *:* ]]; then
+        rp="${target%%:*}:"
+    fi
+    local bare="${target##*:}"
+    incus list "${rp}" --all-projects -c en -f csv 2>/dev/null \
+        | awk -F ',' -v name="${bare}" '$2==name {print $1; exit}'
+}
+
+# Returns 0 if the named container exists in the current project, OR if it
+# can be located in another project (in which case INCUS_PROJECT is updated
+# and exported so subsequent incus calls scope to that project).
+# Accepts bare "name" or "remote:name".
+_is_container() {
+    local target; target="$(_apply_remote "$1")"
+    local bare="${target##*:}"
+    if incus list "${target}" -c n -f csv 2>/dev/null | grep -q "${bare}"; then
+        return 0
+    fi
+    # Not in current project — search all projects and adopt the one we find it in.
+    local detected
+    detected=$(_find_container_project "${target}")
+    if [[ -n "${detected}" ]]; then
+        if [[ "${detected}" != "${INCUS_PROJECT:-default}" ]]; then
+            echo "${YELLOW}Note:${NORM} '${bare}' found in project '${BOLD}${detected}${NORM}'; using that project for this command." >&2
+        fi
+        INCUS_PROJECT="${detected}"
+        export INCUS_PROJECT
+        return 0
+    fi
+    return 1
+}
+_get_customization_items() {
+    local subdir="$1"
+    local path="${OPT_DIR}/${subdir}"
+    if [[ -d "${path}" ]]; then
+        ls "${path}/" 2>/dev/null | xargs
+    fi
+}
+
+# --- Terminal link helper ---
+_termurl() {
+    local texturl="$1" url="$2"
+    local bell esc
+    bell=$(echo -e "\x07")
+    esc=$(echo -e "\x1b")
+    echo "${esc}]8;;${url}${bell}${texturl}${esc}]8;;${bell}"
+}
+
+# --- printTable (kept mostly as-is from original) ---
+_printTable() {
+    local delimiter="$1"
+    IFS="${delimiter}" read -ra justification <<< "$2"
+    IFS="${delimiter}" read -ra widths <<< "$3"
+    local header="$4"
+    local footer="$5"
+    local _data_var="$6"
+    # Bash 3.2 compatible: copy array by name instead of nameref
+    eval 'local _data_items=("${'${_data_var}'[@]}")'
+    local total_width=0
+    for width in "${widths[@]}"; do
+        total_width=$(( total_width + width ))
+    done
+    total_width=$(( total_width - 1 ))
+
+    _printRow() {
+        IFS="${delimiter}" read -ra row <<< "$1"
+        local output=""
+        for (( i = 0; i < ${#row[@]}; i++ )); do
+            local cell="${row[$i]}"
+            local width="${widths[$i]}"
+            local justify="${justification[$i]}"
+            local cell_output=""
+            if [[ ${#cell} -gt "${width}" ]]; then
+                cell="${cell:0:$((width - 4))}..."
+            fi
+            local thisWidth=$(( width - 1 ))
+            if [[ "${justify}" == "justifyRight" ]]; then
+                printf -v cell_output "%${thisWidth}s" "${cell}"
+            elif [[ "${justify}" == "center" ]]; then
+                local padding=$(( (thisWidth - ${#cell}) / 2 ))
+                printf -v cell_output "%${padding}s%s%${padding}s" "" "${cell}" ""
+            else
+                printf -v cell_output "%-${thisWidth}s" "${cell}"
+            fi
+            output+="${cell_output} "
+        done
+        echo "${output}"
+    }
+
+    _printLine() {
+        printf "%s\n" "$(printf '%*s' "${total_width}" | tr ' ' '-')"
+    }
+
+    echo "$(_printRow "${header}")"
+    _printLine
+    for row in "${_data_items[@]}"; do
+        if [[ "${row}" == "-" ]]; then
+            _printLine
+        else
+            echo "$(_printRow "${row}")"
+        fi
+    done
+    if [[ -n "${footer}" ]] && [[ "${footer}" != "," ]]; then
+        _printLine
+        echo "$(_printRow "${footer}")"
+    fi
+}
+
+# ============================================================
+# 3. Subcommand Implementations
+# ============================================================
+
+# ---- container ----
+
+_cmd_container_start() {
+    _need_args 1 $# "container start <name...>" || return 1
+    _variadic_exec --no-verify "incus start {item}" "$@"
+}
+_cmd_container_stop() {
+    _need_args 1 $# "container stop <name...>" || return 1
+    _variadic_exec --no-verify "incus stop {item}" "$@"
+}
+_cmd_container_restart() {
+    _need_args 1 $# "container restart <name...>" || return 1
+    _variadic_exec --no-verify "incus restart {item}" "$@"
+}
+_cmd_container_delete() {
+    local force=false
+    while [[ "${1:-}" == --* ]]; do
+        case "$1" in
+            --force) force=true; shift ;;
+            *) _die "Unknown flag: $1" ;;
+        esac
+    done
+    _need_args 1 $# "container delete [--force] <name...>" || return 1
+    if $force; then
+        _variadic_exec --verify "incus stop --force {item};incus delete --force {item}" "$@"
+    else
+        _variadic_exec --verify "incus stop --force {item};incus delete {item}" "$@"
+    fi
+}
+_cmd_container_start_all() {
+    local names
+    names=$(_get_all_container_names)
+    [[ -z "${names}" ]] && { echo "No containers found."; return 0; }
+    _variadic_exec --no-verify "incus start {item}" ${names}
+}
+_cmd_container_stop_all() {
+    local names
+    names=$(_get_all_container_names)
+    [[ -z "${names}" ]] && { echo "No containers found."; return 0; }
+    _variadic_exec --no-verify "incus stop {item}" ${names}
+}
+_cmd_container_restart_all() {
+    local names
+    names=$(_get_all_container_names)
+    [[ -z "${names}" ]] && { echo "No containers found."; return 0; }
+    _variadic_exec --verify "incus restart {item}" ${names}
+}
+_cmd_container_delete_all() {
+    local force=false yes=false
+    while [[ "${1:-}" == --* ]]; do
+        case "$1" in
+            --force) force=true; shift ;;
+            --yes)   yes=true;   shift ;;
+            *) _die "Unknown flag: $1" ;;
+        esac
+    done
+    local names
+    names=$(_get_all_container_names)
+    [[ -z "${names}" ]] && { echo "No containers found."; return 0; }
+    if $yes; then
+        if $force; then
+            _variadic_exec --no-verify "incus stop --force {item};incus delete --force {item}" ${names}
+        else
+            _variadic_exec --no-verify "incus stop --force {item};incus delete {item}" ${names}
+        fi
+    else
+        if $force; then
+            _variadic_exec --verify "incus stop --force {item};incus delete --force {item}" ${names}
+        else
+            _variadic_exec --verify "incus stop --force {item};incus delete {item}" ${names}
+        fi
+    fi
+}
+_cmd_container_resize_disk() {
+    _need_args 2 $# "container resize disk <size> <name...> [--override]" || return 1
+    local size="$1"; shift
+    local override=false
+    local items=()
+    for arg in "$@"; do
+        if [[ "$arg" == "--override" ]]; then
+            override=true
+        else
+            items+=("$arg")
+        fi
+    done
+    if $override; then
+        _variadic_exec --no-verify --fixed "${size}" "incus config device set {item} root size={one}" "${items[@]}"
+    else
+        _variadic_exec --no-verify --fixed "${size}" "incus config device override {item} root size={one}" "${items[@]}"
+    fi
+}
+_cmd_container_resize_memory() {
+    _need_args 2 $# "container resize memory <mem> <name...>" || return 1
+    local mem="$1"; shift
+    _variadic_exec --no-verify --fixed "${mem}" "incus stop {item};incus config set {item} limits.memory {one};incus start {item}" "$@"
+}
+_cmd_container_resize_cpu() {
+    _need_args 2 $# "container resize cpu <cpu> <name...>" || return 1
+    local cpu="$1"; shift
+    _variadic_exec --no-verify --fixed "${cpu}" "incus config set {item} limits.cpu {one}" "$@"
+}
+_cmd_container_set_memory() {
+    _need_args 2 $# "container set-memory <mem> <name...>" || return 1
+    _cmd_container_resize_memory "$@"
+}
+_cmd_container_set_cpu() {
+    _need_args 2 $# "container set-cpu <cpu> <name...>" || return 1
+    _cmd_container_resize_cpu "$@"
+}
+_cmd_container_resize() {
+    _need_args 1 $# "container resize <disk|memory|cpu> <size> <name...> [--override]" || return 1
+    local what="$1"; shift
+    case "${what}" in
+        disk)   _cmd_container_resize_disk "$@" ;;
+        memory|mem) _cmd_container_resize_memory "$@" ;;
+        cpu)    _cmd_container_resize_cpu "$@" ;;
+        --help|-h|help)
+            echo "Usage: ${PROG} container resize <disk|memory|cpu> <value> <name...> [--override]"
+            echo ""
+            echo "  disk   <size>  <name...> [--override]   Resize root disk (e.g. 50GiB)"
+            echo "  memory <mem>   <name...>                Set memory limit (e.g. 4GiB)"
+            echo "  cpu    <cpu>   <name...>                Set CPU limit (e.g. 4)"
+            ;;
+        *)
+            _die "Unknown resize target: ${what}. Expected: disk, memory, or cpu"
+            ;;
+    esac
+}
+_cmd_container_exec_all() {
+    _need_args 1 $# "container exec-all <cmd>" || return 1
+    local cmd="$*"
+    for container in $(_get_all_container_names); do
+        local target; target="$(_apply_remote "${container}")"
+        echo ""
+        echo "${CYAN}${target}${NORM}"
+        incus exec "${target}" -- bash -c "${cmd}"
+    done
+}
+_cmd_container_run_all() {
+    _need_args 1 $# "container run-all <cmd>" || return 1
+    local cmd="$*"
+    for mm in $(_get_running_container_names); do
+        local target; target="$(_apply_remote "${mm}")"
+        echo "-----------------------------------------------------------"
+        echo "${CYAN}${target}${NORM}"
+        incus exec "${target}" -- bash -c "${cmd}"
+    done
+}
+_cmd_container_destroy_relaunch() {
+    _need_args 1 $# "container destroy-relaunch <name>" || return 1
+    local input="$1"
+    local target; target="$(_apply_remote "${input}")"
+    local name="${target##*:}"
+    local rp=""
+    [[ "${target}" == *:* ]] && rp="${target%%:*}:"
+    if incus list "${rp}" -c nD -f csv 2>/dev/null | grep -q "$name"; then
+        incus stop "${target}" 2>/dev/null || true
+        incus delete "${target}"
+    else
+        echo "Container ${target} does not exist"
+    fi
+    if [[ -f "${OPT_DIR}/automation/startcmds/$name" ]]; then
+        bash "${OPT_DIR}/automation/startcmds/$name"
+    else
+        echo "Start command file $name does not exist"
+    fi
+}
+
+# ---- profile ----
+
+_cmd_profile_add() {
+    _need_args 2 $# "profile add <profile> <container...>" || return 1
+    local profile="$1"; shift
+    _variadic_exec --no-verify --fixed "${profile}" "incus profile add {item} {one}" "$@"
+}
+_cmd_profile_remove() {
+    _need_args 2 $# "profile remove <profile> <container...>" || return 1
+    local profile="$1"; shift
+    _variadic_exec --no-verify --fixed "${profile}" "incus profile remove {item} {one}" "$@"
+}
+_cmd_profile_add_multi() {
+    _need_args 2 $# "profile add-multi <container> <profile...>" || return 1
+    local container; container="$(_apply_remote "$1")"; shift
+    _variadic_exec --no-verify --no-remote --fixed "${container}" "incus profile add {one} {item}" "$@"
+}
+_cmd_profile_remove_multi() {
+    _need_args 2 $# "profile remove-multi <container> <profile...>" || return 1
+    local container; container="$(_apply_remote "$1")"; shift
+    _variadic_exec --no-verify --no-remote --fixed "${container}" "incus profile remove {one} {item}" "$@"
+}
+_cmd_profile_delete() {
+    _need_args 1 $# "profile delete <name...>" || return 1
+    _variadic_exec --verify --no-remote "incus profile delete {item}" "$@"
+}
+_cmd_profile_delete_all() {
+    local yes=false
+    [[ "${1:-}" == "--yes" ]] && { yes=true; shift; }
+    local profiles
+    profiles=$(_get_all_profiles)
+    [[ -z "${profiles}" ]] && { echo "No profiles to delete."; return 0; }
+    if $yes; then
+        _variadic_exec --no-verify --no-remote "incus profile delete {item}" ${profiles}
+    else
+        _variadic_exec --verify --no-remote "incus profile delete {item}" ${profiles}
+    fi
+}
+
+# ---- network ----
+
+_cmd_network_delete() {
+    _need_args 1 $# "network delete <name...>" || return 1
+    local filtered=()
+    for net in "$@"; do
+        if [[ "${net}" == "incusbr0" ]]; then
+            _confirm "incusbr0 is a default network. Delete it too?" || continue
+        fi
+        filtered+=("${net}")
+    done
+    [[ ${#filtered[@]} -eq 0 ]] && { echo "No networks to delete."; return 0; }
+    _variadic_exec --verify --no-remote "incus network delete {item}" "${filtered[@]}"
+}
+_cmd_network_delete_all() {
+    local yes=false
+    [[ "${1:-}" == "--yes" ]] && { yes=true; shift; }
+    local networks
+    networks=$(_get_all_networks)
+    [[ -z "${networks}" ]] && { echo "No networks to delete."; return 0; }
+
+    local has_incusbr0=false
+    local filtered=""
+    for net in ${networks}; do
+        if [[ "${net}" == "incusbr0" ]]; then
+            has_incusbr0=true
+        else
+            filtered="${filtered} ${net}"
+        fi
+    done
+
+    if ${has_incusbr0}; then
+        if _confirm "incusbr0 is a default network. Delete it too?"; then
+            filtered="${filtered} incusbr0"
+        fi
+    fi
+
+    filtered="${filtered## }"
+    [[ -z "${filtered}" ]] && { echo "No networks to delete."; return 0; }
+
+    if $yes; then
+        _variadic_exec --no-verify --no-remote "incus network delete {item}" ${filtered}
+    else
+        _variadic_exec --verify --no-remote "incus network delete {item}" ${filtered}
+    fi
+}
+
+# ---- image ----
+
+_cmd_image_list() {
+    local filter="${1:-}"
+    _run "incus image list images:${filter}"
+}
+_cmd_image_delete() {
+    _need_args 1 $# "image delete <fingerprint...>" || return 1
+    _variadic_exec --verify --no-remote "incus image delete {item}" "$@"
+}
+_cmd_image_delete_all() {
+    local yes=false
+    [[ "${1:-}" == "--yes" ]] && { yes=true; shift; }
+    local fps
+    fps=$(_get_all_image_fingerprints)
+    [[ -z "${fps}" ]] && { echo "No images to delete."; return 0; }
+    if $yes; then
+        _variadic_exec --no-verify --no-remote "incus image delete {item}" ${fps}
+    else
+        _variadic_exec --verify --no-remote "incus image delete {item}" ${fps}
+    fi
+}
+
+# ---- launch ----
+
+_cmd_launch() {
+    local image="" name="" profiles=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --image)   image="$2";   shift 2 ;;
+            --profile) profiles+=("$2"); shift 2 ;;
+            -*)        _die "Unknown flag: $1" ;;
+            *)
+                if [[ -z "${name}" ]]; then
+                    name="$1"; shift
+                else
+                    _die "Unexpected argument: $1"
+                fi
+                ;;
+        esac
+    done
+    [[ -z "${name}" ]] && _die "Usage: ${PROG} launch <name> [--image IMAGE] [--profile PROFILE...]"
+    [[ -z "${image}" ]] && image="ubuntu/24.04"
+    local profile_args=""
+    if [[ ${#profiles[@]} -gt 0 ]]; then
+        for p in "${profiles[@]}"; do
+            profile_args+=" --profile ${p}"
+        done
+    else
+        profile_args=" --profile default"
+    fi
+    name="$(_apply_remote "${name}")"
+    _run "incus launch images:${image} ${name}${profile_args}"
+}
+_cmd_launch_recommended() {
+    _need_args 1 $# "launch recommended <name>" || return 1
+    local container; container="$(_apply_remote "$1")"
+    if [[ -n "${defaultLaunch:-}" ]]; then
+        local ready="${defaultLaunch//\$container/${container}}"
+        _run "${ready}"
+    else
+        echo "No defaultLaunch variable defined."
+        echo "Set it in /etc/profile.d/10-incus-magic-vars.sh or ~/.usermagic"
+    fi
+}
+_cmd_launch_clone() {
+    _need_args 2 $# "launch clone <original> <new> [--image IMAGE]" || return 1
+    local original new_name image="${3:-}"
+    original="$(_apply_remote "$1")"
+    new_name="$(_apply_remote "$2")"
+    # strip --image flag if used
+    if [[ "${3:-}" == "--image" ]]; then
+        image="${4:-}"
+    fi
+    if [[ -z "${image}" ]]; then
+        local i1 i2
+        i1=$(incus config show "${original}" 2>/dev/null | grep image.os | awk -F ": " '{print $2}' | tr '[:upper:]' '[:lower:]')
+        i2=$(incus config show "${original}" 2>/dev/null | grep image.release | awk -F ": " '{print $2}' | tr '[:upper:]' '[:lower:]')
+        image="${i1}/${i2}"
+    fi
+    local allP
+    allP=$(_get_container_profiles "${original}")
+    local profile_args=""
+    for p in ${allP}; do
+        profile_args+=" --profile ${p}"
+    done
+    echo "${CYAN}incus launch images:${image} ${new_name}${profile_args}${NORM}"
+    if _confirm "Proceed?"; then
+        _run "incus launch images:${image} ${new_name}${profile_args}"
+    fi
+}
+_cmd_launch_test() {
+    local target; target="$(_apply_remote "t1")"
+    _run "incus launch images:ubuntu/24.04 ${target} --profile default"
+}
+
+# ---- launch wizard (interactive) ----
+
+readonly SCRIPTS_DIR="${HOME}/.local/share/incusmagic"
+
+# Prompt user to pick from a numbered list. Sets _PICK to the chosen value.
+# Usage: _pick "Prompt" "option1" "option2" ...
+_pick() {
+    local prompt="$1"; shift
+    local options=("$@")
+    echo ""
+    echo "${BOLD}${prompt}${NORM}"
+    local i=1
+    for opt in "${options[@]}"; do
+        echo "  ${CYAN}${i})${NORM} ${opt}"
+        i=$(( i + 1 ))
+    done
+    while true; do
+        echo -n "${YELLOW}> ${NORM}"
+        read -r choice || true
+        if [[ "${choice}" =~ ^[0-9]+$ ]] && [[ "${choice}" -ge 1 ]] && [[ "${choice}" -le ${#options[@]} ]]; then
+            _PICK="${options[$(( choice - 1 ))]}"
+            return 0
+        fi
+        echo "  Invalid choice. Enter 1-${#options[@]}."
+    done
+}
+
+# Prompt for free-text input with a default. Sets _INPUT to the value.
+# Usage: _prompt "Prompt" "default"
+_prompt() {
+    local prompt="$1"
+    local default="${2:-}"
+    echo ""
+    if [[ -n "${default}" ]]; then
+        echo -n "${BOLD}${prompt}${NORM} [${default}]: "
+    else
+        echo -n "${BOLD}${prompt}${NORM}: "
+    fi
+    read -r _INPUT || true
+    if [[ -z "${_INPUT}" ]]; then
+        _INPUT="${default}"
+    fi
+}
+
+# Multi-select from a list. Sets _PICKS array to chosen values.
+# Usage: _pick_multi "Prompt" "option1" "option2" ...
+_pick_multi() {
+    local prompt="$1"; shift
+    local options=("$@")
+    _PICKS=()
+    if [[ ${#options[@]} -eq 0 ]]; then return 0; fi
+    echo ""
+    echo "${BOLD}${prompt}${NORM}"
+    local i=1
+    for opt in "${options[@]}"; do
+        echo "  ${CYAN}${i})${NORM} ${opt}"
+        i=$(( i + 1 ))
+    done
+    echo "  ${CYAN}0)${NORM} (none)"
+    echo ""
+    echo "Enter numbers separated by spaces, or 0 for none:"
+    echo -n "${YELLOW}> ${NORM}"
+    read -r choices || true
+    if [[ "${choices}" == "0" || -z "${choices}" ]]; then return 0; fi
+    for c in ${choices}; do
+        if [[ "${c}" =~ ^[0-9]+$ ]] && [[ "${c}" -ge 1 ]] && [[ "${c}" -le ${#options[@]} ]]; then
+            _PICKS+=("${options[$(( c - 1 ))]}")
+        fi
+    done
+}
+
+_cmd_launch_wizard() {
+    # --- Parse CLI flags (skip interactive prompts when provided) ---
+    local _arg_image="" _arg_name="" _arg_type="" _arg_desktop="" _arg_memory=""
+    local _arg_cpus="" _arg_disk="" _arg_user="" _arg_scripts="" _arg_yes=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --image)   _arg_image="$2";   shift 2 ;;
+            --name)    _arg_name="$2";    shift 2 ;;
+            --type)    _arg_type="$2";    shift 2 ;;
+            --desktop) _arg_desktop="$2"; shift 2 ;;
+            --memory)  _arg_memory="$2";  shift 2 ;;
+            --cpus)    _arg_cpus="$2";    shift 2 ;;
+            --disk)    _arg_disk="$2";    shift 2 ;;
+            --user)    _arg_user="$2";    shift 2 ;;
+            --scripts) _arg_scripts="$2"; shift 2 ;;
+            -y|--yes)  _arg_yes="yes";    shift ;;
+            *)         _die "Unknown flag: $1" ;;
+        esac
+    done
+
+    echo "${BOLD}=== incusmagic launch wizard v${VERSION} ===${NORM}"
+
+    # --- 1. OS Image ---
+    local image_base=""
+    if [[ -n "${_arg_image}" ]]; then
+        image_base="${_arg_image}"
+    else
+        _pick "Choose OS image:" "Ubuntu 24.04 (u24)" "Ubuntu 22.04 (u22)"
+        case "${_PICK}" in
+            *u24*) image_base="ubuntu/24.04" ;;
+            *u22*) image_base="ubuntu/22.04" ;;
+        esac
+    fi
+
+    # --- 2. Desktop environment ---
+    local image="${image_base}"
+    local install_desktop="no"
+    if [[ -n "${_arg_desktop}" ]]; then
+        install_desktop="${_arg_desktop}"
+    else
+        _pick "Install desktop environment? (LightDM + XFCE)" "No" "Yes"
+        if [[ "${_PICK}" == "Yes" ]]; then
+            install_desktop="yes"
+        fi
+    fi
+
+    # --- 3. Container or VM ---
+    local inst_type="" vm_flag=""
+    if [[ -n "${_arg_type}" ]]; then
+        inst_type="${_arg_type}"
+    else
+        _pick "Container or VM?" "Container" "VM"
+        inst_type="${_PICK}"
+    fi
+    if [[ "${inst_type}" == "VM" || "${inst_type}" == "vm" ]]; then
+        vm_flag="--vm"
+        inst_type="VM"
+    else
+        inst_type="Container"
+    fi
+
+    # --- 4. Resources ---
+    local memory="" cpus="" disk=""
+    if [[ -n "${_arg_memory}" ]]; then
+        memory="${_arg_memory}GiB"
+    else
+        _prompt "Memory in GB" "2"
+        memory="${_INPUT}GiB"
+    fi
+    if [[ -n "${_arg_cpus}" ]]; then
+        cpus="${_arg_cpus}"
+    else
+        _prompt "CPUs" "2"
+        cpus="${_INPUT}"
+    fi
+    if [[ -n "${_arg_disk}" ]]; then
+        disk="${_arg_disk}GiB"
+    else
+        _prompt "Disk size in GB" "10"
+        disk="${_INPUT}GiB"
+    fi
+
+    # --- 5. Name ---
+    local name=""
+    if [[ -n "${_arg_name}" ]]; then
+        name="${_arg_name}"
+    else
+        _prompt "Instance name" ""
+        name="${_INPUT}"
+    fi
+    [[ -z "${name}" ]] && _die "Name is required."
+
+    # --- 6. SSH + user ---
+    local do_ssh="no" ssh_user=""
+    if [[ -n "${_arg_user}" ]]; then
+        do_ssh="yes"
+        ssh_user="${_arg_user}"
+    else
+        _pick "Enable SSH for a user?" "Yes" "No"
+        if [[ "${_PICK}" == "Yes" ]]; then
+            do_ssh="yes"
+            _prompt "Primary username" "${USER}"
+            ssh_user="${_INPUT}"
+        fi
+    fi
+
+    # --- 7. Setup scripts ---
+    local selected_scripts=()
+    _PICKS=()
+    if [[ -n "${_arg_scripts}" ]]; then
+        IFS=',' read -ra selected_scripts <<< "${_arg_scripts}"
+    else
+        local scripts_available=()
+        if [[ -d "${SCRIPTS_DIR}" ]]; then
+            while IFS= read -r f; do
+                [[ -n "${f}" ]] && scripts_available+=("$(basename "${f}")")
+            done < <(find "${SCRIPTS_DIR}" -maxdepth 1 -name '*.sh' ! -name 'post-*.sh' -type f 2>/dev/null | sort)
+        fi
+        if [[ ${#scripts_available[@]} -gt 0 ]]; then
+            _pick_multi "Select setup scripts to run (from ${SCRIPTS_DIR}):" "${scripts_available[@]}"
+        fi
+        selected_scripts=("${_PICKS[@]}")
+    fi
+
+    # --- Summary ---
+    echo ""
+    echo "${BOLD}=== Launch Summary ===${NORM}"
+    echo "  Version:   ${CYAN}v${VERSION}${NORM}"
+    echo "  Image:     ${CYAN}${image}${NORM}"
+    echo "  Desktop:   ${CYAN}${install_desktop}${NORM}"
+    echo "  Type:      ${CYAN}${inst_type}${NORM}"
+    echo "  Name:      ${CYAN}${name}${NORM}"
+    echo "  Memory:    ${CYAN}${memory}${NORM}"
+    echo "  CPUs:      ${CYAN}${cpus}${NORM}"
+    echo "  Disk:      ${CYAN}${disk}${NORM}"
+    if [[ "${do_ssh}" == "yes" ]]; then
+        echo "  SSH user:  ${CYAN}${ssh_user}${NORM}"
+    fi
+    if [[ ${#selected_scripts[@]} -gt 0 ]]; then
+        echo "  Setup:     ${CYAN}${selected_scripts[*]}${NORM}"
+    fi
+    echo ""
+    if [[ "${_arg_yes}" == "yes" ]]; then
+        echo "  (auto-confirmed via --yes)"
+    else
+        _confirm "Proceed with launch?" || { echo "Aborted."; return 0; }
+    fi
+
+    # --- Execute ---
+
+    # 1. Create instance (without starting)
+    echo ""
+    echo "${BOLD}--- Creating ${name} ---${NORM}"
+    local init_cmd="incus init images:${image} ${name}"
+    [[ -n "${vm_flag}" ]] && init_cmd+=" ${vm_flag}"
+    init_cmd+=" --profile default"
+    _run "${init_cmd}"
+
+    # 2. Configure resources (while stopped — avoids ETag races)
+    echo ""
+    echo "${BOLD}--- Configuring resources ---${NORM}"
+    _run "incus config set ${name} limits.memory ${memory}"
+    _run "incus config set ${name} limits.cpu ${cpus}"
+
+    # Set disk size (try override first, fall back to set)
+    incus config device override "${name}" root size="${disk}" 2>/dev/null ||
+        incus config device set "${name}" root size="${disk}" 2>/dev/null ||
+        echo "${YELLOW}  Warning: Could not set disk size. You may need to set it manually.${NORM}"
+
+    # 3. Start instance
+    echo ""
+    echo "${BOLD}--- Starting ${name} ---${NORM}"
+    _run "incus start ${name}"
+
+    # 4. Wait for instance to be running
+    echo ""
+    echo "${BOLD}--- Waiting for ${name} to start ---${NORM}"
+    local retries=30
+    while [[ ${retries} -gt 0 ]]; do
+        local state
+        state=$(incus list "${name}" -c s -f csv 2>/dev/null || echo "")
+        if [[ "${state}" == "RUNNING" ]]; then
+            break
+        fi
+        echo "  Waiting... (${state:-not ready})"
+        sleep 2
+        retries=$(( retries - 1 ))
+    done
+    if [[ ${retries} -eq 0 ]]; then
+        _die "Timed out waiting for ${name} to start."
+    fi
+    echo "  ${GREEN}${name} is running.${NORM}"
+
+    # 5. Wait for cloud-init (if applicable)
+    echo ""
+    echo "${BOLD}--- Waiting for cloud-init ---${NORM}"
+    incus exec "${name}" -- bash -c "
+        if command -v cloud-init &>/dev/null; then
+            cloud-init status --wait 2>/dev/null || true
+        fi
+    " 2>/dev/null || true
+    echo "  ${GREEN}Ready.${NORM}"
+
+    # 6. Wait for IP address
+    echo ""
+    echo "${BOLD}--- Waiting for ${name} to get an IP address ---${NORM}"
+    local ip_retries=30  # 30 * 2s = 60s timeout
+    local got_ip=""
+    while [[ ${ip_retries} -gt 0 ]]; do
+        got_ip=$(incus list "${name}" -c 4 -f csv 2>/dev/null | sed 's/ (.*//' | grep -v '^$' || true)
+        if [[ -n "${got_ip}" ]]; then
+            break
+        fi
+        echo "  Waiting for IP... ($(( (30 - ip_retries) * 2 ))s elapsed)"
+        sleep 2
+        ip_retries=$(( ip_retries - 1 ))
+    done
+    if [[ ${ip_retries} -eq 0 ]]; then
+        echo "${YELLOW}  Warning: Timed out waiting for IP address after 60s. Continuing anyway.${NORM}"
+    else
+        echo "  ${GREEN}${name} has IP: ${got_ip}${NORM}"
+    fi
+
+    # 7. SSH enable (after IP is available)
+    if [[ "${do_ssh}" == "yes" ]]; then
+        echo ""
+        echo "${BOLD}--- Setting up SSH for ${ssh_user} ---${NORM}"
+        _cmd_ssh_enable "${name}" "${ssh_user}"
+    fi
+
+    # 8. Setup scripts (always via incus exec — more reliable than SSH
+    #    for long-running installs, and scripts need root anyway)
+    if [[ ${#selected_scripts[@]} -gt 0 ]]; then
+        local logfile="/tmp/incuslaunch.log"
+        echo ""
+        echo "${BOLD}--- Running setup scripts ---${NORM}"
+        echo "  Log: ${logfile}"
+        echo "=== incusmagic launch: ${name} — $(date) ===" >> "${logfile}"
+
+        # Push ALL scripts and support files from SCRIPTS_DIR
+        echo "  Pushing scripts to ${name}..."
+        for push_file in "${SCRIPTS_DIR}"/*.sh "${SCRIPTS_DIR}"/*.conf; do
+            [[ -f "${push_file}" ]] || continue
+            local push_name
+            push_name=$(basename "${push_file}")
+            # Skip post-scripts — they run on the host, not inside the container
+            [[ "${push_name}" == post-* ]] && continue
+            incus file push "${push_file}" "${name}/tmp/${push_name}"
+            incus exec "${name}" -- chmod +x "/tmp/${push_name}" 2>/dev/null || true
+        done
+
+        # Run only the selected scripts
+        for script_name in "${selected_scripts[@]}"; do
+            local script_path="${SCRIPTS_DIR}/${script_name}"
+            if [[ ! -f "${script_path}" ]]; then
+                echo "${RED}  Script not found: ${script_path}${NORM}"
+                continue
+            fi
+
+            echo ""
+            echo "${CYAN}>>> ${script_name}${NORM}"
+            echo "--- ${script_name} started: $(date) ---" >> "${logfile}"
+            local exec_env=""
+            if [[ "${do_ssh}" == "yes" && -n "${ssh_user}" ]]; then
+                exec_env="--env SETUP_USER=${ssh_user}"
+            fi
+            if [[ "${install_desktop}" == "yes" ]]; then
+                exec_env="${exec_env} --env INSTALL_DESKTOP=1"
+            fi
+            incus exec "${name}" ${exec_env} -- bash "/tmp/${script_name}" 2>&1 | tee -a "${logfile}"
+            echo "--- ${script_name} finished: $(date) ---" >> "${logfile}"
+            echo "${GREEN}  <<< ${script_name} done${NORM}"
+        done
+    fi
+
+    # 8.5. Post-scripts (run locally on the host after remote scripts complete)
+    if [[ ${#selected_scripts[@]} -gt 0 ]]; then
+        local post_scripts_ran=0
+        for script_name in "${selected_scripts[@]}"; do
+            local post_script_name="post-${script_name}"
+            local post_script_path="${SCRIPTS_DIR}/${post_script_name}"
+            if [[ -f "${post_script_path}" ]]; then
+                if [[ ${post_scripts_ran} -eq 0 ]]; then
+                    echo ""
+                    echo "${BOLD}--- Running post-scripts (on host) ---${NORM}"
+                fi
+                post_scripts_ran=$(( post_scripts_ran + 1 ))
+                echo ""
+                echo "${CYAN}>>> ${post_script_name} (local)${NORM}"
+                INSTANCE_NAME="${name}" \
+                SETUP_USER="${ssh_user}" \
+                INSTANCE_IP="${got_ip}" \
+                    bash "${post_script_path}"
+                echo "${GREEN}  <<< ${post_script_name} done${NORM}"
+            fi
+        done
+    fi
+
+    echo ""
+    echo "${BOLD}=== Launch complete ===${NORM}"
+    echo "  Instance: ${GREEN}${name}${NORM}"
+    if [[ "${do_ssh}" == "yes" ]]; then
+        echo "  Connect:  ${CYAN}ssh ${name}${NORM}"
+    else
+        echo "  Connect:  ${CYAN}incus exec ${name} -- bash${NORM}"
+    fi
+}
+
+# ---- list ----
+
+_cmd_list() {
+    local filter="${1:-}"
+    # If filter looks like "remote:" or "remote:filter", pass through directly;
+    # otherwise prepend INCUS_REMOTE prefix when set.
+    if [[ -z "${filter}" && -n "${INCUS_REMOTE}" ]]; then
+        filter="${INCUS_REMOTE}:"
+    elif [[ -n "${filter}" && "${filter}" != *:* && -n "${INCUS_REMOTE}" ]]; then
+        filter="${INCUS_REMOTE}:${filter}"
+    fi
+    _run "incus list -c ens46PbtlL ${filter} --all-projects"
+}
+_cmd_list_wide() {
+    local filter="${1:-}"
+    if [[ -z "${filter}" && -n "${INCUS_REMOTE}" ]]; then
+        filter="${INCUS_REMOTE}:"
+    elif [[ -n "${filter}" && "${filter}" != *:* && -n "${INCUS_REMOTE}" ]]; then
+        filter="${INCUS_REMOTE}:${filter}"
+    fi
+    _run "incus list -c ens46PbtlL ${filter} --all-projects"
+}
+_cmd_list_narrow() {
+    local filter="${1:-}"
+    if [[ -z "${filter}" && -n "${INCUS_REMOTE}" ]]; then
+        filter="${INCUS_REMOTE}:"
+    elif [[ -n "${filter}" && "${filter}" != *:* && -n "${INCUS_REMOTE}" ]]; then
+        filter="${INCUS_REMOTE}:${filter}"
+    fi
+    _run "incus list -c n4 ${filter}"
+}
+_cmd_list_csv() {
+    local mode="all"
+    while [[ "${1:-}" == --* ]]; do
+        case "$1" in
+            --running) mode="running"; shift ;;
+            --stopped) mode="stopped"; shift ;;
+            --all)     mode="all";     shift ;;
+            *) _die "Unknown flag: $1" ;;
+        esac
+    done
+    case "${mode}" in
+        running) _get_running_container_names ;;
+        stopped) _get_stopped_container_names ;;
+        all)     _get_all_container_names ;;
+    esac
+}
+
+# ---- backup ----
+
+_cmd_backup() {
+    _need_args 1 $# "backup <name...>" || return 1
+    local dirs="${HOME}/iibackups/$(date +%Y-%m-%d_%H-%M-%S)"
+    mkdir -p "${dirs}"
+    for value in "$@"; do
+        local target bare
+        target="$(_apply_remote "${value}")"
+        bare="${target##*:}"
+        echo "incus export ${target} --instance-only ${dirs}/${bare}.tar.gz"
+        incus export "${target}" --instance-only "${dirs}/${bare}.tar.gz"
+    done
+    echo "Backups saved to: ${dirs}"
+}
+_cmd_backup_all() {
+    local names
+    names=$(_get_all_container_names)
+    [[ -z "${names}" ]] && { echo "No containers to back up."; return 0; }
+    _cmd_backup ${names}
+}
+
+# ---- ssh ----
+
+_cmd_ssh_enable() {
+    # Source user config for key paths
+    [[ -f "${HOME}/.usermagic" ]] && source "${HOME}/.usermagic"
+    local tempfile
+    tempfile=$(mktemp)
+
+    local newkey=0 portfwd="false" passwordlessSudo=1 proxyjump=1 SAVETO=""
+
+    OPTIND=1
+    while getopts "hnp:jsS:" opt; do
+        case "${opt}" in
+            h)
+                echo -e "${BOLD}${UND}Usage:${NORM} ${PROG} ssh enable [options] <container> <username>"
+                echo ""
+                echo -e "${BOLD}${UND}Options:${NORM}"
+                echo "  -h  Show this help"
+                echo "  -n  Generate a new SSH key (vs using existing)"
+                echo "  -p PORT  Forward port from host to container for SSH"
+                echo "  -j  Disable proxyjump"
+                echo "  -s  Disable passwordless sudo"
+                echo "  -S FILE  Save SSH config entry to file"
+                echo ""
+                echo -e "${BOLD}${UND}Examples:${NORM}"
+                echo "  ${PROG} ssh enable mycontainer bob"
+                echo "  ${PROG} ssh enable -n -p 22455 mycontainer sue"
+                return 0
+                ;;
+            n) newkey=1 ;;
+            p) portfwd="${OPTARG}" ;;
+            j) proxyjump=0 ;;
+            s) passwordlessSudo=0 ;;
+            S) SAVETO="${OPTARG}" ;;
+            \?)
+                echo "Option -${OPTARG} not allowed." >&2
+                return 1
+                ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: ${PROG} ssh enable [options] <container> <username>" >&2
+        rm -f "${tempfile}"
+        return 1
+    fi
+
+    # Accept "remote:name" or bare "name" (with INCUS_REMOTE default applied).
+    # CONTAINER_TARGET is always the fully-qualified form for `incus ...` calls.
+    # CONTAINER_NAME is the bare name (used for ssh Host alias, key file names,
+    # display strings, etc.).
+    local CONTAINER_INPUT="$1"
+    local CONTAINER_TARGET; CONTAINER_TARGET="$(_apply_remote "$1")"
+    local CONTAINER_NAME="${CONTAINER_TARGET##*:}"
+    local user="$2"
+    local scpNewKey="" sshkeyoutput=""
+
+    if ! _is_container "${CONTAINER_TARGET}"; then
+        echo "${CONTAINER_TARGET} is not a container" >&2
+        rm -f "${tempfile}"
+        return 1
+    fi
+
+    local keys="" idFile=""
+    if [[ ${newkey} -eq 0 && -f "${newMachinePublicKey:-/nonexistent}" ]]; then
+        echo "Using keys referenced in ${HOME}/.usermagic"
+        keys=$(cat "${newMachinePublicKey}")
+        idFile="${newMachinePrivateKeyName}"
+    elif [[ ${newkey} -eq 0 && -f "${HOME}/.ssh/to_${HOSTNAME}" ]]; then
+        echo "Using the to_${HOSTNAME} key found in .ssh"
+        keys=$(cat ~/.ssh/authorized_keys)
+        idFile="to_${HOSTNAME}"
+    elif [[ ${newkey} -eq 0 && -f "${HOME}/.ssh/to_generic.pub" ]]; then
+        echo "Using the to_generic key found in .ssh"
+        keys=$(cat "${HOME}/.ssh/to_generic.pub")
+        idFile="to_generic"
+    else
+        if [[ ${newkey} -eq 0 ]]; then
+            echo "Cannot find existing key, generating a new one"
+        fi
+        rm -f "${HOME}/.ssh/to_${CONTAINER_NAME}_${user}" "${HOME}/.ssh/to_${CONTAINER_NAME}_${user}.pub"
+        ssh-keygen -o -t ED25519 -b 4096 -C "${user}_${CONTAINER_NAME}_on_${HOSTNAME}" -N "" -f "${HOME}/.ssh/to_${CONTAINER_NAME}_${user}"
+        keys=$(cat "${HOME}/.ssh/to_${CONTAINER_NAME}_${user}.pub")
+        idFile="to_${CONTAINER_NAME}_${user}"
+        sshkeyoutput=$(
+            echo "Your ${BOLD}ssh private key${NORM} is at ${HOME}/.ssh/to_${CONTAINER_NAME}_${user}"
+            echo "Your ${BOLD}ssh public key${NORM}  is at ${HOME}/.ssh/to_${CONTAINER_NAME}_${user}.pub"
+            echo "---------------------------------------------------------------------------------------------"
+            echo "${CYAN}scp ${HOSTNAME}:~/.ssh/to_${CONTAINER_NAME}_${user}* ~/.ssh/${NORM}"
+            echo "---------------------------------------------------------------------------------------------"
+        )
+        scpNewKey="scp ${HOSTNAME}:~/.ssh/to_${CONTAINER_NAME}_${user}* ~/.ssh/ ;"
+    fi
+
+    local useIP port
+    if [[ "${portfwd}" != "false" ]]; then
+        if [[ "${CONTAINER_TARGET}" == *:* ]]; then
+            echo "${YELLOW}Warning:${NORM} -p (port forward) on a remote container (${CONTAINER_TARGET}) forwards to the remote host's interface, not this machine. Reachability from here depends on the network." >&2
+        fi
+        incus config device add "${CONTAINER_TARGET}" proxyport"${portfwd}" proxy listen=tcp:0.0.0.0:"${portfwd}" connect=tcp:127.0.0.1:22
+        if [[ $? -ne 0 ]]; then
+            echo "${RED}Error${NORM} creating port forward. Make sure you're using a unique port."
+            echo "${CYAN}netstat -tulpn | grep ${portfwd}${NORM}"
+            netstat -tulpn | grep "${portfwd}" || true
+            echo "Aborting..."
+            rm -f "${tempfile}"
+            return 1
+        fi
+        port="${portfwd}"
+        useIP=$(ip addr show | grep 'inet ' | grep -v 127.0.0.1 | awk '{print $2}' | cut -d'/' -f1 | head -1)
+    else
+        useIP=$(incus list -c 4 -f csv "${CONTAINER_TARGET}" | grep -v docker | grep -v iibr | head -1 | awk '{print $1}' | cut -d '"' -f2)
+        port=22
+    fi
+
+    # Install SSH in the container
+    local thisPM
+    thisPM=$(_get_package_manager "${CONTAINER_TARGET}")
+    case "${thisPM}" in
+        apt)
+            _remote_install "${CONTAINER_TARGET}" "${thisPM}" "ssh"
+            _remote_start "${CONTAINER_TARGET}" "${thisPM}" "ssh"
+            ;;
+        yum|dnf)
+            _remote_install "${CONTAINER_TARGET}" "${thisPM}" "openssh-server"
+            _remote_start "${CONTAINER_TARGET}" "${thisPM}" "sshd"
+            ;;
+        zypper|pacman)
+            _remote_install "${CONTAINER_TARGET}" "${thisPM}" "openssh"
+            _remote_start "${CONTAINER_TARGET}" "${thisPM}" "sshd"
+            ;;
+    esac
+
+    # Set up authorized_keys
+    if [[ "${user}" == "root" ]]; then
+        incus exec "${CONTAINER_TARGET}" -- bash -c "
+            mkdir -p /root/.ssh && chmod 700 /root/.ssh
+            touch /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys
+            echo '${keys}' >> /root/.ssh/authorized_keys
+            chown -R root:root /root/
+        "
+    else
+        incus exec "${CONTAINER_TARGET}" -- bash -c "
+            if ! id -u ${user} >/dev/null 2>&1; then
+                useradd ${user} -m -G sudo -s /bin/bash
+                echo '${user}:${user}123' | chpasswd
+            fi
+            mkdir -p /home/${user}/.ssh && chmod 700 /home/${user}/.ssh
+            touch /home/${user}/.ssh/authorized_keys && chmod 600 /home/${user}/.ssh/authorized_keys
+            echo '${keys}' >> /home/${user}/.ssh/authorized_keys
+            chown -R ${user}:${user} /home/${user}/
+        "
+    fi
+
+    # Results
+    figlet RESULTS 2>/dev/null || echo "=== RESULTS ==="
+    [[ -n "${sshkeyoutput}" ]] && echo "${sshkeyoutput}"
+
+    local PJUMP=""
+    if [[ ${proxyjump} -eq 1 && -n "${jumphost:-}" ]]; then
+        PJUMP="    proxyjump ${jumphost}"
+    fi
+
+    # Build the SSH config block
+    local config_block=""
+    config_block+="Host ${CONTAINER_NAME}"$'\n'
+    config_block+="    user ${user}"$'\n'
+    config_block+="    hostname ${useIP}"$'\n'
+    config_block+="    port ${port}"$'\n'
+    config_block+="    identityfile ~/.ssh/${idFile}"$'\n'
+    config_block+="    stricthostkeychecking no"$'\n'
+    config_block+="    userknownhostsfile /dev/null"$'\n'
+    config_block+="    serveraliveinterval 200"$'\n'
+    config_block+="    identitiesonly yes"$'\n'
+    config_block+="    passwordauthentication no"$'\n'
+    config_block+="    forwardagent yes"
+    [[ -n "${PJUMP}" ]] && config_block+=$'\n'"${PJUMP}"
+
+    echo "${config_block}" > "${tempfile}"
+
+    # Auto-append to ~/.ssh/config
+    local ssh_config="${HOME}/.ssh/config"
+    mkdir -p "${HOME}/.ssh"
+    chmod 700 "${HOME}/.ssh"
+    touch "${ssh_config}"
+    chmod 600 "${ssh_config}"
+
+    # Remove existing block for this Host if present, then append new one
+    if grep -q "^Host ${CONTAINER_NAME}$" "${ssh_config}" 2>/dev/null; then
+        echo "${YELLOW}Replacing existing '${CONTAINER_NAME}' entry in ${ssh_config}${NORM}"
+        # Remove old block: from "Host <name>" to the line before the next "Host " or EOF
+        local tmp_cfg
+        tmp_cfg=$(mktemp)
+        awk -v host="Host ${CONTAINER_NAME}" '
+            BEGIN { skip=0 }
+            /^Host / {
+                if ($0 == host) { skip=1; next }
+                else { skip=0 }
+            }
+            !skip { print }
+        ' "${ssh_config}" > "${tmp_cfg}"
+        cp "${tmp_cfg}" "${ssh_config}"
+        rm -f "${tmp_cfg}"
+    fi
+
+    # Ensure a blank line before the new entry
+    if [[ -s "${ssh_config}" ]] && [[ "$(tail -c 1 "${ssh_config}")" != "" ]]; then
+        echo "" >> "${ssh_config}"
+    fi
+    echo "${config_block}" >> "${ssh_config}"
+    echo "${GREEN}Appended to ${ssh_config}${NORM}"
+
+    # Display what was written
+    echo "---------------------------------------------------------------------------------------------"
+    echo "${config_block}"
+    echo "---------------------------------------------------------------------------------------------"
+
+    if [[ -n "${SAVETO}" ]]; then
+        cp "${tempfile}" "${SAVETO}"
+        echo "SSH config also saved to ${SAVETO}"
+    fi
+
+    if command -v storm &>/dev/null; then
+        echo ""
+        echo "Storm command:"
+        echo "---------------------------------------------------------------------------------------------"
+        echo "${CYAN}${scpNewKey} storm delete ${CONTAINER_NAME};storm add ${CONTAINER_NAME} ${user}@${useIP}:${port} --id_file ~/.ssh/${idFile} --o \"StrictHostKeyChecking=no\" --o \"UserKnownHostsFile=/dev/null\" --o \"ServerAliveInterval=200\" --o \"IdentitiesOnly=yes\" --o \"passwordauthentication=no\" --o \"forwardagent=yes\"${NORM}"
+        echo "---------------------------------------------------------------------------------------------"
+    fi
+
+    echo "You should now be able to: ${CYAN}ssh ${CONTAINER_NAME}${NORM}"
+    if [[ "${user}" != "root" ]]; then
+        echo "${RED}NOTE: sudo password is:${NORM} ${user}123"
+    fi
+
+    if [[ ${passwordlessSudo} -eq 1 ]]; then
+        incus exec "${CONTAINER_TARGET}" -- bash -c "echo '${user} ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/${user} && chmod 0440 /etc/sudoers.d/${user}"
+    fi
+
+    rm -f "${tempfile}"
+}
+
+# ---- storage ----
+
+_cmd_storage_move() {
+    _need_args 2 $# "storage move <pool> <container...>" || return 1
+    local new_storage_pool="$1"; shift
+    # Validate pool exists
+    if ! incus storage list -f csv 2>/dev/null | grep -q "${new_storage_pool}"; then
+        _die "${new_storage_pool} does not exist."
+    fi
+    for container_arg in "$@"; do
+        local container_target container_name
+        container_target="$(_apply_remote "${container_arg}")"
+        container_name="${container_target##*:}"
+        local uniq
+        uniq=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 5 | head -n 1)
+        _run "incus list -c ens46PbtlL ${container_target} --all-projects"
+        local old_pool
+        old_pool=$(incus list "${container_target}" -c b -f csv)
+        local old_profile new_profile
+        if [[ "${old_pool}" == "default" ]]; then
+            old_profile="disk-generic"
+        else
+            old_profile="${old_pool}"
+        fi
+        if [[ "${new_storage_pool}" == "default" ]]; then
+            new_profile="disk-generic"
+        else
+            new_profile="${new_storage_pool}"
+        fi
+        # For incus move target naming: when a remote is in play, the temp/new
+        # names stay within the same remote — only the bare name part changes.
+        local rp=""
+        [[ "${container_target}" == *:* ]] && rp="${container_target%%:*}:"
+        local temp_target="${rp}${container_name}-${uniq}"
+        echo "${YELLOW}Moving ${container_target} to storage pool ${new_storage_pool} (temp: ${temp_target})${NORM}"
+        incus stop "${container_target}"
+        incus move "${container_target}" "${temp_target}" -s "${new_storage_pool}"
+        incus move "${temp_target}" "${container_target}"
+        incus profile add "${container_target}" "${new_profile}"
+        incus profile remove "${container_target}" "${old_profile}"
+        incus start "${container_target}"
+        _run "incus list -c ens46PbtlL ${container_target} --all-projects"
+    done
+}
+
+# ---- port ----
+
+_cmd_port_forward() {
+    _need_args 4 $# "port forward <container> <name> <host-port> <container-port>" || return 1
+    local container; container="$(_apply_remote "$1")"
+    local name="$2" hport="$3" cport="$4"
+    _run "incus config device add ${container} ${name} proxy listen=tcp:0.0.0.0:${hport} connect=tcp:127.0.0.1:${cport}"
+}
+
+# ---- diag ----
+
+_cmd_diag_top() {
+    _run "systemd-cgtop"
+}
+_cmd_diag_inotify() {
+    _run "inotify-info"
+}
+_cmd_diag_disks() {
+    _cmd_report_disks
+}
+_cmd_diag_systemd_udevd() {
+    if [[ "${1:-}" == "-f" ]]; then
+        while true; do
+            ps ax | grep systemd-udevd | wc -l
+            sleep 1
+        done
+    else
+        ps ax | grep systemd-udevd | wc -l
+    fi
+}
+
+# ---- report ----
+
+_cmd_report_disks() {
+    local fullList
+    fullList=$(incus storage list -f csv)
+    local oldIFS="${IFS}"
+    IFS=$'\n'
+    for disk in ${fullList}; do
+        IFS=',' read -r name type rest <<< "${disk}"
+        if [[ "${type}" == "lvm" ]]; then
+            _report_disksize_vg "${name}"
+        else
+            _report_disksize_local "${name}"
+        fi
+    done
+    IFS="${oldIFS}"
+}
+_cmd_report_disksize() {
+    _need_args 1 $# "report disksize <pool>" || return 1
+    local pool="$1"
+    local pool_type
+    pool_type=$(incus storage list -f csv 2>/dev/null | grep "^${pool}," | awk -F ',' '{print $2}')
+    if [[ "${pool_type}" == "lvm" ]]; then
+        _report_disksize_vg "${pool}"
+    else
+        _report_disksize_local "${pool}"
+    fi
+}
+
+# Storage pool resource helpers
+_get_pool_space_used() {
+    local pool="$1"
+    local storageshow
+    storageshow=$(incus storage show "${pool}" --resources)
+    local spaceUsed
+    spaceUsed=$(echo "${storageshow}" | grep "used:" | head -1 | awk '{print $2}')
+    echo "scale=2; ${spaceUsed} / 1024 / 1024 / 1024" | bc
+}
+_get_pool_space_total() {
+    local pool="$1"
+    local storageshow
+    storageshow=$(incus storage show "${pool}" --resources)
+    local spaceTotal
+    spaceTotal=$(echo "${storageshow}" | grep "total:" | head -1 | awk '{print $2}')
+    echo "scale=2; ${spaceTotal} / 1024 / 1024 / 1024" | bc
+}
+_get_instance_storage_size() {
+    local container="$1"
+    local thisSize
+    thisSize=$(incus config show "${container}" 2>&1 | grep "size:" | awk -F " " '{print $2}')
+    if [[ -z "${thisSize}" ]]; then
+        echo "10"
+    else
+        echo "${thisSize}" | sed 's/[^0-9.]//g'
+    fi
+}
+
+# Cache for disk usage lookups
+__disk_usage_cache=""
+_cache_disk_usage() {
+    __disk_usage_cache=$(incus list -c nD -f csv)
+}
+_get_instance_disk_usage() {
+    local container="$1"
+    local thisSize
+    thisSize=$(echo "${__disk_usage_cache}" | grep "$1" | awk -F "," '{print $2}')
+    if [[ -z "${thisSize}" ]]; then
+        echo "stopped"
+    else
+        echo "${thisSize}" | sed 's/[^0-9.]//g'
+    fi
+}
+_get_instance_disk_internal_size() {
+    local container="$1"
+    local output
+    output=$(incus exec "${container}" -- df -h -x tmpfs -x devtmpfs -x squashfs -x efivarfs / 2>&1 | grep / | awk -F " " '{print $2}')
+    if [[ -z "${output}" ]]; then echo "stopped"; else echo "${output}" | sed 's/[^0-9.]//g'; fi
+}
+_get_instance_disk_internal_used() {
+    local container="$1"
+    local output
+    output=$(incus exec "${container}" -- df -h -x tmpfs -x devtmpfs -x squashfs -x efivarfs / 2>&1 | grep / | awk -F " " '{print $3}')
+    if [[ -z "${output}" ]]; then echo "stopped"; else echo "${output}" | sed 's/[^0-9.]//g'; fi
+}
+_get_instance_disk_internal_avail() {
+    local container="$1"
+    local output
+    output=$(incus exec "${container}" -- df -h -x tmpfs -x devtmpfs -x squashfs -x efivarfs / 2>&1 | grep / | awk -F " " '{print $4}')
+    if [[ -z "${output}" ]]; then echo "stopped"; else echo "${output}" | sed 's/[^0-9.]//g'; fi
+}
+_get_instance_disk_dir_used() {
+    local container="$1"
+    local output
+    output=$(sudo du -sh /var/lib/incus/containers/"${container}"/rootfs 2>/dev/null)
+    if [[ -z "${output}" ]]; then echo "stopped"; else echo "${output}" | sed 's/[^0-9.]//g'; fi
+}
+
+_report_disksize_local() {
+    local storagePool="$1"
+    declare -a print_data
+    local externalSpaceUsed externalSpaceTotal
+    externalSpaceUsed=$(_get_pool_space_used "${storagePool}")
+    externalSpaceTotal=$(_get_pool_space_total "${storagePool}")
+    local container_names
+    container_names=$(incus list -c nDsb -f csv | grep "${storagePool}" | awk -F "," '{print $1}' | xargs)
+    IFS=" " read -r -a container_names_arr <<< "${container_names}"
+    local fulldatasize fulldataavail
+    fulldatasize=$(_get_instance_disk_internal_size "${container_names_arr[0]:-}" 2>/dev/null || echo "0")
+    fulldataavail=$(_get_instance_disk_internal_avail "${container_names_arr[0]:-}" 2>/dev/null || echo "0")
+    local Total_incus_data_allocated=0 Total_incus_data_used=0
+
+    for cn in "${container_names_arr[@]}"; do
+        local incus_data_allocated incus_data_used
+        incus_data_allocated=$(_get_instance_storage_size "${cn}")
+        incus_data_used=$(_get_instance_disk_dir_used "${cn}")
+        Total_incus_data_allocated=$(echo "scale=2; ${Total_incus_data_allocated} + ${incus_data_allocated}" | bc)
+        Total_incus_data_used=$(echo "scale=2; ${Total_incus_data_used} + ${incus_data_used}" | bc)
+        local var="${cn},${incus_data_allocated},${incus_data_used},${fulldatasize},${fulldataavail}"
+        print_data+=("${var}")
+    done
+
+    echo -e "\nStorage: ${storagePool} (${externalSpaceUsed} / ${externalSpaceTotal})\n"
+    _printTable "," "justifyLeft,justifyRight,justifyRight,justifyRight,justifyRight" "20,15,15,15,15" "CONTAINER,I-ALLOC,I-DISK USED,DISK SIZE,DISK AVAIL" "Totals:,${Total_incus_data_allocated},${Total_incus_data_used},," print_data
+    echo -e " - Column Headings"
+    echo -e "   - I-ALLOC: Incus reported allocation when you set root size=xxx"
+    echo -e "   - I-DISK USED: Incus reported disk usage (closely matches df -h inside the container)"
+    echo -e "   - DISK SIZE: Size of the disk shared with the instances"
+    echo -e "   - DISK AVAIL: Remaining space on the disk shared with the instances"
+    echo -e " - all data is in GB\n"
+}
+
+_report_disksize_vg() {
+    local VOLUMEGROUP="$1"
+    declare -a containers
+    declare -a print_data
+    local externalSpaceUsed externalSpaceTotal
+    externalSpaceUsed=$(_get_pool_space_used "${VOLUMEGROUP}")
+    externalSpaceTotal=$(_get_pool_space_total "${VOLUMEGROUP}")
+    local Total_incus_data_allocated=0 Total_lvm_data_used=0 Total_lvm_data_allocated=0 Total_incus_data_used=0
+    _cache_disk_usage
+
+    while IFS= read -r line; do
+        local lv cn type data_used data_allocated data_percent incus_data_allocated incus_data_used
+        lv=$(echo "${line}" | cut -d',' -f1)
+        cn=$(echo "${lv}" | sed -e 's/containers_//' -e 's/virtual-machines_//' -e 's/--/-/g')
+        cn=$(echo "${cn}" | xargs)
+        containers+=("${cn}")
+        type=$(echo "${lv}" | awk -F "_" '{print $1}' | xargs)
+        data_used=$(echo "${line}" | cut -d',' -f2 | sed 's/[Gg]//')
+        data_allocated=$(echo "${line}" | cut -d',' -f3 | sed 's/[Gg]//')
+        data_percent=$(echo "${line}" | cut -d',' -f4)
+        incus_data_allocated=$(_get_instance_storage_size "${cn}")
+        incus_data_used=$(_get_instance_disk_usage "${cn}")
+        [[ -z "${data_used}" ]] && data_used=0
+        [[ -z "${data_allocated}" ]] && data_allocated=0
+        [[ -z "${data_percent}" ]] && data_percent=0
+        if [[ "${type}" != "IncusThinPool" ]]; then
+            Total_incus_data_used=$(echo "${Total_incus_data_used} + ${incus_data_used}" | bc)
+            Total_incus_data_allocated=$(echo "${Total_incus_data_allocated} + ${incus_data_allocated}" | bc)
+            Total_lvm_data_used=$(echo "${Total_lvm_data_used} + ${data_used}" | bc)
+            Total_lvm_data_allocated=$(echo "${Total_lvm_data_allocated} + ${data_allocated}" | bc)
+        else
+            incus_data_used=""
+        fi
+        local var="${cn},${lv},${incus_data_allocated},${incus_data_used},${data_allocated},${data_used},${data_percent}"
+        print_data+=("${var}")
+        if [[ "${type}" == "IncusThinPool" ]]; then
+            print_data+=("-")
+        fi
+    done < <(sudo lvs --units g --noheadings --separator="," -o lv_name,data_percent,lv_size "${VOLUMEGROUP}" | awk -F, '{printf "%s,%s,%s,%s\n", $1, $3*$2/100, $3, $2}')
+
+    echo -e "\nStorage: ${VOLUMEGROUP} (${externalSpaceUsed} / ${externalSpaceTotal})\n"
+    _printTable "," "justifyLeft,justifyLeft,justifyRight,justifyRight,justifyRight,justifyRight,justifyRight" "20,50,15,15,15,15,15" "CONTAINER,LOGICAL VOLUME NAME,I-ALLOC,I-DISK USED,LV-SIZE,LVTP-ALLOC,LVTP-PERCENT" "Totals:,,${Total_incus_data_allocated},${Total_incus_data_used},${Total_lvm_data_allocated},${Total_lvm_data_used}," print_data
+    echo -e " - Column Headings"
+    echo -e "   - I-ALLOC: Incus reported allocation when you set root size=xxx"
+    echo -e "   - I-DISK USED: Incus reported disk usage (closely matches df -h inside the container)"
+    echo -e "   - LV-SIZE: Logical Volume size (assigned maximum size for the LV)"
+    echo -e "   - LVTP-ALLOC: Logical Volume Thin Pool Allocation (amount the thinPool is using)"
+    echo -e "   - LVTP-PERCENT: Amount of the Thin Pool currently committed against the LV-SIZE"
+    echo -e " - all data is in GB\n"
+}
+
+# ---- ps ----
+
+_cmd_ps_systemd() {
+    _run "systemd-cgls"
+}
+_cmd_ps_tree() {
+    _run "ps fauxww"
+}
+_cmd_ps_find() {
+    _need_args 1 $# "ps find <pid>" || return 1
+    local pid="$1"
+    cat /proc/"${pid}"/cgroup
+}
+
+# ---- remote ----
+
+_get_package_manager() {
+    local container="$1"
+    local os_id
+    os_id=$(incus exec "${container}" -- cat /etc/os-release 2>/dev/null | grep '^ID=' | cut -d'=' -f2 | tr -d '"')
+    case "${os_id}" in
+        debian|ubuntu|linuxmint) echo "apt" ;;
+        rhel|centos|fedora)
+            local os_version
+            os_version=$(incus exec "${container}" -- cat /etc/os-release 2>/dev/null | grep '^VERSION_ID=' | cut -d'=' -f2 | tr -d '"' | cut -d'.' -f1)
+            if [[ "${os_id}" == "fedora" ]] && (( os_version >= 22 )) || [[ "${os_id}" != "fedora" ]] && (( os_version >= 8 )); then
+                echo "dnf"
+            else
+                echo "yum"
+            fi
+            ;;
+        opensuse*) echo "zypper" ;;
+        arch|manjaro) echo "pacman" ;;
+        *) echo "unknown"; return 2 ;;
+    esac
+}
+
+_remote_install() {
+    local container="$1" pm="$2"
+    shift 2
+    local programs="$*"
+    case "${pm}" in
+        apt)    incus exec "${container}" -- apt-get update && incus exec "${container}" -- apt install -y ${programs} ;;
+        yum)    incus exec "${container}" -- yum update -y && incus exec "${container}" -- yum install -y ${programs} ;;
+        dnf)    incus exec "${container}" -- dnf update -y && incus exec "${container}" -- dnf install -y ${programs} ;;
+        zypper) incus exec "${container}" -- zypper refresh && incus exec "${container}" -- zypper install -y ${programs} ;;
+        pacman) incus exec "${container}" -- pacman -Syu --noconfirm && incus exec "${container}" -- pacman -S --noconfirm ${programs} ;;
+        *) echo "Unknown package manager: ${pm}" >&2; return 1 ;;
+    esac
+}
+
+_remote_start() {
+    local container="$1" pm="$2"
+    shift 2
+    for program in "$@"; do
+        case "${pm}" in
+            apt|yum|dnf|pacman)
+                incus exec "${container}" -- systemctl enable "${program}"
+                ;;
+            zypper)
+                incus exec "${container}" -- chkconfig "${program}" on
+                ;;
+        esac
+        incus exec "${container}" -- systemctl start "${program}"
+    done
+}
+
+_cmd_remote_install() {
+    _need_args 3 $# "remote install <container> <pkg-mgr> <packages...>" || return 1
+    local container pm
+    container="$(_apply_remote "$1")"
+    pm="$2"
+    shift 2
+    _remote_install "${container}" "${pm}" "$@"
+}
+_cmd_remote_start() {
+    _need_args 3 $# "remote start <container> <pkg-mgr> <services...>" || return 1
+    local container pm
+    container="$(_apply_remote "$1")"
+    pm="$2"
+    shift 2
+    _remote_start "${container}" "${pm}" "$@"
+}
+_cmd_remote_get_pm() {
+    _need_args 1 $# "remote get-pm <container>" || return 1
+    _get_package_manager "$(_apply_remote "$1")"
+}
+
+# ---- customization ----
+
+_cmd_customization_delete() {
+    _need_args 1 $# "customization delete <type> [--yes]" || return 1
+    local cust_type="$1"; shift
+    local yes=false
+    [[ "${1:-}" == "--yes" ]] && { yes=true; shift; }
+
+    local subdir=""
+    case "${cust_type}" in
+        profiles)  subdir="profiles" ;;
+        startcmds) subdir="automation/startcmds" ;;
+        networks)  subdir="networks" ;;
+        projects)  subdir="projects" ;;
+        storage)   subdir="storage" ;;
+        *) _die "Unknown customization type: ${cust_type}. Valid: profiles, startcmds, networks, projects, storage" ;;
+    esac
+
+    local items
+    items=$(_get_customization_items "${subdir}")
+    [[ -z "${items}" ]] && { echo "No ${cust_type} customizations found."; return 0; }
+
+    if $yes; then
+        _variadic_exec --no-verify "rm -f ${OPT_DIR}/${subdir}/{item}" ${items}
+    else
+        _variadic_exec --verify "rm -f ${OPT_DIR}/${subdir}/{item}" ${items}
+    fi
+}
+
+# ---- start-over ----
+
+_cmd_start_over_full() {
+    local yes=false
+    [[ "${1:-}" == "--yes" ]] && { yes=true; shift; }
+    if ! $yes; then
+        _confirm "This will delete ALL containers, profiles, networks, and customization files. Continue?" || return 0
+    fi
+    # Delete containers
+    local names
+    names=$(_get_all_container_names)
+    [[ -n "${names}" ]] && _variadic_exec --no-verify "incus stop --force {item};incus delete --force {item}" ${names}
+    # Delete profiles
+    local profiles
+    profiles=$(_get_all_profiles)
+    [[ -n "${profiles}" ]] && _variadic_exec --no-verify "incus profile delete {item}" ${profiles}
+    # Delete networks (except incusbr0)
+    local networks
+    networks=$(_get_all_networks)
+    local filtered=""
+    for net in ${networks}; do
+        [[ "${net}" != "incusbr0" ]] && filtered="${filtered} ${net}"
+    done
+    [[ -n "${filtered}" ]] && _variadic_exec --no-verify "incus network delete {item}" ${filtered}
+    # Delete customization
+    sudo rm -rf "${OPT_DIR}"
+    echo "Start-over complete."
+}
+_cmd_start_over_active() {
+    local yes=false
+    [[ "${1:-}" == "--yes" ]] && { yes=true; shift; }
+    if ! $yes; then
+        _confirm "This will delete all containers, profiles, and networks. Continue?" || return 0
+    fi
+    local names
+    names=$(_get_all_container_names)
+    [[ -n "${names}" ]] && _variadic_exec --no-verify "incus stop --force {item};incus delete --force {item}" ${names}
+    local profiles
+    profiles=$(_get_all_profiles)
+    [[ -n "${profiles}" ]] && _variadic_exec --no-verify "incus profile delete {item}" ${profiles}
+    local networks
+    networks=$(_get_all_networks)
+    local filtered=""
+    for net in ${networks}; do
+        [[ "${net}" != "incusbr0" ]] && filtered="${filtered} ${net}"
+    done
+    [[ -n "${filtered}" ]] && _variadic_exec --no-verify "incus network delete {item}" ${filtered}
+    echo "Active resources cleared."
+}
+_cmd_start_over_configs() {
+    local yes=false
+    [[ "${1:-}" == "--yes" ]] && { yes=true; shift; }
+    if ! $yes; then
+        _confirm "This will delete all customization config files. Continue?" || return 0
+    fi
+    for subdir in networks profiles projects "automation/startcmds"; do
+        local items
+        items=$(_get_customization_items "${subdir}")
+        [[ -n "${items}" ]] && _variadic_exec --no-verify "rm -rf ${OPT_DIR}/${subdir}/{item}" ${items}
+    done
+    echo "Config files cleared."
+}
+_cmd_start_over_report() {
+    for label_path in "startcmds:automation/startcmds" "profiles:profiles" "networks:networks" "projects:projects" "storage:storage"; do
+        local label="${label_path%%:*}"
+        local path="${label_path##*:}"
+        echo "${BOLD}${label}${NORM}"
+        ls -al "${OPT_DIR}/${path}/" 2>/dev/null || echo "  (directory not found)"
+        echo ""
+    done
+}
+
+# ---- k8s ----
+
+_cmd_k8s_cluster() {
+    _need_args 1 $# "k8s cluster <name>" || return 1
+    local name="$1"
+    for i in 1 2 3; do
+        _run "incus launch images:ubuntu/24.04 ${name}-${i} --profile default"
+    done
+}
+
+# ---- find-actions ----
+
+_cmd_find_actions() {
+    local cnames="${*:-$(_get_running_container_names)}"
+    for mm in ${cnames}; do
+        echo "-----------------------------------------------------------"
+        echo "${CYAN}${mm}${NORM}"
+        local output
+        output=$(incus exec "${mm}" -- bash -c "systemctl status actions.runner.* 2>/dev/null | grep actions.runner. | grep GitHub" 2>/dev/null || true)
+        [[ -z "${output}" ]] && { echo "  No GitHub Actions runners found."; continue; }
+        while IFS= read -r ogline; do
+            local service status path repo
+            service="${ogline#* }"
+            service="${service%% -*}"
+            status=$(incus exec "${mm}" -- bash -c "systemctl status ${service} 2>/dev/null | grep Active:" 2>/dev/null || true)
+            status="${status#*: }"; status="${status%% *}"
+            path=$(incus exec "${mm}" -- bash -c "systemctl status ${service} 2>/dev/null | grep -A3 CGroup | grep Runner.Listen" 2>/dev/null || true)
+            path="${path#* /}"; path="/${path%% run*}"
+            local repoQuery="${path%bin/Runner.Listener}_diag"
+            repo=$(incus exec "${mm}" -- bash -c "if [ -d ${repoQuery} ]; then cd ${repoQuery}; grep github.com \$(ls -1 Runner_* 2>/dev/null | tail -n1) 2>/dev/null; fi" 2>/dev/null || echo "not found")
+            if [[ "${repo}" != "not found" ]]; then
+                repo="https:/${repo#*/}"
+                repo="${repo%%\",}"
+            fi
+            echo "  service: ${service}"
+            echo "     path: ${path}"
+            echo "     repo: ${repo}"
+            if [[ "${status}" == "active" ]]; then
+                echo "   status: ${GREEN}${status}${NORM}"
+            else
+                echo "   status: ${RED}${status}${NORM}"
+            fi
+        done <<< "${output}"
+    done
+}
+
+# ---- history (audit table: instance -> creator) ----
+
+_cmd_history() {
+    local user_filter=""
+    local ignore_projects_csv=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                echo "Usage: ${PROG} history [--ignoreProject proj1,proj2,...] [username]"
+                echo ""
+                echo "Show a table of all instances (running and stopped) and the user who"
+                echo "created each one. Creator data is pulled from Loki lifecycle events."
+                echo "Instances created before Loki was enabled show as 'unk-before-loging'."
+                echo ""
+                echo "Args:"
+                echo "  username                    Optional. Show only instances by this user."
+                echo ""
+                echo "Options:"
+                echo "  --ignoreProject p1,p2,...   Hide instances in these projects (csv)."
+                echo ""
+                echo "Env:"
+                echo "  LOKI_ADDR              Loki HTTP endpoint (e.g. http://10.7.112.252:3100)"
+                echo "  LOKI_HISTORY_SINCE     Lookback window (default: 720h)"
+                return 0
+                ;;
+            --ignoreProject=*) ignore_projects_csv="${1#--ignoreProject=}"; shift ;;
+            --ignoreProject)
+                [[ $# -ge 2 ]] || _die "--ignoreProject requires a value"
+                ignore_projects_csv="$2"; shift 2 ;;
+            -*) _die "Unknown option: $1. See: ${PROG} history --help" ;;
+            *)  user_filter="$1"; shift ;;
+        esac
+    done
+
+    # Build associative set of projects to skip.
+    declare -A skip_project
+    if [[ -n "${ignore_projects_csv}" ]]; then
+        local IFS=','
+        local p
+        for p in ${ignore_projects_csv}; do
+            [[ -n "${p}" ]] && skip_project["${p}"]=1
+        done
+    fi
+
+    command -v logcli >/dev/null 2>&1 || _die "logcli is required for history (https://github.com/grafana/loki/releases). On Incus hosts it lives at /usr/local/bin/logcli."
+    command -v jq     >/dev/null 2>&1 || _die "jq is required for history. Install: apt-get install -y jq"
+    [[ -n "${LOKI_ADDR:-}" ]] || _die "LOKI_ADDR not set. Try: source /etc/profile.d/loki.sh"
+    curl -fsS --max-time 5 "${LOKI_ADDR}/ready" >/dev/null 2>&1 \
+        || _die "Loki not reachable at ${LOKI_ADDR}"
+
+    local since="${LOKI_HISTORY_SINCE:-720h}"
+
+    # Build map: project/name -> user, from Loki "instance-created" events.
+    declare -A name_to_user
+    local line src proj name user key
+    while IFS= read -r line; do
+        [[ -z "${line}" ]] && continue
+        src=$(printf '%s' "${line}" | grep -oE 'source="/1\.0/instances/[^"]+"' | head -1)
+        [[ -z "${src}" ]] && continue
+        src="${src#source=\"}"; src="${src%\"}"
+        proj="default"
+        if [[ "${src}" == *"?project="* ]]; then
+            proj="${src##*\?project=}"
+            proj="${proj%%&*}"
+            src="${src%%\?*}"
+        fi
+        name="${src##*/}"
+        user=$(printf '%s' "${line}" | grep -oE 'requester-username="[^"]+"' | head -1)
+        user="${user#requester-username=\"}"; user="${user%\"}"
+        [[ -z "${name}" || -z "${user}" ]] && continue
+        key="${proj}/${name}"
+        # Don't overwrite; logcli returns newest first by default, so the first
+        # creation event we see for a (project,name) pair is the most recent
+        # creator -- which is what we want if a name was recreated.
+        [[ -z "${name_to_user[${key}]:-}" ]] && name_to_user["${key}"]="${user}"
+    done < <(logcli query "{app=\"incus\"} |~ \"action=\\\"instance-created\\\"\"" \
+                --since="${since}" --limit=10000 --quiet -o raw 2>/dev/null)
+
+    # Pull all instances across all projects and resolve creator.
+    local iname iproj istate itype iloc
+    local -a rows=()
+    while IFS=$'\t' read -r iname iproj istate itype iloc; do
+        [[ -z "${iname}" ]] && continue
+        [[ -n "${skip_project[${iproj}]:-}" ]] && continue
+        local creator="${name_to_user[${iproj}/${iname}]:-unk-before-loging}"
+        if [[ -z "${user_filter}" || "${creator}" == "${user_filter}" ]]; then
+            rows+=("$(printf '%s\t%s\t%s\t%s\t%s' "${iname}" "${creator}" "${iproj}" "${istate}" "${iloc}")")
+        fi
+    done < <(incus list --all-projects --format json 2>/dev/null \
+             | jq -r '.[] | [.name, .project, .status, .type, .location] | @tsv')
+
+    if [[ ${#rows[@]} -eq 0 ]]; then
+        if [[ -n "${user_filter}" ]]; then
+            echo "No instances found for user: ${user_filter}"
+        else
+            echo "No instances found."
+        fi
+        return 0
+    fi
+
+    {
+        printf 'INSTANCE\tUSER\tPROJECT\tSTATE\tLOCATION\n'
+        printf '%s\n' "${rows[@]}" | LC_ALL=C sort
+    } | column -t -s $'\t'
+}
+
+# ---- docs ----
+
+_cmd_docs() {
+    local url="https://docs.google.com/document/d/1JHegKXkxCyaNygPbP_N1HioQlEIphJvvvRGpxzY6LDk/edit#heading=h.thik8yn91w8t"
+    echo "${url}"
+    _termurl "Click to open help document" "${url}"
+}
+
+# ---- reload ----
+
+_cmd_reload() {
+    [[ -f /etc/profile.d/10-incus-magic-vars.sh ]] && source /etc/profile.d/10-incus-magic-vars.sh
+    [[ -f "${HOME}/.usermagic" ]] && source "${HOME}/.usermagic"
+    echo "Environment variables reloaded."
+}
+
+# ============================================================
+# 4. Help System
+# ============================================================
+
+# Registry: "noun verb|description"
+declare -a _CMD_REGISTRY=(
+    "container start|Start one or more containers"
+    "container stop|Stop one or more containers"
+    "container restart|Restart one or more containers"
+    "container delete|Delete one or more containers (prompts for confirmation)"
+    "container start-all|Start all containers"
+    "container stop-all|Stop all containers"
+    "container restart-all|Restart all containers (prompts)"
+    "container delete-all|Delete all containers [--force] [--yes]"
+    "container resize|Resize disk/memory/cpu: <kind> <value> <name...> [--override for disk]"
+    "container resize disk|Resize root disk: <size> <name...> [--override]"
+    "container resize memory|Set memory limit: <mem> <name...> (e.g. 4GiB)"
+    "container resize cpu|Set CPU limit: <cpu> <name...>"
+    "container set-memory|(alias) container resize memory <mem> <name...>"
+    "container set-cpu|(alias) container resize cpu <cpu> <name...>"
+    "container exec-all|Execute command in all containers: <cmd>"
+    "container run-all|Run command in all running containers: <cmd>"
+    "container destroy-relaunch|Destroy and relaunch from startcmd: <name>"
+    "profile add|Add profile to containers: <profile> <container...>"
+    "profile remove|Remove profile from containers: <profile> <container...>"
+    "profile add-multi|Add profiles to one container: <container> <profile...>"
+    "profile remove-multi|Remove profiles from one container: <container> <profile...>"
+    "profile delete|Delete profiles: <name...>"
+    "profile delete-all|Delete all non-default profiles [--yes]"
+    "network delete|Delete networks: <name...> (protects incusbr0)"
+    "network delete-all|Delete all networks [--yes] (protects incusbr0)"
+    "image list|List available images: [filter]"
+    "image delete|Delete images by fingerprint: <fingerprint...>"
+    "image delete-all|Delete all local images [--yes]"
+    "launch|Interactive launch wizard (no args) or direct: <name> [--image IMG] [--profile P...]"
+    "launch wizard|Interactive launch wizard"
+    "launch recommended|Launch with defaultLaunch config: <name>"
+    "launch clone|Clone profiles to new container: <original> <new> [--image IMG]"
+    "launch test|Launch a test container (t1)"
+    "list|List containers (wide format): [filter]"
+    "list wide|List containers (wide): [filter]"
+    "list narrow|List containers (narrow): [filter]"
+    "list csv|List container names [--running / --stopped / --all]"
+    "backup|Backup containers: <name...>"
+    "backup all|Backup all containers"
+    "ssh enable|Enable SSH on container: [opts] <container> <user>"
+    "storage move|Move containers to pool: <pool> <container...>"
+    "port forward|Add port forward: <container> <name> <host-port> <cport>"
+    "diag top|Show systemd-cgtop"
+    "diag inotify|Show inotify-info"
+    "diag disks|Show disk report"
+    "diag systemd-udevd|Count systemd-udevd processes [-f for loop]"
+    "report disks|Full disk report for all storage pools"
+    "report disksize|Disk report for specific pool: <pool>"
+    "ps systemd|Show systemd-cgls"
+    "ps tree|Show process tree (ps fauxww)"
+    "ps find|Find container for PID: <pid>"
+    "remote install|Install packages: <container> <pkg-mgr> <packages...>"
+    "remote start|Start services: <container> <pkg-mgr> <services...>"
+    "remote get-pm|Detect package manager: <container>"
+    "customization delete|Delete customization files: <type> [--yes]"
+    "start-over full|Delete everything [--yes]"
+    "start-over active|Delete containers + profiles + networks [--yes]"
+    "start-over configs|Delete customization files only [--yes]"
+    "start-over report|Show what would be deleted (dry-run)"
+    "k8s cluster|Launch 3-node k8s cluster: <name>"
+    "find-actions|Find GitHub Actions runners: [containers...]"
+    "history|Show instance -> creator user table (uses Loki): [--ignoreProject p1,p2] [username]"
+    "docs|Open help documentation link"
+    "reload|Re-source environment variables"
+    "completion bash|Output bash completion script"
+    "completion zsh|Output zsh completion script"
+    "completion install|Install completions to system dirs"
+    "version|Show version"
+    "help|Show this help"
+)
+
+# Short alias resolver (Bash 3.2 compatible - no associative arrays)
+_resolve_noun_alias() {
+    case "$1" in
+        c)    echo "container" ;;
+        p)    echo "profile" ;;
+        net)  echo "network" ;;
+        img)  echo "image" ;;
+        l)    echo "launch" ;;
+        ls)   echo "list" ;;
+        b)    echo "backup" ;;
+        st)   echo "storage" ;;
+        d)    echo "diag" ;;
+        r)    echo "report" ;;
+        rem)  echo "remote" ;;
+        cust) echo "customization" ;;
+        *)    echo "" ;;
+    esac
+}
+
+# Reverse lookup: noun -> alias
+_get_noun_alias() {
+    case "$1" in
+        container)     echo "c" ;;
+        profile)       echo "p" ;;
+        network)       echo "net" ;;
+        image)         echo "img" ;;
+        launch)        echo "l" ;;
+        list)          echo "ls" ;;
+        backup)        echo "b" ;;
+        storage)       echo "st" ;;
+        diag)          echo "d" ;;
+        report)        echo "r" ;;
+        remote)        echo "rem" ;;
+        customization) echo "cust" ;;
+        *)             echo "" ;;
+    esac
+}
+
+_show_help() {
+    echo "${BOLD}incusmagic${NORM} v${VERSION} - Incus host management CLI"
+    echo ""
+    echo "Usage: ${PROG} [--project NAME] <command> [subcommand] [options] [args...]"
+    echo "       im      [--project NAME] <command> [subcommand] [options] [args...]"
+    echo ""
+    echo "${BOLD}Global options:${NORM}"
+    echo "  --project NAME, -P NAME   Scope incus operations to the named project"
+    echo "                            (also picked up from \$INCUS_PROJECT;"
+    echo "                            auto-detected when a target container is"
+    echo "                            found in a non-default project)"
+    echo ""
+    echo "${BOLD}Commands:${NORM}"
+    echo ""
+
+    local current_noun=""
+    for entry in "${_CMD_REGISTRY[@]}"; do
+        local cmd="${entry%%|*}"
+        local desc="${entry##*|}"
+        local noun="${cmd%% *}"
+        local verb="${cmd#* }"
+        [[ "${verb}" == "${noun}" ]] && verb=""
+
+        if [[ "${noun}" != "${current_noun}" ]]; then
+            [[ -n "${current_noun}" ]] && echo ""
+            current_noun="${noun}"
+            local alias_str=""
+            local _alias
+            _alias=$(_get_noun_alias "${noun}")
+            [[ -n "${_alias}" ]] && alias_str=" (${_alias})"
+            echo "  ${BOLD}${noun}${NORM}${alias_str}"
+        fi
+        if [[ -n "${verb}" ]]; then
+            printf "    %-22s %s\n" "${verb}" "${desc}"
+        else
+            printf "    %-22s %s\n" "(default)" "${desc}"
+        fi
+    done
+    echo ""
+    echo "Run '${PROG} help <command>' for details on a specific command."
+}
+
+_show_subcommand_help() {
+    local target="$1"
+    # Resolve alias
+    local _resolved
+    _resolved=$(_resolve_noun_alias "${target}")
+    [[ -n "${_resolved}" ]] && target="${_resolved}"
+    local found=false
+    echo "${BOLD}${target}${NORM} commands:"
+    echo ""
+    for entry in "${_CMD_REGISTRY[@]}"; do
+        local cmd="${entry%%|*}"
+        local desc="${entry##*|}"
+        local noun="${cmd%% *}"
+        local verb="${cmd#* }"
+        [[ "${verb}" == "${noun}" ]] && verb=""
+        if [[ "${noun}" == "${target}" ]]; then
+            found=true
+            if [[ -n "${verb}" ]]; then
+                printf "  %-24s %s\n" "${PROG} ${noun} ${verb}" "${desc}"
+            else
+                printf "  %-24s %s\n" "${PROG} ${noun}" "${desc}"
+            fi
+        fi
+    done
+    if ! $found; then
+        echo "Unknown command: ${target}" >&2
+        return 1
+    fi
+}
+
+# ============================================================
+# 5. Completion Generator
+# ============================================================
+
+_gen_bash_completion() {
+    cat << 'BASH_COMP'
+# bash completion for incusmagic / im
+_incusmagic_completions() {
+    local cur prev words cword
+    _init_completion || return
+
+    local nouns="container profile network image launch list backup ssh storage port diag report ps remote customization start-over k8s find-actions docs reload completion version help"
+    local noun_aliases="c p net img l ls b st d r rem cust"
+
+    # Resolve alias to full noun
+    _resolve_noun() {
+        case "$1" in
+            c) echo "container" ;;
+            p) echo "profile" ;;
+            net) echo "network" ;;
+            img) echo "image" ;;
+            l) echo "launch" ;;
+            ls) echo "list" ;;
+            b) echo "backup" ;;
+            st) echo "storage" ;;
+            d) echo "diag" ;;
+            r) echo "report" ;;
+            rem) echo "remote" ;;
+            cust) echo "customization" ;;
+            *) echo "$1" ;;
+        esac
+    }
+
+    if [[ ${cword} -eq 1 ]]; then
+        COMPREPLY=( $(compgen -W "${nouns} ${noun_aliases}" -- "${cur}") )
+        return
+    fi
+
+    local noun
+    noun=$(_resolve_noun "${words[1]}")
+
+    if [[ ${cword} -eq 2 ]]; then
+        local verbs=""
+        case "${noun}" in
+            container) verbs="start stop restart delete start-all stop-all restart-all delete-all set-memory set-cpu resize exec-all run-all destroy-relaunch" ;;
+            profile) verbs="add remove add-multi remove-multi delete delete-all" ;;
+            network) verbs="delete delete-all" ;;
+            image) verbs="list delete delete-all" ;;
+            launch) verbs="wizard recommended clone test" ;;
+            list) verbs="wide narrow csv" ;;
+            backup) verbs="all" ;;
+            ssh) verbs="enable" ;;
+            storage) verbs="move" ;;
+            port) verbs="forward" ;;
+            diag) verbs="top inotify disks systemd-udevd" ;;
+            report) verbs="disks disksize" ;;
+            ps) verbs="systemd tree find" ;;
+            remote) verbs="install start get-pm" ;;
+            customization) verbs="delete" ;;
+            start-over) verbs="full active configs report" ;;
+            k8s) verbs="cluster" ;;
+            completion) verbs="bash zsh install" ;;
+            help) verbs="${nouns}" ;;
+        esac
+        if [[ -n "${verbs}" ]]; then
+            COMPREPLY=( $(compgen -W "${verbs}" -- "${cur}") )
+            return
+        fi
+    fi
+
+    # Dynamic completions for container/profile/network names
+    local verb="${words[2]:-}"
+    case "${noun}" in
+        container)
+            case "${verb}" in
+                start|stop|restart|delete|set-memory|set-cpu|destroy-relaunch)
+                    local containers
+                    containers=$(incus list -c n -f csv 2>/dev/null | awk -F',' '{print $1}')
+                    COMPREPLY=( $(compgen -W "${containers}" -- "${cur}") )
+                    ;;
+                resize)
+                    if [[ ${cword} -eq 3 ]]; then
+                        COMPREPLY=( $(compgen -W "disk memory cpu" -- "${cur}") )
+                    else
+                        local containers
+                        containers=$(incus list -c n -f csv 2>/dev/null | awk -F',' '{print $1}')
+                        COMPREPLY=( $(compgen -W "${containers}" -- "${cur}") )
+                    fi
+                    ;;
+            esac
+            ;;
+        profile)
+            case "${verb}" in
+                add|remove|delete)
+                    if [[ ${cword} -eq 3 ]]; then
+                        local profiles
+                        profiles=$(incus profile list -f csv 2>/dev/null | awk -F',' '{print $1}')
+                        COMPREPLY=( $(compgen -W "${profiles}" -- "${cur}") )
+                    else
+                        local containers
+                        containers=$(incus list -c n -f csv 2>/dev/null | awk -F',' '{print $1}')
+                        COMPREPLY=( $(compgen -W "${containers}" -- "${cur}") )
+                    fi
+                    ;;
+                add-multi|remove-multi)
+                    if [[ ${cword} -eq 3 ]]; then
+                        local containers
+                        containers=$(incus list -c n -f csv 2>/dev/null | awk -F',' '{print $1}')
+                        COMPREPLY=( $(compgen -W "${containers}" -- "${cur}") )
+                    else
+                        local profiles
+                        profiles=$(incus profile list -f csv 2>/dev/null | awk -F',' '{print $1}')
+                        COMPREPLY=( $(compgen -W "${profiles}" -- "${cur}") )
+                    fi
+                    ;;
+            esac
+            ;;
+        network)
+            local networks
+            networks=$(incus network list -f csv 2>/dev/null | grep ',CREATED$' | awk -F',' '{print $1}')
+            COMPREPLY=( $(compgen -W "${networks}" -- "${cur}") )
+            ;;
+        storage)
+            if [[ ${cword} -eq 3 ]]; then
+                local pools
+                pools=$(incus storage list -f csv 2>/dev/null | awk -F',' '{print $1}')
+                COMPREPLY=( $(compgen -W "${pools}" -- "${cur}") )
+            else
+                local containers
+                containers=$(incus list -c n -f csv 2>/dev/null | awk -F',' '{print $1}')
+                COMPREPLY=( $(compgen -W "${containers}" -- "${cur}") )
+            fi
+            ;;
+        backup)
+            local containers
+            containers=$(incus list -c n -f csv 2>/dev/null | awk -F',' '{print $1}')
+            COMPREPLY=( $(compgen -W "${containers}" -- "${cur}") )
+            ;;
+        customization)
+            if [[ "${verb}" == "delete" && ${cword} -eq 3 ]]; then
+                COMPREPLY=( $(compgen -W "profiles startcmds networks projects storage" -- "${cur}") )
+            fi
+            ;;
+        report)
+            if [[ "${verb}" == "disksize" && ${cword} -eq 3 ]]; then
+                local pools
+                pools=$(incus storage list -f csv 2>/dev/null | awk -F',' '{print $1}')
+                COMPREPLY=( $(compgen -W "${pools}" -- "${cur}") )
+            fi
+            ;;
+    esac
+}
+complete -F _incusmagic_completions incusmagic
+complete -F _incusmagic_completions im
+BASH_COMP
+}
+
+_gen_zsh_completion() {
+    cat << 'ZSH_COMP'
+#compdef incusmagic im
+
+_incusmagic_get_containers() {
+    local containers
+    containers=(${(f)"$(incus list -c n -f csv 2>/dev/null | awk -F',' '{print $1}')"})
+    _describe 'container' containers
+}
+
+_incusmagic_get_profiles() {
+    local profiles
+    profiles=(${(f)"$(incus profile list -f csv 2>/dev/null | awk -F',' '{print $1}')"})
+    _describe 'profile' profiles
+}
+
+_incusmagic_get_networks() {
+    local networks
+    networks=(${(f)"$(incus network list -f csv 2>/dev/null | grep ',CREATED$' | awk -F',' '{print $1}')"})
+    _describe 'network' networks
+}
+
+_incusmagic_get_pools() {
+    local pools
+    pools=(${(f)"$(incus storage list -f csv 2>/dev/null | awk -F',' '{print $1}')"})
+    _describe 'pool' pools
+}
+
+_incusmagic() {
+    local -a nouns
+    nouns=(
+        'container:Manage containers (alias: c)'
+        'profile:Manage profiles (alias: p)'
+        'network:Manage networks (alias: net)'
+        'image:Manage images (alias: img)'
+        'launch:Launch containers (alias: l)'
+        'list:List containers (alias: ls)'
+        'backup:Backup containers (alias: b)'
+        'ssh:SSH management'
+        'storage:Storage management (alias: st)'
+        'port:Port forwarding'
+        'diag:Diagnostics (alias: d)'
+        'report:Reports (alias: r)'
+        'ps:Process management'
+        'remote:Remote container management (alias: rem)'
+        'customization:Customization files (alias: cust)'
+        'start-over:Start over (destructive)'
+        'k8s:Kubernetes helpers'
+        'find-actions:Find GitHub Actions runners'
+        'docs:Open documentation'
+        'reload:Reload environment'
+        'completion:Shell completions'
+        'version:Show version'
+        'help:Show help'
+    )
+
+    local -a aliases
+    aliases=(
+        'c:container' 'p:profile' 'net:network' 'img:image'
+        'l:launch' 'ls:list' 'b:backup' 'st:storage'
+        'd:diag' 'r:report' 'rem:remote' 'cust:customization'
+    )
+
+    if (( CURRENT == 2 )); then
+        _describe 'command' nouns
+        _describe 'alias' aliases
+        return
+    fi
+
+    local noun="${words[2]}"
+    # Resolve aliases
+    case "${noun}" in
+        c) noun=container ;; p) noun=profile ;; net) noun=network ;;
+        img) noun=image ;; l) noun=launch ;; ls) noun=list ;;
+        b) noun=backup ;; st) noun=storage ;; d) noun=diag ;;
+        r) noun=report ;; rem) noun=remote ;; cust) noun=customization ;;
+    esac
+
+    if (( CURRENT == 3 )); then
+        local -a verbs
+        case "${noun}" in
+            container) verbs=(start stop restart delete start-all stop-all restart-all delete-all set-memory set-cpu resize exec-all run-all destroy-relaunch) ;;
+            profile) verbs=(add remove add-multi remove-multi delete delete-all) ;;
+            network) verbs=(delete delete-all) ;;
+            image) verbs=(list delete delete-all) ;;
+            launch) verbs=(wizard recommended clone test) ;;
+            list) verbs=(wide narrow csv) ;;
+            backup) verbs=(all) ;;
+            ssh) verbs=(enable) ;;
+            storage) verbs=(move) ;;
+            port) verbs=(forward) ;;
+            diag) verbs=(top inotify disks systemd-udevd) ;;
+            report) verbs=(disks disksize) ;;
+            ps) verbs=(systemd tree find) ;;
+            remote) verbs=(install start get-pm) ;;
+            customization) verbs=(delete) ;;
+            start-over) verbs=(full active configs report) ;;
+            k8s) verbs=(cluster) ;;
+            completion) verbs=(bash zsh install) ;;
+            help)
+                _describe 'topic' nouns
+                return
+                ;;
+        esac
+        _describe 'subcommand' verbs
+        return
+    fi
+
+    # Dynamic completions for arguments
+    local verb="${words[3]}"
+    case "${noun}" in
+        container)
+            case "${verb}" in
+                start|stop|restart|delete|set-memory|set-cpu|destroy-relaunch)
+                    _incusmagic_get_containers ;;
+                resize)
+                    if (( CURRENT == 4 )); then
+                        local -a kinds=(disk memory cpu)
+                        _describe 'resource' kinds
+                    else
+                        _incusmagic_get_containers
+                    fi
+                    ;;
+            esac
+            ;;
+        profile)
+            case "${verb}" in
+                add|remove|delete)
+                    if (( CURRENT == 4 )); then
+                        _incusmagic_get_profiles
+                    else
+                        _incusmagic_get_containers
+                    fi
+                    ;;
+                add-multi|remove-multi)
+                    if (( CURRENT == 4 )); then
+                        _incusmagic_get_containers
+                    else
+                        _incusmagic_get_profiles
+                    fi
+                    ;;
+            esac
+            ;;
+        network) _incusmagic_get_networks ;;
+        storage)
+            if (( CURRENT == 4 )); then
+                _incusmagic_get_pools
+            else
+                _incusmagic_get_containers
+            fi
+            ;;
+        backup) _incusmagic_get_containers ;;
+        customization)
+            if [[ "${verb}" == "delete" ]] && (( CURRENT == 4 )); then
+                local -a types=(profiles startcmds networks projects storage)
+                _describe 'type' types
+            fi
+            ;;
+        report)
+            if [[ "${verb}" == "disksize" ]] && (( CURRENT == 4 )); then
+                _incusmagic_get_pools
+            fi
+            ;;
+    esac
+}
+
+compdef _incusmagic incusmagic im
+ZSH_COMP
+}
+
+_install_completions() {
+    local bash_dir="/etc/bash_completion.d"
+    local zsh_dir="/usr/share/zsh/vendor-completions"
+
+    if [[ -d "${bash_dir}" ]]; then
+        _gen_bash_completion > "${bash_dir}/incusmagic"
+        echo "Installed bash completions to ${bash_dir}/incusmagic"
+    else
+        echo "Bash completion dir ${bash_dir} not found, skipping." >&2
+    fi
+
+    if [[ -d "${zsh_dir}" ]]; then
+        _gen_zsh_completion > "${zsh_dir}/_incusmagic"
+        echo "Installed zsh completions to ${zsh_dir}/_incusmagic"
+    else
+        # Try alternate location
+        local alt_zsh="/usr/local/share/zsh/site-functions"
+        if [[ -d "${alt_zsh}" ]]; then
+            _gen_zsh_completion > "${alt_zsh}/_incusmagic"
+            echo "Installed zsh completions to ${alt_zsh}/_incusmagic"
+        else
+            echo "No zsh completion dir found, skipping." >&2
+        fi
+    fi
+}
+
+# ============================================================
+# 6. Main Dispatcher
+# ============================================================
+
+main() {
+    # Top-level options (must come before the noun). Recognized:
+    #   --project=NAME / --project NAME / -P NAME   scope to an Incus project
+    #   --remote=NAME  / --remote NAME  / -R NAME   default incus remote prefix
+    #                                                applied to bare container names
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --project=*)
+                INCUS_PROJECT="${1#--project=}"
+                export INCUS_PROJECT
+                shift
+                ;;
+            --project|-P)
+                [[ $# -ge 2 ]] || _die "--project requires a value"
+                INCUS_PROJECT="$2"
+                export INCUS_PROJECT
+                shift 2
+                ;;
+            --remote=*)
+                INCUS_REMOTE="${1#--remote=}"
+                export INCUS_REMOTE
+                shift
+                ;;
+            --remote|-R)
+                [[ $# -ge 2 ]] || _die "--remote requires a value"
+                INCUS_REMOTE="$2"
+                export INCUS_REMOTE
+                shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    [[ $# -eq 0 ]] && { _show_help; exit 0; }
+
+    local noun="$1"; shift
+
+    # Resolve noun aliases
+    local _resolved
+    _resolved=$(_resolve_noun_alias "${noun}")
+    [[ -n "${_resolved}" ]] && noun="${_resolved}"
+
+    case "${noun}" in
+        # --- Top-level commands without a verb ---
+        help)
+            if [[ $# -gt 0 ]]; then
+                _show_subcommand_help "$1"
+            else
+                _show_help
+            fi
+            ;;
+        version)     echo "incusmagic v${VERSION}" ;;
+        docs)        _cmd_docs "$@" ;;
+        reload)      _cmd_reload "$@" ;;
+        find-actions) _cmd_find_actions "$@" ;;
+        history)     _cmd_history "$@" ;;
+
+        # --- Two-level commands ---
+        container)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                start)            _cmd_container_start "$@" ;;
+                stop)             _cmd_container_stop "$@" ;;
+                restart)          _cmd_container_restart "$@" ;;
+                delete)           _cmd_container_delete "$@" ;;
+                start-all)        _cmd_container_start_all "$@" ;;
+                stop-all)         _cmd_container_stop_all "$@" ;;
+                restart-all)      _cmd_container_restart_all "$@" ;;
+                delete-all)       _cmd_container_delete_all "$@" ;;
+                set-memory)       _cmd_container_set_memory "$@" ;;
+                set-cpu)          _cmd_container_set_cpu "$@" ;;
+                resize)           _cmd_container_resize "$@" ;;
+                exec-all)         _cmd_container_exec_all "$@" ;;
+                run-all)          _cmd_container_run_all "$@" ;;
+                destroy-relaunch) _cmd_container_destroy_relaunch "$@" ;;
+                help|--help|-h)   _show_subcommand_help container ;;
+                *)                _die "Unknown container command: ${verb}. Run '${PROG} help container'" ;;
+            esac
+            ;;
+        profile)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                add)          _cmd_profile_add "$@" ;;
+                remove)       _cmd_profile_remove "$@" ;;
+                add-multi)    _cmd_profile_add_multi "$@" ;;
+                remove-multi) _cmd_profile_remove_multi "$@" ;;
+                delete)       _cmd_profile_delete "$@" ;;
+                delete-all)   _cmd_profile_delete_all "$@" ;;
+                help|--help|-h) _show_subcommand_help profile ;;
+                *)            _die "Unknown profile command: ${verb}. Run '${PROG} help profile'" ;;
+            esac
+            ;;
+        network)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                delete)     _cmd_network_delete "$@" ;;
+                delete-all) _cmd_network_delete_all "$@" ;;
+                help|--help|-h) _show_subcommand_help network ;;
+                *)          _die "Unknown network command: ${verb}. Run '${PROG} help network'" ;;
+            esac
+            ;;
+        image)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                list)       _cmd_image_list "$@" ;;
+                delete)     _cmd_image_delete "$@" ;;
+                delete-all) _cmd_image_delete_all "$@" ;;
+                help|--help|-h) _show_subcommand_help image ;;
+                *)          _die "Unknown image command: ${verb}. Run '${PROG} help image'" ;;
+            esac
+            ;;
+        launch)
+            local verb="${1:-}"
+            case "${verb}" in
+                "")          _cmd_launch_wizard ;;
+                recommended) shift; _cmd_launch_recommended "$@" ;;
+                clone)       shift; _cmd_launch_clone "$@" ;;
+                test)        shift; _cmd_launch_test "$@" ;;
+                wizard)      shift; _cmd_launch_wizard "$@" ;;
+                help|--help|-h) _show_subcommand_help launch ;;
+                *)           _cmd_launch "$@" ;;
+            esac
+            ;;
+        list)
+            local verb="${1:-}"
+            case "${verb}" in
+                wide)    shift; _cmd_list_wide "$@" ;;
+                narrow)  shift; _cmd_list_narrow "$@" ;;
+                csv)     shift; _cmd_list_csv "$@" ;;
+                help|--help|-h) _show_subcommand_help list ;;
+                *)       _cmd_list "$@" ;;
+            esac
+            ;;
+        backup)
+            local verb="${1:-}"
+            case "${verb}" in
+                all)     shift; _cmd_backup_all "$@" ;;
+                help|--help|-h) _show_subcommand_help backup ;;
+                *)       _cmd_backup "$@" ;;
+            esac
+            ;;
+        ssh)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                enable)  _cmd_ssh_enable "$@" ;;
+                help|--help|-h) _show_subcommand_help ssh ;;
+                *)       _die "Unknown ssh command: ${verb}. Run '${PROG} help ssh'" ;;
+            esac
+            ;;
+        storage)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                move)    _cmd_storage_move "$@" ;;
+                help|--help|-h) _show_subcommand_help storage ;;
+                *)       _die "Unknown storage command: ${verb}. Run '${PROG} help storage'" ;;
+            esac
+            ;;
+        port)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                forward) _cmd_port_forward "$@" ;;
+                help|--help|-h) _show_subcommand_help port ;;
+                *)       _die "Unknown port command: ${verb}. Run '${PROG} help port'" ;;
+            esac
+            ;;
+        diag)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                top)          _cmd_diag_top "$@" ;;
+                inotify)      _cmd_diag_inotify "$@" ;;
+                disks)        _cmd_diag_disks "$@" ;;
+                systemd-udevd) _cmd_diag_systemd_udevd "$@" ;;
+                help|--help|-h) _show_subcommand_help diag ;;
+                *)            _die "Unknown diag command: ${verb}. Run '${PROG} help diag'" ;;
+            esac
+            ;;
+        report)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                disks)    _cmd_report_disks "$@" ;;
+                disksize) _cmd_report_disksize "$@" ;;
+                help|--help|-h) _show_subcommand_help report ;;
+                *)        _die "Unknown report command: ${verb}. Run '${PROG} help report'" ;;
+            esac
+            ;;
+        ps)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                systemd) _cmd_ps_systemd "$@" ;;
+                tree)    _cmd_ps_tree "$@" ;;
+                find)    _cmd_ps_find "$@" ;;
+                help|--help|-h) _show_subcommand_help ps ;;
+                *)       _die "Unknown ps command: ${verb}. Run '${PROG} help ps'" ;;
+            esac
+            ;;
+        remote)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                install) _cmd_remote_install "$@" ;;
+                start)   _cmd_remote_start "$@" ;;
+                get-pm)  _cmd_remote_get_pm "$@" ;;
+                help|--help|-h) _show_subcommand_help remote ;;
+                *)       _die "Unknown remote command: ${verb}. Run '${PROG} help remote'" ;;
+            esac
+            ;;
+        customization)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                delete)  _cmd_customization_delete "$@" ;;
+                help|--help|-h) _show_subcommand_help customization ;;
+                *)       _die "Unknown customization command: ${verb}. Run '${PROG} help customization'" ;;
+            esac
+            ;;
+        start-over)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                full)    _cmd_start_over_full "$@" ;;
+                active)  _cmd_start_over_active "$@" ;;
+                configs) _cmd_start_over_configs "$@" ;;
+                report)  _cmd_start_over_report "$@" ;;
+                help|--help|-h) _show_subcommand_help start-over ;;
+                *)       _die "Unknown start-over command: ${verb}. Run '${PROG} help start-over'" ;;
+            esac
+            ;;
+        k8s)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                cluster) _cmd_k8s_cluster "$@" ;;
+                help|--help|-h) _show_subcommand_help k8s ;;
+                *)       _die "Unknown k8s command: ${verb}. Run '${PROG} help k8s'" ;;
+            esac
+            ;;
+        completion)
+            local verb="${1:-help}"; shift || true
+            case "${verb}" in
+                bash)    _gen_bash_completion ;;
+                zsh)     _gen_zsh_completion ;;
+                install) _install_completions ;;
+                help|--help|-h) _show_subcommand_help completion ;;
+                *)       _die "Unknown completion command: ${verb}. Run '${PROG} help completion'" ;;
+            esac
+            ;;
+        --help|-h) _show_help ;;
+        --version|-v) echo "incusmagic v${VERSION}" ;;
+        *)
+            _die "Unknown command: ${noun}. Run '${PROG} help' for usage."
+            ;;
+    esac
+}
+
+# ============================================================
+# 7. Entry Point
+# ============================================================
+
+main "$@"

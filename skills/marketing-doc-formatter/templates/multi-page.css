@@ -1,0 +1,28 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Raleway:wght@400;500;600&display=swap');
+@page { size: letter; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Raleway", "Arial", "Helvetica", sans-serif; font-size: 10.5pt; line-height: 1.5; color: #2D2D2D; }
+.header-logo { text-align: left; border-bottom: 2px solid #3684F5; padding-bottom: 8px; margin-bottom: 18px; }
+.header-logo img { height: 36px; }
+h1 { font-family: "Poppins", "Futura", "Arial", sans-serif; font-size: 22pt; color: #205388; font-weight: 700; margin: 0 0 6px 0; }
+h2 { font-family: "Poppins", "Futura", "Arial", sans-serif; font-size: 15pt; color: #3684F5; font-weight: 600; margin: 22px 0 8px 0; border-bottom: 1px solid #E0E0E0; padding-bottom: 4px; }
+h3 { font-family: "Poppins", "Futura", "Arial", sans-serif; font-size: 12pt; color: #205388; font-weight: 600; margin: 14px 0 5px 0; }
+h4 { font-family: "Poppins", "Futura", "Arial", sans-serif; font-size: 11pt; color: #205388; font-weight: 600; margin: 10px 0 4px 0; }
+p { margin: 0 0 8px 0; }
+hr { border: none; border-top: 2px solid #3684F5; margin: 14px 0; }
+ul, ol { padding-left: 22px; margin: 4px 0 10px 0; }
+li { margin-bottom: 4px; }
+strong { color: #205388; }
+em { color: #444; }
+code { background: #F0F4FA; padding: 1px 4px; border-radius: 2px; font-family: "SF Mono", Consolas, monospace; font-size: 9.5pt; }
+blockquote { border-left: 4px solid #FF9C2B; background: #FFF8F0; padding: 8px 14px; margin: 10px 0; color: #444; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.5pt; page-break-inside: avoid; }
+thead th { background-color: #205388; color: #FFFFFF; font-family: "Poppins", "Futura", "Arial", sans-serif; font-weight: 600; padding: 8px 10px; text-align: left; border-bottom: 3px solid #FF9C2B; }
+tbody tr:nth-child(even) { background-color: #F0F4FA; }
+tbody tr:nth-child(odd) { background-color: #FFFFFF; }
+tbody td { padding: 6px 10px; border-bottom: 1px solid #E0E0E0; vertical-align: top; }
+tbody td:first-child { font-weight: 600; color: #205388; }
+a { color: #3684F5; text-decoration: none; }
+</style>

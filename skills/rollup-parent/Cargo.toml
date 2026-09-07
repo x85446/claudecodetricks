@@ -1,0 +1,17 @@
+[package]
+name = "chopper2-rollup-parent"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "rollup-parent"
+path = "src/main.rs"
+
+[dependencies]
+agent-comms-core = { path = "../../../../crates/agent-comms-core" }
+agent-comms-cfg  = { path = "../../../../crates/agent-comms-cfg" }
+agent-comms-git  = { path = "../../../../crates/agent-comms-git" }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+clap             = { workspace = true }
+anyhow           = { workspace = true }

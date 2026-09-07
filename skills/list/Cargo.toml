@@ -1,0 +1,25 @@
+[package]
+name = "operator-list"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "list"
+path = "src/main.rs"
+
+[dependencies]
+agent-comms-core.workspace = true
+agent-comms-cfg.workspace  = true
+agent-comms-git.workspace  = true
+clap.workspace             = true
+anyhow.workspace           = true
+serde.workspace            = true
+serde_json.workspace       = true
+serde_yaml.workspace       = true
+jiff.workspace             = true
+indexmap.workspace         = true
+walkdir.workspace          = true
+
+[dev-dependencies]
+tempfile.workspace   = true
+assert_cmd.workspace = true

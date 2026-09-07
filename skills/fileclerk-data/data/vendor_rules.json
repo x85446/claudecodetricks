@@ -1,0 +1,162 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Vendor-specific rules for split transactions",
+    "last_updated": "2026-01-23"
+  },
+  "vendors": {
+    "deel": {
+      "source_type": "pdf",
+      "file_pattern": "YYMMDD $x,xxx.xx Deel.pdf",
+      "parent": {
+        "details": "DEBIT-IN1",
+        "site": "deel.com",
+        "link": "deel",
+        "sublink_prefix": "D",
+        "type": "ACH_DEBIT"
+      },
+      "children": {
+        "salaries": {
+          "details": "SPLIT",
+          "site_pattern": "deel.{employee}",
+          "type": "EMPLOYEE_SALARY",
+          "acrual_rule": "end_of_month"
+        },
+        "fees": {
+          "details": "SPLIT",
+          "site": "deel.fee",
+          "type": "Fee",
+          "acrual_rule": "end_of_month"
+        }
+      },
+      "employees": ["pete", "jenia", "janne", "gabi", "eran"],
+      "sublink_has_period": {
+        "parent": false,
+        "children": true
+      }
+    },
+    "onpay": {
+      "source_type": "pdf",
+      "file_pattern": "YYMMDD $x,xxx.xx onpay.pdf",
+      "parent": {
+        "details": "DEBIT-IN1",
+        "site": "onpay.split",
+        "link": "Onpay",
+        "sublink_prefix": "OP",
+        "type": "ACH_DEBIT"
+      },
+      "children": {
+        "salaries": {
+          "details": "SPLIT",
+          "site_pattern": "onpay.{employee}",
+          "type": "EMPLOYEE_SALARY"
+        },
+        "fees": {
+          "details": "SPLIT",
+          "site": "onpay.fee",
+          "type": "Fee"
+        },
+        "reimbursements": {
+          "details": "SPLIT",
+          "site_pattern": "onpay.{employee}.r",
+          "type": "EMPLOYEE_REIMBURSEMENT"
+        }
+      },
+      "employees": ["ed", "travis", "yash"],
+      "sublink_has_period": {
+        "parent": false,
+        "children": true
+      }
+    },
+    "ramp": {
+      "source_type": "csv",
+      "file_pattern": "YYMMDD $x,xxx.xx Ramp.csv",
+      "parent": {
+        "details": "DEBIT-IN1",
+        "site": "ramp.split",
+        "link": "Ramp",
+        "sublink_prefix": "R",
+        "type": "ACH_DEBIT",
+        "identification": "Transfer from Izuma Checking"
+      },
+      "children": {
+        "transactions": {
+          "details": "ramp_split",
+          "site_rule": "from_merchant_name",
+          "type_rule": "CC_{user}",
+          "acrual_rule": "clearing_date",
+          "sublink": null
+        }
+      },
+      "csv_columns": {
+        "date": "Clearing Date",
+        "description": "Merchant Name",
+        "amount": "Amount",
+        "user": "User",
+        "receipt": "Has Receipt",
+        "parent_amount": "Outstanding Balance"
+      },
+      "sublink_has_period": {
+        "parent": false,
+        "children": false
+      }
+    },
+    "bacancy": {
+      "source_type": "pdf",
+      "parent": {
+        "details": "DEBIT-IN1",
+        "site": "bacancy.com",
+        "link": "bacancy",
+        "sublink_prefix": "B",
+        "type": "ACH_PAYMENT"
+      },
+      "children": {
+        "contractors": {
+          "details": "SPLIT",
+          "site_pattern": "Bacancy.{employee}",
+          "type": "EMPLOYEE_SALARY"
+        }
+      },
+      "employees": ["abhisek", "tulsi", "vishal", "prtik"],
+      "sublink_has_period": {
+        "parent": false,
+        "children": true
+      }
+    },
+    "apiaryx": {
+      "source_type": "pdf",
+      "parent": {
+        "details": "DEBIT-IT1",
+        "site": "apiaryx.com",
+        "link": "apiaryx",
+        "sublink_prefix": "APX",
+        "type": "ACH_PAYMENT"
+      },
+      "children": {
+        "contractors": {
+          "details": "SPLIT",
+          "site_pattern": "apiaryx.{employee}",
+          "type": "EMPLOYEE_SALARY"
+        },
+        "commission": {
+          "details": "SPLIT",
+          "site": "apiaryx.fee",
+          "type": "FEE"
+        }
+      },
+      "employees": ["abhishek", "suprith", "utkarsh", "anirudh"],
+      "sublink_has_period": {
+        "parent": false,
+        "children": true
+      },
+      "notes": "ApiaryX invoices often arrive before the Chase payment. Use scripts/apiaryx_splits.py to add orphan children, then adopt them when the Chase ALLREC import creates the parent DEBIT-IT1 row."
+    }
+  },
+  "split_rules": {
+    "posting_date": "Children inherit parent's posting date (column C)",
+    "sublink_parent": "Format: [Prefix][YYMM] without period",
+    "sublink_child": "Format: [Prefix][YYMM]. with period",
+    "validation": "Sum of child Split Valid (P) must equal negated parent Amount (E)",
+    "acrual_default": "Same as posting date unless vendor rule specifies otherwise"
+  }
+}

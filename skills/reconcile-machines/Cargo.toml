@@ -1,0 +1,33 @@
+[package]
+name    = "reconcile-machines"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "reconcile_machines"
+path = "src/lib.rs"
+
+[[bin]]
+name = "reconcile-machines"
+path = "src/main.rs"
+
+[features]
+default = []
+test-support = []
+
+[dependencies]
+agent-comms-core = { path = "../../../../crates/agent-comms-core" }
+agent-comms-cfg  = { path = "../../../../crates/agent-comms-cfg" }
+agent-comms-git  = { path = "../../../../crates/agent-comms-git" }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+serde_yaml       = { workspace = true }
+anyhow           = { workspace = true }
+thiserror        = { workspace = true }
+clap             = { workspace = true }
+jiff             = { workspace = true }
+tracing          = { workspace = true }
+indexmap         = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

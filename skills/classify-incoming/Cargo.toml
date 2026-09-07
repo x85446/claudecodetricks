@@ -1,0 +1,18 @@
+[package]
+name = "chopper2-classify-incoming"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "classify-incoming"
+path = "src/main.rs"
+
+[dependencies]
+agent-comms-core   = { path = "../../../../crates/agent-comms-core" }
+agent-comms-cfg    = { path = "../../../../crates/agent-comms-cfg" }
+agent-comms-claude = { path = "../../../../crates/agent-comms-claude" }
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+clap               = { workspace = true }
+anyhow             = { workspace = true }
+jiff               = { workspace = true }

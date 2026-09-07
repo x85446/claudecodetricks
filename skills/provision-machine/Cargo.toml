@@ -1,0 +1,30 @@
+[package]
+name    = "provision-machine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "provision_machine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "provision-machine"
+path = "src/main.rs"
+
+[features]
+default = []
+test-support = []
+
+[dependencies]
+agent-comms-core = { path = "../../../../crates/agent-comms-core" }
+agent-comms-cfg  = { path = "../../../../crates/agent-comms-cfg" }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+serde_yaml       = { workspace = true }
+anyhow           = { workspace = true }
+thiserror        = { workspace = true }
+clap             = { workspace = true }
+jiff             = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

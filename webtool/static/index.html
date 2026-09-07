@@ -21,6 +21,9 @@
       <button id="expand-all" class="btn btn-secondary">Expand All</button>
       <button id="collapse-all" class="btn btn-secondary">Collapse All</button>
       <button id="iterator-glossary-btn" class="btn btn-secondary">Iterators</button>
+      <button id="product-brief-btn" class="btn btn-secondary">Product Brief</button>
+      <button id="log-btn" class="btn btn-secondary">Log <span id="log-count" class="log-count hidden">0</span></button>
+      <button id="settings-btn" class="btn btn-secondary">Settings</button>
     </div>
   </header>
 
@@ -39,6 +42,63 @@
         <button id="iterator-modal-close" class="btn-close">&times;</button>
       </div>
       <div id="iterator-modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="product-brief-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Product Brief</h2>
+        <button id="product-brief-close" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">
+          This is the product-level context sent to AI when you click the "Product" feedback button.
+          Describe the product vision, target users, key differentiators, and anything the AI should know.
+        </p>
+        <textarea id="product-brief-textarea" style="width:100%;min-height:300px;resize:vertical;"></textarea>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button id="product-brief-save" class="btn btn-save">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="log-panel" class="log-panel hidden">
+    <div class="log-panel-header">
+      <h2>AI Feedback Log</h2>
+      <button id="log-panel-close" class="btn-close">&times;</button>
+    </div>
+    <div id="log-panel-body" class="log-panel-body">
+      <p class="log-empty">No feedback sent yet.</p>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button id="settings-modal-close" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Saving</h3>
+          <label class="settings-option">
+            <input type="radio" name="save-mode" value="autosave">
+            <div class="settings-option-info">
+              <strong>Auto Save</strong>
+              <span>Changes save automatically after editing. No save buttons shown.</span>
+            </div>
+          </label>
+          <label class="settings-option">
+            <input type="radio" name="save-mode" value="manual" checked>
+            <div class="settings-option-info">
+              <strong>Save Buttons</strong>
+              <span>Changes are only saved when you click Save. Explicit control.</span>
+            </div>
+          </label>
+        </div>
+      </div>
     </div>
   </div>
 
