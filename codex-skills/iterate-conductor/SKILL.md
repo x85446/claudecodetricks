@@ -1,6 +1,6 @@
 ---
 name: iterate-conductor
-description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via $iterate, clears blockers by escalating to different approaches, and batches whatever it genuinely cannot solve into one shared blocked plan for a human session. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
+description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via $iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
 ---
 
 
@@ -28,7 +28,6 @@ Argument: start | stop | pause | resume | run | status | kill | schedule <rule>.
 Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
 
 - `$accounts` — ported.
-- `$feature-branch` — ported.
 - `$i` — ported.
 - `$ibs` — ported.
 - `$ic` — ported.
@@ -39,6 +38,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$iterate-notes` — ported.
 - `$iterate-planner` — ported.
 - `$iterate-rules` — ported.
+- `$iterate-triage` — ported.
 
 `$iterate` runs *a* plan. The conductor runs *the queue*: it picks the next
 plan, lets `$iterate` drive it, handles what comes back, and moves on — sweep
@@ -59,7 +59,8 @@ cron: <job-id>              # the tick this conductor armed; cleared on stop
 conductor-schedule:         # optional, same grammar as launch-schedule;
   - allow daily 22:00-06:00 #   intersected with it, so it can only narrow
 current: <plan-name>        # plan handed to $iterate, empty between plans
-blocked-plan: <plan-name>   # the shared human-needed plan, empty if none open
+last-cycle: 12             # sweep number of the last full pass; red plans get
+                            #   one cheap blocker re-test per completed cycle
 imported-issues: [12, 47]   # issue numbers already pulled in, never re-imported
 sweeps: 14
 ---
@@ -119,14 +120,19 @@ not to move the ownership.
 To narrow *only* the conductor's own sweeping without touching what a human may
 launch, use `conductor-schedule:` below — that one is genuinely ours.
 
+### `unblock <plan>`
+Mark a red plan cyan: set `status: unblocked`, append what changed to its log.
+Use when you cleared the blocker outside a triage session. `$iterate-triage`
+does this for you when it resolves one.
+
 ### `status`
 Read-only. Print, in this shape:
 
 ```
 conductor  enabled · sweep 14 · next tick 3m
 current    owl — step 4/6, running 22m
-queued     elk, fox
-blocked    hare — 3 items awaiting a human
+queued     elk (unblocked, next), fox
+blocked    hare — needs: router creds
 imported   12 issues, last sweep pulled 2
 ```
 
@@ -176,8 +182,17 @@ One tick. Do these in order and stop at the first that applies.
    ending (next section), clear `current:`, continue to 5.
 
 5. **A plan is queued** → pick the next one and hand it to `$iterate <name>`.
-   Order: `phase: executing` before `phase: planned` (finish what is started),
-   then oldest `Started:` first. Set `current:`, log the start, exit.
+   Order, highest first:
+
+   1. `status: unblocked` (cyan) — someone just cleared its path; honour that
+      before starting anything new.
+   2. `phase: executing` with no terminal status — finish what is already begun.
+   3. `phase: planned` — oldest `Started:` first.
+
+   Skip `status: blocked-on-operator` / `awaiting-human-gate` (red) entirely,
+   except for the one cheap re-test per completed cycle described below. Set
+   `current:`, clear any `status: unblocked` you just picked up, log the start,
+   exit.
 
 6. **Queue empty** → run bug intake (below). If it produced a plan, take it as
    `current:`. Otherwise log `queue empty` once and exit.
@@ -210,34 +225,60 @@ minutes, counted from when the conductor handed it over). When the box expires,
 the plan is blocked as-is and the sweep moves on. One stubborn plan must not eat
 the night while five easy ones wait behind it.
 
-### Moving blocked work out
+### Blocked means "park it and move on"
 
-Move the blocked items to **the shared blocked plan** — one open at a time,
-named from `iterate-run name next` on first use, recorded in `blocked-plan:`,
-and reused by every subsequent sweep until a human clears it.
+**The plan stays exactly where it is.** Set `status: blocked-on-operator` (or
+`awaiting-human-gate`) in its frontmatter with a one-line reason, leave it in
+`plans/` on its own branch, clear `current:`, and go to the next plan. Nothing
+is copied, nothing is archived, no separate blocked plan is built.
 
-1. Copy the blocked steps, their validations, and their provenance into the
-   blocked plan, each tagged with its source: `from <plan>: <blocker>`.
-2. Remove them from the source plan. If the source has nothing left unfinished,
-   archive it; otherwise leave it queued so its remaining work continues.
-3. Log the move in both plans.
+Earlier this skill assembled blocked work into one shared plan and archived the
+sources. That was more machinery for a worse result: it split a plan's steps
+across two files, cost the plan its own branch and history, and gave you one
+undifferentiated pile instead of a per-plan state you can see at a glance. A
+blocked plan is just a plan that is waiting.
 
-**Batch the mergeable blockers into one merge.** If several plans end blocked on
-"couldn't merge / couldn't commit / branch not merged", do **not** write one
-merge step per plan. Write a single step in the blocked plan listing every
-branch, so the human does one merge session that lands everything on the default
-branch at once:
+**What you see instead.** The status line renders one letter per plan, coloured
+by state — `⚙️ J K L` with J red and K green means J is waiting on you while K
+is being worked right now. That is the whole handoff.
 
-```
-Na: Merge these branches to main, in order: feature/owl-metrics (clean),
-    feature/elk-api (conflicts in src/api/routes.go), feature/fox-docs (clean).
-    [skill: $feature-branch]
-Nb: All three merged, branches deleted local and remote, main green.
-```
+### Unblocking happens in a second session, concurrently
 
-That is the whole point of the blocked plan: it turns N interruptions into one
-sitting. Any other blocker class that repeats across plans gets the same
-treatment — one step covering all instances, never one per plan.
+The conductor keeps working K. You open another session in the same directory
+and run `$iterate-triage` to find out what J is waiting on and clear it. This is
+supported and expected — the concurrency lock is **per-plan**, so a second
+session touching a different plan is not a conflict.
+
+**One physical constraint: the working tree is shared.** The conductor has K's
+branch checked out. A second session must not check out J's branch — that yanks
+files out from under a live run mid-step.
+
+- **Environment blockers** — credentials, permissions, deleting a VM, restarting
+  a runner, answering a question — need no branch at all. Fix the world, record
+  the resolution in J's plan file, mark it cyan. This is the overwhelming
+  majority.
+- **Blockers that genuinely need code on J's branch** — use a git worktree:
+  `git worktree add ../<repo>-J <J's branch>`, work there, commit, remove it.
+  Never switch the shared tree's branch while the conductor is running.
+
+### `status: unblocked` — cyan, ready to re-queue
+
+When a blocker is cleared, the resolving session sets `status: unblocked` and
+appends what changed to the plan's log. The status line turns that letter cyan:
+*was blocked, is not any more, waiting for its turn.*
+
+The conductor picks up cyan plans **first** — ahead of never-started ones. They
+were already in flight and someone has just spent effort clearing their path;
+leaving them behind a fresh plan wastes that.
+
+**Red plans also get one cheap re-test per full pass through the queue.** Not
+every sweep — once per complete cycle. Some blockers clear themselves (a host
+comes back, a lease renews) and would otherwise sit red until noticed; but
+re-testing a permission that still is not granted, every single sweep, is the
+loop shape that burned thirteen hours. Only re-test blockers that are cheap and
+objectively checkable — does the host answer, does the file exist, does the
+command return zero. A blocker whose resolution is a human judgement is never
+auto-retested; it waits for cyan.
 
 ## Bug intake
 

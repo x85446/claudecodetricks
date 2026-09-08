@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and gives a verdict plus the shortest path back to main. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: (none — reads the project state)
-version: 1.0.0
+version: 1.1.0
 ---
 
 <!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
@@ -55,6 +55,8 @@ fits.
 | `phase: executing`, `status: blocked-on-operator` / `awaiting-human-gate` | **Blocked on you.** Extract exactly what a human must do, as a numbered list. Walk the first one. |
 | `phase: executing`, stopped mid-run, no terminal status | **Died mid-run** (session killed, context ran out, cron lost). Commit anything loose, then offer `/iterate <name>` to resume. |
 | Feature branch with no matching plan | **Orphan branch.** Say whose it looks like from the name, whether it has unmerged commits, and offer to merge, rebase or delete. Never delete unasked. |
+| `status: unblocked` (cyan) | Already cleared, waiting its turn. Say which plan and that the conductor will take it next; if the conductor is off, offer `/iterate <name>`. |
+| Several plans all-green but unmerged | Batch them: one merge session landing every branch, in dependency order, rather than N separate ones. |
 | `phase: closed` sitting in `plans/` | Should have been archived. Say so, offer to archive. |
 | Not a git repo | Report plan state only; every branch line is a silent no-op. |
 
@@ -95,6 +97,38 @@ report the result before moving to the next.
 Group blockers of the same kind into one ask. Three instance deletions is one
 question about three instances, never three questions. If clearing one unblocks
 several steps, say which — that is what makes an ask worth answering.
+
+### When it's cleared, mark it cyan
+
+Set `status: unblocked` in the plan's frontmatter and append what changed to its
+log. The status line turns that plan's letter cyan, and `/iterate-conductor`
+picks cyan plans up **before** anything never started.
+
+Only mark it when the blocker is actually gone — verify it, don't take "should
+be fine" for an answer. A plan wrongly marked cyan goes straight back into the
+queue to fail on the same wall.
+
+### Unblocking while the conductor is running something else
+
+This is the normal case, not an edge case: the conductor works K while you sit
+in a second session clearing J. **The concurrency lock is per-plan**, so two
+sessions on two different plans is not a conflict.
+
+**But the working tree is shared, and the conductor has K's branch checked out.**
+
+- **Never check out J's branch.** That pulls files out from under a live run
+  mid-step and corrupts K.
+- **Environment blockers need no branch at all** — credentials, permissions,
+  deleting a VM, restarting a runner, answering a question. Fix the world,
+  record it, mark cyan. This covers almost everything that actually blocks.
+- **If J genuinely needs code changes**, use a worktree:
+  `git worktree add ../<repo>-J <J's branch>`, work and commit there, then
+  `git worktree remove`. Say you're doing it and why — a stray worktree left
+  behind is confusing later.
+
+Before touching anything, check whether the plan you're about to edit is the one
+currently running (`running:` heartbeat under 90 seconds). If it is, report and
+stop — that plan is not yours to triage right now.
 
 ## Rules
 
