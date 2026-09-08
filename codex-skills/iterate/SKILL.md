@@ -122,21 +122,24 @@ Rules:
 - **An explicit keyword beats the clock.** The schedule is a proxy for "the user is away"; the keyword is the user saying it directly. Report the override, never refuse over it, unless `launch-window-strict: true`.
 - **One keyword authorizes one launch.** It is consumed by the launch it appears in, not remembered. This is deliberately unlike standing risk acceptance: the gate exists precisely because each run is expensive, so each run is authorized on its own.
 
-## Auto-resume via cron
+## Auto-resume — Codex cannot arm this itself
 
-<!-- codex-port: Claude Code's `/loop` has no Codex equivalent; rewritten onto
-     CronCreate/CronList/CronDelete per references/codex-format.md. The 7-day
-     recurring-job expiry below is a Codex-only constraint with no counterpart
-     in the original. -->
+<!-- codex-port: Claude Code arms its own resumption with /loop or CronCreate.
+     Codex has NO in-session scheduling tool -- Cron*/ScheduleWakeup are Claude
+     Code's, and an open feature request for Codex (openai/codex#25466). An
+     earlier port instructed Codex to call CronCreate and it answered "this
+     session doesn't expose them". Rewritten to ask the user instead. -->
 
-API errors, transient stalls, or hitting context limits will silently end a turn. The skill survives this with a recurring cron job that re-fires `$iterate` on a fixed cadence.
+API errors, transient stalls, or hitting context limits will silently end a turn. Under Claude Code the skill survives this by arming its own recurring trigger. **Codex has no in-session equivalent** — there is no tool this skill can call to schedule its own re-firing. Do not attempt `CronCreate`, `CronList`, `CronDelete` or `ScheduleWakeup`; they are not available and inventing a call wastes a turn and misleads the user.
 
-- **On a fresh task or first execution of a `phase: planned` plan — flat or teamed** (you just wrote/transitioned the state file): `CronCreate` a recurring job firing `$iterate` **every minute** as your *first* action. **1 minute is the maximum interval, for flat plans and teamed plans alike — never stretch it wider.** The subsequent firings pass no argument, so they read the state file and continue. **Record the job id in the plan frontmatter**: `loop-mechanism: cron <job-id>` (e.g. `cron f560eb36`) — cancellation later must target this exact id, and "whatever I armed" must be readable from the file, not remembered. Make the job durable (persisted to `.codex/scheduled_tasks.json`) rather than session-only; a session-only job dies with the session that armed it, which is the exact failure auto-resume exists to survive.
-- **Recurring cron jobs auto-expire after 7 days.** A plan still executing at the 7-day mark loses its auto-resume silently. On any tick, if the plan's `Started:`/`Executing:` timestamp is more than ~6 days old, re-arm: `CronDelete` the recorded id, `CronCreate` a fresh job, write the new id into `loop-mechanism:`, and log the re-arm. There is no Claude Code equivalent of this — it is a Codex-specific obligation.
-- **On every terminal exit (full success, 5-cycle giveup, blocked-on-operator, human-gate) — `CronDelete` the recorded job id, then VERIFY it's dead.** Read `loop-mechanism:` from the plan file, delete that exact id, then `CronList` and confirm the id is gone. **Verification is mandatory, not optional**: if the delete result reports not-found, an error, or `CronList` still shows the job, the loop is still live — fix it before doing anything else. Confirmed live under the original harness (civet, 2026-08-21): an armed cron whose cancel was never verified fired the executor once a minute for 13+ hours against an already-blocked plan. Then clear `loop-mechanism:` from the plan file so a later resume knows nothing is armed. On success: archive after. On giveup/blocked: leave the state file for inspection.
-- **When the job fires and a run is already in progress**: see the lock section below — the second run exits immediately.
+So the resumption trigger is **the user's to create, once, outside the session**, and this skill's job is to say so clearly:
 
-The user can stop the loop at any time with `CronDelete <job-id>` — the id is in the plan's `loop-mechanism:` field, and `CronList` shows every armed job if the plan file is unavailable.
+- **On a fresh task or first execution of a `phase: planned` plan**, print exactly one line naming what is needed and continue working: `auto-resume not armed — Codex cannot schedule itself. To survive a stalled turn, create a Codex Automation for "$iterate" (ChatGPT desktop/web → Scheduled) or an OS cron job running \`codex exec\`, firing at most every minute.` Record `loop-mechanism: user-managed` in the plan frontmatter so a later turn knows nothing is armed and does not try to cancel a job it never created.
+- **Without a trigger, a stalled turn simply stops.** That is the honest state. The plan file holds everything needed, so a human typing `$iterate <name>` resumes exactly where it left off — nothing is lost, it just waits for a person instead of a clock.
+- **On every terminal exit**, there is nothing to cancel. Note `loop-mechanism:` was user-managed and say whether the user's Automation, if any, should be paused now that the plan is finished — they own it, so they must be told it is still firing.
+- **When the trigger fires and a run is already in progress**: see the lock section below — the second run exits immediately.
+
+If a future Codex release ships in-session scheduling, this section is the one to rewrite; check `references/codex-format.md` first.
 
 ## Feature branch (one plan = one branch, merge only on all-green)
 
@@ -304,7 +307,7 @@ phase: executing
 executor-version: <version>    # this skill's own frontmatter `version:` — stamped when phase first flips to executing; on resume by a DIFFERENT version, leave it and add a Status/Log line "resumed by executor <version>"
 running: <UTC timestamp>       # heartbeat — update at every step boundary
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo) — see "Feature branch" above
-loop-mechanism: cron <job-id>  # EXACTLY the job id the auto-resume armed; CronDelete targets this; cleared on verified cancel
+loop-mechanism: user-managed   # Codex cannot arm its own resumption; the user owns any Automation/OS cron
 human-gate: <step N>           # only when the plan marks a terminal human-decision step (written by $iterate-planner) — see Step 5's human-gate path
 
 ## Goal
@@ -399,7 +402,7 @@ If any check fails:
 - **Publish the changelogs** (see "Changelog" above): distill `## Changelog draft` into `CHANGELOG.md` + `RELEASES.md`, commit them on the plan's branch — they ride the PR.
 - **Run the merge flow** (see "Feature branch" above): `$feature-branch finish` → merge the PR → branch deleted, back on the default branch. All-green is the merge trigger; no separate approval needed. A failed merge does NOT un-succeed the plan — flag it in the summary (`⚠ complete but NOT merged — <reason>, branch preserved`) and continue archiving.
 - **Add a `Finished: <UTC timestamp now>` line** (same `date -u +%Y-%m-%dT%H:%M:%SZ` format as `Executing:`) right before archiving — this is the real "done at" instant the dashboard's "Ran for" figure reads once archived. Without it, that figure falls back to the latest CONFIRMED activity span (hook/registry data), which can simply not exist for a project with neither wired up — confirmed live: a flat plan showed "Running for 0s" despite a correct `Executing:`, because there was no activity data to compute a span against at all. Set once, never touched again.
-- Cancel the auto-resume loop — the exact mechanism recorded in `loop-mechanism:`, with the verified-cancel procedure from "Auto-resume" (CronDelete the recorded id, confirm via CronList, clear the field).
+- Cancel the auto-resume loop — the exact mechanism recorded in `loop-mechanism:`, per "Auto-resume" — nothing was armed by this skill, so clear the field and tell the user if their Automation is still firing.
 - Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`. If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it. If the plan was teamed, also move `./.claude/iterate/plans/<name>.teams/` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.teams/` (the per-team logs are already merged into the archived plan file — this just keeps the raw team logs around for audit, don't leave the working `.teams/` dir behind).
 - Report a 3-5 line summary: goal, what was done, validation results, time taken, **and the merge result** (`merged to <default> via PR <url>, branch deleted` — or the ⚠ not-merged flag with reason). On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
 - **Suggest `$oracle harvest`** to the user — one line at end of report: "If anything in this run is worth remembering for next time, run `$oracle harvest`." Don't auto-invoke; oracle harvesting is opt-in.
@@ -415,7 +418,7 @@ If any check fails:
 - Write the "Next attempt" hint in the ONE standardized shape the dashboard tool actually parses — this was previously freeform prose per-run, which the dashboard couldn't recognize at all (it just kept reading as plain `executing` no matter how done the plan actually was):
   - At the very top of the file, above the frontmatter, a blockquote banner: `> **Next attempt (one operator action):** <what's blocking, one or two sentences> <the exact command(s) to run once it's cleared>`.
   - In the frontmatter, `status: blocked-on-operator: <one-line reason>` — that exact `blocked-on-operator` prefix is the literal string the dashboard matches on; don't paraphrase it into "waiting on user" or similar. This is IN ADDITION to `phase:`, not a replacement — leave `phase: executing` as-is.
-- Cancel the loop — `CronDelete` the exact id from `loop-mechanism:`, verify via `CronList`, clear the field (see "Auto-resume"). Without this, the job fires forever and re-hits the same giveup — and an unverified cancel is exactly as bad as no cancel, just quieter.
+- Cancel the loop — clear `loop-mechanism:` — nothing was armed to cancel (see "Auto-resume"). Without this, the job fires forever and re-hits the same giveup — and an unverified cancel is exactly as bad as no cancel, just quieter.
 - Stop. Report ONE blocker reason — the specific check that failed 5 times (or the specific operator-only clause) AND why no other outcome could absorb attention — plus what specific operator action would unblock. **Do NOT write a menu of "things the user could do next." Do NOT list "(a) ... (b) ..." options. Do NOT frame remaining work as choices.** One blocker, one ask, done. On a teamed plan where multiple teams are blocked, aggregate: report the done/blocked status of every team in one line each, then the single most-actionable next operator step (usually whichever blocker, once fixed, unblocks the most dependent teams).
 - Do **not** archive — leave the plan file in place so the user can read what happened and re-invoke fresh after fixing the blocker.
 
@@ -449,9 +452,9 @@ You can $iterate again to drive (a) the remaining chart conversions, or address 
 4. **Always update the plan file before doing anything destructive** (delete, overwrite, force-push, restart service). The state file is the resumption contract; don't violate it.
 5. **Never replace a plan file without archiving first.** Old state goes to `./.claude/iterate/archive/<UTC-timestamp>.md`.
 6. **Logging is mandatory.** Every decision and every step outcome must land in the appropriate section. Future-you (next `$iterate` call) reads the log to know what's already done.
-7. **Don't loop forever.** 5 cycles per failing validation check, then stop and report. On stop, `CronDelete` the job so it doesn't keep re-running into the same wall.
+7. **Don't loop forever.** 5 cycles per failing validation check, then stop and report. On stop, tell the user to pause their Automation if they created one.
 8. **Respect the user's constraints absolutely.** Constraints listed in the state file override your own judgment.
-9. **Set up a resumption loop on first run; on terminal exit (success, giveup, blocked-on-operator, human-gate) cancel the EXACT mechanism you armed and verify the cancel took. 1 minute is the maximum interval — flat or teamed, no exceptions.** Record the job id in `loop-mechanism:` at arm time and confirm the delete with `CronList` — an unverified cancel is how a finished plan ends up being ticked at for 13 hours. Re-arm before the 7-day recurring-job expiry on any run that could outlive a week. This is what makes the skill survive API errors and stalled sessions.
+9. **Set up a resumption loop on first run; on terminal exit (success, giveup, blocked-on-operator, human-gate) cancel the EXACT mechanism you armed and verify the cancel took. 1 minute is the maximum interval — flat or teamed, no exceptions.** Record `loop-mechanism: user-managed` — this skill arms nothing, so there is nothing to cancel, but a user-created Automation keeps firing until they pause it and must be told so. Under Codex a stalled turn simply waits for a human; the plan file loses nothing.
 10. **Honor the concurrency lock.** If `running:` is fresh, exit silently — don't double-run.
 11. **Na is a hint; Nb is the contract.** If a step's described mechanism doesn't work, find another path that meets the validation. Only after exhausting reasonable alternatives (and hitting the 5-cycle cap per failing validation) do you give up. Never treat the step's wording as a constraint.
 12. **Validation requires real execution.** Never declare a check green on the basis of code inspection alone. The validation must actually run/load/curl/click the thing being changed. If the plan's Nb says "tests pass", you ALSO load the page / hit the endpoint / run the command end-to-end before marking it done. Log the added execution in the Decisions log.
@@ -505,4 +508,4 @@ What the skill does:
 - `owl-link-tree` returns, `link-tree.log.md` ends with `TEAM DONE: link tree updated, verified live in browser`. Merges it, checks off steps 3 and 5, sets `link-tree` `Status: done`.
 - All teams done, no unassigned steps → runs full-plan Validation once more across everything. All green.
 - Merge flow: `$feature-branch finish` pushes `feature/owl-metrics-service` and opens the PR, then `gh pr merge --squash --delete-branch` lands it on main and removes the branch local + remote.
-- Archives `owl.md` and `owl.teams/`, `CronDelete`s the recorded job id and confirms via `CronList`, reports: "✓ owl done — 2 teams (deploy, link-tree ran sequentially due to dependency), 4 steps, all validations green. Merged to main via PR #12, `feature/owl-metrics-service` deleted."
+- Archives `owl.md` and `owl.teams/`, confirms nothing was armed (Codex resumption is user-managed), reports: "✓ owl done — 2 teams (deploy, link-tree ran sequentially due to dependency), 4 steps, all validations green. Merged to main via PR #12, `feature/owl-metrics-service` deleted."

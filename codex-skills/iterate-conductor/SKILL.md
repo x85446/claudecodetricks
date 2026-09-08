@@ -1,6 +1,6 @@
 ---
 name: iterate-conductor
-description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via $iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
+description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via $iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; under Codex the recurring trigger is a user-created Automation or OS cron, since Codex cannot schedule itself.
 ---
 
 
@@ -55,7 +55,8 @@ from here: two things owning execution is how a plan gets worked twice.
 ---
 enabled: true
 paused: false
-cron: <job-id>              # the tick this conductor armed; cleared on stop
+tick: user-managed          # Codex cannot arm its own trigger; the user owns
+                            #   the Automation / OS cron that fires this skill
 conductor-schedule:         # optional, same grammar as launch-schedule;
   - allow daily 22:00-06:00 #   intersected with it, so it can only narrow
 current: <plan-name>        # plan handed to $iterate, empty between plans
@@ -79,22 +80,31 @@ started in.
 Route on `$1`:
 
 ### `start` / `on`
-Write `enabled: true`, `paused: false`. Arm a recurring cron firing
-`$iterate-conductor` — **every 5 minutes**, not every minute: a tick that finds
-a run already in flight does nothing, and `$iterate` owns its own 1-minute
-resumption loop. Record the job id in `cron:`. Report what is queued. Then run
-one sweep immediately rather than waiting for the first tick.
+Write `enabled: true`, `paused: false`. **Codex cannot arm its own trigger** —
+there is no in-session scheduling tool (`CronCreate` and friends are Claude Code
+tools; for Codex they are an open feature request). Print exactly one line
+telling the user what to create, once:
+
+```
+enabled. Codex cannot schedule itself — create the recurring trigger once:
+  ChatGPT desktop/web → Scheduled → new Automation firing "$iterate-conductor",
+  or an OS cron/launchd job running `codex exec` with the same prompt.
+  Every 5 minutes is right: a tick that finds a run in flight does nothing.
+```
+
+Record `tick: user-managed`. Then **run one sweep immediately** — that part
+needs no scheduler, and it means `start` does visible work even before the
+trigger exists.
 
 ### `stop` / `off`
 **The current plan finishes first.** Write `enabled: false`; the plan in flight
-runs to its own terminal state, and no new plan is started after it. Cancel the
-cron only once `current:` is empty — cancelling while a plan is mid-flight would
-strand it without a supervisor to handle its ending. Report which plan is
+runs to its own terminal state, and no new plan is started after it. The user's trigger is not yours to cancel — say plainly that it keeps firing
+until they pause it, and that ticks are harmless no-ops once disabled. Report which plan is
 draining and that no further plans will start.
 
 ### `pause`
 Same draining behaviour, but `paused: true` with `enabled:` left true, so
-`resume` picks the queue back up exactly where it stopped. The cron stays armed
+`resume` picks the queue back up exactly where it stopped. The user's trigger keeps firing
 and its ticks become no-ops while paused.
 
 ### `resume`
@@ -137,8 +147,7 @@ imported   12 issues, last sweep pulled 2
 ```
 
 ### `kill`
-**The one verb that does not wait.** Halt now, mid-plan: cancel the conductor
-cron AND the current plan's own loop, set `enabled: false`, and leave the plan
+**The one verb that does not wait.** Halt now, mid-plan: stop the sweep AND the current plan's own loop, set `enabled: false`, and leave the plan
 exactly where it stands (resumable with `$iterate <name>`).
 
 `stop` and `pause` deliberately finish the current plan, so neither can halt a

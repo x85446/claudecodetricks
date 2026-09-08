@@ -76,7 +76,7 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → invoke `$testmaster-prune` explicitly, args verbatim.
 3. **run** ("run", "run fast", "run standard", "run slow", "run <test-id>") → invoke `$testmaster-run` explicitly, args verbatim. Bare "run" = fast+standard (the iterate-safe set).
 4. **report** ("report", "report card", "how are the tests") → invoke `$testmaster-report` explicitly.
-5. **nightly** ("nightly", "set up nightly tests") → arm a scheduled full run (all tiers incl. slow) at local midnight via the harness's cron/schedule mechanism, prompt `$testmaster run all`. **Record the mechanism + job id in `./.claude/testmaster/nightly.json`** and tell the user the exact cancel command (cancel with `CronDelete <job-id>`, then confirm with `CronList`). Never arm a second nightly if `nightly.json` already records a live one.
+5. **nightly** ("nightly", "set up nightly tests") → Codex cannot schedule itself, so tell the user to create the nightly run once: a ChatGPT Automation firing `$testmaster run all` at local midnight, or an OS cron job running `codex exec`. **Record `mechanism: user-managed` in `./.claude/testmaster/nightly.json`** along with what you told them, and note that pausing it is theirs to do. Never arm a second nightly if `nightly.json` already records a live one.
 6. **status** ("status") → one screen from `registry.json`: counts per tier, pass/fail split, slowest 5, last full-run date. Read-only. For the *organized* view (by requirement, with validity) route to `catalog` instead.
 7. **default** (anything else describing test work) → decide maintain vs prune vs run by the work's nature and route as above.
 

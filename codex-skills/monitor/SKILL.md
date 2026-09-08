@@ -20,7 +20,7 @@ Auto-fixes aggressively during the loop. Stays silent between cycles. Notifies o
 
 - `<minutes>` (required) — cadence between checks, e.g. `5`
 - `[what to monitor]` (optional) — free-text description to focus the skill, e.g. `"the production deploy"`. If omitted, infer from recent conversation.
-- `--continue` (internal) — set automatically by `ScheduleWakeup` on subsequent cycles; user never passes this
+- `--continue` (internal) — passed by whatever re-invokes this skill on the next cycle; the user never types it
 
 If `$ARGUMENTS` is empty or non-numeric, print usage (`$monitor <minutes> [what]`) and exit.
 
@@ -115,8 +115,24 @@ Skip Steps 1-4. Go straight to Step 5.
 
 5. **If cycle >= max_cycles (10):** go to Step 6 (final: cap hit)
 
-6. Otherwise, update state file and schedule next wake:
-   - Use `ScheduleWakeup(delaySeconds = cadence_minutes * 60, reason = "monitor cycle N+1: <last_status>", prompt = "$monitor --continue")`
+6. Otherwise, update the state file and hand the next cycle back to the user.
+
+   <!-- codex-port: Claude Code self-schedules with ScheduleWakeup. Codex has no
+        in-session scheduling tool, so this skill cannot wake itself. Rewritten
+        to a user-created trigger; see references/codex-format.md. -->
+
+   **Codex cannot schedule its own next cycle** — there is no `ScheduleWakeup`
+   equivalent, and inventing a call wastes the turn. On the FIRST cycle only,
+   print one line telling the user how to make it recur:
+
+   ```
+   monitoring every <N>m — Codex cannot wake itself. To keep cycles running:
+     ChatGPT desktop/web → Scheduled → Automation firing "$monitor --continue"
+     every <N> minutes, or an OS cron job running `codex exec` with that prompt.
+   ```
+
+   Then end the cycle. The state file holds everything, so the next invocation —
+   scheduled or typed by hand — resumes at cycle N+1 exactly as before.
 
 Do not output anything to the user in this step unless Step 6 is triggered.
 
@@ -214,7 +230,7 @@ If no reasonable fix is available (the failure is novel, the root cause is uncle
 
 ## Guardrails
 
-- **Never run $monitor without explicit user confirmation** on first invocation. `--continue` only fires from `ScheduleWakeup` in the same session.
+- **Never run $monitor without explicit user confirmation** on first invocation. `--continue` only ever arrives from the recurring trigger the user set up, never from a first invocation.
 - **Never push to main or force-push without user approval** even in aggressive-fix mode. Limit pushes to feature branches.
 - **Never auto-rollback production** — deploy reverts need human signoff. "Revert a commit and push to a feature branch" is fine; "rollback prod" is not.
 - **Respect the cap.** 10 cycles is the hard ceiling. Don't extend it silently.
@@ -229,4 +245,4 @@ If no reasonable fix is available (the failure is novel, the root cause is uncle
 - Don't exceed 10 cycles even if it seems close to passing
 - Don't infer deploy success from "CI green" alone if the conversation indicates a separate deploy step
 - Don't `rm` the state file until the final notification goes out
-- Don't leave `ScheduleWakeup` dangling after final state — exit cleanly
+- On reaching a final state, say so plainly and tell the user to pause the Automation they created — this skill cannot cancel a trigger it never armed
