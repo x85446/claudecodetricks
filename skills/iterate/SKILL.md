@@ -3,7 +3,7 @@ name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: <paragraph describing the work to do AND how to validate success>
 disable-model-invocation: true
-version: 3.7.0
+version: 3.8.0
 ---
 <!-- version: bump on EVERY behavioral change to this skill (minor for additions, major for schema/contract changes, patch for wording). Stamped into every plan this skill executes (executor-version:) at the moment phase flips to executing. -->
 
@@ -120,10 +120,11 @@ The user can manually stop the loop any time with `/loop` (no args) or by pressi
 
 ## Feature branch (one plan = one branch, merge only on all-green)
 
-Every plan in a git repo runs on its own feature branch — `branch: feature/<name>-<slug>` in the plan's frontmatter, normally created by `/iterate-planner` at plan-creation time. All branch operations go through the **`feature-branch` skill** (`[skill: /feature-branch]`), never hand-rolled git.
+Every plan in a git repo runs on its own feature branch — `branch: feature/<name>-<slug>` in the plan's frontmatter. **The planner names it but does not create it** (`branch-created: false`); the branch comes into existence here, at execution start, so that planning never moves the user off the default branch. All branch operations go through the **`feature-branch` skill** (`[skill: /feature-branch]`), never hand-rolled git.
 
 **At execution start** (any transition to `phase: executing`, and on every resume entry):
-- Plan has `branch:` → ensure it's checked out (`git rev-parse --abbrev-ref HEAD`; if not on it, check it out) before any step runs. All work — coordinator steps AND dispatched teams, which share the same working tree — happens on this branch. Teams never switch branches.
+- Plan has `branch:` with `branch-created: false` (or no such field, and the branch does not exist) → **create it now**: `/feature-branch start feature <plan-name>-<slug>`, then set `branch-created: true` in the plan file. This is the moment a plan stops being a document and starts being work, and it is the only place the branch is born. If the default branch has uncommitted work, let `/feature-branch start` carry it over.
+- Plan has `branch:` that already exists → ensure it's checked out (`git rev-parse --abbrev-ref HEAD`; if not on it, check it out) before any step runs. All work — coordinator steps AND dispatched teams, which share the same working tree — happens on this branch. Teams never switch branches.
 - Plan has no `branch:` but this IS a git repo (direct `/iterate <task>` fresh runs, pre-branch-era plans): create one now via `/feature-branch start feature <plan-name>-<short-goal-slug>` and write `branch:` into the plan file. If currently on the default branch with uncommitted work, let `/feature-branch start` handle carrying it onto the new branch.
 - Not a git repo → no branch anything; log `not a git repo — no feature branch` once and proceed. Every branch-related instruction in this file is a silent no-op for such plans.
 

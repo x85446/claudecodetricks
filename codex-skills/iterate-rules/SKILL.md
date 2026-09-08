@@ -1,6 +1,6 @@
 ---
 name: iterate-rules
-description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which $iterate enforces at launch. Rules gate launching a run; they never touch plans, and never stop a run that is already going.
+description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which $iterate enforces at launch.
 ---
 
 
@@ -10,6 +10,12 @@ description: Read and write the iterate launch policy for THIS project in plain 
 
 The front door to `./.claude/iterate/policy.md`. You describe the rule; this
 writes the schema `$iterate` actually enforces.
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 
 ## Usage
 

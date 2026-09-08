@@ -110,6 +110,7 @@ iterate-notes	userglobal	self
 iterate-plan	-	self
 iterate-planner	userglobal	self
 iterate-rules	userglobal	self
+iterate-triage	userglobal	self
 izmachine	userglobal	~/workspace/izuma/izmachine/skills/izmachine
 list	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list
 list-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list-dead-letter
