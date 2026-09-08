@@ -2,9 +2,9 @@
 name: iterate-notes
 description: The note-taking half of the iterate stack — capture ideas for the NEXT iterate plan, before any formal planning. Triggers on "/iterate-notes", "take a note", "note this", "add a note". Appends the ask to the current notes file in one synthesized line and acks in one line. Also "list notes", "show notes", "new notes <topic>", and the handoff "turn these notes into a plan" (routed to /iterate-planner). Notes live under ./.claude/iterate/notes/. This skill never brainstorms, never plans, never executes — deciding between options is /iterate-brainstorm, planning is /iterate-planner.
 argument-hint: <a note to take, or "list notes" / "show notes" / "new notes <topic>" / "turn these notes into a plan">
-version: 2.0.0
+version: 5.0.0
 ---
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # /iterate-notes — Write it down, don't work it out
 
@@ -72,3 +72,18 @@ Two sections, nothing else. **Never add an `## Open questions` or `## Research a
 4. **Never ask clarifying questions.** A note is capture, not analysis — take it, ack it, done. Ambiguity gets resolved later, in `/ibs` or at planning time.
 5. **Two sections only.** `## Notes` and `## Decisions`. No appendix, ever — depth that matters belongs in `/ibs`'s conversation or in `/oracle` as durable project knowledge, not in a write-mostly bin inside a notepad.
 6. **Notes files are cheap and local — never git-managed by this skill.** No branch, no commit choreography; they live with the other iterate state under `./.claude/iterate/`.
+
+## `version`
+
+`version` (or "what version") on **any** iterate skill reports the same thing —
+the family version, because the stack is versioned as one unit:
+
+```
+iterate family 5.0.0
+iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
+```
+
+Run `iterate-run version` for the second line — a real installed binary, never a
+recalled string. If members disagree, say so and name them: drift inside the
+family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
+only correct way to bump.

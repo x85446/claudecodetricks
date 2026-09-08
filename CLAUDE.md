@@ -25,6 +25,23 @@ This repo is also the canonical backup/source for globally-installed Claude Code
 
 Plans name their feature branch but do not create it — the branch is born at execution, so the status line keeps reading `main ✔` until real work starts, and the statusline's `⚙️` segment (one letter per plan: green executing, yellow planned, red blocked, cyan unblocked-and-ready, dim closed) carries plan state instead of the branch name doing it badly.
 
+**The iterate family shares one version.** `iterate`, `iterate-planner`,
+`iterate-conductor`, `iterate-triage`, `iterate-rules`, `iterate-notes`,
+`iterate-brainstorm` and the five aliases all carry the same `version:` — the
+stack evolves as a unit, so a plan stamped `iterate 5.0.0` says which era of the
+*whole* stack produced it, which per-skill numbers could never express. Drift
+between members is a defect, not a state.
+
+```bash
+skills/skillctl family iterate            # members + shared version, non-zero on drift
+skills/skillctl family iterate set 5.1.0  # the only correct way to bump
+```
+
+`version` on any family skill answers identically: the family version plus
+`iterate-run version` from the real binary. Membership is the `family` column in
+`skillmap.tsv`. `/iterate` remains the executor — the family is a versioning and
+naming unit, not a router.
+
 Aliases: `/ip` → iterate-planner, `/i` → iterate, `/in` → iterate-notes, `/ibs` → iterate-brainstorm, `/ic` → iterate-conductor (all in `skills/`). `/ip` and `/in` delegate via the Skill tool; `/i`, `/ibs` and `/ic` cannot (their targets' flags block the Skill tool), so they read and follow the target's SKILL.md directly — the user typing `/i`, `/ibs` or `/ic` is the explicit invocation the flag reserves.
 
 `/iterate`, `/iterate-brainstorm`, `/iterate-conductor`, `/i`, `/in`, `/ip`, `/ibs`, and `/ic` carry `disable-model-invocation: true`. For `/iterate` it is side effects (autonomous execution, PR merges); for `/iterate-brainstorm` it is that a decision session is something the user opens deliberately, never something natural language trips into; for `/iterate-conductor` it is the same side effects as `/iterate` but across the whole queue, unattended. `/iterate-planner` deliberately does NOT carry the flag: `/ip` delegates to it via the Skill tool, and that flag blocks Skill-tool delegation entirely. Plan state lives at `./.claude/iterate/plans/<name>.md` in whichever project they're run from; live status/dashboard for that state is `iterate-run` (`src/cmd/iterate-run/`, this repo's own Go binary — `iterate-run serve` for the web dashboard, `iterate-run status`/`timeline` for the CLI).

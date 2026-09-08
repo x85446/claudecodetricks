@@ -3,10 +3,10 @@ name: iterate-conductor
 description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via /iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
 argument-hint: start | stop | pause | resume | run | status | kill | schedule <rule>
 disable-model-invocation: true
-version: 2.0.0
+version: 5.0.0
 ---
 
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # /iterate-conductor — keep the whole queue moving
 
@@ -300,3 +300,18 @@ When the plan queue is empty, import open issues from this repo's forge.
    skip. The sweep log is how a human reconstructs a night they slept through.
 8. **`stop` and `pause` drain; only `kill` interrupts.** Never halt a plan
    mid-flight for a graceful verb — that is what leaves a half-built branch.
+
+## `version`
+
+`version` (or "what version") on **any** iterate skill reports the same thing —
+the family version, because the stack is versioned as one unit:
+
+```
+iterate family 5.0.0
+iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
+```
+
+Run `iterate-run version` for the second line — a real installed binary, never a
+recalled string. If members disagree, say so and name them: drift inside the
+family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
+only correct way to bump.

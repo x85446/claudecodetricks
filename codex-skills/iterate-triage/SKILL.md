@@ -4,7 +4,7 @@ description: Use when the status line shows a feature branch instead of "main �
 ---
 
 
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # $iterate-triage — what happened here, and what gets me back to main
 
@@ -163,3 +163,18 @@ stop — that plan is not yours to triage right now.
    line — a silent fix leaves the same bug to happen next week.
 6. **Safe to run mid-plan.** If a run is live, report and stop. Triage must
    never disturb a working plan.
+
+## `version`
+
+`version` (or "what version") on **any** iterate skill reports the same thing —
+the family version, because the stack is versioned as one unit:
+
+```
+iterate family 5.0.0
+iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
+```
+
+Run `iterate-run version` for the second line — a real installed binary, never a
+recalled string. If members disagree, say so and name them: drift inside the
+family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
+only correct way to bump.

@@ -26,6 +26,8 @@ Verbs:
   why <name>...      why it is installed where it is
   targets            symbolic target -> path
   audit [-v]         registry audit (unregistered / drifted first-party skills)
+  family [name] [-v]        show a family's members and shared version
+  family <name> set X.Y.Z   stamp every member to one version
 """
 import os, re, subprocess, sys, shutil, glob
 
@@ -56,10 +58,11 @@ def load():
         if not line or line.startswith("#"):
             continue
         parts = line.split("\t")
-        if len(parts) != 3:
+        if len(parts) < 3:
             continue
-        name, tgt, owner = parts
-        rows[name] = ([] if tgt == "-" else tgt.split(",")), owner
+        name, tgt, owner = parts[0], parts[1], parts[2]
+        fam = parts[3] if len(parts) > 3 and parts[3] != "-" else None
+        rows[name] = ([] if tgt == "-" else tgt.split(",")), owner, fam
     return rows
 
 
@@ -142,7 +145,7 @@ def target_is_newer(src, dst):
 def stale(rows, tmap):
     """[(name, target, path, src, newer)] for every mapped copy out of date."""
     out = []
-    for name, (tgts, owner) in sorted(rows.items()):
+    for name, (tgts, owner, _fam) in sorted(rows.items()):
         src = src_of(name, owner)
         if not os.path.exists(f"{src}/SKILL.md"):
             continue
@@ -162,7 +165,7 @@ def cmd_status(args):
     st = stale(rows, tmap)
     broken = [d for d in glob.glob(f"{H}/.claude/skills/*/") + glob.glob(f"{H}/.agents/skills/*/")
               if not os.access(f"{d}/SKILL.md", os.R_OK)]
-    missing_src = [n for n, (t, o) in rows.items()
+    missing_src = [n for n, (t, o, _f) in rows.items()
                    if not os.path.exists(f"{src_of(n, o)}/SKILL.md")]
     print(f"skills\t{len(rows)}\tstale\t{len(st)}\tbroken\t{len(broken)}\tno-source\t{len(missing_src)}")
     if v:
@@ -208,7 +211,7 @@ def cmd_install(args):
     for n in args:
         if n not in rows:
             print(f"FAIL\t{n}\tnot in skillmap.tsv"); bad = 1; continue
-        tgts, owner = rows[n]
+        tgts, owner, _fam = rows[n]
         if not tgts:
             # Not a failure: most adopted skills are registered so they are
             # backed up, and were never meant to be deployed anywhere.
@@ -230,8 +233,8 @@ def cmd_where(args):
     for n in args:
         if n not in rows:
             print(f"?\t{n}\tunmapped"); continue
-        tgts, owner = rows[n]
-        print(f"{n}\t{','.join(tgts) or 'backup-only'}\t{owner}")
+        tgts, owner, fam = rows[n]
+        print(f"{n}\t{','.join(tgts) or 'backup-only'}\t{owner}\t{fam or '-'}")
     return 0
 
 
@@ -240,11 +243,13 @@ def cmd_why(args):
     for n in args:
         if n not in rows:
             print(f"?\t{n}\tunmapped"); continue
-        tgts, owner = rows[n]
+        tgts, owner, fam = rows[n]
         src = src_of(n, owner)
         print(f"{n}\tsource\t{src.replace(H,'~')}")
         print(f"{n}\towner\t" + ("authored here" if owner == "self"
               else f"mirrored from {owner} — edit it there, not here"))
+        if fam:
+            print(f"{n}\tfamily\t{fam} — shares the family version, never bumped alone")
         if not tgts:
             print(f"{n}\tdeploy\tbackup-only (registered so it is backed up, never installed)")
         for t in tgts:
@@ -272,7 +277,54 @@ def cmd_audit(args):
     return 0
 
 
-CMDS = {"status": cmd_status, "sync": cmd_sync, "install": cmd_install,
+def cmd_family(args):
+    """List a family's members and versions, or stamp them all to one version.
+
+    Family members share a single version because the stack evolves as a unit:
+    a plan stamped "iterate 5.0.0" says which era of the WHOLE stack produced
+    it, which per-skill versions could never express. Drift between members is
+    therefore a defect, not a state — `set` is the only correct way to bump.
+    """
+    rows = load()
+    fam = args[0] if args and not args[0].startswith("-") else "iterate"
+    members = sorted(n for n, (_t, _o, f) in rows.items() if f == fam)
+    if not members:
+        print(f"?\t{fam}\tno such family"); return 1
+
+    def ver(n):
+        p = f"{REG}/{n}/SKILL.md"
+        if not os.path.exists(p):
+            return None
+        m = re.search(r'^version:\s*(\S+)', open(p).read(), re.M)
+        return m.group(1) if m else None
+
+    if len(args) >= 3 and args[1] == "set":
+        new = args[2]
+        if not re.fullmatch(r'\d+\.\d+\.\d+', new):
+            print(f"FAIL\t{new}\tnot semver"); return 1
+        for n in members:
+            p = f"{REG}/{n}/SKILL.md"
+            t = open(p).read()
+            if re.search(r'^version:\s*\S+', t, re.M):
+                t = re.sub(r'^version:\s*\S+', f"version: {new}", t, count=1, flags=re.M)
+            else:
+                # insert as the last frontmatter line
+                t = re.sub(r'\n---\n', f"\nversion: {new}\n---\n", t, count=1)
+            open(p, "w").write(t)
+            print(f"stamped\t{n}\t{new}")
+        return 0
+
+    vs = {ver(n) for n in members}
+    agreed = len(vs) == 1 and None not in vs
+    print(f"family\t{fam}\tmembers\t{len(members)}\t"
+          f"version\t{vs.pop() if agreed else 'DRIFTED'}")
+    if not agreed or "-v" in args:
+        for n in members:
+            print(f"  {n}\t{ver(n) or 'MISSING'}")
+    return 0 if agreed else 1
+
+
+CMDS = {"status": cmd_status, "family": cmd_family, "sync": cmd_sync, "install": cmd_install,
         "where": cmd_where, "why": cmd_why, "targets": cmd_targets,
         "audit": cmd_audit}
 
