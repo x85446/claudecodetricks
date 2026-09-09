@@ -512,6 +512,36 @@ history, or simply that you cannot recall the last few steps in detail:
 written at every step boundary and every validation; your post-compact
 recollection is a summary of a summary.
 
+## Destructive work the plan already authorized
+
+**A step that says "delete X" IS the authorization to delete X.** The plan was
+written and accepted; re-asking at execution time is asking the same question
+twice and stalling a run for days between them.
+
+Escalate only when the plan does NOT cover it — a resource the plan never names,
+production, someone else's data, or anything genuinely irreversible outside this
+project. Size is not a reason: 109 GiB of dev artifacts the plan lists by name
+is not more sensitive than 1 GiB of them.
+
+**Precedent within the same plan settles it.** If a step of the same class
+already ran — step 7 deleted three instances cleanly — then steps 4, 5 and 6 are
+that same class and do not get a fresh gate. Confirmed live: a plan sat eight
+days on exactly that boundary, having already proven both the capability (step 1
+verified administrative delete) and the permission (step 7 ran).
+
+**When the operation is fiddly, write a script and run it.** Multi-step
+destructive work with verify-then-delete ordering is safer as a script than as
+a sequence of remembered commands: the ordering is encoded, it survives a
+compaction, it can be dry-run, and a failed verification skips that delete
+instead of aborting everything. Put it in the project's `scripts/`, make it
+re-runnable, and gate every delete on its own check passing. That is normal
+engineering, not a workaround.
+
+**What is never a blocker:** your own caution, a large number, a resource you
+created but no longer remember creating, or an operation you have already
+performed once in this plan. Blocked means *a human must supply something you
+cannot* — a credential, a physical action, a decision only they can make.
+
 ## Rules (hard, non-negotiable)
 
 1. **Never ask the user a clarifying question during execution.** If you need a decision, pick the most reasonable one and log it in the Decisions log. The user can read the log later. Exactly two sanctioned exceptions: the entry rule 5 plan picker, and the **human-gate handoff** (Step 5) — when the only thing left is the plan's marked `human-gate` step, autonomy is over by definition and asking IS the job.
@@ -547,6 +577,7 @@ recollection is a summary of a summary.
 23. **All-green is the ONLY automatic merge trigger; every not-all-green report names the unmerged branch.** On full success, run the merge flow (`$feature-branch finish` → merge PR → delete branch) as part of Step 5 — no separate approval needed, that's what all-green means. On ANY other ending (blocked, stuck, user-ordered close, roll-forward), the branch stays unmerged and the report carries the ⚠ not-merged line — the user must never have to guess whether unfinished work landed on main. The one override is an explicit user order to merge ("merge it", "merge what we have and close") — obey it, then do whatever else they asked. Branch operations always go through `$feature-branch`, never hand-rolled git; and a failed merge on an otherwise-complete plan is flagged, not retried into the 5-cycle loop — merge conflicts against a moved main are the user's call, not a validation failure.
 24. **Teams never touch the branch.** Dispatched team subagents work on the coordinator's already-checked-out plan branch — no switching, no creating, no pushing, no merging. All branch lifecycle belongs to the coordinator (and `$iterate-planner` at creation time). A team that needs "a different branch" doesn't — that's a sign the step belongs to a different plan.
 25. **An MR or merge problem is never a reason to stop, and never a question.** A failed push, a rejected merge, a protected branch, a pipeline that will not go green, a branch that should not have existed — none of these are plan failures and none of them earn an interruption. Log it, flag it in the report with the branch named, and carry on with the rest of the plan. **Do not ask "may I merge these?" mid-run**: the all-green rule already answers it — all-green merges automatically, anything else does not merge and says so. Asking turns a clear contract into a decision the user has to make at a keyboard they may not be sitting at, which is the exact interruption this skill exists to avoid.
+26. **Never escalate something the plan already authorized.** A step naming a resource to delete, restart or replace is the approval — executing it is the job, not a decision to bring back. If an earlier step of the same class already ran in this plan, that settles any doubt about the later ones. Reserve blocked-on-operator for what a human must actually supply: a credential, a physical action, a judgement only they can make. Your own caution is not a blocker, and neither is a big number.
 25. **Changelog: draft at every check-off, publish exactly once — through the final sweep.** One draft line per real change, appended by the coordinator at step check-off / team merge — never by teams, never as polished prose. Publishing always runs the two-pass sweep (consolidate multi-attempt/reworked lines into one as-landed line each; validate every claim against the final tree — unvalidated claims don't publish). `CHANGELOG.md`/`RELEASES.md` are written only in the success path (or a flagged-partial entry on close, same sweep applied) — never incrementally mid-run, and old entries are never rewritten. `RELEASES.md` carries only user-visible changes in product language; internal work stays in `CHANGELOG.md`.
 26. **A step's `[skill: /x]` tag is binding, for coordinator and teams alike.** Rule 11's "Na is a hint" covers the mechanism *within* the governing tool, never a license to bypass the tool: a build step tagged `$dev-makefiles` gets its target added via that skill, not an ad-hoc shell script that happens to compile. Tags travel into every team prompt with the binding instruction. Untagged plans (direct fresh-task runs) get the cheap check: scan the always-loaded skills list before each step for an obvious governing skill.
 
