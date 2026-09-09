@@ -254,7 +254,7 @@ that once ticked a dead plan for thirteen hours. Escalation means changing
 
 | Blocker | Escalation ladder |
 |---|---|
-| access / credentials | `/accounts` self-heal → retry once → blocked |
+| access / credentials | substitution test (is a local conformant implementation enough? see `/iterate`) → `/accounts` self-heal → retry once → blocked |
 | dependency missing | install it → rebuild → retry once → blocked |
 | test fails on pre-existing breakage | confirm it predates the plan → skip that check, note it, continue |
 | merge conflict | rebase on the default branch → retry → blocked |
