@@ -183,7 +183,17 @@ pretend to be graceful. Report the plan left mid-flight and its branch state.
 
 ## The sweep
 
-One tick. Do these in order and stop at the first that applies.
+**Under Codex a sweep is a loop, not a tick.** Nothing will call this skill
+again, so returning after one plan is how a queue of ten gets one worked. Run
+the steps below, and when a plan reaches a terminal state, **go back to the top
+and take the next one** — keep going until the queue holds nothing actionable,
+the launch window closes, or the turn dies.
+
+`$iterate` now runs each plan to a genuine terminal state rather than pausing
+mid-run, so control comes back here at a real boundary, which is exactly where
+the next plan should start.
+
+Do these in order and stop at the first that applies.
 
 1. **Not enabled, or paused, and no `current:`** → exit silently. A no-op tick
    prints nothing.
@@ -218,7 +228,7 @@ One tick. Do these in order and stop at the first that applies.
    ending (next section), clear `current:`, continue to 5.
 
 5. **A plan is queued** → pick the next one and hand it to `$iterate <name>`.
-   Order, highest first:
+   Order, highest first (then loop back here when it finishes):
 
    1. `status: unblocked` (cyan) — someone just cleared its path; honour that
       before starting anything new.
@@ -231,7 +241,8 @@ One tick. Do these in order and stop at the first that applies.
    exit.
 
 6. **Queue empty** → run bug intake (below). If it produced a plan, take it as
-   `current:`. Otherwise log `queue empty` once and exit.
+   `current:` and loop. Otherwise log `queue empty` once and stop — that is the
+   one honest end of a sweep.
 
 ## When a plan ends
 

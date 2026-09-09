@@ -202,7 +202,7 @@ On entry, **before doing anything else**:
 3. If `running:` is a timestamp older than 90 seconds → previous run died (API error, killed session, etc.). Treat as stale; take the lock, log "resumed after stale lock from <timestamp>", continue.
 4. If `running: false` → take the lock (set timestamp), continue.
 
-On every exit path (success, giveup, normal end-of-turn): set `running: false` and write before returning control.
+On every exit path (success, giveup, blocked-on-operator, human-gate): set `running: false` and write before returning control. Under Codex those four are the only exits — there is no voluntary mid-run stop.
 
 ## Team dispatch (parallel execution on teamed plans)
 
@@ -446,10 +446,27 @@ UNACCEPTABLE stuck-report shape (this is the cowardly-stop pattern — never wri
 You can $iterate again to drive (a) the remaining chart conversions, or address (b) the pre-existing issues separately and re-invoke.
 ```
 
-**On normal end-of-turn (work not yet complete, no giveup):**
-- Set `running: false` (lock released).
-- Leave the plan file and the cron job intact. The next tick will resume from state.
-- Brief status line to the user is OK but not required.
+**There is no "normal end-of-turn" under Codex. Keep working.**
+
+<!-- codex-port: Claude Code may stop mid-run because a cron tick resumes it.
+     Codex has no such tick, so a voluntary pause here strands the plan until a
+     human retypes the command. The allowance is removed, not translated. -->
+
+Under Claude Code this skill may pause mid-run because a scheduled tick will
+wake it. **Nothing wakes it here.** A voluntary stop is therefore not a pause —
+it is the end of the run, with the plan half-done and no one coming.
+
+So: work until one of the genuine terminal states is reached — all-green
+success, 5-cycle giveup, blocked-on-operator, or human-gate. Do not stop because
+the run feels long, because a step finished cleanly, because a milestone looks
+like a good place to report, or because a summary would read well right now.
+None of those are endings; under Codex each one abandons the plan.
+
+If the turn ends anyway — context exhausted, an API error, the session killed —
+that is survivable but not automatic: `running:` goes stale, the plan file holds
+every step, decision and validation, and the next `$iterate <name>` a human
+types resumes exactly where it stopped. Nothing is lost. It simply waits for a
+person instead of a clock, which is the one real cost of having no scheduler.
 
 ## Rules (hard, non-negotiable)
 
@@ -474,7 +491,7 @@ You can $iterate again to drive (a) the remaining chart conversions, or address 
     The user invoked `$iterate` to iterate, not to be polled. Allowed reports:
     - **Success**: 3-5 line summary of what's done.
     - **Hard blocker** (only): "blocked: <specific reason — credential / external service down / 5-cycle giveup with last error>; what's needed: <specific operator action>". One reason. No menu.
-    - **End-of-turn (mid-run)**: brief status line is OPTIONAL; the cron tick resumes it. Don't write a wrap-up that reads like the run is over when it isn't.
+    - **Mid-run**: do not write a wrap-up at all. Under Codex there is no tick to resume you, so a mid-run summary is how a half-finished plan gets mistaken for a finished one. Keep working instead.
 15. **Pre-existing failures are NOT blockers — flag and continue.** If validation catches a broken pod / app / state that pre-dates this run (check pod `creationTimestamp`, last-restart age, Application `lastTransitionTime`, prior Decisions log entries), record it once in Status/Log as `pre-existing: <name> broken since <date> — not caused by this work` and TREAT THE CHECK AS GREEN for blocking purposes. Don't count it toward the 5-cycle cap. Don't stop on it. The user can address pre-existing breakage separately; THIS run keeps going.
 16. **One blocked outcome does NOT block other outcomes.** Multi-outcome plans (e.g., "do X on cluster A, then B, then C, then retire D") have independently-progressable outcomes. If outcome 1 is stuck at a hard blocker, MOVE TO outcome 2 immediately. Work outcomes in parallel where ordering allows. Only report "stuck" when EVERY outcome is independently stuck on a hard blocker. Acceptable transition: "Outcome 1: blocked on X (operator needed); proceeding to outcome 2." Then keep going.
 17. **"Straightforward more work" / "more of the same shape" is NEVER a stop reason.** If the remaining work is "6 more MRs of the same shape as the one that just succeeded," DO THOSE 6 MRS. Don't ask if the user wants you to continue. Don't summarize what's left as if presenting options. Repetitive work is exactly what `$iterate` is FOR — that's why you're called the iterator. The only acceptable stops are: full success, all-outcomes-stuck-on-hard-blocker, or 5-cycle giveup on a specific failing check.
