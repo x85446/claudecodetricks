@@ -166,9 +166,26 @@ Code's own tool description attached ("session-only by default, durable to
 wrong and it shipped: ported skills instructed Codex to call tools that do not
 exist, and Codex reported `this session doesn't expose them`.
 
-For Codex they are an **open feature request** — openai/codex issue #25466,
-implemented only on a contributor's fork, not merged. Verify before trusting any
-future claim that they landed.
+For Codex they are an **open feature request** — [openai/codex#25466][1], filed
+2026-05-31 by panbergco, still open with no maintainer response. The proposal
+describes `CronCreate`/`CronList`/`CronDelete` plus `ScheduleWakeup`, "session-only
+by default or durable to `.codex/scheduled_tasks.json`", and a `/loop` command.
+
+**That wording is where this file's error came from.** The earlier version
+transcribed the proposal as shipped capability, right down to the
+`scheduled_tasks.json` path. A proposal read as documentation is the specific
+failure mode to watch for here: check the issue state, not just the prose.
+
+A working implementation exists on the author's fork —
+`github.com/panbergco/codex/tree/feat/session-scheduling-tools`, ~12 files
+registering handlers in `ToolExecutor`/`CoreToolRuntime` — filed as an issue
+because PRs to openai/codex are collaborator-only. Running it means running an
+unofficial Codex build: rebasing against upstream forever, no support, and a
+port that silently breaks the day it diverges. Not worth it when an OS cron job
+gets the same outcome. Re-check the issue before trusting any claim that these
+landed.
+
+[1]: https://github.com/openai/codex/issues/25466
 
 **What Codex actually has:**
 
