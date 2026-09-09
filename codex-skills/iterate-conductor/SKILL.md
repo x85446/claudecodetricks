@@ -8,6 +8,13 @@ description: Works the whole plan queue unattended. When started, sweeps every u
 
 # $iterate-conductor — keep the whole queue moving
 
+**Version:** iterate family 5.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 | Skill | Role |
 |---|---|
 | `$iterate-notes` (`$in`) | **Capture** |
@@ -135,11 +142,31 @@ Mark a red plan cyan: set `status: unblocked`, append what changed to its log.
 Use when you cleared the blocker outside a triage session. `$iterate-triage`
 does this for you when it resolves one.
 
+### Degraded mode — enabled with no trigger
+
+Codex cannot schedule itself, so the conductor's normal state here is real but
+partial: `enabled: true` and it will sweep, but **only when something invokes
+it.** `start` is effectively one sweep plus an intention.
+
+Say that plainly rather than letting `enabled` imply autonomy:
+
+```
+conductor  enabled · NO TRIGGER — sweeps only when invoked
+           create one: ChatGPT → Scheduled → "$iterate-conductor" every 5m,
+           or an OS cron running `codex exec`
+```
+
+The same gap applies one level down: `$iterate` cannot arm its own resumption
+either, so a plan the conductor starts has no recovery if that turn stalls. It
+is still correct to start — the plan file loses nothing and a human can resume
+it — but **say so at dispatch**, once, rather than letting a stalled run look
+like a running one. Never claim a tick was armed when none was.
+
 ### `status`
 Read-only. Print, in this shape:
 
 ```
-conductor  enabled · sweep 14 · next tick 3m
+conductor  enabled · sweep 14 · next tick 3m   (or "NO TRIGGER" — see above)
 current    owl — step 4/6, running 22m
 queued     elk (unblocked, next), fox
 blocked    hare — needs: router creds

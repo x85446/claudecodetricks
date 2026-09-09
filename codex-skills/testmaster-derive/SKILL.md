@@ -6,6 +6,13 @@ description: TESTMASTER child (invoked via $testmaster): derives test-case specs
 
 # $testmaster-derive — turn a stated requirement into the test cases it implies
 
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Obey the shared contracts in `$testmaster`'s SKILL.md (state paths, tiers, real-world mandate) — read it if not already in context.
 
 ## Usage

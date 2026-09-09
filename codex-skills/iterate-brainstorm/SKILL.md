@@ -3,9 +3,16 @@ name: iterate-brainstorm
 description: The decide-between-options half of the iterate stack. Investigates the project, its current implementation, and its available toolsets, then presents 3 label-locked options — comparison table first, then a paragraph each (what it is, how to implement it, pros, cons) — with one marked Recommended. The user interrogates, expands, and chooses; on request the skill emits a numbered summary the user hands to $ip. Chat-only: writes no files, no notes, no plans, no branches.
 ---
 
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $ibs — Reach a decision, don't record one
+
+**Version:** iterate family 5.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 The decision skill for the iterate stack:
 

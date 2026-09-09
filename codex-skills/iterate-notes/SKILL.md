@@ -3,9 +3,16 @@ name: iterate-notes
 description: Triggers on "$iterate-notes", "take a note", "note this", "add a note". Appends the ask to the current notes file in one synthesized line and acks in one line. Also "list notes", "show notes", "new notes <topic>", and the handoff "turn these notes into a plan" (routed to $iterate-planner). This skill never brainstorms, never plans, never executes — deciding between options is $iterate-brainstorm, planning is $iterate-planner.
 ---
 
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $iterate-notes — Write it down, don't work it out
+
+**Version:** iterate family 5.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 The capture skill for the iterate stack:
 

@@ -198,6 +198,49 @@ for name in "${ALL[@]}"; do
     done
 done
 
+# --- carry the version into the body ----------------------------------------
+# Codex frontmatter allows ONLY name and description, so scaffold.sh strips
+# `version:` — and a skill that cannot read its own version stamps
+# "executor-version: unspecified" into every plan it runs. Observed live under
+# Codex. The version is not optional metadata here: it is what tells a plan
+# which era of the stack produced it.
+#
+# So it moves to the body, where Codex imposes no schema. Runs over EVERY port
+# including manual=true ones: stamping a version is mechanical, and holding it
+# back behind hand-edit protection is how the ports fell a release behind.
+for name in "${ALL[@]}"; do
+    codex_name="${name#-}"
+    out="$OUT_ROOT/$codex_name/SKILL.md"
+    [[ -f "$out" ]] || continue
+    src_v="$(sed -n 's/^version: *//p' "$SRC_ROOT/$name/SKILL.md" 2>/dev/null | head -1)"
+    [[ -n "$src_v" ]] || continue
+    fam="$(awk -F'\t' -v n="$name" '$1==n && NF>3 && $4!="-" {print $4}' "$SRC_ROOT/skillmap.tsv" 2>/dev/null)"
+    label="${fam:+$fam family }$src_v"
+    python3 - "$out" "$label" <<'PYV'
+import re, sys
+p, label = sys.argv[1], sys.argv[2]
+s = open(p).read()
+block = """**Version:** __LABEL__
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+""".replace("__LABEL__", label)
+if re.search(r"^\*\*Version:\*\* .*$", s, re.M):
+    s = re.sub(r"^\*\*Version:\*\* .*$", "**Version:** " + label, s, count=1, flags=re.M)
+else:
+    lines = s.split(chr(10))
+    h1 = next((i for i, l in enumerate(lines) if l.startswith("# ")), None)
+    if h1 is None:
+        sys.exit(0)
+    lines.insert(h1 + 1, chr(10) + block)
+    s = chr(10).join(lines)
+s = re.sub(r"<!-- version: bump on EVERY[^>]*-->",
+           "<!-- version: shared across the family; see the **Version:** line above. -->", s)
+open(p, "w").write(s)
+PYV
+done
+
 # --- fit the startup manifest ----------------------------------------------
 # Codex charges name+description of every implicitly-invocable skill against a
 # 2%-of-context / 8,000-char budget, half of Claude Code's. Descriptions written

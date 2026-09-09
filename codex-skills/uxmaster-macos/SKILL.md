@@ -6,6 +6,13 @@ description: UXMASTER child (invoked via $uxmaster): judges an interface against
 
 # $uxmaster-macos — does this feel like a Mac app
 
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Obey the shared contracts in `$uxmaster`'s SKILL.md. Findings here are `kind: platform-convention` with the HIG rule cited in `rule:`.
 
 ## Usage

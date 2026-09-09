@@ -3,9 +3,16 @@ name: iterate-planner
 description: Never executes — the user runs $iterate for that. Triggers on "$iterate-planner" or its alias "$ip", "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle". Plan management: "status" (git + plans snapshot), "publish" / "show plan" (re-render read-only), "list plans", "add to <name>", "delete <name>", "from <name> remove <x>", "close <name>" (archive unfinished, branch left unmerged), "roll <name>" (carry unfinished steps to a new plan, same branch), "turn these notes into a plan" / "notes-to-plan". Teaming: "team this", "teamify", "team up the plan", "reorganize into teams"; reverse with "flat", "flatify", "un-team", "remove teams".
 ---
 
-<!-- version: bump on EVERY behavioral change to this skill (minor for additions, major for schema/contract changes, patch for wording). This value is stamped into every plan this skill writes (planner-version:) — it's how a plan records which era of the planner built it. -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
+
+**Version:** iterate family 5.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 The planning skill for the iterate stack:
 

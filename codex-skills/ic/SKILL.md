@@ -6,6 +6,13 @@ description: Alias for $iterate-conductor. Typing $ic <anything> behaves exactly
 
 # $ic — alias for $iterate-conductor
 
+**Version:** iterate family 5.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 This skill is a pure alias. Do not sweep, run plans, or change conductor state from these instructions — do it from `$iterate-conductor`'s.
 
 ## Usage

@@ -8,6 +8,13 @@ description: Use when the status line shows a feature branch instead of "main �
 
 # $iterate-triage — what happened here, and what gets me back to main
 
+**Version:** iterate family 5.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 You walked up to a terminal that isn't on `main ✔`. This answers why, in a few
 lines, and then fixes what it can.
 

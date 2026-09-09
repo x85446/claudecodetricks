@@ -6,6 +6,13 @@ description: TESTMASTER child (invoked via $testmaster): regenerates the self-co
 
 # $testmaster-report — the HTML report card
 
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Obey the shared contracts in `$testmaster`'s SKILL.md. Reads `./.claude/testmaster/registry.json` + `history.jsonl`; writes ONLY `./.claude/testmaster/report/index.html`. Never touches tests or the registry.
 
 ## Usage

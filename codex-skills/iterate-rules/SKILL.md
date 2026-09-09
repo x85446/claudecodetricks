@@ -4,9 +4,16 @@ description: Read and write the iterate launch policy for THIS project in plain 
 ---
 
 
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema changes, patch for wording). The schema here is the contract $iterate reads; changing it means changing $iterate too. -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $iterate-rules — say when a run is allowed to start
+
+**Version:** iterate family 5.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 The front door to `./.claude/iterate/policy.md`. You describe the rule; this
 writes the schema `$iterate` actually enforces.
