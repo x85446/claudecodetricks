@@ -5,7 +5,7 @@ description: Alias for $iterate-planner. Typing $ip <anything> behaves exactly a
 
 # $ip — alias for $iterate-planner
 
-**Version:** iterate family 5.0.0
+**Version:** iterate family 5.1.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

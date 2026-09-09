@@ -8,7 +8,7 @@ description: Read and write the iterate launch policy for THIS project in plain 
 
 # $iterate-rules — say when a run is allowed to start
 
-**Version:** iterate family 5.0.0
+**Version:** iterate family 5.1.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

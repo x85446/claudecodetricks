@@ -1,6 +1,6 @@
 ---
 name: iterate-conductor
-description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via /iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. When nothing is left that a machine can advance it notifies you once and stands its own tick down instead of ticking at a wall. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
+description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via /iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
 argument-hint: start | stop | pause | resume | run | status | kill | schedule <rule>
 disable-model-invocation: true
 version: 5.1.0
@@ -18,6 +18,9 @@ version: 5.1.0
 | `/iterate-rules` | **Gate** — when a run may start |
 | `/iterate` (`/i`) | **Execute** — one plan |
 | `/iterate-conductor` | **Conduct** — every plan, unattended, until the queue is empty |
+
+When nothing is left that a machine can advance, it notifies you once and
+stands its own tick down rather than ticking at a wall (see "Wind-down").
 
 `/iterate` runs *a* plan. The conductor runs *the queue*: it picks the next
 plan, lets `/iterate` drive it, handles what comes back, and moves on — sweep
@@ -261,10 +264,33 @@ that once ticked a dead plan for thirteen hours. Escalation means changing
 | ambiguity in the plan | pick the most reasonable reading, log the decision, continue — never stop to ask |
 | needs a human decision, a secret, physical access, or an external party | **blocked immediately, no ladder** — no approach clears it |
 
-**Each plan gets a wall-clock box** (`plan-box:` in conductor.md, default 45
-minutes, counted from when the conductor handed it over). When the box expires,
-the plan is blocked as-is and the sweep moves on. One stubborn plan must not eat
-the night while five easy ones wait behind it.
+### The plan box measures stalling, not working
+
+**`plan-box:` (conductor.md, default 45 minutes) is a no-progress timer, not a
+wall-clock limit.** It starts when the conductor hands the plan over and
+**resets on every recorded advance**: a step checked off, a validation met, a
+team merged, a commit landed. A plan that is moving is never boxed, however long
+it takes — the box exists to catch a plan that is *stuck*, and a stuck plan
+stops producing log lines within minutes.
+
+Confirmed live (Codex, tiger): steps 1–6 complete, 47 tests passing, minutes
+from the finishers — and the 45-minute wall-clock box parked it anyway. The
+symmail conductor had already hit the same wall from the other side and
+hand-raised its box to 720 minutes in its own log, because a multi-hour build
+measured by wall clock is boxed for succeeding slowly. Both are the same bug:
+the box was measuring the wrong thing.
+
+**When the box does expire** — 45 minutes with nothing checked off, nothing
+merged, nothing committed — the plan is genuinely stalled. Finish nothing, ask
+nothing: treat it as a blocked ending, run `/iterate`'s landing test (green work
+merges, the unfinished part rolls to a new plan), set
+`status: blocked-on-operator: stalled — no progress for <n> minutes`, clear
+`current:`, and **take the next plan in the same sweep**. Parking a plan is not
+the end of the sweep; it is the middle of one.
+
+An optional `plan-cap:` (off by default) is the separate, generous wall-clock
+backstop for a plan that logs progress forever without converging. Set it in
+hours, not minutes, and only where that has actually happened.
 
 ### Blocked means "park it and move on"
 
@@ -433,6 +459,17 @@ When the plan queue is empty, import open issues from this repo's forge.
    human is a blocked item to move past. The single message you owe the operator
    is the one push when the whole queue has gone dry (see "Wind-down"), and it
    is a statement, not a prompt.
+
+   **A question asked in an unattended run is a hang.** Nobody is reading, so
+   the run does not pause — it *ends*, holding the lock, with the queue behind
+   it. In degraded mode (no tick, Codex) it ends permanently: nothing will
+   answer and nothing will fire again. "May I extend the limit?" is never the
+   move; extending a limit you own, logging that you did, and carrying on is.
+   Confirmed live (Codex, tiger): the run stopped 48 minutes in to ask
+   permission for its own timer, and the queue never advanced.
+
+   The same goes for every limit in this file — the box, the cycle cap, the
+   import cap. **You own them. Adjust and log, or stop and move on. Never ask.**
 4. **Never bypass either schedule, and never write `policy.md`.** Enablement
    authorizes the *expense* (standing in for the launch keyword); the schedules
    still govern *when*. `/iterate-rules` owns `policy.md` — the conductor reads

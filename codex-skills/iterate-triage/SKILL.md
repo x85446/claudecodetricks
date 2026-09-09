@@ -8,7 +8,13 @@ description: Use when the status line shows a feature branch instead of "main �
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.0.0
+**Version:** iterate family 5.1.0
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and gives a verdict plus the shortest path back to main.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -17,12 +23,6 @@ description: Use when the status line shows a feature branch instead of "main �
 
 You walked up to a terminal that isn't on `main ✔`. This answers why, in a few
 lines, and then fixes what it can.
-
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and gives a verdict plus the shortest path back to main.
 
 ## Usage
 
@@ -133,6 +133,13 @@ picks cyan plans up **before** anything never started.
 Only mark it when the blocker is actually gone — verify it, don't take "should
 be fine" for an answer. A plan wrongly marked cyan goes straight back into the
 queue to fail on the same wall.
+
+**Then check that something is still ticking.** A conductor whose whole queue
+was red stands its own cron down (`stood-down:` in `conductor.md`) — cyan is
+exactly the event it was waiting for, and it has no tick left to notice it with.
+Re-arm it with `$iterate-conductor start` and say you did. Otherwise the plan
+you just cleared sits cyan in front of a conductor that will never look again,
+which is the same stall you were called in to fix, wearing a friendlier colour.
 
 ### Unblocking while the conductor is running something else
 
