@@ -131,6 +131,8 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 8. **roll** — "roll `<name>`", "roll the uncompleted steps to a new plan", "carry the unfinished work forward", "roll it over": create a NEW plan holding only the source plan's unfinished steps, **inheriting the same feature branch**, and archive the source. Run the Roll-forward procedure (see [procedures.md](procedures.md)). Then **stop**. Same defining property as close: no merge happened, and the report says so.
 
+  **Exception — rolling after a landing.** When `/iterate` merged the source plan's green work and rolled only a parked feature forward (see its "Blocked on one feature"), the source branch is gone. The rolled plan gets a **new** branch name (`branch-created: false`, born at execution like any other), carries `status: blocked-on-operator` with the same reason, and states in its Goal what already landed. Report says `green work merged; <n> steps carried forward`, not the ⚠ not-merged line — that line would be false.
+
 8.5. **notes-to-plan** — `$1` matches "notes-to-plan `<topic>`", "turn these notes into a plan", "turn the latest notes into a plan", "plan from notes": resolve the notes file (`./.claude/iterate/notes/<topic>.md`; unnamed → the `notes/current` pointer, else the most-recently-modified `status: open` notes file — see `/iterate-notes`). This is a NEW-plan creation (proceed exactly as op 9 — name from `iterate-run name next`, feature branch, oracle merge, access preflight, auto-teamify) with the notes file as the plan source (Step 2): each `## Notes` line becomes candidate step material, each `## Decisions` line binds as a Constraint or shapes a step (decisions are settled — don't re-litigate them), `## Open questions` surface as `Inferred:` decisions the planner makes and logs (never as questions back to the user), and `## Research appendix` is mined for context, not steps. Provenance for notes-derived steps cites the source: `Notes <topic>: <the synthesized ask>`. After writing the plan, set the notes file's `status: consumed (plan: <name>)` — it stays in `notes/` as the record of where the plan came from.
 
 9. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below — this includes the now-default auto-Teamify pass unless `$1` also carries a flat trigger phrase, see Step 6 "Write the plan file", and the feature-branch creation per "One plan = one feature branch" above).
@@ -397,6 +399,7 @@ human-gate: <step N>           # only when Step 5.5 found a terminal human-decis
 - Context: <oracle architecture note if applicable>
 - Timing: <known duration for a specific operation, if the oracle has one>
 - Access: <target> — <capability needed>, verified via step <N> (one per access dependency found)
+- Depends on: <the packages, binaries, or schema this plan builds on> (from plan <name>) <!-- name what must EXIST, not "stage N merged to main": a predecessor now lands its green work even when one feature parks, so a merge-phrased gate is stricter than the real dependency and stalls the queue when it needn't -->
 
 ## Teams
 <!-- Only present when teamed: true. See "Teams" section above for schema. Omit entirely on flat plans. -->

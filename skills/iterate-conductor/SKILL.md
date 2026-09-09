@@ -268,9 +268,17 @@ the night while five easy ones wait behind it.
 
 ### Blocked means "park it and move on"
 
-**The plan stays exactly where it is.** Set `status: blocked-on-operator` (or
-`awaiting-human-gate`) in its frontmatter with a one-line reason, leave it in
-`plans/` on its own branch, clear `current:`, and go to the next plan. Nothing
+**The green work lands first, then the plan stays where it is.** `/iterate`
+runs the landing test on every blocked ending (see its "Blocked on one
+feature") — green work merges to main and only the parked feature rolls to a
+new plan. Expect that to have happened; if a blocked plan comes back with an
+unmerged branch, its log says which clause of the landing test failed. Then set
+`status: blocked-on-operator` (or `awaiting-human-gate`) with a one-line reason,
+leave the plan in `plans/`, clear `current:`, and go to the next plan.
+
+**This is what keeps a chain from stalling.** Downstream plans gated on a
+predecessor are waiting for its *code*, not its perfection — landing the green
+work releases them the moment one feature parks. Nothing
 is copied, nothing is archived, no separate blocked plan is built.
 
 Earlier this skill assembled blocked work into one shared plan and archived the
