@@ -111,7 +111,7 @@ Two rules matter when editing a ported skill:
   non-zero with the skills named, and nothing is installed. Descriptions are
   always emitted double-quoted — an unquoted `**Always invoke…` is a YAML alias,
   not text, and Codex skips the skill.
-- **Codex's manifest budget is 8,000 chars, half Claude Code's — used as-is, with no safety margin.** Codex truncates rather than warns, so the number in `sync-all.sh` is the real cap: 8,000 fits, 8,001 does not ship. Only
+- **Codex's manifest budget is 2% of the context window, or 8,000 chars when that window is unknown** — half Claude Code's 16,000 fallback. Overflow is not a warning you can ignore: descriptions are **shortened first**, and the tail is where the least-common trigger phrases live; skills are omitted entirely only under severe overcrowding, and only that case warns. 8,000 is therefore the worst-case floor, and `sync-all.sh` targets it with no safety margin — 8,000 fits, 8,001 does not ship. Only
   implicitly-invocable skills spend it, and in Codex disabling implicit
   invocation does *not* block delegation — so children of a meta are folded to
   explicit-only for free (`FOLD_CHILDREN_OF` in `sync-all.sh`).

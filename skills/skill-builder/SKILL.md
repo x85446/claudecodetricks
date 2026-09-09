@@ -61,6 +61,17 @@ is a guideline or a gate:
 | **Drops whole entries** | Skills past the budget stop being listed at all. | Hard gate for anything that must route. |
 | **Degrades gracefully / no cap** | Over-length costs context, not correctness. | Going over is a judgment call, not a defect. |
 
+**Both of these runtimes shorten before they drop.** Claude Code truncates a
+description past 1,536 mid-sentence; Codex shortens descriptions first when the
+manifest overflows and omits whole skills only under severe overcrowding — the
+one case that warns. Either way the tail goes, and the tail is where the
+least-common trigger phrases live, so the loss is silent in the way that matters:
+routing quietly gets worse and nothing says so.
+
+**Both budgets are 2% of the context window**, with a fixed fallback when that
+window is unknown — 16,000 for Claude Code, 8,000 for Codex. The fallback is the
+worst case, so build against it.
+
 **No safety margins.** A margin is unused capacity that hides the real rule: if
 the limit is 8,000 then 8,000 is fine and 8,001 is not, and a build that holds
 back to 7,600 is just failing 400 chars early while still not enforcing
