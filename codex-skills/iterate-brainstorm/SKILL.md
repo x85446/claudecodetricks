@@ -1,6 +1,6 @@
 ---
-name: iterate-brainstorm
-description: The decide-between-options half of the iterate stack. Investigates the project, its current implementation, and its available toolsets, then presents 3 label-locked options — comparison table first, then a paragraph each (what it is, how to implement it, pros, cons) — with one marked Recommended. The user interrogates, expands, and chooses; on request the skill emits a numbered summary the user hands to $ip. Chat-only: writes no files, no notes, no plans, no branches.
+name: "iterate-brainstorm"
+description: "The decide-between-options half of the iterate stack. Investigates the project, its current implementation, and its available toolsets, then presents 3 label-locked options — comparison table first, then a paragraph each (what it is, how to implement it, pros, cons) — with one marked Recommended. The user interrogates, expands, and chooses; on request the skill emits a numbered summary the user hands to $ip. Chat-only: writes no files, no notes, no plans, no branches."
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->

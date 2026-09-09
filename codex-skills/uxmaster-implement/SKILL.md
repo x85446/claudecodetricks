@@ -1,6 +1,6 @@
 ---
-name: uxmaster-implement
-description: UXMASTER child (invoked via $uxmaster): writes the actual UI code for an approved design in the project's real framework. The only UXMASTER child that edits code.
+name: "uxmaster-implement"
+description: "UXMASTER child (invoked via $uxmaster): writes the actual UI code for an approved design in the project's real framework. The only UXMASTER child that edits code."
 ---
 
 

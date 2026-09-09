@@ -1,6 +1,6 @@
 ---
-name: filemaster
-description: >-
+name: "filemaster"
+description: "Use when someone asks to process an intake folder, identify/rename/route a scanned document, invoice or statement, stand up a new intake with init, or resolve a file filemaster escalated to review."
 ---
 
 
@@ -9,6 +9,12 @@ description: >-
 You are the judgment layer for a filemaster intake. The `filemaster` CLI does the
 deterministic work; you decide only what it can't. Architecture reference:
 `docs/master.md` in the filemaster repo.
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+The judgment layer for the filemaster CLI: recognize the document, then route up / route down / act.
 
 ## Usage
 

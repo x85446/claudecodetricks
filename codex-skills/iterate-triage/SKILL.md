@@ -1,6 +1,6 @@
 ---
-name: iterate-triage
-description: Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
+name: "iterate-triage"
+description: "Walk up to a stale terminal and find out what's going on in one short answer. Use when the status line shows a feature branch instead of \"main ✔\", when a plan looks stuck, or when you've been away and don't remember where you left off."
 ---
 
 
@@ -14,7 +14,7 @@ description: Use when the status line shows a feature branch instead of "main �
 
 <!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
-Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and gives a verdict plus the shortest path back to main.
+Reads the real state — plans, branch, uncommitted work, blockers — and gives a verdict plus the shortest path back to main.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

@@ -49,6 +49,32 @@ Descriptions are the only part of a skill loaded at startup, so they are a share
 | **Per skill** | 1,536 chars for `description` + `when_to_use` **combined** | Truncated mid-sentence in the skill listing. Trigger phrases past the cut are invisible to routing. |
 | **All skills** | 2% of the context window (fallback 16,000 chars) | Skills beyond the budget stop being listed at all — they can't auto-fire. |
 
+### Know the target's failure mode before you ship
+
+A budget is not advice. Before shipping a skill to any runtime, know what that
+runtime does when you exceed its cap, because the answer decides whether the cap
+is a guideline or a gate:
+
+| Failure mode | What it means | How to treat the cap |
+|---|---|---|
+| **Truncates** | The tail is silently cut. Trigger phrases past the cut stop existing, and nothing says so. | **Hard gate.** Verify with real numbers and refuse to ship over. |
+| **Drops whole entries** | Skills past the budget stop being listed at all. | Hard gate for anything that must route. |
+| **Degrades gracefully / no cap** | Over-length costs context, not correctness. | Going over is a judgment call, not a defect. |
+
+**No safety margins.** A margin is unused capacity that hides the real rule: if
+the limit is 8,000 then 8,000 is fine and 8,001 is not, and a build that holds
+back to 7,600 is just failing 400 chars early while still not enforcing
+anything. Set the number to the actual limit and **enforce it in the tool** —
+Codex's porter (`skills/skill-2-codex/scripts/`) validates every generated port
+and exits non-zero rather than installing one that is broken or over cap.
+
+**Frontmatter must be valid YAML, not merely parseable by today's parser.** A
+description opening with a YAML indicator (`*`, `&`, `>`, `|`, `!`, `%`, `` ` ``)
+is a different node type, not text — `description: **Always invoke...` reads as
+an alias and fails to load. Claude Code tolerates it; Codex does not. Quote the
+value. Confirmed live: two skills failed to load in Codex and nineteen more were
+one strict parser away from the same fate.
+
 Four facts that change how you write frontmatter:
 
 1. **Omitting `description` does not save budget.** If absent, the listing falls back to the *first paragraph of the markdown body* — usually longer and not routing-optimized. To spend less, write a *shorter* description, never no description.

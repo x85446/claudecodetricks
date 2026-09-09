@@ -1,6 +1,6 @@
 ---
-name: testmaster-prune
-description: TESTMASTER child (invoked via $testmaster): deletes dead tests, consolidates duplicates, and conforms headers to the registry.
+name: "testmaster-prune"
+description: "TESTMASTER child (invoked via $testmaster): deletes dead tests, consolidates duplicates, and conforms headers to the registry."
 ---
 
 

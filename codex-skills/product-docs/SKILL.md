@@ -1,6 +1,6 @@
 ---
-name: product-docs
-description: Invoked as iterate plans' standing final task, or directly ("update the product docs", "sync the user docs", "document the new features"). Developer/internal docs are out of scope.
+name: "product-docs"
+description: "Invoked as iterate plans' standing final task, or directly (\"update the product docs\", \"sync the user docs\", \"document the new features\"). Developer/internal docs are out of scope."
 ---
 
 
@@ -8,18 +8,18 @@ description: Invoked as iterate plans' standing final task, or directly ("update
 
 **Version:** 1.0.0
 
+## What this skill does
+
+Maintains the END-USER product documentation of the current project — each invocation brings the docs to match the product as it is right now: documents new features and how to operate them, updates changed behavior, and DELETES documentation for removed features.
+
+Maintains the END-USER product documentation of the current project — each invocation brings the docs to match the product as it is right now: documents new features and how to operate them, updates changed behavior, and DELETES documentation for removed features.
+
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
      plan's planner-version / executor-version. -->
 
 
 End-user documentation only: what the product does and how to operate it, written for someone who uses it and has never seen the code. Internal/dev docs (architecture, build, contributing) are out of scope.
-
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-Maintains the END-USER product documentation of the current project — each invocation brings the docs to match the product as it is right now: documents new features and how to operate them, updates changed behavior, and DELETES documentation for removed features.
 
 ## Usage
 

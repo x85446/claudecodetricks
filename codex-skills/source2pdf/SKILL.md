@@ -1,6 +1,6 @@
 ---
-name: source2pdf
-description: Use when someone asks to build a master/super PDF from a _sources folder, consolidate or merge source PDFs into one file in order, assemble monthly statements/bills into a single mortgage.pdf or water.pdf, or run source2pdf. Concatenates every PDF in a _sources/ folder chronologically into one master PDF.
+name: "source2pdf"
+description: "Use when someone asks to build a master/super PDF from a _sources folder, consolidate or merge source PDFs into one file in order, assemble monthly statements/bills into a single mortgage.pdf or water.pdf, or run source2pdf. Concatenates every PDF in a _sources/ folder chronologically into one master PDF."
 ---
 
 

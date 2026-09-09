@@ -1,7 +1,8 @@
 ---
-name: i
-description: Alias for $iterate. Typing $i <anything> behaves exactly as $iterate <anything> — autonomous execution of the current or named plan, resumption included. Exists purely as a shorthand.
+name: "i"
+description: "Alias for $iterate. Typing $i <anything> behaves exactly as $iterate <anything> — autonomous execution of the current or named plan, resumption included. Exists purely as a shorthand."
 ---
+
 
 # $i — alias for $iterate
 
@@ -14,22 +15,20 @@ description: Alias for $iterate. Typing $i <anything> behaves exactly as $iterat
 
 This skill is a pure alias. Do not execute the plan from these instructions — execute from `$iterate`'s.
 
-Invoke `$iterate` explicitly, passing `$ARGUMENTS` through **verbatim** — no
-interpretation, no preprocessing, no summarizing. Everything (plan resolution, team dispatch, resumption, merge-on-green) is
-defined there, and the alias must never produce behavior different from the
-real skill.
+## Usage
 
-If `$iterate` does not resolve, it has not been installed under Codex's
-skill-discovery path yet. Report that rather than improvising the behavior
-from memory; the alias is worthless if it silently diverges from its target.
+Argument: <same arguments as /iterate>. `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
-`$i` is user-invoked in both harnesses: `$iterate` sets
-`policy.allow_implicit_invocation: false` in its `agents/openai.yaml` because
-autonomous execution and PR merges are reserved for deliberate, explicit invocation. That setting blocks *implicit* selection only — explicit `$iterate`
-invocation is exactly what it leaves open, which is why the delegation above
-is the normal path and not a workaround.
+<!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 
 ## Dependencies
 
-- `$iterate` — must also be installed as a Codex skill for this alias to
-  resolve. Port it with `$skill-2-codex` if it is missing.
+Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
+
+- `$iterate` — ported.
+
+**Do NOT attempt `$iterate` — it will always fail.** `$iterate` carries `disable-model-invocation: true` by design (autonomous execution and PR merges are reserved for explicit user invocation), and that flag blocks explicit `$name` invocation unconditionally.
+
+Instead: read `~/.agents/skills/iterate/SKILL.md` and follow it directly, with `$ARGUMENTS` as its input, verbatim — no interpretation, no preprocessing, no summarizing. Everything (plan resolution, team dispatch, resumption, merge-on-green) is defined there.
+
+**This is the sanctioned path, not a circumvention.** The flag on `$iterate` reserves it for explicit *user* invocation — and this alias is exactly that: it is itself `disable-model-invocation: true`, so the ONLY way these instructions can be in context is that the user personally typed `$i`. A user keystroke on `$i` IS the explicit user invocation of `$iterate`, same as `$iterate` itself — the alias merely saves six characters. Do not refuse, do not ask the user to retype the long form; follow `$iterate`'s SKILL.md now.

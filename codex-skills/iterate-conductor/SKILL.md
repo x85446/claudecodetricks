@@ -1,6 +1,6 @@
 ---
-name: iterate-conductor
-description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via $iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
+name: "iterate-conductor"
+description: "Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via $iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled."
 ---
 
 

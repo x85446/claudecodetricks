@@ -1,6 +1,6 @@
 ---
-name: uxmaster-macos
-description: UXMASTER child (invoked via $uxmaster): judges an interface against the Apple Human Interface Guidelines for macOS.
+name: "uxmaster-macos"
+description: "UXMASTER child (invoked via $uxmaster): judges an interface against the Apple Human Interface Guidelines for macOS."
 ---
 
 

@@ -1,6 +1,6 @@
 ---
-name: docs-organizer
-description: Use when someone asks to organize docs, clean up the docs folder, consolidate documentation, restructure project documentation, or invokes $docs-organizer.
+name: "docs-organizer"
+description: "Use when someone asks to organize docs, clean up the docs folder, consolidate documentation, restructure project documentation, or invokes $docs-organizer."
 ---
 
 

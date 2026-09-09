@@ -1,6 +1,6 @@
 ---
-name: ic
-description: Alias for $iterate-conductor. Typing $ic <anything> behaves exactly as $iterate-conductor <anything> — start/stop/pause/resume/run/status/kill of the unattended queue sweep. Exists purely as a shorthand.
+name: "ic"
+description: "Alias for $iterate-conductor. Typing $ic <anything> behaves exactly as $iterate-conductor <anything> — start/stop/pause/resume/run/status/kill of the unattended queue sweep. Exists purely as a shorthand."
 ---
 
 

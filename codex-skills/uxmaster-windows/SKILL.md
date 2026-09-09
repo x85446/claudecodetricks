@@ -1,6 +1,6 @@
 ---
-name: uxmaster-windows
-description: UXMASTER child (invoked via $uxmaster): judges an interface against Windows 11 Fluent design and WinUI 3 conventions.
+name: "uxmaster-windows"
+description: "UXMASTER child (invoked via $uxmaster): judges an interface against Windows 11 Fluent design and WinUI 3 conventions."
 ---
 
 

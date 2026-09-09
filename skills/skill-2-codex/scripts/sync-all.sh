@@ -35,7 +35,8 @@ INSTALL_ROOT="$HOME/.agents/skills"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DO_INSTALL=false; FORCE=""; ONLY=""; QUIET=false; PORT_ALL=false; PRUNE=false
-MANIFEST_BUDGET=7600   # Codex's real cap is 8000; hold slack so adding a skill does not immediately overflow
+MANIFEST_BUDGET=8000   # Codex's cap, used as-is. A margin is unused capacity
+                       # that hides the real rule: 8000 is fine, 8001 is not.
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --install) DO_INSTALL=true; shift ;;
@@ -270,6 +271,21 @@ for codex_name in "${!STAMP_SRC[@]}"; do
       echo "out=$(sha_of "$out")"
       echo "manual=false"; } > "$out/.portstamp"
 done
+
+# --- gate: nothing ships broken or over the cap -----------------------------
+# Both failure modes are silent on the far side — a port whose YAML does not
+# parse is skipped at load, and a manifest past the cap loses content without
+# naming what. So they fail HERE, loudly, before install.
+VALIDATE_OUT=""; VALIDATE_RC=0
+if [[ -d "$OUT_ROOT" ]]; then
+    VALIDATE_OUT="$(python3 "$HERE/validate.py" "$OUT_ROOT" --budget "$MANIFEST_BUDGET" 2>&1)" || VALIDATE_RC=$?
+fi
+if [[ $VALIDATE_RC -ne 0 ]]; then
+    printf '%s\n' "$VALIDATE_OUT" >&2
+    echo "REFUSING TO INSTALL — generated ports are broken or over the ${MANIFEST_BUDGET}-char cap." >&2
+    echo "The ports in $OUT_ROOT are left as generated so the diff is inspectable." >&2
+    exit 1
+fi
 
 if $DO_INSTALL; then
     mkdir -p "$INSTALL_ROOT"

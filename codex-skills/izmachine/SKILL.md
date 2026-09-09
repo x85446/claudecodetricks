@@ -1,6 +1,6 @@
 ---
-name: izmachine
-description: Use when you need a local virtual machine or container on this Mac — create, inspect, run a command inside, snapshot, clone, lock or destroy one, or bring machines up from a machine.iz definition file — through the `izmachine` binary. Triggers on "spin up a linux box", "give me a throwaway VM", "run this in a container", "what guests are on this host", "make a macOS VM", "snapshot that guest", "destroy the test box", "is the provider ready", "machine.iz", ".iz file", "izmachine".
+name: "izmachine"
+description: "Use when you need a local virtual machine or container on this Mac — create, inspect, run a command inside, snapshot, clone, lock or destroy one, or bring machines up from a machine.iz definition file — through the `izmachine` binary. Triggers on \"spin up a linux box\", \"give me a throwaway VM\", \"run this in a container\", \"what guests are on this host\", \"make a macOS VM\", \"snapshot that guest\", \"destroy the test box\", \"is the provider ready\", \"machine.iz\", \".iz file\", \"izmachine\"."
 ---
 
 

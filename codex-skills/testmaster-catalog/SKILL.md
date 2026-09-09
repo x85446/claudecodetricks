@@ -1,6 +1,6 @@
 ---
-name: testmaster-catalog
-description: TESTMASTER child (invoked via $testmaster): the organizing index — requirement to cases to covered code — recomputing validity (valid/drifted/orphaned/unverified) as the code changes.
+name: "testmaster-catalog"
+description: "TESTMASTER child (invoked via $testmaster): the organizing index — requirement to cases to covered code — recomputing validity (valid/drifted/orphaned/unverified) as the code changes."
 ---
 
 

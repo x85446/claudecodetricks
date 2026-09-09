@@ -1,6 +1,6 @@
 ---
-name: testmaster-run
-description: TESTMASTER child (invoked via $testmaster): executes a tier or named tests, measures real wall-clock durations, and updates the timing registry.
+name: "testmaster-run"
+description: "TESTMASTER child (invoked via $testmaster): executes a tier or named tests, measures real wall-clock durations, and updates the timing registry."
 ---
 
 

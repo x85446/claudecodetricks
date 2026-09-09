@@ -1,14 +1,20 @@
 ---
-name: iterate-rules
-description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which $iterate enforces at launch.
+name: "iterate-rules"
+description: "Read and write the iterate launch policy for THIS project in plain language — \"don't run iterate before 10pm\", \"require a keyword to launch\", \"weeknights only\", \"no runs over the holidays\", \"show the rules\", \"would a run start right now\". Writes ./.claude/iterate/policy.md, which $iterate enforces at launch."
 ---
 
 
-<!-- version: shared across the family; see the **Version:** line above. -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # $iterate-rules — say when a run is allowed to start
 
 **Version:** iterate family 5.1.0
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -17,12 +23,6 @@ description: Read and write the iterate launch policy for THIS project in plain 
 
 The front door to `./.claude/iterate/policy.md`. You describe the rule; this
 writes the schema `$iterate` actually enforces.
-
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 
 ## Usage
 
@@ -230,3 +230,18 @@ file and its reason text, so the intent survives a temporary lift. Deleting
 6. **Don't argue with the rule.** If they want runs only between 03:00 and
    03:05, write it. Warn once if a rule can never match (`allow mon 22:00-22:00`
    is an empty window), then do as asked.
+
+## `version`
+
+`version` (or "what version") on **any** iterate skill reports the same thing —
+the family version, because the stack is versioned as one unit:
+
+```
+iterate family 5.0.0
+iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
+```
+
+Run `iterate-run version` for the second line — a real installed binary, never a
+recalled string. If members disagree, say so and name them: drift inside the
+family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
+only correct way to bump.

@@ -1,6 +1,6 @@
 ---
-name: vm
-description: Use when someone asks to run, build, test or debug something on a local macOS, Linux or Windows guest on this Mac, or to create, start, stop, ssh into, snapshot, restore, clone, tag or destroy one. Triggers on "run this on a linux box", "test it on windows", "check that on a mac VM", "spin up a VM", "make me a linux box", "I need a windows machine", "fresh mac VM", "give me a throwaway box to test on", "ssh into the VM", "snapshot this VM", "roll it back", "clone that VM", "destroy the test VM", "what VMs do I have".
+name: "vm"
+description: "Use when someone asks to run, build, test or debug something on a local macOS, Linux or Windows guest on this Mac, or to create, start, stop, ssh into, snapshot, restore, clone, tag or destroy one. Triggers on \"run this on a linux box\", \"test it on windows\", \"check that on a mac VM\", \"spin up a VM\", \"make me a linux box\", \"I need a windows machine\", \"fresh mac VM\", \"give me a throwaway box to test on\", \"ssh into the VM\", \"snapshot this VM\", \"roll it back\", \"clone that VM\", \"destroy the test VM\", \"what VMs do I have\"."
 ---
 
 

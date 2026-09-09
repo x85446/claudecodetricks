@@ -1,6 +1,6 @@
 ---
-name: ssh-config
-description: Use when someone asks to update/edit/add/delete/move an SSH host or site, wire up an SSH key (identityfile) for a host, modify ~/.ssh/config or ~/.ssh/config.d, manage SSH sites (cypress, df-austin, ed-house, brian), sort SSH config files, set up SSH access to a new machine, **speed up SSH connections** (ControlMaster / multiplexing / "make ssh faster" / "keep connection alive" / "reuse the connection"), or invokes $ssh-config.
+name: "ssh-config"
+description: "Use when someone asks to update/edit/add/delete/move an SSH host or site, wire up an SSH key (identityfile) for a host, modify ~/.ssh/config or ~/.ssh/config.d, manage SSH sites (cypress, df-austin, ed-house, brian), sort SSH config files, set up SSH access to a new machine, **speed up SSH connections** (ControlMaster / multiplexing / \"make ssh faster\" / \"keep connection alive\" / \"reuse the connection\"), or invokes $ssh-config."
 ---
 
 

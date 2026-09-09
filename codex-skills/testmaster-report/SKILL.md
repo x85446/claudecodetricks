@@ -1,6 +1,6 @@
 ---
-name: testmaster-report
-description: TESTMASTER child (invoked via $testmaster): regenerates the self-contained HTML report card from the registry and run history.
+name: "testmaster-report"
+description: "TESTMASTER child (invoked via $testmaster): regenerates the self-contained HTML report card from the registry and run history."
 ---
 
 
