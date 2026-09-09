@@ -116,7 +116,7 @@ Rules:
 
 ## Auto-resume via `/loop`
 
-API errors, transient stalls, or hitting context limits will silently end a turn. The skill survives this by piggybacking on `/loop`, which fires `/iterate` on a fixed cadence.
+API errors, transient stalls, or a killed session will silently end a turn. (A context *compaction* is different — the turn continues; see "Surviving an auto-compact" below.) The skill survives this by piggybacking on `/loop`, which fires `/iterate` on a fixed cadence.
 
 - **On a fresh task or first execution of a `phase: planned` plan — flat or teamed** (you just wrote/transitioned the state file): invoke `/loop 1m /iterate` as your *first* action (or an equivalent cron/scheduled trigger firing at most every 1 minute, if that's what the harness offers instead of `/loop`). **1 minute is the maximum interval, for flat plans and teamed plans alike — never stretch it wider.** The subsequent firings have no `$1`, so they read the state file and continue. **Record exactly what you armed in the plan frontmatter**: `loop-mechanism: /loop` or `loop-mechanism: cron <job-id>` (e.g. `cron f560eb36`) — cancellation later must target this exact mechanism, and "whatever I armed" must be readable from the file, not remembered.
 - **On a teamed plan, treat the automatic background-completion notification as a bonus, not a replacement for tight polling.** In principle a dispatched team notifies you the moment it finishes, but that path can have its own latency or go missing depending on what's actually running the loop (a scheduled/cron trigger isn't always able to react to a notification the instant it arrives the way an interactive session can) — a 1-minute poll is what actually guarantees no long idle gap regardless of whether the notification landed cleanly. A heartbeat tick that finds nothing new costs nothing; a missed notification with a wide poll interval costs real wall-clock time doing nothing. When in doubt, poll tighter, not looser.
@@ -432,6 +432,44 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 - Set `running: false` (lock released).
 - Leave the plan file and the `/loop` schedule intact. The next loop tick will resume from state.
 - Brief status line to the user is OK but not required.
+
+## Surviving an auto-compact (this happens on essentially every plan)
+
+Long runs fill the context window and the harness compacts: the conversation is
+replaced by a summary and **the turn continues**. This is not an interruption to
+recover from — it is the normal middle of a long plan, and it happens on
+essentially every real run. Treat it as routine.
+
+What compaction costs you is **memory, not state**. The plan file is untouched:
+phase, the Steps checklist with its checkmarks, Validations, Constraints,
+Decisions log, Status/Log and the `running:` heartbeat all survive on disk
+exactly as they were. Your recollection of them does not.
+
+So, the moment you notice the context was compacted — a summary in place of the
+history, or simply that you cannot recall the last few steps in detail:
+
+1. **Re-read the plan file before doing anything else.** Not to "check", but
+   because it is now your only accurate account of where the run is. Never
+   reconstruct progress from the summary; a summary is lossy exactly where step
+   numbers and validation outcomes live.
+2. **Re-read this skill if the rules are no longer in context.** A compacted run
+   that has forgotten its own contract is how a plan gets a cheerful wrap-up at
+   step 7 of 22.
+3. **Resume, do not restart.** A checked-off step is done — do not redo it,
+   re-verify it, or "confirm" it. Side-effecting work redone after a compact is
+   the expensive failure here: a second deploy, a duplicate migration, a
+   re-deleted resource.
+4. **Keep going.** Compaction is not a terminal state. It is not a milestone, a
+   natural pause, or a good moment to report. Pick up at the first unchecked
+   step and continue to a real ending.
+5. **Do not write a summary of what you have done so far.** The instinct after
+   a compact is to re-establish context out loud for the user. Resist it — the
+   plan file already holds that record, and a mid-run wrap-up is how a
+   half-finished plan gets mistaken for a finished one.
+
+**If the plan file and your memory disagree, the file wins, always.** It is
+written at every step boundary and every validation; your post-compact
+recollection is a summary of a summary.
 
 ## Rules (hard, non-negotiable)
 

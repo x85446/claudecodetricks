@@ -137,7 +137,7 @@ Rules:
      earlier port instructed Codex to call CronCreate and it answered "this
      session doesn't expose them". Rewritten to ask the user instead. -->
 
-API errors, transient stalls, or hitting context limits will silently end a turn. Under Claude Code the skill survives this by arming its own recurring trigger. **Codex has no in-session equivalent** — there is no tool this skill can call to schedule its own re-firing. Do not attempt `CronCreate`, `CronList`, `CronDelete` or `ScheduleWakeup`; they are not available and inventing a call wastes a turn and misleads the user.
+API errors, transient stalls, or a killed session will silently end a turn. (A context *compaction* is different — the turn continues; see "Surviving an auto-compact" below.) Under Claude Code the skill survives this by arming its own recurring trigger. **Codex has no in-session equivalent** — there is no tool this skill can call to schedule its own re-firing. Do not attempt `CronCreate`, `CronList`, `CronDelete` or `ScheduleWakeup`; they are not available and inventing a call wastes a turn and misleads the user.
 
 So the resumption trigger is **the user's to create, once, outside the session**, and this skill's job is to say so clearly:
 
@@ -467,6 +467,44 @@ that is survivable but not automatic: `running:` goes stale, the plan file holds
 every step, decision and validation, and the next `$iterate <name>` a human
 types resumes exactly where it stopped. Nothing is lost. It simply waits for a
 person instead of a clock, which is the one real cost of having no scheduler.
+
+## Surviving an auto-compact (this happens on essentially every plan)
+
+Long runs fill the context window and the harness compacts: the conversation is
+replaced by a summary and **the turn continues**. This is not an interruption to
+recover from — it is the normal middle of a long plan, and it happens on
+essentially every real run. Treat it as routine.
+
+What compaction costs you is **memory, not state**. The plan file is untouched:
+phase, the Steps checklist with its checkmarks, Validations, Constraints,
+Decisions log, Status/Log and the `running:` heartbeat all survive on disk
+exactly as they were. Your recollection of them does not.
+
+So, the moment you notice the context was compacted — a summary in place of the
+history, or simply that you cannot recall the last few steps in detail:
+
+1. **Re-read the plan file before doing anything else.** Not to "check", but
+   because it is now your only accurate account of where the run is. Never
+   reconstruct progress from the summary; a summary is lossy exactly where step
+   numbers and validation outcomes live.
+2. **Re-read this skill if the rules are no longer in context.** A compacted run
+   that has forgotten its own contract is how a plan gets a cheerful wrap-up at
+   step 7 of 22.
+3. **Resume, do not restart.** A checked-off step is done — do not redo it,
+   re-verify it, or "confirm" it. Side-effecting work redone after a compact is
+   the expensive failure here: a second deploy, a duplicate migration, a
+   re-deleted resource.
+4. **Keep going.** Compaction is not a terminal state. It is not a milestone, a
+   natural pause, or a good moment to report. Pick up at the first unchecked
+   step and continue to a real ending.
+5. **Do not write a summary of what you have done so far.** The instinct after
+   a compact is to re-establish context out loud for the user. Resist it — the
+   plan file already holds that record, and a mid-run wrap-up is how a
+   half-finished plan gets mistaken for a finished one.
+
+**If the plan file and your memory disagree, the file wins, always.** It is
+written at every step boundary and every validation; your post-compact
+recollection is a summary of a summary.
 
 ## Rules (hard, non-negotiable)
 

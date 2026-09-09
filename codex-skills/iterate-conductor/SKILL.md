@@ -244,6 +244,17 @@ Do these in order and stop at the first that applies.
    `current:` and loop. Otherwise log `queue empty` once and stop — that is the
    one honest end of a sweep.
 
+## A compaction is not a plan ending
+
+Long sweeps compact. When the context is summarized mid-sweep, re-read
+`conductor.md` and the current plan file before deciding anything — the sweep
+log records which plans are done and which is in flight, and that record is
+accurate where your post-compact recollection is not.
+
+**Never treat a compaction as a plan reaching a terminal state.** A plan is done
+when its file says so, never because control came back to you looking like a
+boundary. Mistaking one for the other archives unfinished work and moves on.
+
 ## When a plan ends
 
 **Complete** — `$iterate` has already merged and archived it. Log one line.
