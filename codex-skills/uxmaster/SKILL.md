@@ -1,22 +1,29 @@
 ---
-name: uxmaster
-description: Route ALL interface work here; the meta picks the child. Use for any UX/UI work: "uxmaster", "review the UX", "audit the UI", "what's wrong with this interface", "design this screen", "design the settings", "make the interface better", "is this right for macOS/Windows/GNOME/Linux", "does this feel native", "check accessibility", "WCAG audit", "review the CLI's UX", "review the web UI", "implement this design", "build the design", "implement F3".
+name: "uxmaster"
+description: "UXMASTER — the UX/UI design meta. Route ALL interface work here; the meta picks the child. Use for any UX/UI work: \"uxmaster\", \"review the UX\", \"audit the UI\", \"what's wrong with this interface\", \"design this screen\", \"design the settings\", \"make the interface better\", \"is this right for macOS/Windows/GNOME/Linux\", \"does this feel native\", \"check accessibility\", \"WCAG audit\", \"review the CLI's UX\", \"review the web UI\", \"implement this design\", \"build the design\", \"implement F3\"."
 ---
 
-<!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 
 <!-- codex-port: no confirmed structured-picker equivalent in Codex; every structured picker in this file became an ordinary numbered-list question -- verify the wording reads naturally where it mattered. -->
 
 # $uxmaster — UX/UI design orchestrator (UXMASTER)
 
-Meta skill. Routes to one child per concern and owns the shared contracts below. Do the routed work via explicit `$name` invocation — never inline a child's job here.
+**Version:** 1.2.0
 
 ## What this skill does
 
 <!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
 UXMASTER — the UX/UI design meta. Detects the project's platform and routes to its children: analysis (platform-agnostic audit), the platform experts (macOS, Linux, Windows, web, command-line), and implement (writes the real framework code). Findings land in ./.claude/uxmaster/findings.md. Pairs with the FFIV macro's UX/UI enhancement sweep.
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
+Meta skill. Routes to one child per concern and owns the shared contracts below. Do the routed work via explicit `$name` invocation — never inline a child's job here.
 
 ## Usage
 

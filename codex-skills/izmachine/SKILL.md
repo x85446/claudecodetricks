@@ -1,12 +1,18 @@
 ---
-name: izmachine
-description: Use when you need a local virtual machine or container on this Mac — create, inspect, run a command inside, snapshot, clone, lock or destroy one, or bring machines up from a machine.iz definition file — through the `izmachine` binary. Covers all six providers (lume, lima, utm, container, docker, incus) behind one grammar. Triggers on "spin up a linux box", "give me a throwaway VM", "run this in a container", "what guests are on this host", "make a macOS VM", "snapshot that guest", "destroy the test box", "is the provider ready", "machine.iz", ".iz file", "izmachine".
+name: "izmachine"
+description: "Use when you need a local virtual machine or container on this Mac — create, inspect, run a command inside, snapshot, clone, lock or destroy one, or bring machines up from a machine.iz definition file — through the `izmachine` binary. Triggers on \"spin up a linux box\", \"give me a throwaway VM\", \"run this in a container\", \"what guests are on this host\", \"make a macOS VM\", \"snapshot that guest\", \"destroy the test box\", \"is the provider ready\", \"machine.iz\", \".iz file\", \"izmachine\"."
 ---
 
 
 # `izmachine` — local VMs and containers
 
 The request: $ARGUMENTS
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+Covers all six providers (lume, lima, utm, container, docker, incus) behind one grammar.
 
 ## Usage
 

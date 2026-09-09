@@ -1,6 +1,6 @@
 ---
-name: monitor
-description: Use when someone asks to monitor a fix, watch a deployment, check on something every few minutes, keep an eye on CI, or invokes $monitor.
+name: "monitor"
+description: "Use when someone asks to monitor a fix, watch a deployment, check on something every few minutes, keep an eye on CI, or invokes $monitor."
 ---
 
 

@@ -24,8 +24,9 @@ import argparse, json, os, re, sys, glob
 
 # Constructs with no single correct port. Reported, never auto-rewritten.
 FLAGS = {
-    "loop":       (r'(?<![\w./-])/loop\b',
-                   "Claude Code /loop auto-resume -> CronCreate/CronDelete (note the 7-day recurring expiry)"),
+    "loop":       (r'(?<![\w./-])/loop\b|\bCronCreate\b|\bCronList\b|\bCronDelete\b|\bScheduleWakeup\b',
+                   "self-scheduling has NO Codex equivalent -- Cron*/ScheduleWakeup are Claude Code tools; "
+                   "rewrite to ask the user for a Codex Automation or an OS cron running `codex exec`"),
     "askuser":    (r'\bAskUserQuestion\b',
                    "structured picker -> plain numbered prose list; no confirmed Codex equivalent"),
     "agenttool":  (r'\bAgent tool\b|\bsubagent_type\b|\brun_in_background\b',

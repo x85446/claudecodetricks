@@ -1,6 +1,6 @@
 ---
-name: safedelete
-description: Use when someone wants to safely delete redundant source PDFs, verify that a merged/consolidated PDF fully contains its originals before deleting, confirm _original-bundles or _sources are represented page-for-page, or run safedelete. Proves every original page's content exists in the kept files (rendered-image md5, not eyeballing), then Trashes the originals only if SAFE.
+name: "safedelete"
+description: "Use when someone wants to safely delete redundant source PDFs, verify that a merged/consolidated PDF fully contains its originals before deleting, confirm _original-bundles or _sources are represented page-for-page, or run safedelete. Proves every original page's content exists in the kept files (rendered-image md5, not eyeballing), then Trashes the originals only if SAFE."
 ---
 
 

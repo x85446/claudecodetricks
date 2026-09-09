@@ -3,9 +3,9 @@ name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: <paragraph describing the work to do AND how to validate success>
 disable-model-invocation: true
-version: 3.7.0
+version: 5.1.0
 ---
-<!-- version: bump on EVERY behavioral change to this skill (minor for additions, major for schema/contract changes, patch for wording). Stamped into every plan this skill executes (executor-version:) at the moment phase flips to executing. -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # /iterate — Run a task to completion without interrupting the user
 
@@ -32,7 +32,14 @@ Two separate timestamps, don't conflate them: `Started:` is when the plan was **
 
 Resolve in this order:
 
-0. **`$1` is exactly "version"** (or "what version", "iterate version"): run `iterate-run version` and print its output verbatim — real installed binary, not a memory recall, works from any directory. If not found, report "iterate-run isn't installed — run `make install` in claudecodetricks." Then **stop**, no plan involved.
+0. **`$1` is exactly "version"** (or "what version", "iterate version"): print the family version from this skill's own frontmatter, then run `iterate-run version` and print its output verbatim — real installed binary, not a memory recall, works from any directory. Every iterate skill answers `version` identically because the family shares one number; `skillctl family iterate` shows the members and flags drift. If not found, report "iterate-run isn't installed — run `make install` in claudecodetricks." Then **stop**, no plan involved.
+0.4. **`status: unblocked` clears on entry.** If the resolved plan carries
+`status: unblocked` (a human cleared its blocker — see `/iterate-triage`),
+remove that field before doing anything else and log one line naming what was
+cleared. It is a queue signal, not a run state: leaving it set would keep the
+plan cyan in the status line while it is actually executing, and would make the
+conductor re-prioritise a plan it has already picked up.
+
 0.5. **Re-entry guard — a terminal plan does not resume on a no-arg tick.** If `$1` is empty and the resolved executing plan has `status: blocked-on-operator` (or `status: awaiting-human-gate`) already set, AND nothing material has changed since it was written (no new user message addressing the blocker, no change to the gate's input files): this tick has no job. **First check whether the loop is somehow still armed** (`loop-mechanism:` non-empty in the plan file) — it shouldn't be, the terminal path cancels it, but if it is (a prior run died before canceling, or canceled the wrong mechanism), cancel it NOW with verification, log one line `re-entry guard: killed leftover <mechanism>`, and exit. Otherwise **exit immediately and silently** — no status re-verification, no environment audits, no "handoff document" polishing, no re-asserting the wall. Confirmed live (civet): 13+ hours of once-a-minute ticks against an already-blocked plan, each manufacturing self-generated audit work because nothing told a resuming tick that "already terminal, nothing changed" means *stop*, not *find something to do*. A user-typed `/iterate <name>` (non-empty `$1`) bypasses this guard — an explicit human invocation IS a material change, so re-check the blocker for real then.
 1. **A plan is already `phase: executing`** (scan `plans/`): resume THAT plan from its "Status / Log", honoring the concurrency lock. This takes precedence over everything below — it's what makes the `/loop` re-fires (which pass no `$1`) continue the live run instead of prompting. If several are somehow executing, pick the one named by `current`, else the most-recently-heartbeated.
 1.5. **Project launch gate (only if this project set one).** Read `./.claude/iterate/policy.md` if it exists (see "Project policy" below). If it sets `require-launch-keyword: <word>` and that word is **not** present anywhere in `$1`, do NOT launch: print the policy's stated reason plus `re-run as \`/iterate <plan> <word>\`` and **stop**. Nothing is transitioned, no lock taken, no loop armed.
@@ -109,7 +116,7 @@ Rules:
 
 ## Auto-resume via `/loop`
 
-API errors, transient stalls, or hitting context limits will silently end a turn. The skill survives this by piggybacking on `/loop`, which fires `/iterate` on a fixed cadence.
+API errors, transient stalls, or a killed session will silently end a turn. (A context *compaction* is different — the turn continues; see "Surviving an auto-compact" below.) The skill survives this by piggybacking on `/loop`, which fires `/iterate` on a fixed cadence.
 
 - **On a fresh task or first execution of a `phase: planned` plan — flat or teamed** (you just wrote/transitioned the state file): invoke `/loop 1m /iterate` as your *first* action (or an equivalent cron/scheduled trigger firing at most every 1 minute, if that's what the harness offers instead of `/loop`). **1 minute is the maximum interval, for flat plans and teamed plans alike — never stretch it wider.** The subsequent firings have no `$1`, so they read the state file and continue. **Record exactly what you armed in the plan frontmatter**: `loop-mechanism: /loop` or `loop-mechanism: cron <job-id>` (e.g. `cron f560eb36`) — cancellation later must target this exact mechanism, and "whatever I armed" must be readable from the file, not remembered.
 - **On a teamed plan, treat the automatic background-completion notification as a bonus, not a replacement for tight polling.** In principle a dispatched team notifies you the moment it finishes, but that path can have its own latency or go missing depending on what's actually running the loop (a scheduled/cron trigger isn't always able to react to a notification the instant it arrives the way an interactive session can) — a 1-minute poll is what actually guarantees no long idle gap regardless of whether the notification landed cleanly. A heartbeat tick that finds nothing new costs nothing; a missed notification with a wide poll interval costs real wall-clock time doing nothing. When in doubt, poll tighter, not looser.
@@ -118,13 +125,20 @@ API errors, transient stalls, or hitting context limits will silently end a turn
 
 The user can manually stop the loop any time with `/loop` (no args) or by pressing Esc during the inter-tick wait — but if the plan armed a cron, the user's `/loop` won't kill it either; `CronDelete <job-id>` (id in the plan's `loop-mechanism:`) is the cancel.
 
-## Feature branch (one plan = one branch, merge only on all-green)
+## Feature branch (one plan = one branch; all-green merges, and so does green-work-with-a-parked-feature)
 
-Every plan in a git repo runs on its own feature branch — `branch: feature/<name>-<slug>` in the plan's frontmatter, normally created by `/iterate-planner` at plan-creation time. All branch operations go through the **`feature-branch` skill** (`[skill: /feature-branch]`), never hand-rolled git.
+Every plan in a git repo runs on its own feature branch — `branch: feature/<name>-<slug>` in the plan's frontmatter. **The planner names it but does not create it** (`branch-created: false`); the branch comes into existence here, at execution start, so that planning never moves the user off the default branch. All branch operations go through the **`feature-branch` skill** (`[skill: /feature-branch]`), never hand-rolled git.
 
 **At execution start** (any transition to `phase: executing`, and on every resume entry):
-- Plan has `branch:` → ensure it's checked out (`git rev-parse --abbrev-ref HEAD`; if not on it, check it out) before any step runs. All work — coordinator steps AND dispatched teams, which share the same working tree — happens on this branch. Teams never switch branches.
-- Plan has no `branch:` but this IS a git repo (direct `/iterate <task>` fresh runs, pre-branch-era plans): create one now via `/feature-branch start feature <plan-name>-<short-goal-slug>` and write `branch:` into the plan file. If currently on the default branch with uncommitted work, let `/feature-branch start` handle carrying it onto the new branch.
+- Plan has `branch:` with `branch-created: false` (or no such field, and the branch does not exist) → **create it now**: `/feature-branch start feature <plan-name>-<slug>`, then set `branch-created: true` in the plan file. This is the moment a plan stops being a document and starts being work, and it is the only place the branch is born. If the default branch has uncommitted work, let `/feature-branch start` carry it over.
+- Plan has `branch:` that already exists → ensure it's checked out (`git rev-parse --abbrev-ref HEAD`; if not on it, check it out) before any step runs. All work — coordinator steps AND dispatched teams, which share the same working tree — happens on this branch. Teams never switch branches.
+- Plan has no `branch:` but this IS a git repo (direct `/iterate <task>` fresh runs, pre-branch-era plans): **a plan has exactly one branch for its whole life, so derive the name once and never again.**
+
+  1. **Look before creating.** `git branch --list 'feature/<plan-name>-*'`. If any branch already exists for this plan, **adopt it** — write it into `branch:` and check it out. Never create a second one because you cannot remember the first.
+  2. **Write `branch:` to the plan file BEFORE creating the branch**, not after. The name must be on disk before anything can interrupt — a compaction, an API error, a killed session — because the only way a second branch gets created is the name being derivable but not recorded.
+  3. Then `/feature-branch start feature <plan-name>-<slug>`. If the default branch has uncommitted work, let `/feature-branch start` carry it over.
+
+  **Never re-derive the slug.** It comes from the goal, and the goal reads differently from inside step 2 than from inside step 9 — that is how one plan ends up with `feature/pigeon-cloud-setup-bug-monitor`, `feature/pigeon-portal-service-control` and `feature/pigeon-desktop-template-adapter`, three branches and three MRs for work that was always one unit. Confirmed live. If `branch:` is set, it is the answer; there is no second opinion to seek.
 - Not a git repo → no branch anything; log `not a git repo — no feature branch` once and proceed. Every branch-related instruction in this file is a silent no-op for such plans.
 
 **On all-green completion — the merge flow** (runs in Step 5's success path, BEFORE archiving):
@@ -386,6 +400,7 @@ If any check fails:
 - Cancel the auto-resume loop — the exact mechanism recorded in `loop-mechanism:`, with the verified-cancel procedure from "Auto-resume" (a /loop stop does NOT kill a cron; read the result, confirm dead, clear the field).
 - Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`. If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it. If the plan was teamed, also move `./.claude/iterate/plans/<name>.teams/` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.teams/` (the per-team logs are already merged into the archived plan file — this just keeps the raw team logs around for audit, don't leave the working `.teams/` dir behind).
 - Report a 3-5 line summary: goal, what was done, validation results, time taken, **and the merge result** (`merged to <default> via PR <url>, branch deleted` — or the ⚠ not-merged flag with reason). On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
+- **Send the one `PushNotification`** (rule 9): plan, outcome, merge result — `owl done: 6/6 green, merged to main`.
 - **Suggest `/oracle harvest`** to the user — one line at end of report: "If anything in this run is worth remembering for next time, run `/oracle harvest`." Don't auto-invoke; oracle harvesting is opt-in.
 
 **On human-gate reached (every agent-completable validation green; only the plan's marked `human-gate` step remains):** this is the DESIGNED ending of a plan that ends in a human decision session — it is success-with-handoff, not "blocked", and it must not fall through to the stuck path below.
@@ -394,12 +409,29 @@ If any check fails:
 - **Then ASK — with AskUserQuestion, not only a markdown file.** This is the second sanctioned exception to "never ask" (alongside entry rule 5's plan picker), and it's principled: autonomy is over by definition at a human gate, so interrupting is the job. Ask the gate's actual question(s) — or, when the gate is a decision *session* too big for one prompt (like a 21-item agenda), ask the meta-question: point at the prepared agenda file and offer "start the session now / I'll come back later". If the user answers now, work the decisions conversationally, record them into the gate's artifacts, then re-run full Validation → normal success path (including the merge flow). If they defer (or the question times out unanswered), leave the awaiting state — the plan resumes when they type `/iterate` again.
 - Report shape: 2-3 lines of what's done + `awaiting human gate: <what>` + where the prepared material lives + the ⚠ branch-not-merged line.
 
+**Blocked on one feature does not mean the whole branch waits.** Before parking anything, ask whether the green work can land on main by itself. Usually it can, and then it must:
+
+**The landing test** — all four, no exceptions:
+1. The blocked clauses are the *only* unmet ones. Every other validation is green.
+2. The branch passes the project's ordinary bar with the blocked resource absent — build, vet, and the full suite green on a bare box, where the blocked feature's tests **skip** rather than fail.
+3. The blocked feature is **inert on main**: gated behind an env var, flag, or config, or purely additive code no default path reaches. Landing it must change nothing for someone who doesn't have the missing thing.
+4. Nothing half-wires a user-visible path — no menu entry, CLI flag, or endpoint that exists but errors.
+
+**Passes → land it, then roll the blocker.** Merge through `/feature-branch finish` exactly as on all-green (push → PR → merge → delete branch), then hand the unmet steps to `/iterate-planner`'s **roll** op as a NEW plan on a NEW branch, `status: blocked-on-operator` with the same one-line reason, provenance citing this plan. Archive this one. Report: `✔ green work merged to main · <n> steps rolled to <newplan> (blocked: <reason>)`.
+
+This is the point of the whole thing: downstream plans gated on "stage 1 merged to main" start immediately, the operator's missing piece becomes one small plan instead of a stalled queue, and the work is on main where it can't rot on a branch. Confirmed live (symmail `stoat`): 19/23 green, the four unmet clauses all token-gated and skipping, `make check` green on a bare box — it passed every clause of the landing test and still sat unmerged, holding eleven plans behind it all night.
+
+**Fails → park as before**, branch unmerged, ⚠ line in the report. Landing must never be the thing that puts broken code on main.
+
+**Before declaring any access wall: run the substitution test.** A validation clause that names a vendor endpoint (`api.fastmail.com`, a hosted dashboard, a SaaS API) blocks on that vendor only when the vendor is what the plan is delivering. If the clause is really about a **protocol or standard**, a conformant implementation you can run locally satisfies it — Dovecot for IMAP, Stalwart/Apache James/Cyrus for JMAP, MinIO for S3, Keycloak for OIDC. Stand it up, run the clause's assertions against it **unchanged**, record the substitution in the log (`step 10: substituted local Stalwart for api.fastmail.com — RFC 8620, same assertions, all green`), and count the clause met with the vendor run noted as an optional confirmation. This is the one sanctioned edit to Nb's target, and it is bounded: same assertions, same protocol, only the endpoint moves, and never when the vendor integration *is* the deliverable. Confirmed live (symmail `stoat`): the team built a local httptest JMAP stub, passed 21 tests against it, and still reported an operator wall because four Nb clauses named Fastmail — a paid account blocked a night's queue over an open RFC.
+
 **On stuck (5-cycle cap hit AND every other outcome also stuck — genuinely no forward motion possible), OR every validation is met except one clause that only a human can clear** (billing, an external approval, physical/credential access no agent has — a wall, not a failing check — and the plan did NOT mark it as a `human-gate`, else use the human-gate path above):
 - Set `running: false`. Update the plan file: mark which steps completed, which validation checks pass, which fail and why.
 - Write the "Next attempt" hint in the ONE standardized shape the dashboard tool actually parses — this was previously freeform prose per-run, which the dashboard couldn't recognize at all (it just kept reading as plain `executing` no matter how done the plan actually was):
   - At the very top of the file, above the frontmatter, a blockquote banner: `> **Next attempt (one operator action):** <what's blocking, one or two sentences> <the exact command(s) to run once it's cleared>`.
   - In the frontmatter, `status: blocked-on-operator: <one-line reason>` — that exact `blocked-on-operator` prefix is the literal string the dashboard matches on; don't paraphrase it into "waiting on user" or similar. This is IN ADDITION to `phase:`, not a replacement — leave `phase: executing` as-is.
 - Cancel the loop — exact mechanism from `loop-mechanism:`, verified dead, field cleared (see "Auto-resume"). Without this, the loop fires forever and re-hits the same giveup — and canceling the WRONG mechanism (a /loop stop against an armed cron) is exactly as bad as not canceling, just quieter.
+- **Send the one `PushNotification`** (rule 9): the plan name, the wall, and what to supply — `stoat blocked: needs a Fastmail JMAP API token, then /iterate stoat`. The user started this and left; the banner they can't see yet is not a handoff.
 - Stop. Report ONE blocker reason — the specific check that failed 5 times (or the specific operator-only clause) AND why no other outcome could absorb attention — plus what specific operator action would unblock. **Do NOT write a menu of "things the user could do next." Do NOT list "(a) ... (b) ..." options. Do NOT frame remaining work as choices.** One blocker, one ask, done. On a teamed plan where multiple teams are blocked, aggregate: report the done/blocked status of every team in one line each, then the single most-actionable next operator step (usually whichever blocker, once fixed, unblocks the most dependent teams).
 - Do **not** archive — leave the plan file in place so the user can read what happened and re-invoke fresh after fixing the blocker.
 
@@ -425,6 +457,74 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 - Leave the plan file and the `/loop` schedule intact. The next loop tick will resume from state.
 - Brief status line to the user is OK but not required.
 
+## Surviving an auto-compact (this happens on essentially every plan)
+
+Long runs fill the context window and the harness compacts: the conversation is
+replaced by a summary and **the turn continues**. This is not an interruption to
+recover from — it is the normal middle of a long plan, and it happens on
+essentially every real run. Treat it as routine.
+
+What compaction costs you is **memory, not state**. The plan file is untouched:
+phase, the Steps checklist with its checkmarks, Validations, Constraints,
+Decisions log, Status/Log and the `running:` heartbeat all survive on disk
+exactly as they were. Your recollection of them does not.
+
+So, the moment you notice the context was compacted — a summary in place of the
+history, or simply that you cannot recall the last few steps in detail:
+
+1. **Re-read the plan file before doing anything else.** Not to "check", but
+   because it is now your only accurate account of where the run is. Never
+   reconstruct progress from the summary; a summary is lossy exactly where step
+   numbers and validation outcomes live.
+2. **Re-read this skill if the rules are no longer in context.** A compacted run
+   that has forgotten its own contract is how a plan gets a cheerful wrap-up at
+   step 7 of 22.
+3. **Resume, do not restart.** A checked-off step is done — do not redo it,
+   re-verify it, or "confirm" it. Side-effecting work redone after a compact is
+   the expensive failure here: a second deploy, a duplicate migration, a
+   re-deleted resource.
+4. **Keep going.** Compaction is not a terminal state. It is not a milestone, a
+   natural pause, or a good moment to report. Pick up at the first unchecked
+   step and continue to a real ending.
+5. **Do not write a summary of what you have done so far.** The instinct after
+   a compact is to re-establish context out loud for the user. Resist it — the
+   plan file already holds that record, and a mid-run wrap-up is how a
+   half-finished plan gets mistaken for a finished one.
+
+**If the plan file and your memory disagree, the file wins, always.** It is
+written at every step boundary and every validation; your post-compact
+recollection is a summary of a summary.
+
+## Destructive work the plan already authorized
+
+**A step that says "delete X" IS the authorization to delete X.** The plan was
+written and accepted; re-asking at execution time is asking the same question
+twice and stalling a run for days between them.
+
+Escalate only when the plan does NOT cover it — a resource the plan never names,
+production, someone else's data, or anything genuinely irreversible outside this
+project. Size is not a reason: 109 GiB of dev artifacts the plan lists by name
+is not more sensitive than 1 GiB of them.
+
+**Precedent within the same plan settles it.** If a step of the same class
+already ran — step 7 deleted three instances cleanly — then steps 4, 5 and 6 are
+that same class and do not get a fresh gate. Confirmed live: a plan sat eight
+days on exactly that boundary, having already proven both the capability (step 1
+verified administrative delete) and the permission (step 7 ran).
+
+**When the operation is fiddly, write a script and run it.** Multi-step
+destructive work with verify-then-delete ordering is safer as a script than as
+a sequence of remembered commands: the ordering is encoded, it survives a
+compaction, it can be dry-run, and a failed verification skips that delete
+instead of aborting everything. Put it in the project's `scripts/`, make it
+re-runnable, and gate every delete on its own check passing. That is normal
+engineering, not a workaround.
+
+**What is never a blocker:** your own caution, a large number, a resource you
+created but no longer remember creating, or an operation you have already
+performed once in this plan. Blocked means *a human must supply something you
+cannot* — a credential, a physical action, a decision only they can make.
+
 ## Rules (hard, non-negotiable)
 
 1. **Never ask the user a clarifying question during execution.** If you need a decision, pick the most reasonable one and log it in the Decisions log. The user can read the log later. Exactly two sanctioned exceptions: the entry rule 5 plan picker, and the **human-gate handoff** (Step 5) — when the only thing left is the plan's marked `human-gate` step, autonomy is over by definition and asking IS the job.
@@ -435,9 +535,9 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 6. **Logging is mandatory.** Every decision and every step outcome must land in the appropriate section. Future-you (next `/iterate` call) reads the log to know what's already done.
 7. **Don't loop forever.** 5 cycles per failing validation check, then stop and report. On stop, cancel the `/loop` so it doesn't keep re-running into the same wall.
 8. **Respect the user's constraints absolutely.** Constraints listed in the state file override your own judgment.
-9. **Set up a resumption loop on first run; on terminal exit (success, giveup, blocked-on-operator, human-gate) cancel the EXACT mechanism you armed and verify the cancel took. 1 minute is the maximum interval — flat or teamed, no exceptions.** Record the mechanism in `loop-mechanism:` at arm time; a /loop stop does not kill a cron and a cancel result saying "NOT stopped" means the loop is still live — act on it. Team-completion notifications can accelerate a merge when they land cleanly, but never widen the poll interval on the assumption they will — a stale-but-cheap heartbeat beats a wide gap of real inactivity. This is what makes the skill survive API errors, stalled sessions, and missed notifications alike — and what keeps a finished plan from being ticked at for 13 hours.
+9. **Set up a resumption loop on first run; on terminal exit (success, giveup, blocked-on-operator, human-gate) cancel the EXACT mechanism you armed and verify the cancel took. 1 minute is the maximum interval — flat or teamed, no exceptions.** Record the mechanism in `loop-mechanism:` at arm time; a /loop stop does not kill a cron and a cancel result saying "NOT stopped" means the loop is still live — act on it. Team-completion notifications can accelerate a merge when they land cleanly, but never widen the poll interval on the assumption they will — a stale-but-cheap heartbeat beats a wide gap of real inactivity. This is what makes the skill survive API errors, stalled sessions, and missed notifications alike — and what keeps a finished plan from being ticked at for 13 hours. **Every terminal exit also sends exactly one `PushNotification`** — one line naming the outcome and, when the ending needs one, the single thing the user must supply: `stoat blocked: needs a Fastmail JMAP API token, then /iterate stoat`. An autonomous run exists because they walked away; an ending that lands only in scrollback is one they discover hours later at a terminal that has been ticking at nothing. The tool suppresses itself when they are actually watching, so it costs nothing when it isn't needed — but one push per *ending*, never per cycle or per team merge.
 10. **Honor the concurrency lock.** If `running:` is fresh, exit silently — don't double-run.
-11. **Na is a hint; Nb is the contract.** If a step's described mechanism doesn't work, find another path that meets the validation. Only after exhausting reasonable alternatives (and hitting the 5-cycle cap per failing validation) do you give up. Never treat the step's wording as a constraint.
+11. **Na is a hint; Nb is the contract — but a vendor endpoint inside Nb is not part of that contract unless the vendor is the deliverable.** If a step's described mechanism doesn't work, find another path that meets the validation. Only after exhausting reasonable alternatives (and hitting the 5-cycle cap per failing validation) do you give up. Never treat the step's wording as a constraint.
 12. **Validation requires real execution.** Never declare a check green on the basis of code inspection alone. The validation must actually run/load/curl/click the thing being changed. If the plan's Nb says "tests pass", you ALSO load the page / hit the endpoint / run the command end-to-end before marking it done. Log the added execution in the Decisions log.
 13. **Respect the oracle if it exists.** `./.claude/data/oracle.md` contains project-specific lessons. On direct `/iterate` (no prior plan), read it during Step 1.5 and merge its rules. On `phase: planned` with `planner: iterate-planner`, trust that the oracle was already applied.
 14. **NEVER produce a status check or "Either/Or" decision menu in any report.** Mid-run, end-of-turn, on giveup, on success — none of these allow:
@@ -457,10 +557,13 @@ You can /iterate again to drive (a) the remaining chart conversions, or address 
 20. **Never dispatch a team whose dependencies aren't `status: done`.** Check the Teams table's `Depends on` column before every dispatch, every tick. A team becomes eligible the moment its dependencies clear — dispatch it that same tick, don't wait for an extra loop cycle.
 21. **A `TEAM BLOCKED` team is a per-team giveup, not a whole-plan giveup.** Apply rule 16 (one blocked outcome doesn't block others) at the team level: keep dispatching and progressing every team that isn't itself blocked. Only reach the whole-plan "stuck" report (rule 14/16's stuck path) when every team is done-or-blocked and at least one is blocked.
 22. **Never start a wait-and-poll loop against a remote target without first confirming, via one real probe of the actual capability needed, that you can observe its state.** See "Access verification" above. A step/team that's "still running" against a remote host, VM, or API with no verified way to check on it is not progress — treat the missing probe itself as the blocker, and run it before doing anything else in that scope. On probe failure: try `/accounts` self-heal first, then report an operator-wall blocker immediately (no 5-cycle wait) if that can't fix it — never proceed to the wait loop hoping it resolves.
-23. **All-green is the ONLY automatic merge trigger; every not-all-green report names the unmerged branch.** On full success, run the merge flow (`/feature-branch finish` → merge PR → delete branch) as part of Step 5 — no separate approval needed, that's what all-green means. On ANY other ending (blocked, stuck, user-ordered close, roll-forward), the branch stays unmerged and the report carries the ⚠ not-merged line — the user must never have to guess whether unfinished work landed on main. The one override is an explicit user order to merge ("merge it", "merge what we have and close") — obey it, then do whatever else they asked. Branch operations always go through `/feature-branch`, never hand-rolled git; and a failed merge on an otherwise-complete plan is flagged, not retried into the 5-cycle loop — merge conflicts against a moved main are the user's call, not a validation failure.
+23. **All-green merges automatically — and so does green work whose one blocked feature passes the landing test (see "Blocked on one feature"). Every branch that still doesn't merge is named in the report.** On full success, run the merge flow (`/feature-branch finish` → merge PR → delete branch) as part of Step 5 — no separate approval needed, that's what all-green means. On a blocked ending, run the landing test first: passing it, merge the green work and roll the blocked steps to a new plan on a new branch. On any other ending (a failed landing test, stuck, user-ordered close, roll-forward), the branch stays unmerged and the report carries the ⚠ not-merged line — the user must never have to guess whether unfinished work landed on main. The one override is an explicit user order to merge ("merge it", "merge what we have and close") — obey it, then do whatever else they asked. Branch operations always go through `/feature-branch`, never hand-rolled git; and a failed merge on an otherwise-complete plan is flagged, not retried into the 5-cycle loop — merge conflicts against a moved main are the user's call, not a validation failure.
 24. **Teams never touch the branch.** Dispatched team subagents work on the coordinator's already-checked-out plan branch — no switching, no creating, no pushing, no merging. All branch lifecycle belongs to the coordinator (and `/iterate-planner` at creation time). A team that needs "a different branch" doesn't — that's a sign the step belongs to a different plan.
-25. **Changelog: draft at every check-off, publish exactly once — through the final sweep.** One draft line per real change, appended by the coordinator at step check-off / team merge — never by teams, never as polished prose. Publishing always runs the two-pass sweep (consolidate multi-attempt/reworked lines into one as-landed line each; validate every claim against the final tree — unvalidated claims don't publish). `CHANGELOG.md`/`RELEASES.md` are written only in the success path (or a flagged-partial entry on close, same sweep applied) — never incrementally mid-run, and old entries are never rewritten. `RELEASES.md` carries only user-visible changes in product language; internal work stays in `CHANGELOG.md`.
-26. **A step's `[skill: /x]` tag is binding, for coordinator and teams alike.** Rule 11's "Na is a hint" covers the mechanism *within* the governing tool, never a license to bypass the tool: a build step tagged `/dev-makefiles` gets its target added via that skill, not an ad-hoc shell script that happens to compile. Tags travel into every team prompt with the binding instruction. Untagged plans (direct fresh-task runs) get the cheap check: scan the always-loaded skills list before each step for an obvious governing skill.
+25. **An MR or merge problem is never a reason to stop, and never a question.** A failed push, a rejected merge, a protected branch, a pipeline that will not go green, a branch that should not have existed — none of these are plan failures and none of them earn an interruption. Log it, flag it in the report with the branch named, and carry on with the rest of the plan. **Do not ask "may I merge these?" mid-run**: the all-green rule already answers it — all-green merges automatically, anything else does not merge and says so. Asking turns a clear contract into a decision the user has to make at a keyboard they may not be sitting at, which is the exact interruption this skill exists to avoid.
+26. **Never escalate something the plan already authorized.** A step naming a resource to delete, restart or replace is the approval — executing it is the job, not a decision to bring back. If an earlier step of the same class already ran in this plan, that settles any doubt about the later ones. Reserve blocked-on-operator for what a human must actually supply: a credential, a physical action, a judgement only they can make. Your own caution is not a blocker, and neither is a big number.
+27. **Changelog: draft at every check-off, publish exactly once — through the final sweep.** One draft line per real change, appended by the coordinator at step check-off / team merge — never by teams, never as polished prose. Publishing always runs the two-pass sweep (consolidate multi-attempt/reworked lines into one as-landed line each; validate every claim against the final tree — unvalidated claims don't publish). `CHANGELOG.md`/`RELEASES.md` are written only in the success path (or a flagged-partial entry on close, same sweep applied) — never incrementally mid-run, and old entries are never rewritten. `RELEASES.md` carries only user-visible changes in product language; internal work stays in `CHANGELOG.md`.
+28. **A step's `[skill: /x]` tag is binding, for coordinator and teams alike.** Rule 11's "Na is a hint" covers the mechanism *within* the governing tool, never a license to bypass the tool: a build step tagged `/dev-makefiles` gets its target added via that skill, not an ad-hoc shell script that happens to compile. Tags travel into every team prompt with the binding instruction. Untagged plans (direct fresh-task runs) get the cheap check: scan the always-loaded skills list before each step for an obvious governing skill.
+29. **Free and permissive bounds every alternative path.** When a step's stated mechanism fails and rule 11 sends you looking for another way, the replacement must be free (no purchase, subscription, or metered account) and permissively licensed (MIT/BSD/Apache-2.0/ISC/MPL-2.0). A paid service or a copyleft dependency — GPL/LGPL/AGPL/SSPL, source-available — is a **decision, not a workaround**: name the free alternative you rejected and why, and hand the choice to the user. Cost and licences must never appear for the first time in an executor log. The plan's `License:` and `Cost:` constraints are the authorization; nothing else is.
 
 ## Example trigger
 

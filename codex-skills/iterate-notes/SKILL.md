@@ -1,20 +1,45 @@
 ---
-name: iterate-notes
-description: Triggers on "$iterate-notes", "take a note", "note this", "add a note". Appends the ask to the current notes file in one synthesized line and acks in one line. Also "list notes", "show notes", "new notes <topic>", and the handoff "turn these notes into a plan" (routed to $iterate-planner). This skill never brainstorms, never plans, never executes — deciding between options is $iterate-brainstorm, planning is $iterate-planner.
+name: "iterate-notes"
+description: "The note-taking half of the iterate stack — capture ideas for the NEXT iterate plan, before any formal planning. Triggers on \"$iterate-notes\", \"take a note\", \"note this\", \"add a note\". Appends the ask to the current notes file in one synthesized line and acks in one line. Also \"list notes\", \"show notes\", \"new notes <topic>\", and the handoff \"turn these notes into a plan\" (routed to $iterate-planner). This skill never brainstorms, never plans, never executes — deciding between options is $iterate-brainstorm, planning is $iterate-planner."
 ---
 
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # $iterate-notes — Write it down, don't work it out
 
-The capture skill for the iterate stack:
+**Version:** iterate family 5.1.0
 
 ## What this skill does
 
 <!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
-The note-taking half of the iterate stack — capture ideas for the NEXT iterate plan, before any formal planning. Notes live under ./.claude/iterate/notes/.
+Notes live under ./.claude/iterate/notes/.
 
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
+The capture skill for the iterate stack:
+
+## Usage
+
+Argument: <a note to take, or "list notes" / "show notes" / "new notes <topic>" / "turn these notes into a plan">. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+
+<!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
+
+## Dependencies
+
+Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
+
+- `$i` — ported.
+- `$ibs` — ported.
+- `$in` — ported.
+- `$ip` — ported.
+- `$iterate` — ported.
+- `$iterate-brainstorm` — ported.
+- `$iterate-planner` — ported.
+- `$oracle` — ported.
 
 | Skill | Role |
 |---|---|
@@ -23,24 +48,9 @@ The note-taking half of the iterate stack — capture ideas for the NEXT iterate
 | `$iterate-planner` (`$ip`) | **Plan** — formalize into the 1a/1b schema |
 | `$iterate` (`$i`) | **Execute** autonomously |
 
-## Usage
-
-The argument is the note to take — or one of `list notes`, `show notes`, `new notes <topic>`, `turn these notes into a plan`. `$ARGUMENTS` is the whole thing.
-
-<!-- codex-port: Claude Code's `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose and never left to the token alone. -->
-
-## Dependencies
-
-This skill invokes other skills with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
-
-- `$iterate-planner` — ported alongside this one.
-- `$iterate-brainstorm` — ported alongside this one.
-
-Project state stays at `./.claude/iterate/` — **not** `./.agents/`. That path is read and written by the `iterate-run` binary (dashboard, plan-name registry, run wrapper), which is harness-agnostic; moving it would split state between harnesses and blind the dashboard.
-
 This skill is a **notepad with a memory**. It does no investigation, no analysis, no option-weighing, no oracle merge, no access preflight, no teamify, no feature branch, no step/validation pairs. Capture is the whole job, and the ack is one line.
 
-**It does not brainstorm.** Working a decision — comparing approaches, weighing trade-offs, "what are my options for X" — is `$iterate-brainstorm`. A question asked in passing gets answered in ordinary conversation; it does not turn this skill into a discussion mode. If a note-taking session starts becoming a design session, say so in one line and point at `$ibs`.
+**It does not brainstorm.** Working a decision — comparing approaches, weighing trade-offs, "what are my options for X" — is `$iterate-brainstorm`. A question asked in passing gets answered by Claude in ordinary conversation; it does not turn this skill into a discussion mode. If a note-taking session starts becoming a design session, say so in one line and point at `$ibs`.
 
 ## Notes files
 
@@ -83,13 +93,28 @@ Two sections, nothing else. **Never add an `## Open questions` or `## Research a
 
 5. **new notes** — "new notes <topic>" or a clearly-distinct new future-plan topic: create a fresh file, set `current`, ack in one line. The old file stays `open` — multiple idea streams may brew at once.
 
-6. **handoff** — "turn these notes into a plan", "turn the latest notes into a plan", "plan this up", "make it a plan": do NOT plan here. Invoke `$iterate-planner` explicitly with `notes-to-plan <topic>` (resolve `<topic>` per the current/latest rules above first). The planner reads the notes file, builds the real plan with its full machinery, and marks the notes `status: consumed (plan: <name>)`.
+6. **handoff** — "turn these notes into a plan", "turn the latest notes into a plan", "plan this up", "make it a plan": do NOT plan here. Invoke `$iterate-planner` explicitly and args `notes-to-plan <topic>` (resolve `<topic>` per the current/latest rules above first). The planner reads the notes file, builds the real plan with its full machinery, and marks the notes `status: consumed (plan: <name>)`.
 
 ## Rules (hard)
 
-1. **Never brainstorm, never plan, never execute.** No option tables, no trade-off analysis, no step/validation pairs, no oracle, no branches, no auto-resume cron. Deciding between approaches is `$ibs`; planning is `$ip`; both are one line away.
+1. **Never brainstorm, never plan, never execute.** No option tables, no trade-off analysis, no step/validation pairs, no oracle, no branches, no `/loop`. Deciding between approaches is `$ibs`; planning is `$ip`; both are one line away.
 2. **One line in, one line out.** The ack is the entire response to a note. Capture is not an invitation to discuss what was captured.
 3. **Notes are synthesized, not transcribed.** Boil each ask to its simplest one-line form, keeping the few distinctive words that make it recognizably the user's — the same test as planner provenance: reading it back, the user instantly says "yes, that's what I meant".
 4. **Never ask clarifying questions.** A note is capture, not analysis — take it, ack it, done. Ambiguity gets resolved later, in `$ibs` or at planning time.
 5. **Two sections only.** `## Notes` and `## Decisions`. No appendix, ever — depth that matters belongs in `$ibs`'s conversation or in `$oracle` as durable project knowledge, not in a write-mostly bin inside a notepad.
 6. **Notes files are cheap and local — never git-managed by this skill.** No branch, no commit choreography; they live with the other iterate state under `./.claude/iterate/`.
+
+## `version`
+
+`version` (or "what version") on **any** iterate skill reports the same thing —
+the family version, because the stack is versioned as one unit:
+
+```
+iterate family 5.0.0
+iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
+```
+
+Run `iterate-run version` for the second line — a real installed binary, never a
+recalled string. If members disagree, say so and name them: drift inside the
+family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
+only correct way to bump.

@@ -1,6 +1,6 @@
 ---
-name: profile-tools
-description: Use when someone asks to add/move/find a shell function, alias, or export in their personal-mac-tools profile.d, edit ~/.profile helpers, audit profile.d for conflicts, or invokes $profile-tools.
+name: "profile-tools"
+description: "Use when someone asks to add/move/find a shell function, alias, or export in their personal-mac-tools profile.d, edit ~/.profile helpers, audit profile.d for conflicts, or invokes $profile-tools."
 ---
 
 

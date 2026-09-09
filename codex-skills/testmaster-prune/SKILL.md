@@ -1,10 +1,17 @@
 ---
-name: testmaster-prune
-description: TESTMASTER child (invoked via $testmaster): deletes dead tests, consolidates duplicates, and conforms headers to the registry.
+name: "testmaster-prune"
+description: "TESTMASTER child (invoked via $testmaster): deletes dead tests, consolidates duplicates, and conforms headers to the registry."
 ---
 
 
 # $testmaster-prune — keep the suite true
+
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Obey the shared contracts in `$testmaster`'s SKILL.md. This child is the suite's gardener: it removes and merges, it never authors new coverage.
 

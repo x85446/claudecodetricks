@@ -1,19 +1,26 @@
 ---
-name: testmaster
-description: Route ALL test-suite work here; the meta picks the child. Use for any test-suite work: "testmaster", "testmaster init", "adopt this suite", "onboard testmaster", "set up testmaster here", "run the tests", "maintain the test suite", "add tests for <x>", "derive tests for <requirement>", "should this have a test", "what tests does this need", "prune the tests", "consolidate duplicate tests", "clean up the suite", "test report card", "how are the tests", "what's untested", "test coverage", "what did this change invalidate", "which tests drifted", "set up nightly tests".
+name: "testmaster"
+description: "TESTMASTER — the SQA test-suite meta. Route ALL test-suite work here; the meta picks the child. Use for any test-suite work: \"testmaster\", \"testmaster init\", \"adopt this suite\", \"onboard testmaster\", \"set up testmaster here\", \"run the tests\", \"maintain the test suite\", \"add tests for <x>\", \"derive tests for <requirement>\", \"should this have a test\", \"what tests does this need\", \"prune the tests\", \"consolidate duplicate tests\", \"clean up the suite\", \"test report card\", \"how are the tests\", \"what's untested\", \"test coverage\", \"what did this change invalidate\", \"which tests drifted\", \"set up nightly tests\"."
 ---
 
-<!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $testmaster — SQA suite orchestrator (TESTMASTER)
 
-Meta skill. Routes to one child per concern and owns the shared contracts below. Do the routed work via explicit `$name` invocation — never inline a child's job here.
+**Version:** 1.4.0
 
 ## What this skill does
 
 <!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
-TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: adopt (onboard an existing suite), derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates.
+Owns the whole test lifecycle through its children: adopt (onboard an existing suite), derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates.
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
+Meta skill. Routes to one child per concern and owns the shared contracts below. Do the routed work via explicit `$name` invocation — never inline a child's job here.
 
 ## Usage
 

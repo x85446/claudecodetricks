@@ -1,10 +1,17 @@
 ---
-name: uxmaster-linux
-description: UXMASTER child (invoked via $uxmaster): judges an interface against the GNOME HIG (GTK4/libadwaita) or KDE HIG (Qt/Kirigami).
+name: "uxmaster-linux"
+description: "UXMASTER child (invoked via $uxmaster): judges an interface against the GNOME HIG (GTK4/libadwaita) or KDE HIG (Qt/Kirigami)."
 ---
 
 
 # $uxmaster-linux — does this feel native on the Linux desktop
+
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Obey the shared contracts in `$uxmaster`'s SKILL.md. Findings are `kind: platform-convention` with the HIG rule cited in `rule:`.
 

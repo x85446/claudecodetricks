@@ -1,10 +1,17 @@
 ---
-name: testmaster-run
-description: TESTMASTER child (invoked via $testmaster): executes a tier or named tests, measures real wall-clock durations, and updates the timing registry.
+name: "testmaster-run"
+description: "TESTMASTER child (invoked via $testmaster): executes a tier or named tests, measures real wall-clock durations, and updates the timing registry."
 ---
 
 
 # $testmaster-run — execute and measure
+
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Obey the shared contracts in `$testmaster`'s SKILL.md. This child is the ONLY thing that writes measured timing into `registry.json` — every duration in the system traces back to a run it performed.
 

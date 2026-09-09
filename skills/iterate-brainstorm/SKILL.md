@@ -3,9 +3,9 @@ name: iterate-brainstorm
 description: The decide-between-options half of the iterate stack. Investigates the project, its current implementation, and its available toolsets, then presents 3 label-locked options — comparison table first, then a paragraph each (what it is, how to implement it, pros, cons) — with one marked Recommended. The user interrogates, expands, and chooses; on request the skill emits a numbered summary the user hands to /ip. Chat-only: writes no files, no notes, no plans, no branches.
 argument-hint: <the decision you need help with, e.g. "need some help deciding on a communications protocol">
 disable-model-invocation: true
-version: 1.0.0
+version: 5.1.0
 ---
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema/contract changes, patch for wording). -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # /ibs — Reach a decision, don't record one
 
@@ -60,6 +60,7 @@ Open the reply with the table. Nothing before it but at most one framing line.
 - **Axes are chosen per decision**, from what actually differentiates these three — not a fixed rubric. Effort, reversibility, blast radius, dependency added, who has to maintain it, how it fails. Four to five axes; if two axes say the same thing, cut one.
 - **Cells are short** — a few words. The table is for scanning, the paragraphs are for reading.
 - **Exactly one option carries `★ Recommended`.**
+- **Cost and licence are axes whenever the options differ on them** — `free / MIT` scans in three words and is exactly what decides a lot of these. An option that costs money or carries a copyleft licence (GPL/LGPL/AGPL/SSPL, source-available) says so in the table, in those words, not buried in its paragraph.
 
 ### Phase 2 — One paragraph per option
 
@@ -117,15 +118,31 @@ The summary is the handoff artifact. The user carries it to the planner themselv
 2. **Never plan and never execute.** No 1a/1b pairs, no steps, no validations, no `/loop`. When the user wants a plan, the answer is the numbered summary plus "hand that to `/ip`" — not a plan written here.
 3. **Investigation is unlimited; screen output is not.** Phase 0 never gets dumped. ~150 words per option paragraph. This is the rule `/iterate-notes` lost when its research appendix turned depth-on-screen into depth-in-a-bin nobody read — do not reintroduce that bin here in any form.
 4. **Labels are locked for the session.** `1 — <Name>` never renumbers, never renames, never gets recycled, even when options are revised, replaced, or added to. The user references options by number or name and both must keep resolving to the same thing an hour later.
-5. **Exactly one `★ Recommended`, always present.** Presenting three options with no position is the status check the user's standing rules forbid. Take a position; the decision still belongs to them. If the recommendation is genuinely close, say which axis decided it.
-6. **Generate before asking.** No clarifying-question round ahead of the options — investigate and produce the table. At most ONE question, only when the answer changes which options are worth generating at all, and only inside the framing line.
-7. **The user selects.** Recommend, argue, defend — but never announce a decision on their behalf and never move to Phase 4 unasked.
-8. **Not a note-taker.** If the ask is capture ("take a note", "remember that"), say so in one line and route to `/in`. If the ask is already-decided formalization, route to `/ip`.
-9. **One sitting, not a streak.** `/in` is fired rapid-fire; this is not. One invocation opens one decision and stays with it through discussion. A genuinely new decision is a new `/ibs` invocation, with its own option numbering — but summary numbering stays monotonic across the whole session.
-10. **Standing risk acceptance carries.** If the user has said "this isn't prod" / "accept the risk" / "do it everywhere", the cons sections reflect that reality instead of re-raising it as a blocker.
+5. **Free and permissive is the default position.** Never hand the user a paid service or a copyleft dependency as `★ Recommended` unless that option's paragraph carries the argument: the free/permissive equivalent named, the specific capability it lacks, and whether the licence obligation actually attaches here (linking a library, or just running a container). Absent that argument, the permissive option wins and the paid one is a row in the table with its price in the cell. Options the user cannot adopt without a credit card or a lawyer are not really three options.
+6. **Exactly one `★ Recommended`, always present.** Presenting three options with no position is the status check the user's standing rules forbid. Take a position; the decision still belongs to them. If the recommendation is genuinely close, say which axis decided it.
+7. **Generate before asking.** No clarifying-question round ahead of the options — investigate and produce the table. At most ONE question, only when the answer changes which options are worth generating at all, and only inside the framing line.
+8. **The user selects.** Recommend, argue, defend — but never announce a decision on their behalf and never move to Phase 4 unasked.
+9. **Not a note-taker.** If the ask is capture ("take a note", "remember that"), say so in one line and route to `/in`. If the ask is already-decided formalization, route to `/ip`.
+10. **One sitting, not a streak.** `/in` is fired rapid-fire; this is not. One invocation opens one decision and stays with it through discussion. A genuinely new decision is a new `/ibs` invocation, with its own option numbering — but summary numbering stays monotonic across the whole session.
+11. **Standing risk acceptance carries.** If the user has said "this isn't prod" / "accept the risk" / "do it everywhere", the cons sections reflect that reality instead of re-raising it as a blocker.
 
 ## Example
 
 > `/ibs need some help deciding on a communications protocol`
 
 Investigates the repo (what it is, how components talk today, what's already vendored), then replies with a 3-row table across effort / latency / debuggability / added dependency, `★ Recommended` on row 2, three ~150-word paragraphs, and a closing offer to expand. The user argues for option 3, asks two questions, then says "summarize" — and gets `**Summary 1**`, which they hand to `/ip`.
+
+## `version`
+
+`version` (or "what version") on **any** iterate skill reports the same thing —
+the family version, because the stack is versioned as one unit:
+
+```
+iterate family 5.0.0
+iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
+```
+
+Run `iterate-run version` for the second line — a real installed binary, never a
+recalled string. If members disagree, say so and name them: drift inside the
+family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
+only correct way to bump.

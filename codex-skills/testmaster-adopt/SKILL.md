@@ -1,11 +1,18 @@
 ---
-name: testmaster-adopt
-description: TESTMASTER child (invoked via $testmaster): brings an existing repo's test suite into the framework — discovers every test, seeds the catalog, and computes which source files each test covers.
+name: "testmaster-adopt"
+description: "TESTMASTER child (invoked via $testmaster): brings an existing repo's test suite into the framework — discovers every test, seeds the catalog, and computes which source files each test covers."
 ---
 
-<!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $testmaster-adopt — make an existing suite conform
+
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Obey the shared contracts in `$testmaster`'s SKILL.md. This is the **one-time onboarding pass** every project runs before the rest of TESTMASTER means anything: a repo with hundreds of tests and no catalog gets an index, real tiers, and — the part nothing else produces — a `covers` list per test.
 

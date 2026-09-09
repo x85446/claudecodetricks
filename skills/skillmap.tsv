@@ -10,191 +10,199 @@
 #             adopted skills: registered so they are backed up, not deployed)
 # owner       "self" when this repo authors it, else the path of the repo that
 #             does — those are MIRRORED here and edited there
+# family      the versioned family this skill belongs to, or "-" for none.
+#             Family members share ONE version number: the stack evolves as a
+#             unit, and a plan stamped "iterate 5.0.0" says which era of the
+#             WHOLE stack built it — which is the useful fact. Per-skill
+#             versions could not express that.
 #
-#name	targets	owner
--check-images	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-check-images
--image-fetcher	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-image-fetcher
--pdfify	-	self
--renamer	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-renamer
-accounts	userglobal	self
-apiaryx-tab	-	~/workspace/izuma/fintool/.claude/skills/apiaryx-tab
-archive-closed	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/archive-closed
-argocd-skill	-	self
-auditor	personaldb	self
-auditor-sourcetable-inspector	personaldb	self
-auto-recover	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/auto-recover
-build-dod	-	~/workspace/x85446/kilroy/skills/build-dod
-bump	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/bump
-categorize	cctricks	self
-categorize-cost-center	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-cost-center
-categorize-linker	personaldb	self
-categorize-recurring	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-recurring
-categorize-venue	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-venue
-categorizer	personaldb	self
-chopper2-doctor	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/chopper2-doctor
-chopper2-serve	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/chopper2-serve
-claim-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/claim-bug
-classify-incoming	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/classify-incoming
-cloud-setup-dev	-	~/workspace/gravhl/GROUPS/backend/cloud-setup/.claude/skills/cloud-setup-dev
-codeconverter	recode	self
-codeconverter-00-guidance	-	self
-codeconverter-00-source-provenance	-	self
-codeconverter-01-service-profile	-	self
-codeconverter-02-codebase-analysis	-	self
-codeconverter-03-dependency-discovery	-	self
-codeconverter-04-test-baseline	-	self
-codeconverter-05-api-surface	-	self
-codeconverter-05a-endpoint-consumers	-	self
-codeconverter-05b-outbound-dependencies	-	self
-codeconverter-05c-datastore-peers	-	self
-codeconverter-06-domain-analysis	-	self
-codeconverter-07-target-codebase	-	self
-codeconverter-08-gap-validation	-	self
-codeconverter-09-dependency-audit	-	self
-codeconverter-10-service-alignment	-	self
-codeconverter-10a-pilot-slice	-	self
-codeconverter-11-migration-plan	-	self
-codeconverter-12-migration-qa	-	self
-codeconverter-verify	-	self
-competitive-intel	imarketing	self
-create-dotfile	-	~/workspace/x85446/kilroy/skills/create-dotfile
-create-runfile	-	~/workspace/x85446/kilroy/skills/create-runfile
-darpa-equipment-references	imarketing	self
-data-access	-	~/workspace/x85446/financeSheets/finance-project/.claude/skills/data-access
-decommission-machine	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/decommission-machine
-dedupe-against-open	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/dedupe-against-open
-delete-slug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/delete-slug
-dev-makefiles	userglobal	self
-dockerfile	-	~/workspace/x85446/warden/.claude/skills/dockerfile
-docket-runner	-	~/workspace/gravhl/smugjudge/.claude/skills/docket-runner
-docs-organizer	all	self
-downloader	personaldb	self
-downloader-orderdocs	personaldb	self
-dump-state	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/dump-state
-feature-branch	userglobal	self
-feature-tracker	imarketing,imyriplay	self
-file-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/file-bug
-file-chase-statements	-	~/workspace/izuma/fintool/.claude/skills/file-chase-statements
-fileclerk-data	-	~/workspace/izuma/fintool/.claude/skills/fileclerk-data
-filemaster	userglobal	self
-fix-chrome-remote-desktop	userglobal	self
-force-close	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/force-close
-grant-izuma-fit	-	~/workspace/izuma/marketing/.claude/skills/grant-izuma-fit
-grant-perfect-applicant	-	~/workspace/izuma/marketing/.claude/skills/grant-perfect-applicant
-grant-really-wants	-	~/workspace/izuma/marketing/.claude/skills/grant-really-wants
-grant-scout	imarketing	self
-gravhl-cloud-setup-dev	-	self
-gravhl-cluster	-	~/workspace/gravhl/GROUPS/backend/.claude/skills/gravhl-cluster
-health-check-machines	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/health-check-machines
-health-report	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/health-report
-hours-maker	finance	self
-hours-researcher	finance	self
-house-fill	-	~/workspace/x85446/financeSheets/finance-project/.claude/skills/house-fill
-i	userglobal	self
-ibs	userglobal	self
-importer	personaldb	self
-importer-audit	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/importer-audit
-importer-dedup	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/importer-dedup
-importer-fix	personaldb	self
-in	userglobal	self
-incoming-files	-	~/workspace/x85446/financeSheets/finance-project/.claude/skills/incoming-files
-incus	userglobal	self
-infra-access	-	~/workspace/izuma/site-infra/.claude/skills/infra-access
-investigating-kilroy-runs	-	~/workspace/x85446/kilroy/skills/investigating-kilroy-runs
-ip	userglobal	self
-iterate	userglobal	self
-iterate-brainstorm	userglobal	self
-iterate-notes	userglobal	self
-iterate-plan	-	self
-iterate-planner	userglobal	self
-iterate-rules	userglobal	self
-izmachine	userglobal	~/workspace/izuma/izmachine/skills/izmachine
-list	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list
-list-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list-dead-letter
-mark-fixed	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/mark-fixed
-mark-verified	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/mark-verified
-marketing-doc-formatter	imarketing	self
-marketing-template-studio	imarketing	self
-md-tester	-	self
-metro-recovery	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/metro-recovery
-monitor	all	self
-notify	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/notify
-oracle	userglobal	self
-organizer	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/organizer
-pause	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/pause
-pdf2name	userglobal	self
-pipelinelogs	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/pipelinelogs
-prd-generator	-	~/workspace/gravhl/GROUPS/backend/extra/design/.claude/skills/prd-generator
-product-discovery	imarketing	self
-product-docs	userglobal	self
-production-process-ai	-	~/workspace/izuma/fintool/.claude/skills/production-process-ai
-profile-tools	userglobal	self
-promote-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/promote-dead-letter
-provision-machine	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/provision-machine
-rack-port-table	-	~/workspace/izuma/site-infra/.claude/skills/rack-port-table
-rack-svg	-	~/workspace/izuma/site-infra/.claude/skills/rack-svg
-react-native-bare	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/react-native-bare
-react-native-best-practices	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/react-native-best-practices
-react-native-rules	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/react-native-rules
-read-bug-history	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/read-bug-history
-read-inbox	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/read-inbox
-reassign-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/reassign-bug
-rebuild-index	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/rebuild-index
-reconcile-identities	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/reconcile-identities
-reconcile-machines	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/reconcile-machines
-reconfigure-machine	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/reconfigure-machine
-refresh-forge-auth	-	self
-regenerate-trust-token	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/regenerate-trust-token
-reject-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/reject-bug
-release-kilroy	-	~/workspace/x85446/kilroy/skills/release-kilroy
-renaming-finance-files	-	self
-reopen	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/reopen
-resume	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/resume
-retry-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/retry-dead-letter
-rollup-parent	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/rollup-parent
-route-to-agent	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/route-to-agent
-safedelete	userglobal	self
-show	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/show
-simulate-cycle	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/simulate-cycle
-skill-2-codex	userglobal	self
-skill-builder	userglobal	self
-skill-maker	-	self
-skilltest-renaming-finance-files	-	~/workspace/izuma/fintool/.claude/skillet/skilltest-renaming-finance-files
-skillwork-renaming-finance-files	-	~/workspace/izuma/fintool/.claude/skillet/skillwork-renaming-finance-files
-slack-clarify	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/slack-clarify
-slack-intake	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/slack-intake
-smug-judge	-	~/workspace/gravhl/smugjudge/.claude/skills/smug-judge
-source2pdf	userglobal	self
-ssh-config	userglobal	self
-starting-a-project	-	~/workspace/x85446/kilroy/skills/starting-a-project
-sw3-portpair	-	~/workspace/izuma/site-infra/.claude/skills/sw3-portpair
-sync-common	-	~/workspace/x85446/financeSheets/googlesheets/.claude/skills/sync-common
-tax-doc-combiner	taxes	self
-tax-doc-rename	-	self
-tax-organizer	taxes	self
-testmaster	userglobal	self
-testmaster-adopt	userglobal	self
-testmaster-catalog	userglobal	self
-testmaster-derive	userglobal	self
-testmaster-maintain	userglobal	self
-testmaster-prune	userglobal	self
-testmaster-report	userglobal	self
-testmaster-run	userglobal	self
-transition-state	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/transition-state
-tui-runner	-	self
-tutorial	userglobal	self
-unstick-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/unstick-bug
-update-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/update-bug
-using-kilroy	-	~/workspace/x85446/kilroy/skills/using-kilroy
-uxmaster	userglobal	self
-uxmaster-analysis	userglobal	self
-uxmaster-cli	userglobal	self
-uxmaster-implement	userglobal	self
-uxmaster-linux	userglobal	self
-uxmaster-macos	userglobal	self
-uxmaster-web	userglobal	self
-uxmaster-windows	userglobal	self
-venue-classifier	personaldb	self
-vm	userglobal	self
-window-schedule	houses	self
-zot-populate	-	~/workspace/gravhl/GROUPS/backend/.claude/skills/zot-populate
+#name	targets	owner	family
+-check-images	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-check-images	-
+-image-fetcher	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-image-fetcher	-
+-pdfify	-	self	-
+-renamer	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-renamer	-
+accounts	userglobal	self	-
+apiaryx-tab	-	~/workspace/izuma/fintool/.claude/skills/apiaryx-tab	-
+archive-closed	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/archive-closed	-
+argocd-skill	-	self	-
+auditor	personaldb	self	-
+auditor-sourcetable-inspector	personaldb	self	-
+auto-recover	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/auto-recover	-
+build-dod	-	~/workspace/x85446/kilroy/skills/build-dod	-
+bump	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/bump	-
+categorize	cctricks	self	-
+categorize-cost-center	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-cost-center	-
+categorize-linker	personaldb	self	-
+categorize-recurring	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-recurring	-
+categorize-venue	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-venue	-
+categorizer	personaldb	self	-
+chopper2-doctor	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/chopper2-doctor	-
+chopper2-serve	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/chopper2-serve	-
+claim-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/claim-bug	-
+classify-incoming	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/classify-incoming	-
+cloud-setup-dev	-	~/workspace/gravhl/GROUPS/backend/cloud-setup/.claude/skills/cloud-setup-dev	-
+codeconverter	recode	self	-
+codeconverter-00-guidance	-	self	-
+codeconverter-00-source-provenance	-	self	-
+codeconverter-01-service-profile	-	self	-
+codeconverter-02-codebase-analysis	-	self	-
+codeconverter-03-dependency-discovery	-	self	-
+codeconverter-04-test-baseline	-	self	-
+codeconverter-05-api-surface	-	self	-
+codeconverter-05a-endpoint-consumers	-	self	-
+codeconverter-05b-outbound-dependencies	-	self	-
+codeconverter-05c-datastore-peers	-	self	-
+codeconverter-06-domain-analysis	-	self	-
+codeconverter-07-target-codebase	-	self	-
+codeconverter-08-gap-validation	-	self	-
+codeconverter-09-dependency-audit	-	self	-
+codeconverter-10-service-alignment	-	self	-
+codeconverter-10a-pilot-slice	-	self	-
+codeconverter-11-migration-plan	-	self	-
+codeconverter-12-migration-qa	-	self	-
+codeconverter-verify	-	self	-
+competitive-intel	imarketing	self	-
+create-dotfile	-	~/workspace/x85446/kilroy/skills/create-dotfile	-
+create-runfile	-	~/workspace/x85446/kilroy/skills/create-runfile	-
+darpa-equipment-references	imarketing	self	-
+data-access	-	~/workspace/x85446/financeSheets/finance-project/.claude/skills/data-access	-
+decommission-machine	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/decommission-machine	-
+dedupe-against-open	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/dedupe-against-open	-
+delete-slug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/delete-slug	-
+dev-makefiles	userglobal	self	-
+dockerfile	-	~/workspace/x85446/warden/.claude/skills/dockerfile	-
+docket-runner	-	~/workspace/gravhl/smugjudge/.claude/skills/docket-runner	-
+docs-organizer	all	self	-
+downloader	personaldb	self	-
+downloader-orderdocs	personaldb	self	-
+dump-state	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/dump-state	-
+feature-branch	userglobal	self	-
+feature-tracker	imarketing,imyriplay	self	-
+file-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/file-bug	-
+file-chase-statements	-	~/workspace/izuma/fintool/.claude/skills/file-chase-statements	-
+fileclerk-data	-	~/workspace/izuma/fintool/.claude/skills/fileclerk-data	-
+filemaster	userglobal	self	-
+fix-chrome-remote-desktop	userglobal	self	-
+force-close	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/force-close	-
+grant-izuma-fit	-	~/workspace/izuma/marketing/.claude/skills/grant-izuma-fit	-
+grant-perfect-applicant	-	~/workspace/izuma/marketing/.claude/skills/grant-perfect-applicant	-
+grant-really-wants	-	~/workspace/izuma/marketing/.claude/skills/grant-really-wants	-
+grant-scout	imarketing	self	-
+gravhl-cloud-setup-dev	-	self	-
+gravhl-cluster	-	~/workspace/gravhl/GROUPS/backend/.claude/skills/gravhl-cluster	-
+health-check-machines	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/health-check-machines	-
+health-report	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/health-report	-
+hours-maker	finance	self	-
+hours-researcher	finance	self	-
+house-fill	-	~/workspace/x85446/financeSheets/finance-project/.claude/skills/house-fill	-
+i	userglobal	self	iterate
+ibs	userglobal	self	iterate
+ic	userglobal	self	iterate
+importer	personaldb	self	-
+importer-audit	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/importer-audit	-
+importer-dedup	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/importer-dedup	-
+importer-fix	personaldb	self	-
+in	userglobal	self	iterate
+incoming-files	-	~/workspace/x85446/financeSheets/finance-project/.claude/skills/incoming-files	-
+incus	userglobal	self	-
+infra-access	-	~/workspace/izuma/site-infra/.claude/skills/infra-access	-
+investigating-kilroy-runs	-	~/workspace/x85446/kilroy/skills/investigating-kilroy-runs	-
+ip	userglobal	self	iterate
+iterate	userglobal	self	iterate
+iterate-brainstorm	userglobal	self	iterate
+iterate-conductor	userglobal	self	iterate
+iterate-notes	userglobal	self	iterate
+iterate-plan	-	self	-
+iterate-planner	userglobal	self	iterate
+iterate-rules	userglobal	self	iterate
+iterate-triage	userglobal	self	iterate
+izmachine	userglobal	~/workspace/izuma/izmachine/skills/izmachine	-
+list	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list	-
+list-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list-dead-letter	-
+mark-fixed	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/mark-fixed	-
+mark-verified	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/mark-verified	-
+marketing-doc-formatter	imarketing	self	-
+marketing-template-studio	imarketing	self	-
+md-tester	-	self	-
+metro-recovery	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/metro-recovery	-
+monitor	all	self	-
+notify	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/notify	-
+oracle	userglobal	self	-
+organizer	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/organizer	-
+pause	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/pause	-
+pdf2name	userglobal	self	-
+pipelinelogs	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/pipelinelogs	-
+prd-generator	-	~/workspace/gravhl/GROUPS/backend/extra/design/.claude/skills/prd-generator	-
+product-discovery	imarketing	self	-
+product-docs	userglobal	self	-
+production-process-ai	-	~/workspace/izuma/fintool/.claude/skills/production-process-ai	-
+profile-tools	userglobal	self	-
+promote-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/promote-dead-letter	-
+provision-machine	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/provision-machine	-
+rack-port-table	-	~/workspace/izuma/site-infra/.claude/skills/rack-port-table	-
+rack-svg	-	~/workspace/izuma/site-infra/.claude/skills/rack-svg	-
+react-native-bare	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/react-native-bare	-
+react-native-best-practices	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/react-native-best-practices	-
+react-native-rules	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/react-native-rules	-
+read-bug-history	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/read-bug-history	-
+read-inbox	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/read-inbox	-
+reassign-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/reassign-bug	-
+rebuild-index	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/rebuild-index	-
+reconcile-identities	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/reconcile-identities	-
+reconcile-machines	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/reconcile-machines	-
+reconfigure-machine	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/reconfigure-machine	-
+refresh-forge-auth	-	self	-
+regenerate-trust-token	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/regenerate-trust-token	-
+reject-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/reject-bug	-
+release-kilroy	-	~/workspace/x85446/kilroy/skills/release-kilroy	-
+renaming-finance-files	-	self	-
+reopen	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/reopen	-
+resume	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/resume	-
+retry-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/retry-dead-letter	-
+rollup-parent	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/rollup-parent	-
+route-to-agent	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/route-to-agent	-
+safedelete	userglobal	self	-
+show	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/show	-
+simulate-cycle	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/simulate-cycle	-
+skill-2-codex	userglobal	self	-
+skill-builder	userglobal	self	-
+skill-maker	-	self	-
+skilltest-renaming-finance-files	-	~/workspace/izuma/fintool/.claude/skillet/skilltest-renaming-finance-files	-
+skillwork-renaming-finance-files	-	~/workspace/izuma/fintool/.claude/skillet/skillwork-renaming-finance-files	-
+slack-clarify	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/slack-clarify	-
+slack-intake	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/slack-intake	-
+smug-judge	-	~/workspace/gravhl/smugjudge/.claude/skills/smug-judge	-
+source2pdf	userglobal	self	-
+ssh-config	userglobal	self	-
+starting-a-project	-	~/workspace/x85446/kilroy/skills/starting-a-project	-
+sw3-portpair	-	~/workspace/izuma/site-infra/.claude/skills/sw3-portpair	-
+sync-common	-	~/workspace/x85446/financeSheets/googlesheets/.claude/skills/sync-common	-
+tax-doc-combiner	taxes	self	-
+tax-doc-rename	-	self	-
+tax-organizer	taxes	self	-
+testmaster	userglobal	self	-
+testmaster-adopt	userglobal	self	-
+testmaster-catalog	userglobal	self	-
+testmaster-derive	userglobal	self	-
+testmaster-maintain	userglobal	self	-
+testmaster-prune	userglobal	self	-
+testmaster-report	userglobal	self	-
+testmaster-run	userglobal	self	-
+transition-state	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/transition-state	-
+tui-runner	-	self	-
+tutorial	userglobal	self	-
+unstick-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/unstick-bug	-
+update-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/update-bug	-
+using-kilroy	-	~/workspace/x85446/kilroy/skills/using-kilroy	-
+uxmaster	userglobal	self	-
+uxmaster-analysis	userglobal	self	-
+uxmaster-cli	userglobal	self	-
+uxmaster-implement	userglobal	self	-
+uxmaster-linux	userglobal	self	-
+uxmaster-macos	userglobal	self	-
+uxmaster-web	userglobal	self	-
+uxmaster-windows	userglobal	self	-
+venue-classifier	personaldb	self	-
+vm	userglobal	self	-
+window-schedule	houses	self	-
+zot-populate	-	~/workspace/gravhl/GROUPS/backend/.claude/skills/zot-populate	-

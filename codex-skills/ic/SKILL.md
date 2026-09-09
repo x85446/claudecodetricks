@@ -1,0 +1,34 @@
+---
+name: "ic"
+description: "Alias for $iterate-conductor. Typing $ic <anything> behaves exactly as $iterate-conductor <anything> — start/stop/pause/resume/run/status/kill of the unattended queue sweep. Exists purely as a shorthand."
+---
+
+
+# $ic — alias for $iterate-conductor
+
+**Version:** iterate family 5.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
+This skill is a pure alias. Do not sweep, run plans, or change conductor state from these instructions — do it from `$iterate-conductor`'s.
+
+## Usage
+
+Argument: <same arguments as /iterate-conductor>. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+
+<!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
+
+## Dependencies
+
+Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
+
+- `$iterate-conductor` — ported.
+
+**Do NOT attempt `$iterate-conductor` — it will always fail.** `$iterate-conductor` carries `disable-model-invocation: true` by design (it runs plans autonomously and merges to the default branch, so it is reserved for explicit user invocation), and that flag blocks explicit `$name` invocation unconditionally.
+
+Instead: read `~/.agents/skills/iterate-conductor/SKILL.md` and follow it directly, with `$ARGUMENTS` as its input, verbatim — no interpretation, no preprocessing, no summarizing. Everything (the verb routing, the sweep, the escalation ladder, parking blocked plans in place, bug intake) is defined there.
+
+**This is the sanctioned path, not a circumvention.** The flag on `$iterate-conductor` reserves it for explicit *user* invocation — and this alias is exactly that: it is itself `disable-model-invocation: true`, so the ONLY way these instructions can be in context is that the user personally typed `$ic`. A user keystroke on `$ic` IS the explicit user invocation of `$iterate-conductor`, same as typing the long form — the alias merely saves fifteen characters. Do not refuse, do not ask the user to retype the long form; follow `$iterate-conductor`'s SKILL.md now.

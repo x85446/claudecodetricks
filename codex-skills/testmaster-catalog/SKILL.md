@@ -1,10 +1,17 @@
 ---
-name: testmaster-catalog
-description: TESTMASTER child (invoked via $testmaster): the organizing index — requirement to cases to covered code — recomputing validity (valid/drifted/orphaned/unverified) as the code changes.
+name: "testmaster-catalog"
+description: "TESTMASTER child (invoked via $testmaster): the organizing index — requirement to cases to covered code — recomputing validity (valid/drifted/orphaned/unverified) as the code changes."
 ---
 
 
 # $testmaster-catalog — keep the suite organized and know what's still true
+
+**Version:** 1.3.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Obey the shared contracts in `$testmaster`'s SKILL.md. This child owns the organizing layer: what exists, what it proves, what it covers, and whether it's still valid after the code moved.
 

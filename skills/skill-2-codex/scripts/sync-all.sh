@@ -35,7 +35,8 @@ INSTALL_ROOT="$HOME/.agents/skills"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DO_INSTALL=false; FORCE=""; ONLY=""; QUIET=false; PORT_ALL=false; PRUNE=false
-MANIFEST_BUDGET=7600   # Codex's real cap is 8000; hold slack so adding a skill does not immediately overflow
+MANIFEST_BUDGET=8000   # Codex's cap, used as-is. A margin is unused capacity
+                       # that hides the real rule: 8000 is fine, 8001 is not.
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --install) DO_INSTALL=true; shift ;;
@@ -198,6 +199,49 @@ for name in "${ALL[@]}"; do
     done
 done
 
+# --- carry the version into the body ----------------------------------------
+# Codex frontmatter allows ONLY name and description, so scaffold.sh strips
+# `version:` — and a skill that cannot read its own version stamps
+# "executor-version: unspecified" into every plan it runs. Observed live under
+# Codex. The version is not optional metadata here: it is what tells a plan
+# which era of the stack produced it.
+#
+# So it moves to the body, where Codex imposes no schema. Runs over EVERY port
+# including manual=true ones: stamping a version is mechanical, and holding it
+# back behind hand-edit protection is how the ports fell a release behind.
+for name in "${ALL[@]}"; do
+    codex_name="${name#-}"
+    out="$OUT_ROOT/$codex_name/SKILL.md"
+    [[ -f "$out" ]] || continue
+    src_v="$(sed -n 's/^version: *//p' "$SRC_ROOT/$name/SKILL.md" 2>/dev/null | head -1)"
+    [[ -n "$src_v" ]] || continue
+    fam="$(awk -F'\t' -v n="$name" '$1==n && NF>3 && $4!="-" {print $4}' "$SRC_ROOT/skillmap.tsv" 2>/dev/null)"
+    label="${fam:+$fam family }$src_v"
+    python3 - "$out" "$label" <<'PYV'
+import re, sys
+p, label = sys.argv[1], sys.argv[2]
+s = open(p).read()
+block = """**Version:** __LABEL__
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+""".replace("__LABEL__", label)
+if re.search(r"^\*\*Version:\*\* .*$", s, re.M):
+    s = re.sub(r"^\*\*Version:\*\* .*$", "**Version:** " + label, s, count=1, flags=re.M)
+else:
+    lines = s.split(chr(10))
+    h1 = next((i for i, l in enumerate(lines) if l.startswith("# ")), None)
+    if h1 is None:
+        sys.exit(0)
+    lines.insert(h1 + 1, chr(10) + block)
+    s = chr(10).join(lines)
+s = re.sub(r"<!-- version: bump on EVERY[^>]*-->",
+           "<!-- version: shared across the family; see the **Version:** line above. -->", s)
+open(p, "w").write(s)
+PYV
+done
+
 # --- fit the startup manifest ----------------------------------------------
 # Codex charges name+description of every implicitly-invocable skill against a
 # 2%-of-context / 8,000-char budget, half of Claude Code's. Descriptions written
@@ -227,6 +271,21 @@ for codex_name in "${!STAMP_SRC[@]}"; do
       echo "out=$(sha_of "$out")"
       echo "manual=false"; } > "$out/.portstamp"
 done
+
+# --- gate: nothing ships broken or over the cap -----------------------------
+# Both failure modes are silent on the far side — a port whose YAML does not
+# parse is skipped at load, and a manifest past the cap loses content without
+# naming what. So they fail HERE, loudly, before install.
+VALIDATE_OUT=""; VALIDATE_RC=0
+if [[ -d "$OUT_ROOT" ]]; then
+    VALIDATE_OUT="$(python3 "$HERE/validate.py" "$OUT_ROOT" --budget "$MANIFEST_BUDGET" 2>&1)" || VALIDATE_RC=$?
+fi
+if [[ $VALIDATE_RC -ne 0 ]]; then
+    printf '%s\n' "$VALIDATE_OUT" >&2
+    echo "REFUSING TO INSTALL — generated ports are broken or over the ${MANIFEST_BUDGET}-char cap." >&2
+    echo "The ports in $OUT_ROOT are left as generated so the diff is inspectable." >&2
+    exit 1
+fi
 
 if $DO_INSTALL; then
     mkdir -p "$INSTALL_ROOT"

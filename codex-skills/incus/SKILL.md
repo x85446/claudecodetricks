@@ -1,6 +1,6 @@
 ---
-name: incus
-description: Use whenever you need to interact with an incus VM or container — create, destroy, exec, snapshot, list, restore from snapshot, debug, or wire SSH access. Triggers on "launch incus", "spin up vm", "create container", "fresh alma 9 box", "exec into", "snapshot", "destroy this vm", "I need a test machine", "give me a build env", etc.
+name: "incus"
+description: "Use whenever you need to interact with an incus VM or container — create, destroy, exec, snapshot, list, restore from snapshot, debug, or wire SSH access. Triggers on \"launch incus\", \"spin up vm\", \"create container\", \"fresh alma 9 box\", \"exec into\", \"snapshot\", \"destroy this vm\", \"I need a test machine\", \"give me a build env\", etc."
 ---
 
 

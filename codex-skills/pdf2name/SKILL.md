@@ -1,6 +1,6 @@
 ---
-name: pdf2name
-description: Use when someone asks to rename PDFs to the standard filename format, name or file bill/statement/invoice PDFs, clean up PDF filenames from their contents, or run pdf2name. Reads each PDF's internals and renames it to "YYMMDD accountID source $amount description.pdf".
+name: "pdf2name"
+description: "Use when someone asks to rename PDFs to the standard filename format, name or file bill/statement/invoice PDFs, clean up PDF filenames from their contents, or run pdf2name. Reads each PDF's internals and renames it to \"YYMMDD accountID source $amount description.pdf\"."
 ---
 
 

@@ -1,10 +1,17 @@
 ---
-name: testmaster-maintain
-description: TESTMASTER child (invoked via $testmaster): writes new test cases and updates existing ones to match current product behavior.
+name: "testmaster-maintain"
+description: "TESTMASTER child (invoked via $testmaster): writes new test cases and updates existing ones to match current product behavior."
 ---
 
 
 # $testmaster-maintain — keep test cases true to the product
+
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Obey the shared contracts in `$testmaster`'s SKILL.md (state paths, tiers, headers, real-world mandate) — read it if not already in context.
 

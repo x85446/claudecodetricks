@@ -1,11 +1,11 @@
 ---
 name: iterate-planner
-description: The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Every new plan in a git repo gets its own feature branch; plans are teamed by default and end with three standing finishers (Makefile, TESTMASTER, product-docs). Plans are saved and animal-named under ./.claude/iterate/plans/. Never executes — the user runs /iterate for that.
+description: The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it — planning stays on your current branch, so the status line reads main until execution starts; plans are teamed by default and end with three standing finishers (Makefile, TESTMASTER, product-docs). Plans are saved and animal-named under ./.claude/iterate/plans/. Never executes — the user runs /iterate for that.
 when_to_use: Triggers on "/iterate-planner" or its alias "/ip", "plan this for iterate", "give me an iterate plan", "restate the plan", "plan with the oracle". Plan management: "status" (git + plans snapshot), "publish" / "show plan" (re-render read-only), "list plans", "add to <name>", "delete <name>", "from <name> remove <x>", "close <name>" (archive unfinished, branch left unmerged), "roll <name>" (carry unfinished steps to a new plan, same branch), "turn these notes into a plan" / "notes-to-plan". Teaming: "team this", "teamify", "team up the plan", "reorganize into teams"; reverse with "flat", "flatify", "un-team", "remove teams". Also recognizes the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps over a named scope, and the "skip" modifier ("skip", "skip finishers", "skip the pre-baked steps", "skip tests/docs/makefile") which suppresses the standing end-of-plan finishers for that plan.
 argument-hint: <optional context, e.g. "restate the plan from above", "plan: 1. do X, 2. validate Y", or "flat" / "flatify" to un-team the current plan>
-version: 3.15.0
+version: 5.1.0
 ---
-<!-- version: bump on EVERY behavioral change to this skill (minor for additions, major for schema/contract changes, patch for wording). This value is stamped into every plan this skill writes (planner-version:) — it's how a plan records which era of the planner built it. -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # /iterate-planner — Build the plan (oracle-aware), don't execute
 
@@ -80,7 +80,11 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 
 Every plan in a git repo lives on its own feature branch, managed through the **`feature-branch` skill** (`[skill: /feature-branch]`) — never by hand-rolled git commands. The lifecycle:
 
-- **At new-plan creation** (here, in the planner): invoke `/feature-branch start feature <plan-name> <short-goal-slug>` to create and check out `feature/<plan-name>-<slug>` (e.g. `feature/owl-access-preflight`) BEFORE writing the plan file, then record it in the plan's frontmatter as `branch: feature/<name>-<slug>`. This means the plan file itself, and every code edit the plan later drives, lands on the branch — never on main. (This also satisfies feature-branch's own pre-edit gate, which would otherwise block the plan-file Write on a default branch.)
+- **At new-plan creation** (here, in the planner): **do NOT create or check out the branch.** Compute the name it will have and record it as `branch: feature/<name>-<slug>` with `branch-created: false`. Planning stays on whatever branch the user is already on — normally the default one.
+
+  Planning is not editing the repo. The plan file lives under `./.claude/iterate/`, which is project metadata (commonly gitignored outright), so writing it on the default branch dirties nothing tracked. Creating a branch at plan time bought nothing and cost the single clearest signal the user has: **a status line reading `main ✔` means no iterate work is outstanding.** Switching branches the moment planning began destroyed that, leaving "not on main" to mean either real unfinished work or merely that someone once opened a planning session — and the two are indistinguishable at a glance.
+
+  **feature-branch's pre-edit gate does not apply to the plan file.** That gate protects tracked source from landing on a default branch; `./.claude/iterate/plans/<name>.md` is neither tracked source nor the plan's work product. Write it where you stand.
 - **During execution**: `/iterate` checks out the plan's `branch:` at execution start and all work happens there — see its SKILL.md.
 - **At all-green completion**: `/iterate` runs the merge flow (push → PR → merge to the default branch → delete the branch) automatically. **A plan that did not finish all-green NEVER merges** — not on blocked, not on close, not on roll-forward — unless the user explicitly orders a merge.
 - **Not a git repo** (no `.git` — e.g. a Google Drive project): skip all of this silently; write the plan with no `branch:` field and note "not a git repo — no feature branch" in the audit trail. Everything else works unchanged.
@@ -126,6 +130,8 @@ If a current plan exists and the user just describes more work, **add it to the 
 7. **close** — "close `<name>`", "close the plan", "archive `<name>` as is", "wrap it up unfinished", "close it out": archive the plan even though not everything finished. Run the Close procedure (see [procedures.md](procedures.md)). Then **stop**. The defining property: **the feature branch is NOT merged** — the close report must say so explicitly.
 
 8. **roll** — "roll `<name>`", "roll the uncompleted steps to a new plan", "carry the unfinished work forward", "roll it over": create a NEW plan holding only the source plan's unfinished steps, **inheriting the same feature branch**, and archive the source. Run the Roll-forward procedure (see [procedures.md](procedures.md)). Then **stop**. Same defining property as close: no merge happened, and the report says so.
+
+  **Exception — rolling after a landing.** When `/iterate` merged the source plan's green work and rolled only a parked feature forward (see its "Blocked on one feature"), the source branch is gone. The rolled plan gets a **new** branch name (`branch-created: false`, born at execution like any other), carries `status: blocked-on-operator` with the same reason, and states in its Goal what already landed. Report says `green work merged; <n> steps carried forward`, not the ⚠ not-merged line — that line would be false.
 
 8.5. **notes-to-plan** — `$1` matches "notes-to-plan `<topic>`", "turn these notes into a plan", "turn the latest notes into a plan", "plan from notes": resolve the notes file (`./.claude/iterate/notes/<topic>.md`; unnamed → the `notes/current` pointer, else the most-recently-modified `status: open` notes file — see `/iterate-notes`). This is a NEW-plan creation (proceed exactly as op 9 — name from `iterate-run name next`, feature branch, oracle merge, access preflight, auto-teamify) with the notes file as the plan source (Step 2): each `## Notes` line becomes candidate step material, each `## Decisions` line binds as a Constraint or shapes a step (decisions are settled — don't re-litigate them), `## Open questions` surface as `Inferred:` decisions the planner makes and logs (never as questions back to the user), and `## Research appendix` is mined for context, not steps. Provenance for notes-derived steps cites the source: `Notes <topic>: <the synthesized ask>`. After writing the plan, set the notes file's `status: consumed (plan: <name>)` — it stays in `notes/` as the record of where the plan came from.
 
@@ -231,6 +237,21 @@ The plan is written without oracle augmentation. Note in the audit trail: "Oracl
 
 This is **not opt-in** — run it on every plan write and every refinement, same as the oracle merge, over the full Goal + Steps + Validation + Constraints (including anything the oracle merge in Step 4 just added).
 
+**First, the substitution test — run it before anything gets called an access dependency.**
+
+A requirement that names a *vendor* is not automatically a dependency on that vendor. Ask, in order:
+
+- **Is the thing an open standard with a runnable implementation?** Then "a real server" is a **creation step** — stand one up (docker, a local daemon, the project's fixture) — and there is no access dependency at all. IMAP → Dovecot. SMTP → Postfix. JMAP → Stalwart, Apache James, Cyrus (which is what Fastmail itself runs). S3 → MinIO. OIDC → Keycloak. LDAP → OpenLDAP. The protocol is the requirement; the brand is one implementation of it.
+- **Is the vendor itself the deliverable?** "Sync the user's Fastmail account", "ship the Stripe integration", "deploy to their cluster" — then yes, it is a genuine access dependency and the scan below applies in full.
+- **Neither?** Take the local implementation and note the vendor as an optional extra confirmation the plan does **not** gate on.
+
+**Confirmed live (symmail `stoat`, 2026-09-09).** Two acceptance criteria of identical shape, classified opposite ways, eight lines apart in the same plan's own provenance:
+
+> 1. Inferred: the success criteria run against a real IMAP/SMTP server — a local Dovecot + Postfix fixture is a creation step, not an access dependency.
+> 9. Inferred: access preflight — "JMAP verified against Fastmail" needs a Fastmail JMAP API token.
+
+The IMAP call was right and nothing separated the two but a proper noun the roadmap document happened to use. Four validations went out written against `api.fastmail.com`, a twelve-plan queue was gated behind them, and the run ended on a paid account nobody had — to exercise an open RFC (8620/8621) that three open-source servers implement and docker starts in a minute. **A vendor name in a source document is a default, not a constraint.** When you inherit one, inherit the standard and pick the implementation yourself; write the validation against the local server and let the vendor be a bonus. Say so in the step's provenance (`Inferred: JMAP is RFC 8620 — local Stalwart is a creation step, not a Fastmail dependency`) so the substitution is visible rather than silent.
+
 1. **Scan for access dependencies** — anything later steps need reachable that isn't already local/guaranteed: SSH hosts / remote machine names (`ssh <host>`, "on <host>", VM/container targets reached via a remote), API keys / access keys / tokens / credentials / secrets, gated URLs (dashboards, APIs requiring login), cloud accounts (AWS/GCP/Cloudflare/etc.), git remotes or GitHub/GitLab orgs+repos not already known-accessible, database connection targets.
 2. **For each dependency found, identify the SPECIFIC capability later steps actually need** — not bare reachability. "Can ssh to cypressLinux" is not the requirement; "can ssh to cypressLinux AND run `incus` there AND read a target VM's build status" is. Bare-connectivity checks miss exactly the failure mode this step exists to catch.
 3. **Dedupe** — one verification step per distinct target+capability, even if several later steps reference it.
@@ -251,6 +272,30 @@ Scan the plan for a **terminal human gate**: a step whose completion inherently 
 - **Found mid-plan**: don't leave it inline where it would stall autonomous execution — restructure: move it to the end if ordering allows; otherwise split the plan at the gate (steps after it become a follow-on plan, noted in the footer) so each autonomous stretch ends at a gate rather than parking on one.
 - **Rule 9's ban on STOP-steps is unchanged** — a human-gate is not a "halt if X" check; it's a real deliverable (prepare the agenda/materials, hold the session, record decisions) whose *completion* needs a human. Prepare-side work stays agent-owned; only the decision itself gates.
 - Not found → nothing to write; most plans have no gate.
+
+### 5.6. The free-and-permissive default (mandatory, every plan)
+
+**Free and permissively licensed is the default, everywhere, without being asked for.** Paid services and copyleft code are not forbidden — they need an argument strong enough to survive being written down, and the argument is the *user's* to accept, never the planner's to assume.
+
+- **Free** means no purchase, no subscription, no metered account, no credit card to get started. A free tier that the plan's actual usage exceeds is a paid service.
+- **Permissive** means MIT, BSD, Apache-2.0, ISC, MPL-2.0 (file-scope), Unlicense/CC0. **Copyleft** — GPL, LGPL, AGPL, SSPL and friends — is the thing to route around, along with source-available and "free until you're commercial" licenses.
+
+Before writing any step that adopts a dependency, a service, or a fixture, answer three questions in the step's provenance:
+
+1. **What is the permissive, free equivalent?** Name it. There almost always is one, and "I didn't look" is the failure this gate exists to prevent. For a *test fixture* especially, the field is wide: pick the permissive one and move on.
+2. **What does the paid or copyleft option do that it can't?** A concrete capability the plan actually needs — not popularity, not polish, not that it was the first hit.
+3. **Does the obligation even attach?** Linking a copyleft library into a closed product is a real problem; running an unmodified copyleft *server* in docker to test against is not. Say which case you're in — but when a permissive equivalent exists at similar effort, take it anyway. The preference is standing, not a legal opinion.
+
+If the answer is still "paid" or "copyleft", **that is a decision, not a default**: surface it as a `human-gate` step (5.5) or send the user to `/ibs`, with the three answers attached. Never let it in silently, and never let cost or a licence appear for the first time in an executor log.
+
+Every plan that adopts anything emits the markers, same pattern as `Access:` and `Timing:`:
+
+```
+- License: <dep> — <SPDX id>; <linked | run as a service | build-time only>
+- Cost: none — <the free/self-hosted path taken>   (or: <amount>, authorized by <the user's own words>)
+```
+
+Worked example, from the substitution test above: "JMAP verified against Fastmail" is paid *and* the wrong question. The permissive answers are **Apache James (Apache-2.0)** and **Cyrus (BSD)** — Cyrus being what Fastmail itself runs, so it is also the highest-fidelity target. **Stalwart is AGPL-3.0** (dual-licensed with a proprietary enterprise edition): fine to run unmodified in a test container, still not the one to reach for first when two permissive servers speak the same RFC. Reach for the permissive one first, every time.
 
 ### 5.7. Skill tagging pass (mandatory, every step, at creation time)
 
@@ -313,7 +358,7 @@ Two behaviours, depending on what the target plan already has:
 
 **On a brand-new plan** (op 9, or the first-plan path of op 10) — after Steps 1-5 above have produced the full Goal/Steps/Validation/Constraints — do two things before writing:
 
-1. **Create the feature branch** (git repos only — see "One plan = one feature branch" above): invoke `/feature-branch start feature <plan-name>-<short-goal-slug>` so `feature/<name>-<slug>` exists and is checked out BEFORE the plan file is written. Record it as `branch:` in the frontmatter. Not a git repo → skip, no `branch:` field, one audit-trail note. (Roll-forward plans skip this too — they inherit their source's branch, per op 8.)
+1. **Name the feature branch, do not create it** (git repos only — see "One plan = one feature branch" above): compute `feature/<plan-name>-<short-goal-slug>` and record it in the frontmatter as `branch:` plus `branch-created: false`. Do not run `/feature-branch start`, do not check anything out — `/iterate` creates the branch at execution start. Not a git repo → skip, no `branch:` field, one audit-trail note. (Roll-forward plans inherit their source's branch, which by then usually exists — carry `branch-created:` forward unchanged.)
 2. Run the **Teamify procedure** (see below) automatically, unless `$1` also carried a flat trigger phrase (see "Flat trigger phrases" above), in which case skip straight to writing flat. This is what makes teaming the default: every new plan gets a real attempt at clustering, and either ends up with a `## Teams` table or a legitimate "no independent context boundaries — staying flat" outcome (both are normal, neither needs the user to ask).
 
 **Refining an existing plan triggers neither** — no new branch (the plan already has one, or deliberately has none), and no auto-teamify: a flat plan being added to stays flat (use the explicit teamify trigger if it's grown enough to warrant teams); a teamed plan being added to uses the existing cheap Auto-classify-on-add, never a full re-cluster.
@@ -354,6 +399,7 @@ human-gate: <step N>           # only when Step 5.5 found a terminal human-decis
 - Context: <oracle architecture note if applicable>
 - Timing: <known duration for a specific operation, if the oracle has one>
 - Access: <target> — <capability needed>, verified via step <N> (one per access dependency found)
+- Depends on: <the packages, binaries, or schema this plan builds on> (from plan <name>) <!-- name what must EXIST, not "stage N merged to main": a predecessor now lands its green work even when one feature parks, so a merge-phrased gate is stricter than the real dependency and stalls the queue when it needn't -->
 
 ## Teams
 <!-- Only present when teamed: true. See "Teams" section above for schema. Omit entirely on flat plans. -->
@@ -523,7 +569,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 18. **Never invalidate team membership except through teamify, flatify, or remove-from.** Refining Steps/Validation/Constraints text must not silently drop a step's team assignment. If `remove-from` deletes a step that belonged to a team, remove its number from that team's row too (renumbering the rest) — don't leave a stale reference to a step that no longer exists. Flatify is the one operation that's SUPPOSED to drop every step's team assignment at once — that's its entire job, not a bug.
 19. **Rapid-fire streaks get a one-line reply, not a full reprint.** See "Rapid-fire terse mode" above — this exists because the user queues several adds in a row without reading each one; a full plan dump on every single one is slow and clutters the conversation. Always show the full plan on the first invocation of a streak and whenever there's genuine doubt about whether the streak ended.
 20. **No fixed team count or taxonomy — split on independent context needs, not topic labels.** Two steps stay in the same team whenever they need the same files/system/domain knowledge, even if they sound topically different — splitting those gains nothing and costs two agents paying to load the same context. Two steps only go in different teams when their context needs are genuinely independent — that's the only case parallel dispatch actually saves work. Never default to a binary split ("UI vs other", "code vs everything else") and never bias toward the fewest possible groups just because fewer is simpler to write; also never bias toward the most possible groups if steps genuinely share context. Up to roughly 10 teams, discovered from actual context boundaries in the plan, not chosen from habit.
-21. **Every plan gets an access preflight pass, every time — not opt-in, not something the user has to ask for.** Scan for SSH hosts, remote machines, API/access keys, credentials, and gated URLs; write a verification step, tagged `[skill: /accounts]`, at the very front of whichever scope (global, or a specific team) actually depends on it — before any step that needs that access. The check must exercise the SPECIFIC capability later steps depend on (e.g. "can read the remote build's status"), not bare reachability — a plan that assumes access works and finds out mid-run has already wasted the time this step exists to save. See "Access preflight scan" above.
+21. **Every plan gets an access preflight pass, every time — not opt-in, not something the user has to ask for.** Scan for SSH hosts, remote machines, API/access keys, credentials, and gated URLs; write a verification step, tagged `[skill: /accounts]`, at the very front of whichever scope (global, or a specific team) actually depends on it — before any step that needs that access. The check must exercise the SPECIFIC capability later steps depend on (e.g. "can read the remote build's status"), not bare reachability — a plan that assumes access works and finds out mid-run has already wasted the time this step exists to save. **Run the substitution test first, every time**: a vendor named in a requirement is an access dependency only when that vendor is the deliverable. If the requirement is an open standard, standing up a conformant server is a creation step and there is no dependency to preflight. See "Access preflight scan" above.
 22. **Flatify never refuses on an executing plan without saying why, and never refuses on an already-flat one either.** Same phase:executing guard as delete (removing Teams out from under a live dispatch would orphan tracked status) — refuse and say so. On an already-flat plan, `flatify` is a no-op, not an error: report "already flat" and stop. Never touch the underlying `## Steps`/`## Validation` content — flatify only ever removes the `## Teams` section and flips `teamed: false`.
 23. **One plan = one feature branch, managed only through `/feature-branch`.** Every new plan in a git repo gets `feature/<name>-<slug>` created at plan-creation time and recorded as `branch:` in the frontmatter — before the plan file is written, so nothing lands on main. Roll-forward plans are the one exception: they inherit their source plan's branch verbatim and never create a new one. Not a git repo → skip silently, no `branch:` field.
 24. **Close and roll-forward NEVER merge, and ALWAYS say the merge hasn't happened.** The ⚠-line naming the unmerged branch is mandatory in both reports — the user must never discover later that archived work silently isn't on main. The only paths that merge a plan's branch are `/iterate`'s all-green completion and an explicit user order ("merge it", "close it and merge") — nothing implicit, ever.
@@ -537,3 +583,19 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 ## Examples
 
 Two full worked examples (a plain restate-the-plan run with oracle merge, and a teamify + rapid-fire-adds streak) live in [examples.md](examples.md) — load that file when you need to see the exact output shape end to end, e.g. building a similar plan-writing skill from this one as a template, or checking an edge case in the operation router / auto-classify / rapid-fire terse-mode logic against a concrete run.
+28. **Free and permissive by default — a paid service or a copyleft dependency is the user's decision, never the plan's assumption.** Name the free/permissive equivalent, say what the alternative does that it can't, and say whether the obligation actually attaches (linking vs. running a container); if it still wins, route it through a `human-gate` step or `/ibs` with those three answers attached. Emit `License:` and `Cost:` constraints for everything a plan adopts. See "The free-and-permissive default" above.
+
+## `version`
+
+`version` (or "what version") on **any** iterate skill reports the same thing —
+the family version, because the stack is versioned as one unit:
+
+```
+iterate family 5.0.0
+iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
+```
+
+Run `iterate-run version` for the second line — a real installed binary, never a
+recalled string. If members disagree, say so and name them: drift inside the
+family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
+only correct way to bump.

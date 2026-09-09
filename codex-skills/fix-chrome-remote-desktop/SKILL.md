@@ -1,6 +1,6 @@
 ---
-name: fix-chrome-remote-desktop
-description: Use when the user says "fixup chrome remote desktop", "CRD is offline", "CRD lights up then greys out", "chrome remote desktop stopped working", "reconnect chrome remote desktop", or invokes $fix-chrome-remote-desktop.
+name: "fix-chrome-remote-desktop"
+description: "Use when the user says \"fixup chrome remote desktop\", \"CRD is offline\", \"CRD lights up then greys out\", \"chrome remote desktop stopped working\", \"reconnect chrome remote desktop\", or invokes $fix-chrome-remote-desktop."
 ---
 
 

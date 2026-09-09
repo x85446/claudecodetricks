@@ -1,10 +1,17 @@
 ---
-name: uxmaster-windows
-description: UXMASTER child (invoked via $uxmaster): judges an interface against Windows 11 Fluent design and WinUI 3 conventions.
+name: "uxmaster-windows"
+description: "UXMASTER child (invoked via $uxmaster): judges an interface against Windows 11 Fluent design and WinUI 3 conventions."
 ---
 
 
 # $uxmaster-windows — does this feel like a Windows 11 app
+
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Obey the shared contracts in `$uxmaster`'s SKILL.md. Findings are `kind: platform-convention` with the Fluent/WinUI rule cited in `rule:`.
 

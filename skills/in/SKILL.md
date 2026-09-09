@@ -3,7 +3,7 @@ name: in
 description: Alias for /iterate-notes. Typing /in <anything> behaves exactly as /iterate-notes <anything> — note capture for the next iterate plan. Exists purely as a shorthand for rapid note-taking.
 argument-hint: <same arguments as /iterate-notes>
 disable-model-invocation: true
-version: 1.0.1
+version: 5.1.0
 ---
 
 # /in — alias for /iterate-notes

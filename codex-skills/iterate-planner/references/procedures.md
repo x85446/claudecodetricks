@@ -56,8 +56,8 @@ Unlike Teamify, this is never expensive — Teams is purely additive metadata (s
 The user is deliberately ending a plan that didn't finish all-green. Honor it — don't argue, don't try to finish the remaining steps first — but make the consequences visible.
 
 1. Resolve the target plan (named, else current).
-2. If `running:` is a fresh timestamp (within 90s — a live `$iterate` run): refuse — "a run is live on `<name>`; stop the loop first (`CronDelete` the id in the plan's `loop-mechanism:`), then close." Otherwise proceed (a stale heartbeat or `running: false` is the normal case here).
-3. `CronDelete` any auto-resume job the plan armed (the id recorded in `loop-mechanism:` / `cron_job_id:`) and confirm with `CronList`, so nothing re-fires against an archived plan.
+2. If `running:` is a fresh timestamp (within 90s — a live `$iterate` run): refuse — "a run is live on `<name>`; stop the loop first (`/loop` with no args), then close." Otherwise proceed (a stale heartbeat or `running: false` is the normal case here).
+3. Cancel any auto-resume loop/cron the plan set up (`/loop` no-args, or the recorded `cron_job_id:`), so nothing re-fires against an archived plan.
 4. Set `running: false`. In the plan file, leave the Steps/Validation checkboxes exactly as they stand — the archive IS the record of what didn't finish.
 4.5. **Publish the partial changelog — through the same final sweep.** If `## Changelog draft` has entries, run `$iterate`'s two-pass sweep (consolidate multi-attempt lines into as-landed lines; validate every claim against the actual tree — a closed plan is especially likely to hold draft lines for work later abandoned) and distill the survivors into `CHANGELOG.md` + `RELEASES.md`, entry heading suffixed `(partial — plan closed unfinished)`. Completed work deserves its record even when the plan didn't; an empty or fully-swept-away draft publishes nothing.
 5. Move `plans/<name>.md` → `archive/<UTC-timestamp>-<name>-closed.md` (and `plans/<name>.teams/` → `archive/<UTC-timestamp>-<name>-closed.teams/` if teamed). Repoint/clear `current` same as the delete op.

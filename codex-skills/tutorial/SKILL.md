@@ -1,11 +1,18 @@
 ---
-name: tutorial
-description: Builds and maintains self-running bash tutorials that live in the codebase. A tutorial walks a human through a program by showing each real command pre-filled and editable, running it on Enter — no copy-paste, no setup, no thinking. Menu-driven and extensible; also updates, reorganizes, deletes, and audits existing tutorials as the code changes.
+name: "tutorial"
+description: "Builds and maintains self-running bash tutorials that live in the codebase. A tutorial walks a human through a program by showing each real command pre-filled and editable, running it on Enter — no copy-paste, no setup, no thinking. Menu-driven and extensible; also updates, reorganizes, deletes, and audits existing tutorials as the code changes."
 ---
 
-<!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $tutorial — self-running tutorials that live with the code
+
+**Version:** 1.2.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Builds a **bash tutorial the human drives with the Enter key**. Every step prints the real command already filled in — arguments and all — and runs it when they hit Enter. They can edit the line first; they never have to type one from scratch, look anything up, or set anything up. The point is training and demoing with zero friction.
 
