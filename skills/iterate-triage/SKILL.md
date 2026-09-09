@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and gives a verdict plus the shortest path back to main. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: (none — reads the project state)
-version: 5.0.0
+version: 5.1.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -107,6 +107,13 @@ picks cyan plans up **before** anything never started.
 Only mark it when the blocker is actually gone — verify it, don't take "should
 be fine" for an answer. A plan wrongly marked cyan goes straight back into the
 queue to fail on the same wall.
+
+**Then check that something is still ticking.** A conductor whose whole queue
+was red stands its own cron down (`stood-down:` in `conductor.md`) — cyan is
+exactly the event it was waiting for, and it has no tick left to notice it with.
+Re-arm it with `/iterate-conductor start` and say you did. Otherwise the plan
+you just cleared sits cyan in front of a conductor that will never look again,
+which is the same stall you were called in to fix, wearing a friendlier colour.
 
 ### Unblocking while the conductor is running something else
 

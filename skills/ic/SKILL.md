@@ -3,7 +3,7 @@ name: ic
 description: Alias for /iterate-conductor. Typing /ic <anything> behaves exactly as /iterate-conductor <anything> — start/stop/pause/resume/run/status/kill of the unattended queue sweep. Exists purely as a shorthand.
 argument-hint: <same arguments as /iterate-conductor>
 disable-model-invocation: true
-version: 5.0.0
+version: 5.1.0
 ---
 
 # /ic — alias for /iterate-conductor
