@@ -271,6 +271,30 @@ Scan the plan for a **terminal human gate**: a step whose completion inherently 
 - **Rule 9's ban on STOP-steps is unchanged** — a human-gate is not a "halt if X" check; it's a real deliverable (prepare the agenda/materials, hold the session, record decisions) whose *completion* needs a human. Prepare-side work stays agent-owned; only the decision itself gates.
 - Not found → nothing to write; most plans have no gate.
 
+### 5.6. The free-and-permissive default (mandatory, every plan)
+
+**Free and permissively licensed is the default, everywhere, without being asked for.** Paid services and copyleft code are not forbidden — they need an argument strong enough to survive being written down, and the argument is the *user's* to accept, never the planner's to assume.
+
+- **Free** means no purchase, no subscription, no metered account, no credit card to get started. A free tier that the plan's actual usage exceeds is a paid service.
+- **Permissive** means MIT, BSD, Apache-2.0, ISC, MPL-2.0 (file-scope), Unlicense/CC0. **Copyleft** — GPL, LGPL, AGPL, SSPL and friends — is the thing to route around, along with source-available and "free until you're commercial" licenses.
+
+Before writing any step that adopts a dependency, a service, or a fixture, answer three questions in the step's provenance:
+
+1. **What is the permissive, free equivalent?** Name it. There almost always is one, and "I didn't look" is the failure this gate exists to prevent. For a *test fixture* especially, the field is wide: pick the permissive one and move on.
+2. **What does the paid or copyleft option do that it can't?** A concrete capability the plan actually needs — not popularity, not polish, not that it was the first hit.
+3. **Does the obligation even attach?** Linking a copyleft library into a closed product is a real problem; running an unmodified copyleft *server* in docker to test against is not. Say which case you're in — but when a permissive equivalent exists at similar effort, take it anyway. The preference is standing, not a legal opinion.
+
+If the answer is still "paid" or "copyleft", **that is a decision, not a default**: surface it as a `human-gate` step (5.5) or send the user to `/ibs`, with the three answers attached. Never let it in silently, and never let cost or a licence appear for the first time in an executor log.
+
+Every plan that adopts anything emits the markers, same pattern as `Access:` and `Timing:`:
+
+```
+- License: <dep> — <SPDX id>; <linked | run as a service | build-time only>
+- Cost: none — <the free/self-hosted path taken>   (or: <amount>, authorized by <the user's own words>)
+```
+
+Worked example, from the substitution test above: "JMAP verified against Fastmail" is paid *and* the wrong question. The permissive answers are **Apache James (Apache-2.0)** and **Cyrus (BSD)** — Cyrus being what Fastmail itself runs, so it is also the highest-fidelity target. **Stalwart is AGPL-3.0** (dual-licensed with a proprietary enterprise edition): fine to run unmodified in a test container, still not the one to reach for first when two permissive servers speak the same RFC. Reach for the permissive one first, every time.
+
 ### 5.7. Skill tagging pass (mandatory, every step, at creation time)
 
 The available-skills list is already in context (descriptions are always loaded) — this pass costs a lookup, not a load. For EVERY step, at the moment it's written:
@@ -556,6 +580,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 ## Examples
 
 Two full worked examples (a plain restate-the-plan run with oracle merge, and a teamify + rapid-fire-adds streak) live in [examples.md](examples.md) — load that file when you need to see the exact output shape end to end, e.g. building a similar plan-writing skill from this one as a template, or checking an edge case in the operation router / auto-classify / rapid-fire terse-mode logic against a concrete run.
+28. **Free and permissive by default — a paid service or a copyleft dependency is the user's decision, never the plan's assumption.** Name the free/permissive equivalent, say what the alternative does that it can't, and say whether the obligation actually attaches (linking vs. running a container); if it still wins, route it through a `human-gate` step or `/ibs` with those three answers attached. Emit `License:` and `Cost:` constraints for everything a plan adopts. See "The free-and-permissive default" above.
 
 ## `version`
 
