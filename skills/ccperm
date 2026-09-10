@@ -1,0 +1,300 @@
+#!/usr/bin/env python3
+"""ccperm — keep Claude Code permission rules from evaporating, and keep
+feedback drafts off Anthropic's servers.
+
+Two problems, one file.
+
+1. Approvals you click land in `settings.local.json`, which is per-project, so
+   every new repo starts blank and you re-approve the same commands daily.
+   Worse, entering auto mode DROPS broad allow rules that grant arbitrary code
+   execution and only restores them when you leave, so a broad approval cannot
+   survive a session no matter where it is written. Narrow rules in the global
+   `~/.claude/settings.json` are the only ones that persist.
+
+2. `SendFeedback` queues a draft under ~/.claude/feedback/drafts/. Nothing is
+   transmitted unless you run /feedback. `draft purge` deletes them so the
+   question never comes up.
+
+Grammar: <noun> <verb> [operands] with flags accepted in any position.
+
+  ccperm rules show                  where every rule lives, and which are doomed
+  ccperm rules install [--migrate]   write narrow rules to the global settings
+  ccperm rules revert                restore the newest backup
+  ccperm draft list                  queued feedback drafts, with titles
+  ccperm draft purge                 delete them, unsent
+
+  --dry-run    print what would change, write nothing
+  --yes        skip the confirmation on destructive verbs
+  --json       machine output
+"""
+import json
+import os
+import re
+import shutil
+import sys
+import time
+
+HOME = os.path.expanduser("~")
+GLOBAL = os.path.join(HOME, ".claude", "settings.json")
+USER_LOCAL = os.path.join(HOME, ".claude", "settings.local.json")
+DRAFTS = os.path.join(HOME, ".claude", "feedback", "drafts")
+
+# The rules worth having globally: narrow enough to survive auto mode, and
+# exactly the "turn in my code" path that keeps getting blocked.
+WANT = [
+    "Bash(gh pr merge:*)",
+    "Bash(gh pr create:*)",
+    "Bash(gh pr view:*)",
+    "Bash(gh pr list:*)",
+    "Bash(gh pr checks:*)",
+]
+
+# Allow rules auto mode drops on entry and restores on exit. A rule matching
+# any of these cannot persist, which is why re-adding it feels endless.
+BROAD = [
+    (re.compile(r"^Bash\(\*\)$"), "blanket Bash"),
+    (re.compile(r"^PowerShell\(\*\)$"), "blanket PowerShell"),
+    (re.compile(r"^Bash\((python|node|ruby|perl|sh|bash|zsh|deno|bun)\*"), "wildcarded interpreter"),
+    (re.compile(r"^Bash\((npm|pnpm|yarn|bun|pip|uv|cargo|go) run"), "package-manager run"),
+    (re.compile(r"^Agent\("), "Agent rule"),
+    (re.compile(r"^Monitor\("), "Monitor rule"),
+]
+
+
+def load(path):
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (json.JSONDecodeError, OSError) as exc:
+        die(f"cannot read {path}: {exc}")
+
+
+def allows(path):
+    return load(path).get("permissions", {}).get("allow", [])
+
+
+def broad_reason(rule):
+    for pat, why in BROAD:
+        if pat.search(rule):
+            return why
+    return None
+
+
+def die(msg):
+    print(f"ccperm: {msg}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def confirm(prompt, opts):
+    if opts["yes"] or opts["dry_run"]:
+        return True
+    try:
+        return input(f"{prompt} [y/N] ").strip().lower() in ("y", "yes")
+    except EOFError:
+        return False
+
+
+def project_locals():
+    """Every .claude/settings.local.json under the usual workspace roots."""
+    found = []
+    for root in (os.path.join(HOME, "workspace"), os.getcwd()):
+        if not os.path.isdir(root):
+            continue
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames
+                           if d not in (".git", "node_modules", "vendor", "target")]
+            if "settings.local.json" in filenames and dirpath.endswith(".claude"):
+                found.append(os.path.join(dirpath, "settings.local.json"))
+            if len(found) >= 200:
+                return found
+    return found
+
+
+def rules_show(opts):
+    rows = [("global", GLOBAL, allows(GLOBAL)),
+            ("user-local", USER_LOCAL, allows(USER_LOCAL))]
+    for path in project_locals():
+        rows.append(("project-local", path, allows(path)))
+
+    if opts["json"]:
+        print(json.dumps([{"scope": s, "path": p, "count": len(a), "rules": a}
+                          for s, p, a in rows], indent=2))
+        return 0
+
+    for scope, path, rules in rows:
+        doomed = [r for r in rules if broad_reason(r)]
+        note = f"\t{len(doomed)} dropped in auto mode" if doomed else ""
+        print(f"{scope}\t{len(rules)}\t{path}{note}")
+
+    missing = [r for r in WANT if r not in allows(GLOBAL)]
+    print()
+    if missing:
+        print(f"missing from global\t{len(missing)}")
+        for r in missing:
+            print(f"  {r}")
+        print("\nfix: ccperm rules install")
+    else:
+        print("global\tall wanted rules present")
+
+    everywhere = [(s, r, broad_reason(r)) for s, _, rs in rows for r in rs if broad_reason(r)]
+    if everywhere:
+        print("\nthese cannot persist in auto mode, whatever file they sit in:")
+        for scope, rule, why in everywhere:
+            print(f"  {scope}\t{rule}\t{why}")
+    return 0
+
+
+def rules_install(opts):
+    data = load(GLOBAL)
+    allow = data.setdefault("permissions", {}).setdefault("allow", [])
+    added = [r for r in WANT if r not in allow]
+
+    migrated, refused = [], []
+    if opts["migrate"]:
+        for rule in allows(USER_LOCAL):
+            if rule in allow or rule in added:
+                continue
+            why = broad_reason(rule)
+            if why:
+                refused.append((rule, why))
+            else:
+                migrated.append(rule)
+
+    if not added and not migrated:
+        print("global\tnothing to add")
+        for rule, why in refused:
+            print(f"skipped\t{rule}\t{why}")
+        return 0
+
+    for rule in added + migrated:
+        print(f"+ {rule}")
+    for rule, why in refused:
+        print(f"skipped\t{rule}\t{why} — auto mode would drop it anyway")
+
+    if opts["dry_run"]:
+        print("\ndry run, nothing written")
+        return 0
+    if not confirm(f"write {len(added) + len(migrated)} rules to {GLOBAL}?", opts):
+        print("aborted")
+        return 1
+
+    backup = f"{GLOBAL}.bak.{time.strftime('%Y%m%dT%H%M%S')}"
+    if os.path.exists(GLOBAL):
+        shutil.copy2(GLOBAL, backup)
+    allow.extend(added + migrated)
+    tmp = f"{GLOBAL}.tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+        fh.write("\n")
+    os.replace(tmp, GLOBAL)
+    print(f"\nwrote\t{GLOBAL}")
+    print(f"backup\t{backup}")
+    print("restart Claude Code, or run /permissions to confirm they loaded")
+    return 0
+
+
+def rules_revert(opts):
+    d = os.path.dirname(GLOBAL)
+    backups = sorted(f for f in os.listdir(d)
+                     if f.startswith("settings.json.bak."))
+    if not backups:
+        die("no backup found")
+    newest = os.path.join(d, backups[-1])
+    print(f"restore\t{newest}\t-> {GLOBAL}")
+    if opts["dry_run"]:
+        print("dry run, nothing written")
+        return 0
+    if not confirm("restore it?", opts):
+        print("aborted")
+        return 1
+    shutil.copy2(newest, GLOBAL)
+    print("restored")
+    return 0
+
+
+def draft_list(opts):
+    if not os.path.isdir(DRAFTS):
+        print("drafts\t0")
+        return 0
+    files = sorted(f for f in os.listdir(DRAFTS) if f.endswith(".json"))
+    if opts["json"]:
+        out = []
+        for f in files:
+            out.append({"file": f, "body": load(os.path.join(DRAFTS, f))})
+        print(json.dumps(out, indent=2))
+        return 0
+    print(f"drafts\t{len(files)}\t{DRAFTS}")
+    for f in files:
+        body = load(os.path.join(DRAFTS, f))
+        title = body.get("title") or body.get("type") or "(untitled)"
+        print(f"  {f}\t{title}")
+    if files:
+        print("\nnothing is sent unless you run /feedback. delete: ccperm draft purge")
+    return 0
+
+
+def draft_purge(opts):
+    if not os.path.isdir(DRAFTS):
+        print("drafts\t0")
+        return 0
+    files = [f for f in os.listdir(DRAFTS) if f.endswith(".json")]
+    if not files:
+        print("drafts\t0")
+        return 0
+    for f in files:
+        print(f"- {f}")
+    if opts["dry_run"]:
+        print("dry run, nothing deleted")
+        return 0
+    if not confirm(f"delete {len(files)} unsent draft(s)?", opts):
+        print("aborted")
+        return 1
+    for f in files:
+        os.remove(os.path.join(DRAFTS, f))
+    print(f"deleted\t{len(files)}")
+    return 0
+
+
+VERBS = {
+    ("rules", "show"): rules_show,
+    ("rules", "install"): rules_install,
+    ("rules", "revert"): rules_revert,
+    ("draft", "list"): draft_list,
+    ("draft", "purge"): draft_purge,
+}
+
+
+def main(argv):
+    opts = {"dry_run": False, "yes": False, "json": False, "migrate": False}
+    words = []
+    for arg in argv:                       # flags parse in any position
+        if arg in ("-h", "--help"):
+            print(__doc__)
+            return 0
+        if arg == "--dry-run":
+            opts["dry_run"] = True
+        elif arg in ("-y", "--yes"):
+            opts["yes"] = True
+        elif arg == "--json":
+            opts["json"] = True
+        elif arg == "--migrate":
+            opts["migrate"] = True
+        elif arg.startswith("-"):
+            die(f"unknown flag {arg}\ntry: ccperm --help")
+        else:
+            words.append(arg)
+
+    if not words:
+        return rules_show(opts)
+    if len(words) == 1:
+        words.append({"rules": "show", "draft": "list"}.get(words[0], ""))
+    key = (words[0], words[1])
+    if key not in VERBS:
+        die(f"unknown command: {' '.join(words[:2]).strip()}\ntry: ccperm --help")
+    return VERBS[key](opts)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
