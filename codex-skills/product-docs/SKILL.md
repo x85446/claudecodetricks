@@ -10,7 +10,7 @@ description: "Invoked as iterate plans' standing final task, or directly (\"upda
 
 ## What this skill does
 
-Maintains the END-USER product documentation of the current project — each invocation brings the docs to match the product as it is right now: documents new features and how to operate them, updates changed behavior, and DELETES documentation for removed features.
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
 Maintains the END-USER product documentation of the current project — each invocation brings the docs to match the product as it is right now: documents new features and how to operate them, updates changed behavior, and DELETES documentation for removed features.
 
@@ -23,7 +23,7 @@ End-user documentation only: what the product does and how to operate it, writte
 
 ## Usage
 
-Argument: <optional scope hint — default: everything that changed since docs were last true>. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: "<optional scope hint — default: everything that changed since docs were last true>". `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 

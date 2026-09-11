@@ -10,7 +10,7 @@ description: "Use when creating or modifying a Makefile, adding make targets, se
 
 ## What this skill does
 
-Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation.
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
 Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation.
 
@@ -23,7 +23,7 @@ Create and maintain Makefiles using the 2-layer system. If `$ARGUMENTS` is provi
 
 ## Usage
 
-Argument: [action] [details]. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: "[action] [details]". `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 

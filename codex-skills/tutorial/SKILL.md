@@ -18,7 +18,7 @@ Builds a **bash tutorial the human drives with the Enter key**. Every step print
 
 ## Usage
 
-Argument: <what to build a tutorial for, or: list | update <name> | audit | reorganize | delete <name>>. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: "<what to build a tutorial for, or: list | update <name> | audit | reorganize | delete <name>>". `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 

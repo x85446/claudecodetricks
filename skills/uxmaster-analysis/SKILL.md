@@ -1,6 +1,6 @@
 ---
 name: uxmaster-analysis
-description: UXMASTER child (invoked via /uxmaster): platform-agnostic UX audit — task flow, information architecture, state and error handling, accessibility fundamentals.
+description: "UXMASTER child (invoked via /uxmaster): platform-agnostic UX audit — task flow, information architecture, state and error handling, accessibility fundamentals."
 argument-hint: <surface to analyze, e.g. "the settings screen" or "first-run onboarding">
 version: 1.1.0
 ---

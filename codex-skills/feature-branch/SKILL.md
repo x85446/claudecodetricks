@@ -1,5 +1,5 @@
 ---
-name: "feature-branch"
+name: feature-branch
 description: "Use when the user says 'start a feature', 'fix a bug', 'work on X', 'open a PR', 'open an MR', 'merge this branch', 'clean up branches', 'prune branches', or runs `$feature-branch`."
 ---
 
@@ -8,7 +8,7 @@ description: "Use when the user says 'start a feature', 'fix a bug', 'work on X'
 
 ## What this skill does
 
-Enforce the Atlassian feature-branch workflow for GitHub and GitLab repos: branch off the default branch, work, open a PR/MR, and delete the local + remote branch once merged.
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
 Enforce the Atlassian feature-branch workflow for GitHub and GitLab repos: branch off the default branch, work, open a PR/MR, and delete the local + remote branch once merged. Also: BEFORE any code edit (Edit/Write) in a git repo, this skill must check the current branch — if on the default branch (main/master/develop), block the edit and create a feature/bugfix branch first.
 

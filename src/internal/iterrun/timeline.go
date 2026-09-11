@@ -916,6 +916,43 @@ func PrintTimelineSummary(w io.Writer, rows []Row) {
 	}
 }
 
+// planMetaLine renders the plan detail page's harness/version/launch-command
+// strip, right under the title. Three independent pieces of truth live
+// here: which harness produced this plan (PlanSummary.Harness), which
+// family version wrote or is running it (PlanSummary.Version, may be
+// empty on a very old plan), and the exact command to resume it — in
+// that harness's OWN syntax, since a dashboard that prints a command the
+// reader's harness doesn't have is worse than printing none. An
+// "unknown" plan (the field is genuinely absent — see PlanSummary.Harness)
+// shows both forms, each labelled, rather than guessing.
+func planMetaLine(plan PlanSummary) string {
+	var b strings.Builder
+	b.WriteString(`<div class="planmeta">`)
+
+	hlabel, hclass := harnessBadge(plan.Harness)
+	fmt.Fprintf(&b, `<span class="hbadge %s">%s</span>`, hclass, html.EscapeString(hlabel))
+
+	if plan.Version != "" {
+		fmt.Fprintf(&b, `<span class="planmeta-version">iterate family %s</span>`, html.EscapeString(plan.Version))
+	}
+
+	name := html.EscapeString(plan.Name)
+	claudeCmd := `/iterate ` + name
+	codexCmd := `$iterate ` + name
+	switch plan.Harness {
+	case "claude-code":
+		fmt.Fprintf(&b, `<code class="launch-cmd">%s</code>`, claudeCmd)
+	case "codex":
+		fmt.Fprintf(&b, `<code class="launch-cmd">%s</code>`, codexCmd)
+	default:
+		fmt.Fprintf(&b, `<code class="launch-cmd"><span class="launch-tag">claude-code</span> %s</code>`, claudeCmd)
+		fmt.Fprintf(&b, `<code class="launch-cmd"><span class="launch-tag">codex</span> %s</code>`, codexCmd)
+	}
+
+	b.WriteString(`</div>`)
+	return b.String()
+}
+
 // RenderTimelineHTML builds a self-contained Gantt-style timeline page: one
 // row per agent, busy spans as bars, gaps left visibly blank (and colored
 // when severe) so downtime is something you SEE, not something you
@@ -937,6 +974,7 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		eyebrow = `<div class="eyebrow">iterate plan <span class="archived-chip">archived</span></div>`
 	}
 	header := backLink + eyebrow + `<h1>` + html.EscapeString(planName) + `</h1>`
+	header += planMetaLine(plan)
 	if plan.Blocked() && plan.NextAttempt != "" {
 		// The most urgent thing on the page, so it goes first — a plan can
 		// have every team done and still be sitting here waiting on one
@@ -1586,6 +1624,14 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
 .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
 .archived-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.02em;background:var(--surface-2);color:var(--text-faint);border:1px solid var(--border)}
 h1{font-size:24px;font-weight:700;margin:2px 0 8px;text-wrap:balance;letter-spacing:-.01em}
+.planmeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
+.hbadge{font-size:10px;letter-spacing:.02em;padding:3px 8px;border-radius:4px;text-align:center;font-weight:600;border:1px solid transparent}
+.h-claude{background:var(--accent-bg);color:var(--accent)}
+.h-codex{background:var(--good-bg);color:var(--good)}
+.h-unknown{background:var(--queued-bg);color:var(--queued);border-color:var(--border)}
+.planmeta-version{font-size:11px;color:var(--text-faint);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.launch-cmd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;color:var(--text)}
+.launch-tag{color:var(--text-faint);margin-right:4px}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin:26px 0 12px}
 .sub{color:var(--text-dim);font-size:12px;margin-bottom:10px}
 .runbox{display:flex;align-items:baseline;gap:8px;margin:0 0 18px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px}

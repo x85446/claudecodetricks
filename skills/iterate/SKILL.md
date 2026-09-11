@@ -3,7 +3,7 @@ name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: <paragraph describing the work to do AND how to validate success>
 disable-model-invocation: true
-version: 5.1.0
+version: 5.1.1
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -300,6 +300,7 @@ Executing: <UTC timestamp>     # same instant as Started: on this direct fresh-t
 CWD: <pwd at first invocation>
 phase: executing
 executor-version: <version>    # this skill's own frontmatter `version:` — stamped when phase first flips to executing; on resume by a DIFFERENT version, leave it and add a Status/Log line "resumed by executor <version>"
+harness: claude-code           # this direct fresh-task path has no planner run — you're creating the plan file yourself, on Claude Code, so stamp it here. On a plan transitioning from `phase: planned`, this field already exists (written by whichever harness's planner created it) — leave it exactly as found, same as `branch:` and `planner-version:`; never overwrite it with the executor's own harness.
 running: <UTC timestamp>       # heartbeat — update at every step boundary
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo) — see "Feature branch" above
 loop-mechanism: cron <job-id>  # or "/loop" — EXACTLY what the auto-resume armed; cancellation targets this; cleared on verified cancel
@@ -336,7 +337,7 @@ Distilled into CHANGELOG.md + RELEASES.md once, at the success path — see "Cha
 
 If resuming, do not overwrite — append to Decisions log and Status / Log. Update the `running:` heartbeat as you work.
 
-If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Validation/Constraints are already there — just set `phase: executing`, **add `Executing: <UTC timestamp now>` and `executor-version: <this skill's version>` lines** (this is the real execution-start marker the dashboard's "Running for" box reads — do NOT touch `Started:`, which stays as the original drafting time), take the lock, set up `/loop`, and start. Do not re-parse from $1.
+If transitioning from `phase: planned` (set by `/iterate-planner`): the Steps/Validation/Constraints are already there — just set `phase: executing`, **add `Executing: <UTC timestamp now>` and `executor-version: <this skill's version>` lines** (this is the real execution-start marker the dashboard's "Running for" box reads — do NOT touch `Started:`, which stays as the original drafting time), take the lock, set up `/loop`, and start. Do not re-parse from $1. Also do NOT touch `harness:` — it already names whichever harness's planner wrote the file (or reads `unknown` on a pre-existing plan that never had the field); the executor never rewrites it, even when the executing harness differs from the one that planned it.
 
 ### 3. Execute the steps
 

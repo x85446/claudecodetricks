@@ -3,6 +3,7 @@
 A Claude Code marketplace providing:
 - **Agent Teams**: Pre-configured multi-agent teams for product development
 - **Session Hooks**: Voice announcements, AI-powered logging, and automatic git commits
+- **Iterate Dashboard**: One page showing every plan across all your projects, optionally always-on
 
 ## Plugins
 
@@ -191,6 +192,88 @@ Suggested commit:
 
 Create commit now? (y/N)
 ```
+
+## Iterate Dashboard
+
+The dashboard shows every iterate plan across all your projects on one page: which are running, which are blocked, which finished, and how long each took.
+
+### See it now
+
+```bash
+make run
+```
+
+This builds and starts the dashboard on a free port, printing its URL:
+
+```
+iterate-run dashboard: http://127.0.0.1:50425
+```
+
+Press `Ctrl-C` to stop. Use this when you just want to look at something once.
+
+### Keep it running
+
+To have the dashboard always available at the same address, install it as a background service:
+
+```bash
+make serve-install     # starts it now, and again at every login
+make serve-status      # is it running?
+make serve-uninstall   # stop it for good
+```
+
+Once installed it serves at **http://localhost:8420** and restarts itself if it ever dies. Check it without opening a browser:
+
+```bash
+curl localhost:8420/healthz
+# ok iterate-run iterate-v3.3 (commit 81f75486, built 2026-09-11_01:59:29)
+```
+
+`make serve-status` reports the service state and its process id:
+
+```
+plist:   /Users/travis/Library/LaunchAgents/com.x85446.iterate-run-serve.plist
+	state = running
+	pid = 47913
+	last exit code = (never exited)
+```
+
+Logs go to `~/Library/Logs/iterate-run/serve.log`.
+
+### Keep it on screen
+
+A dedicated browser window can sit on the dashboard permanently, reopening itself if you close it:
+
+```bash
+make chrome-install     # opens Chrome on the dashboard, and keeps it open
+make chrome-status
+make chrome-uninstall
+```
+
+This window runs in its own browser profile, so your everyday Chrome — bookmarks, extensions, signed-in accounts — is untouched. It also exposes a debugging port on **9242** for tools that attach to a browser. That is deliberately not Chrome's usual 9222, so nothing that attaches to your normal browser lands here by accident.
+
+To use Chromium or another Chromium-family browser instead:
+
+```bash
+make chrome-install CHROME_BIN=/Applications/Chromium.app/Contents/MacOS/Chromium
+```
+
+Both services are macOS only. On other systems the commands stop with a clear message rather than half-installing.
+
+### What the dashboard shows
+
+Each plan card carries:
+
+- **Which assistant produced it** — a badge reading `claude-code` or `codex`. Plans made before this was recorded show `unknown` rather than guessing.
+- **The right command to run it** — `/iterate <name>` for Claude Code plans, `$iterate <name>` for Codex ones. A project holding both shows both, labelled.
+- **The version** that produced it, read from whichever marker the plan carries.
+- **Conductor state per project** — whether the unattended runner is working, watching, or stood down, and when it next checks. A conductor that is switched on but has nothing to trigger it reads `NO TRIGGER`, so a runner that will never actually fire cannot look healthy.
+
+### Plan names
+
+Plans are named after animals, drawn from a pool of 1,442 across every letter. Each project works through the alphabet in its own order, and no two plans anywhere on your machine ever get the same name.
+
+If a letter runs out, naming moves to the next letter with room rather than failing. Only a completely exhausted pool is an error, and it tells you how many names remain under each letter.
+
 
 ## Development
 

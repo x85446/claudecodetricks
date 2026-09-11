@@ -1,6 +1,6 @@
 ---
 name: "iterate-triage"
-description: "Walk up to a stale terminal and find out what's going on in one short answer. Use when the status line shows a feature branch instead of \"main ✔\", when a plan looks stuck, or when you've been away and don't remember where you left off."
+description: "Use when the status line shows a feature branch instead of \"main ✔\", when a plan looks stuck, or when you've been away and don't remember where you left off."
 ---
 
 
@@ -8,13 +8,13 @@ description: "Walk up to a stale terminal and find out what's going on in one sh
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.1.0
+**Version:** iterate family 5.1.1
 
 ## What this skill does
 
 <!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
-Reads the real state — plans, branch, uncommitted work, blockers — and gives a verdict plus the shortest path back to main.
+Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, with the one act that clears each.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -44,26 +44,67 @@ branch, no human. So if the repo is sitting on a feature branch, something
 failed to happen. Say what, plainly, in one line. Never present a stuck state as
 if it were the normal end of a run.
 
-## Answer in this shape, and keep it short
+## Answer in this shape — the broken, and how each gets fixed. Nothing else.
 
 ```
-nightjar — blocked, 14/22 steps, branch feature/nightjar-testmaster (6 days)
-
-  ✗ 3 things need you:
-      1. delete macos-bake-tahoe, the orphan image, the build VM   (~109 GiB)
-      2. stop/start win-runner — your live Windows runner
-      3. router creds for the lease-table check
-
-  ✓ committed 19 files of verified work that were sitting loose
-  ✗ not merged — 4 failing facets; merging would put a red suite on main
-
-  → start with #1? it closes steps 4, 5, 6, 10.
+complete: 27 of 28
+broken: 1 of 28
+Detail:
+  problem 1: step 28 is a human gate. The moment the rules publish, the
+    router moves 26 scans into 38 documents — 29 routed downstream, 9 held
+    in .review for missing pages — and nothing has approved that split.
+    The gate reads docs/scanner-decisions.md; two of its rows are
+    contestable (the intake types that existed in no signature file).
+  problem 2: 83 files of finished work sat uncommitted for 14 hours. A run
+    that stops at a human gate never reaches $iterate's merge-time commit,
+    so nothing protected the work.
+Fix:
+  problem 1: /tmp/wombat-p1.sh publishes the rules and runs the sweep.
+    Check the two contestable rows in docs/scanner-decisions.md, then
+    `pbcopy < /tmp/wombat-p1.sh` and paste into any terminal.
+  problem 2: done — committed as 3f2a9c1 on feature/wombat-router-filer-reject.
 ```
 
-A verdict line, what needs *you* as a numbered list, what triage already did,
-and one concrete next move. **No narration of how you found out**, no restating
-the plan, no essay. If the whole answer is "everything's fine, you're on main",
-that is one line and you stop.
+Two count lines, then one entry per problem in two lists that share their
+numbers. Nothing before, between, or after.
+
+- **`complete` / `broken` count the plan's steps.** `broken` is every step not
+  done — blocked, failed, gated. With no plan in play, count what is in front
+  of you (branches, PRs) and say so in the same line.
+- **A problem is anything standing between here and `main ✔`**: a blocked
+  step, a gate, or an automation defect triage found — work sitting loose, a
+  merge that never happened, a dead loop still recorded in a plan file. A step
+  that is merely not started is not a problem.
+- **`Detail` says what is broken, ≤150 words, in the user's terms.** What it
+  is, why it stopped here, what it holds up. No restating the plan, no
+  narration of how you found out, no reassurance about what still holds.
+- **`Fix` says how it gets cleared with the least the human can possibly do,
+  ≤50 words.** Triage plans the whole route and does every machine step
+  *before* writing the line, so what is left for the human is exactly one act:
+  - **Run one command.** When the fix is commands the human must issue — a
+    `gh pr merge`, a deletion, a credential paste — write them into
+    `/tmp/<plan>-p<N>.sh`, make it executable, and give the one line that
+    puts it on the clipboard: `pbcopy < /tmp/<plan>-p<N>.sh`. The rest of the
+    50 words say what the script does. One script per problem; never a list
+    of commands to type by hand.
+  - **Say `launch problem N`.** When the human must do something no script
+    can — sign in, create an account, click through a console, decide a row —
+    say how far you get on your own (`I get us to the consent screen; you sign
+    in`) and stop. Their `launch problem N` is the go: do all of it, hand back
+    the single thing only they can do, and finish the rest the moment it
+    lands.
+  - **`done — <what>`.** A problem triage already fixed under "What triage does
+    without asking" gets one line here (`done — committed 83 files as
+    3f2a9c1`) and one line in `Detail`. It is still reported: a silent fix
+    hides the bug that caused it.
+- **Nothing that is good goes in the answer.** No ✓ lines, no "standing
+  constraints still hold", no recap of what the plan achieved, no offer, no
+  "want me to?". The person asked what is broken; every other word is in the
+  way. If nothing is broken, the whole answer is the two count lines and one
+  clause saying where things stand — `merged, on main` · `planned, never
+  started` · `running now, heartbeat 20s, leaving it alone` — then stop.
+- **Most-unblocking first.** If clearing one problem closes several steps,
+  that is the first thing its `Detail` says.
 
 ## Decide which case this is
 
@@ -74,16 +115,16 @@ fits.
 
 | State | Verdict and action |
 |---|---|
-| On default branch, clean, no plans | "clean — nothing outstanding." One line. Stop. |
-| Plans exist, all `phase: planned`, on default branch | **Planning session, never kicked off.** Name the plans, say nothing is running, offer to add to one or start it. This is a normal resting state, not a fault. |
+| On default branch, clean, no plans | `complete: 0 of 0 · broken: 0 of 0 — clean, nothing outstanding.` Stop. |
+| Plans exist, all `phase: planned`, on default branch | **Planning session, never kicked off.** `broken: 0` — name the plans; `$iterate <name>` starts one. A normal resting state, not a fault. |
 | `phase: executing`, `running:` heartbeat fresh (<90s) | **A run is live right now.** Report the step count and leave it alone. Do not touch the branch, the plan, or the tree. |
 | `phase: executing`, no fresh heartbeat, all steps done, all validations green, not merged | **The merge never happened.** This is the failure case — finish it (see below). |
-| `phase: executing`, `status: blocked-on-operator` / `awaiting-human-gate` | **Blocked on you.** Extract exactly what a human must do, as a numbered list. Walk the first one. |
-| `phase: executing`, stopped mid-run, no terminal status | **Died mid-run** (session killed, context ran out, cron lost). Commit anything loose, then offer `$iterate <name>` to resume. |
-| Feature branch with no matching plan | **Orphan branch.** Say whose it looks like from the name, whether it has unmerged commits, and offer to merge, rebase or delete. Never delete unasked. |
-| `status: unblocked` (cyan) | Already cleared, waiting its turn. Say which plan and that the conductor will take it next; if the conductor is off, offer `$iterate <name>`. |
+| `phase: executing`, `status: blocked-on-operator` / `awaiting-human-gate` | **Blocked on you.** Each blocker is a problem; plan its `Fix` down to one human act before you answer. |
+| `phase: executing`, stopped mid-run, no terminal status | **Died mid-run** (session killed, context ran out, cron lost). Commit anything loose; the `Fix` is `$iterate <name>` — one command. |
+| Feature branch with no matching plan | **Orphan branch.** Say whose it looks like from the name and what it carries that main lacks. `Fix` is one script to land it and one to drop it; the human runs the one they mean. Never delete unasked. |
+| `status: unblocked` (cyan) | Already cleared, waiting its turn. Say which plan; the conductor takes it next. If the conductor is off, `Fix` is `$iterate-conductor start` — one command. |
 | Several plans all-green but unmerged | Batch them: one merge session landing every branch, in dependency order, rather than N separate ones. |
-| `phase: closed` sitting in `plans/` | Should have been archived. Say so, offer to archive. |
+| `phase: closed` sitting in `plans/` | Should have been archived. Archive it now (nothing is lost, it is the step `$iterate` owed) and report `done — archived`. |
 | Not a git repo | Report plan state only; every branch line is a silent no-op. |
 
 ## What triage does without asking
@@ -115,14 +156,21 @@ branch delete, rebase onto a moved main — **ask first**, every time.
 
 ## Walking a blocker
 
-Take them one at a time, most-unblocking first. For each: state what you need in
-one sentence, in the user's terms, not the plan's jargon. Do the machine half
-yourself the instant the human half lands — if they grant a deletion, run it and
-report the result before moving to the next.
+`launch problem N` is the go for a problem whose `Fix` said so. Do everything
+up to the human's one act — open the console, create the client, fill every
+field a script can fill, stage the deletion — then say the one thing they must
+do, in one sentence, in their terms. The instant it lands, do the rest: verify,
+record, mark. Then the next problem, most-unblocking first.
 
-Group blockers of the same kind into one ask. Three instance deletions is one
-question about three instances, never three questions. If clearing one unblocks
-several steps, say which — that is what makes an ask worth answering.
+A script a `Fix` line points at is real before the line is written: it exists
+at the path named, `bash -n` passes, its read-only parts were run by you, and a
+person can run it blind — it prints what it did and stops at the first failure
+with the exact next thing to do. A `Fix` naming a script that does not exist
+yet is a promise, not a fix.
+
+Group blockers of the same kind into one problem. Three instance deletions is
+one script about three instances, never three problems. If clearing one
+unblocks several steps, say which — that is what makes it worth doing first.
 
 ### When it's cleared, mark it cyan
 
@@ -167,8 +215,9 @@ stop — that plan is not yours to triage right now.
 
 1. **Read state, never recall it.** Days may have passed and the conversation
    may be gone. Every claim comes from a file or a command run now.
-2. **Short.** A verdict, a numbered list of what needs the human, what you did,
-   one next move. Someone standing at a terminal is not reading paragraphs.
+2. **The format is the answer.** Counts, `Detail`, `Fix` — nothing before,
+   between, or after, and nothing about what went right. Someone standing at
+   a terminal is not reading paragraphs, least of all reassuring ones.
 3. **Never execute plan steps.** Triage diagnoses, commits, and finishes an owed
    merge. Running the actual work is `$iterate` — hand off, don't absorb.
 4. **Never ask a question you can answer.** "Which plan?" is answerable from
@@ -177,6 +226,8 @@ stop — that plan is not yours to triage right now.
    line — a silent fix leaves the same bug to happen next week.
 6. **Safe to run mid-plan.** If a run is live, report and stop. Triage must
    never disturb a working plan.
+7. **Every `Fix` ends in one human act.** One command already on a script, or
+   `launch problem N`. If it takes two, triage has not finished planning.
 
 ## `version`
 

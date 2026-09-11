@@ -137,3 +137,88 @@ func TestArchivedProjectAccordionOmittedWhenNoArchivedPlans(t *testing.T) {
 		t.Errorf("expected no output for a project with no archived plans, got:\n%s", b.String())
 	}
 }
+
+// TestHarnessBadgeCoversAllThreeValues confirms harnessBadge never
+// invents a fourth label — every PlanSummary.Harness value it can ever
+// see (claude-code, codex, or the resolved unknown) maps to its own
+// exact badge.
+func TestHarnessBadgeCoversAllThreeValues(t *testing.T) {
+	cases := []struct {
+		harness   string
+		wantLabel string
+		wantClass string
+	}{
+		{"claude-code", "claude-code", "h-claude"},
+		{"codex", "codex", "h-codex"},
+		{"unknown", "unknown", "h-unknown"},
+	}
+	for _, c := range cases {
+		label, class := harnessBadge(c.harness)
+		if label != c.wantLabel || class != c.wantClass {
+			t.Errorf("harnessBadge(%q) = (%q, %q), want (%q, %q)", c.harness, label, class, c.wantLabel, c.wantClass)
+		}
+	}
+}
+
+// TestLivePlanCardsCarryHarnessBadge confirms every plan card on the
+// dashboard renders its own harness as a badge, and that a
+// claude-code-only project's card list doesn't accidentally show codex
+// (or vice versa) — each plan's own value, not a project-wide guess.
+func TestLivePlanCardsCarryHarnessBadge(t *testing.T) {
+	plans := []PlanSummary{
+		{Name: "claudeplan", Harness: "claude-code"},
+		{Name: "codexplan", Harness: "codex"},
+		{Name: "oldplan", Harness: "unknown"},
+	}
+	var b strings.Builder
+	writeLivePlans(&b, "/some/project", plans)
+	out := b.String()
+	if !strings.Contains(out, `<span class="hbadge h-claude">claude-code</span>`) {
+		t.Errorf("missing claude-code harness badge; output:\n%s", out)
+	}
+	if !strings.Contains(out, `<span class="hbadge h-codex">codex</span>`) {
+		t.Errorf("missing codex harness badge; output:\n%s", out)
+	}
+	if !strings.Contains(out, `<span class="hbadge h-unknown">unknown</span>`) {
+		t.Errorf("missing unknown harness badge; output:\n%s", out)
+	}
+}
+
+// TestHarnessRollupOnlyWhenMixed confirms the project-header rollup stays
+// silent when every live plan shares one harness, and names both when a
+// project genuinely mixes them — the whole point of the rollup is
+// surfacing that mix, so showing it unconditionally would just be noise.
+func TestHarnessRollupOnlyWhenMixed(t *testing.T) {
+	uniform := []PlanSummary{{Name: "a", Harness: "claude-code"}, {Name: "b", Harness: "claude-code"}}
+	if got := harnessRollup(uniform); got != "" {
+		t.Errorf("harnessRollup(uniform claude-code) = %q, want empty", got)
+	}
+	mixed := []PlanSummary{{Name: "a", Harness: "claude-code"}, {Name: "b", Harness: "codex"}}
+	if got := harnessRollup(mixed); got != "claude-code + codex" {
+		t.Errorf("harnessRollup(mixed) = %q, want %q", got, "claude-code + codex")
+	}
+}
+
+// TestWriteLiveProjectSectionRendersConductorStatus confirms an enabled
+// conductor.md sitting next to a project's plans surfaces its tick state
+// on the dashboard, driven through the real writeLiveProjectSection
+// entry point (not just the lower-level ConductorStatusLine helper) so a
+// regression in how the two are wired together would actually be caught.
+func TestWriteLiveProjectSectionRendersConductorStatus(t *testing.T) {
+	dir := t.TempDir()
+	writeConductorFixture(t, dir, `---
+enabled: true
+cron:
+tick: stood-down
+sweeps: 3
+---
+
+## Sweep log
+- [2026-09-10T09:00:00Z] stood down, nothing left to run
+`)
+	var b strings.Builder
+	writeLiveProjectSection(&b, dir, "proj", nil)
+	if !strings.Contains(b.String(), "stood down") {
+		t.Errorf("expected the project section to surface the conductor's stood-down state; output:\n%s", b.String())
+	}
+}

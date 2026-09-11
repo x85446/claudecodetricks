@@ -1,6 +1,6 @@
 ---
 name: "oracle"
-description: "The project's buzzword glossary. Surfaces the **5W+H** (Who, What, When, Where, Why, How) for any registered buzzword or buzzphrase the user might mention — subprojects (incusmagic, P64), tools, internal jargon, named workflows (\"mgmt.gravhl.com new-service workflow\"), domain terms. **Use IMMEDIATELY** when the user (a) mentions a likely buzzword that this project might have a glossary entry for, (b) asks \"what is X\", \"tell me about X\", \"what does X do\", \"where is X\", \"remind me about X\", \"we're going to work on X\", \"how do I use X\", \"explain X\", (c) shares new info about a topic (\"X is a tool that...\", \"X lives at /path/...\", \"X is owned by Y\"), or (d) invokes `$oracle` directly."
+description: "Surfaces the **5W+H** (Who, What, When, Where, Why, How) for any registered buzzword or buzzphrase the user might mention — subprojects (incusmagic, P64), tools, internal jargon, named workflows (\"mgmt.gravhl.com new-service workflow\"), domain terms. **Use IMMEDIATELY** when the user (a) mentions a likely buzzword that this project might have a glossary entry for, (b) asks \"what is X\", \"tell me about X\", \"what does X do\", \"where is X\", \"remind me about X\", \"we're going to work on X\", \"how do I use X\", \"explain X\", (c) shares new info about a topic (\"X is a tool that...\", \"X lives at /path/...\", \"X is owned by Y\"), or (d) invokes `$oracle` directly."
 ---
 
 
@@ -19,7 +19,7 @@ The project's buzzword glossary. The skill stores knowledge two places: `./.clau
 
 ## Usage
 
-Argument: <show|list|add|discover|update|remember|move|forget|harvest> [buzzword] [args]. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: "<show|list|add|discover|update|remember|move|forget|harvest> [buzzword] [args]". `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 

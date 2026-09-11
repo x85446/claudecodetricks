@@ -1,6 +1,6 @@
 ---
 name: uxmaster-cli
-description: UXMASTER child (invoked via /uxmaster): the command-line expert — designs and audits CLI/TUI command grammar, program flow, help, errors, and terminal color.
+description: "UXMASTER child (invoked via /uxmaster): the command-line expert — designs and audits CLI/TUI command grammar, program flow, help, errors, and terminal color."
 argument-hint: <command or subcommand to review, or "design <the flow>">
 version: 2.0.0
 ---

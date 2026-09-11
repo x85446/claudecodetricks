@@ -1,6 +1,6 @@
 ---
 name: "uxmaster"
-description: "UXMASTER — the UX/UI design meta. Route ALL interface work here; the meta picks the child. Use for any UX/UI work: \"uxmaster\", \"review the UX\", \"audit the UI\", \"what's wrong with this interface\", \"design this screen\", \"design the settings\", \"make the interface better\", \"is this right for macOS/Windows/GNOME/Linux\", \"does this feel native\", \"check accessibility\", \"WCAG audit\", \"review the CLI's UX\", \"review the web UI\", \"implement this design\", \"build the design\", \"implement F3\"."
+description: "Route ALL interface work here; the meta picks the child. Use for any UX/UI work: \"uxmaster\", \"review the UX\", \"audit the UI\", \"what's wrong with this interface\", \"design this screen\", \"design the settings\", \"make the interface better\", \"is this right for macOS/Windows/GNOME/Linux\", \"does this feel native\", \"check accessibility\", \"WCAG audit\", \"review the CLI's UX\", \"review the web UI\", \"implement this design\", \"build the design\", \"implement F3\"."
 ---
 
 <!-- version: shared across the family; see the **Version:** line above. -->

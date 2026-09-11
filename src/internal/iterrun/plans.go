@@ -60,6 +60,24 @@ type PlanSummary struct {
 	// and its sibling ".teams/" dir later (BuildRowsFromArchive).
 	Archived    bool
 	ArchiveFile string
+	// Harness is which harness's planner produced this plan file — exactly
+	// one of "claude-code", "codex", or "unknown". The frontmatter
+	// `harness:` field carries claude-code/codex; "unknown" is the
+	// resolved value whenever that field is absent, blank, or holds
+	// anything else — a pre-existing plan genuinely does not say which
+	// harness made it, and guessing wrong here is worse than admitting
+	// that. Never defaulted to either real harness.
+	Harness string
+	// Version is the iterate family version that produced (or is
+	// currently executing) this plan, resolved from whichever of three
+	// markers is present, most-authoritative first: the frontmatter
+	// `executor-version:` (stamped once execution actually begins — the
+	// version of code actually driving a live run), `planner-version:`
+	// (stamped at draft time, updated on refinement), or, for a Codex
+	// plan file (whose frontmatter permits only name and description),
+	// the body line `**Version:** iterate family <x.y.z>` that port
+	// writes instead. Empty when none of the three is present.
+	Version string
 }
 
 // IsCompleted reports whether every team in this plan's Teams table has
@@ -136,6 +154,16 @@ var (
 	reTeamed           = regexp.MustCompile(`^teamed:\s*true\s*$`)
 	reStatus           = regexp.MustCompile(`^status:\s*(.+)$`)
 	reLeadingTimestamp = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2})(Z)?)?`)
+	reHarness          = regexp.MustCompile(`^harness:\s*(.*)$`)
+	reExecutorVersion  = regexp.MustCompile(`^executor-version:\s*(.+)$`)
+	rePlannerVersion   = regexp.MustCompile(`^planner-version:\s*(.+)$`)
+	// reCodexVersion matches the Codex planner port's own version marker
+	// — a plain body line, not frontmatter, since Codex's frontmatter
+	// permits only name and description and so cannot carry
+	// planner-version:/executor-version: the way the Claude Code port
+	// does. Confirmed live in codex-skills/iterate-planner/SKILL.md:
+	// "**Version:** iterate family 5.0.0".
+	reCodexVersion = regexp.MustCompile(`\*\*Version:\*\*\s*iterate family\s+([0-9][0-9A-Za-z.\-]*)`)
 )
 
 // parsePlanStarted best-effort parses a plan's freeform Started:/Executing:
@@ -259,6 +287,7 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 	// empty.
 	inNextAttempt := false
 	var nextAttemptLines []string
+	var executorVersion, plannerVersion, codexVersion string
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -296,6 +325,18 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		if reTeamed.MatchString(line) {
 			ps.Teamed = true
 		}
+		if m := reHarness.FindStringSubmatch(line); m != nil {
+			ps.Harness = strings.TrimSpace(m[1])
+		}
+		if m := reExecutorVersion.FindStringSubmatch(line); m != nil {
+			executorVersion = strings.TrimSpace(m[1])
+		}
+		if m := rePlannerVersion.FindStringSubmatch(line); m != nil {
+			plannerVersion = strings.TrimSpace(m[1])
+		}
+		if m := reCodexVersion.FindStringSubmatch(line); m != nil {
+			codexVersion = strings.TrimSpace(m[1])
+		}
 
 		if strings.HasPrefix(trimmed, "## ") {
 			inGoal = trimmed == "## Goal"
@@ -323,6 +364,30 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		ps.Goal = ps.Goal[:160] + "…"
 	}
 	ps.NextAttempt = strings.TrimSpace(strings.Join(nextAttemptLines, " "))
+
+	switch ps.Harness {
+	case "claude-code", "codex":
+		// keep as written
+	default:
+		// absent, blank, or anything unrecognized — never guess between
+		// the two real harnesses
+		ps.Harness = "unknown"
+	}
+
+	// Most-authoritative first: executor-version (this run's actual
+	// code) beats planner-version (drafting time, can be stale by the
+	// time a plan finally executes) beats the Codex body-line marker
+	// (only present at all because that port's frontmatter can't carry
+	// either of the other two).
+	switch {
+	case executorVersion != "":
+		ps.Version = executorVersion
+	case plannerVersion != "":
+		ps.Version = plannerVersion
+	default:
+		ps.Version = codexVersion
+	}
+
 	return ps, nil
 }
 

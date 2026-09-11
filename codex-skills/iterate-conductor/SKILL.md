@@ -8,7 +8,7 @@ description: "Works the whole plan queue unattended. When started, sweeps every 
 
 # $iterate-conductor — keep the whole queue moving
 
-**Version:** iterate family 5.1.0
+**Version:** iterate family 5.1.1
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
