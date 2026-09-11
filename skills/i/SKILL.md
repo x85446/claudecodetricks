@@ -3,7 +3,7 @@ name: i
 description: Alias for /iterate. Typing /i <anything> behaves exactly as /iterate <anything> — autonomous execution of the current or named plan, resumption included. Exists purely as a shorthand.
 argument-hint: <same arguments as /iterate>
 disable-model-invocation: true
-version: 5.0.0
+version: 5.1.0
 ---
 
 # /i — alias for /iterate

@@ -34,6 +34,33 @@ PKG_DIR := $(SRC_DIR)/pkg
 INSTALL_DIR := $(HOME)/.claude/hooks
 LOG_DIR := $(HOME)/.claude/log
 
+# Always-on dashboard daemon (launchd, macOS only — see makehelp.sh).
+# ITERATE_SERVE_PORT is the fixed default port also baked into
+# `iterate-run serve`'s own --port default (src/cmd/iterate-run/main.go);
+# kept as one value here so the Chrome daemon's start URL can never drift
+# out of sync with the port the serve daemon actually binds.
+ITERATE_SERVE_PORT := 8420
+DASHBOARD_URL := http://localhost:$(ITERATE_SERVE_PORT)/
+
+# Keep-alive Chrome tab on the dashboard (launchd, macOS only). CHROME_BIN
+# is overridable so this can point at Chromium or any Chromium-family
+# browser instead of Google Chrome (proprietary, run as an installed app,
+# never linked or redistributed) without editing the plist by hand:
+#   make chrome-install CHROME_BIN=/path/to/Chromium
+# CHROME_DEBUG_PORT is deliberately NOT Chrome's conventional devtools
+# port (9222): this user runs browser-automation tooling that expects
+# 9222 to be their normal Chrome profile, and squatting that well-known
+# port would make anything attaching to it silently land in this isolated
+# profile instead — no extensions, no logins — a "my automation broke"
+# bug wearing a "something took my port" costume. 9242 is ours, out of
+# the well-known range, in the same spirit as 8420 for serve rather than
+# 8080; confirmed free on this machine (lsof -iTCP -sTCP:LISTEN) before
+# picking it. The debug port is what makes this a daemon in the sense
+# that matters, since something else can attach to it.
+CHROME_BIN ?= /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+CHROME_DEBUG_PORT := 9242
+CHROME_PROFILE_DIR := $(HOME)/Library/Application Support/iterate-run/chrome-profile
+
 # Go configuration
 GO := go
 GOFMT := gofmt
@@ -87,6 +114,8 @@ endif
 .PHONY: watch
 .PHONY: version info
 .PHONY: help
+.PHONY: serve-install serve-uninstall serve-status
+.PHONY: chrome-install chrome-uninstall chrome-status
 
 # ==================================================================================== #
 # BUILD TARGETS
@@ -292,6 +321,41 @@ uninstall:
 	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks and tools uninstalled$(COLOR_RESET)"
 
 # ==================================================================================== #
+# DAEMON TARGETS (macOS only — always-on dashboard + Chrome, via launchd)
+# ==================================================================================== #
+# Complex logic (plist templating, launchctl sequencing, OS branching) lives
+# in makehelp.sh, not inline here — see that file's header comment. Every
+# target below fails with a clear message on non-macOS rather than half
+# installing, since launchd is not portable.
+
+## serve-install: Load the always-on dashboard as a launchd agent (RunAtLoad + KeepAlive)
+serve-install: install
+	$(Q)./makehelp.sh serve-install "$(TOOLS_INSTALL_DIR)/iterate-run" "$(ITERATE_SERVE_PORT)"
+
+## serve-uninstall: Unload and remove the dashboard launchd agent
+serve-uninstall:
+	$(Q)./makehelp.sh serve-uninstall
+
+## serve-status: Show whether the dashboard launchd agent is loaded and running
+serve-status:
+	$(Q)./makehelp.sh serve-status
+
+## chrome-install: Load a dedicated, always-on Chrome tab on the dashboard as a launchd agent
+# CHROME_BIN overrides the browser binary (Chromium/any Chromium-family
+# browser instead of Google Chrome) without editing the plist:
+#   make chrome-install CHROME_BIN=/path/to/Chromium
+chrome-install:
+	$(Q)./makehelp.sh chrome-install "$(CHROME_BIN)" "$(CHROME_DEBUG_PORT)" "$(CHROME_PROFILE_DIR)" "$(DASHBOARD_URL)"
+
+## chrome-uninstall: Unload and remove the Chrome launchd agent (stops it for good)
+chrome-uninstall:
+	$(Q)./makehelp.sh chrome-uninstall
+
+## chrome-status: Show whether the Chrome launchd agent is loaded and running
+chrome-status:
+	$(Q)./makehelp.sh chrome-status
+
+# ==================================================================================== #
 # DEVELOPMENT TARGETS
 # ==================================================================================== #
 
@@ -381,7 +445,10 @@ help:
 	$(Q)sed -n 's/^##//p' $(MAKEFILE_LIST) | grep -E "deps" | column -t -s ':' | sed -e 's/^/  /'
 	$(Q)echo ""
 	$(Q)echo -e "$(COLOR_BOLD)INSTALLATION TARGETS:$(COLOR_RESET)"
-	$(Q)sed -n 's/^##//p' $(MAKEFILE_LIST) | grep -E "(install|uninstall)" | column -t -s ':' | sed -e 's/^/  /'
+	$(Q)sed -n 's/^##//p' $(MAKEFILE_LIST) | grep -E "(install|uninstall)" | grep -vE "(serve-|chrome-)" | column -t -s ':' | sed -e 's/^/  /'
+	$(Q)echo ""
+	$(Q)echo -e "$(COLOR_BOLD)DAEMON TARGETS (macOS only):$(COLOR_RESET)"
+	$(Q)sed -n 's/^##//p' $(MAKEFILE_LIST) | grep -E "(serve-|chrome-)" | column -t -s ':' | sed -e 's/^/  /'
 	$(Q)echo ""
 	$(Q)echo -e "$(COLOR_BOLD)DEVELOPMENT TARGETS:$(COLOR_RESET)"
 	$(Q)sed -n 's/^##//p' $(MAKEFILE_LIST) | grep -E "watch" | column -t -s ':' | sed -e 's/^/  /'

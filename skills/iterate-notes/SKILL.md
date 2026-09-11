@@ -2,7 +2,7 @@
 name: iterate-notes
 description: The note-taking half of the iterate stack — capture ideas for the NEXT iterate plan, before any formal planning. Triggers on "/iterate-notes", "take a note", "note this", "add a note". Appends the ask to the current notes file in one synthesized line and acks in one line. Also "list notes", "show notes", "new notes <topic>", and the handoff "turn these notes into a plan" (routed to /iterate-planner). Notes live under ./.claude/iterate/notes/. This skill never brainstorms, never plans, never executes — deciding between options is /iterate-brainstorm, planning is /iterate-planner.
 argument-hint: <a note to take, or "list notes" / "show notes" / "new notes <topic>" / "turn these notes into a plan">
-version: 5.0.0
+version: 5.1.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 

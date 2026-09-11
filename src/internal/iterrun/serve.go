@@ -3,11 +3,13 @@ package iterrun
 import (
 	"fmt"
 	"html"
+	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 // Serve starts the read-only dashboard: every known project's plans, tabbed
@@ -16,13 +18,42 @@ import (
 // terminal command (see purge.go) precisely because a stray click on a
 // page anyone on the machine can reach is not where a destructive action
 // belongs.
-func Serve(addr string) error {
+//
+// versionLine is the exact string `iterate-run version` prints (e.g.
+// "iterate-run 1.2.3 (commit abc123, built 2026-09-10T12:00:00Z)") — it is
+// echoed verbatim from /healthz so "is the dashboard up, and which build"
+// is answerable by one curl rather than by comparing two commands' output
+// by eye.
+//
+// addr is resolved via net.Listen rather than handed straight to
+// http.ListenAndServe so that "--port 0" (an ephemeral port) can be
+// reported back to the caller: ln.Addr() gives the port the kernel
+// actually picked, which is printed before serving starts.
+func Serve(addr, versionLine string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/plan", handlePlan)
 	mux.HandleFunc("/archive", handleArchive)
-	fmt.Printf("iterate-run dashboard: http://%s\n", addr)
-	return http.ListenAndServe(addr, mux)
+	mux.HandleFunc("/healthz", handleHealthz(versionLine))
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("iterate-run dashboard: http://%s\n", ln.Addr().String())
+	return http.Serve(ln, mux)
+}
+
+// handleHealthz answers "is the dashboard up" for a script rather than a
+// human: 200 with a body naming the exact build `iterate-run version`
+// reports, so a healthcheck can also catch a stale binary silently still
+// running after a rebuild.
+func handleHealthz(versionLine string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "ok %s\n", versionLine)
+	}
 }
 
 func handleIndex(w http.ResponseWriter, _ *http.Request) {
@@ -220,12 +251,57 @@ tfApply();
 // (writeArchivedProjectAccordion), not a collapsible tucked in here.
 func writeLiveProjectSection(b *strings.Builder, dir, short string, plans []PlanSummary) {
 	fmt.Fprintf(b, `<section class="project"><h2 title="%s">%s</h2>`, html.EscapeString(dir), html.EscapeString(short))
+	if roll := harnessRollup(plans); roll != "" {
+		fmt.Fprintf(b, `<span class="harness-rollup" title="harnesses seen among this project's live plans">%s</span>`, html.EscapeString(roll))
+	}
+	if cs, ok := ReadConductorState(dir); ok {
+		if line, show := ConductorStatusLine(cs, time.Now()); show {
+			fmt.Fprintf(b, `<div class="conductor">conductor %s</div>`, line)
+		}
+	}
 	if len(plans) == 0 {
 		b.WriteString(`<p class="empty">no plans found</p>`)
 	} else {
 		writeLivePlans(b, dir, plans)
 	}
 	b.WriteString(`</section>`)
+}
+
+// harnessRollup summarizes which harness(es) produced a project's live
+// plans — "" when the project is uniformly one harness (or has no
+// plans), since a rollup only earns its place on the page once there's
+// actually something to reconcile: a project whose plans came from both
+// a Claude Code run and a Codex run. Order is always claude-code, codex,
+// unknown, regardless of which plans happen to be newest.
+func harnessRollup(plans []PlanSummary) string {
+	seen := map[string]bool{}
+	for _, p := range plans {
+		seen[p.Harness] = true
+	}
+	var parts []string
+	for _, h := range []string{"claude-code", "codex", "unknown"} {
+		if seen[h] {
+			parts = append(parts, h)
+		}
+	}
+	if len(parts) < 2 {
+		return ""
+	}
+	return strings.Join(parts, " + ")
+}
+
+// harnessBadge is a plan card's small harness indicator — always exactly
+// one of the three resolved PlanSummary.Harness values, never a fourth
+// "guessed" label.
+func harnessBadge(h string) (label, class string) {
+	switch h {
+	case "claude-code":
+		return "claude-code", "h-claude"
+	case "codex":
+		return "codex", "h-codex"
+	default:
+		return "unknown", "h-unknown"
+	}
 }
 
 // writeArchivedProjectAccordion renders one project as a single collapsed
@@ -243,8 +319,10 @@ func writeArchivedProjectAccordion(b *strings.Builder, dir, short string, archiv
 		html.EscapeString(dir), html.EscapeString(short), len(archived))
 	for _, p := range archived {
 		badge, badgeClass := archivedBadge(p)
-		fmt.Fprintf(b, `<a class="plan-card" data-tag="%s" href="/archive?project=%s&file=%s"><span class="badge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s</span></a>`,
+		hlabel, hclass := harnessBadge(p.Harness)
+		fmt.Fprintf(b, `<a class="plan-card" data-tag="%s" href="/archive?project=%s&file=%s"><span class="badge %s">%s</span><span class="hbadge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s</span></a>`,
 			html.EscapeString(badge), url.QueryEscape(dir), url.QueryEscape(p.ArchiveFile), badgeClass, html.EscapeString(badge),
+			hclass, html.EscapeString(hlabel),
 			html.EscapeString(p.Name), html.EscapeString(p.Goal), html.EscapeString(p.Started))
 	}
 	b.WriteString(`</div></details>`)
@@ -277,12 +355,14 @@ func writeLivePlans(b *strings.Builder, dir string, plans []PlanSummary) {
 	b.WriteString(`<div class="plans">`)
 	for _, p := range plans {
 		badge, badgeClass := liveBadge(p)
+		hlabel, hclass := harnessBadge(p.Harness)
 		teamsInfo := ""
 		if p.HasTeams {
 			teamsInfo = fmt.Sprintf(" &middot; teams %d/%d", p.TeamsDone, p.TeamsTotal)
 		}
-		fmt.Fprintf(b, `<a class="plan-card" data-tag="%s" href="/plan?project=%s&name=%s"><span class="badge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s%s</span></a>`,
+		fmt.Fprintf(b, `<a class="plan-card" data-tag="%s" href="/plan?project=%s&name=%s"><span class="badge %s">%s</span><span class="hbadge %s">%s</span><span class="pname">%s</span><span class="pgoal">%s</span><span class="pmeta">started %s%s</span></a>`,
 			html.EscapeString(badge), url.QueryEscape(dir), url.QueryEscape(p.Name), badgeClass, badge,
+			hclass, html.EscapeString(hlabel),
 			html.EscapeString(p.Name), html.EscapeString(p.Goal), html.EscapeString(p.Started), teamsInfo)
 	}
 	b.WriteString(`</div>`)
@@ -441,7 +521,7 @@ h2{font-size:13px;color:var(--text-dim);margin:0;font-weight:600;text-transform:
 .archived-project>summary::before{content:'\203A';color:var(--text-faint);font-size:16px;line-height:1;margin-right:2px;transition:transform .15s}
 .archived-project[open]>summary::before{transform:rotate(90deg)}
 .archived-project .plans{padding:0 14px 14px}
-.plan-card{display:grid;grid-template-columns:92px 90px 1fr 230px;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:12.5px}
+.plan-card{display:grid;grid-template-columns:92px 84px 90px 1fr 230px;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);font-size:12.5px}
 .plan-card:hover{border-color:var(--accent)}
 .badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px;border-radius:4px;text-align:center;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .b-planned{background:var(--queued-bg);color:var(--queued)}
@@ -449,6 +529,12 @@ h2{font-size:13px;color:var(--text-dim);margin:0;font-weight:600;text-transform:
 .b-done{background:var(--good-bg);color:var(--good)}
 .b-blocked{background:var(--danger-bg);color:var(--danger)}
 .b-archived{background:var(--archived-bg);color:var(--archived)}
+.hbadge{font-size:10px;letter-spacing:.02em;padding:3px 7px;border-radius:4px;text-align:center;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;border:1px solid transparent}
+.h-claude{background:var(--accent-bg);color:var(--accent)}
+.h-codex{background:var(--good-bg);color:var(--good)}
+.h-unknown{background:var(--queued-bg);color:var(--queued);border-color:var(--border)}
+.harness-rollup{display:inline-block;margin-left:8px;font-size:10.5px;color:var(--text-faint);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.conductor{font-size:11.5px;color:var(--text-dim);margin:4px 0 10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .pname{min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pgoal{min-width:0;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pmeta{color:var(--text-faint);text-align:right;font-size:11px;min-width:0;white-space:normal;line-height:1.5;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}

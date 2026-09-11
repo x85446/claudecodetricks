@@ -106,6 +106,14 @@ def convert(path, all_skills, moved_refs):
     had_ask = bool(re.search(r'\bAskUserQuestion\b', out))
     for pat, rep in ASK:
         out = re.sub(pat, rep, out)
+    # 7. A plan schema's `harness:` default names the harness whose planner
+    #    wrote the file. There is exactly one correct value for a Codex port
+    #    to stamp -- its own identity, never Claude Code's -- so the swap is
+    #    SAFE, not a judgment call. Anchored to frontmatter-style line start so
+    #    it only touches the literal schema default, never prose mentioning
+    #    "claude-code" elsewhere.
+    out = re.sub(r'^harness: claude-code\b', 'harness: codex', out, flags=re.MULTILINE)
+
     if had_ask and "codex-port: no confirmed structured-picker" not in out:
         marker = ("\n<!-- codex-port: no confirmed structured-picker equivalent in Codex; every "
                   "structured picker in this file became an ordinary numbered-list question -- "

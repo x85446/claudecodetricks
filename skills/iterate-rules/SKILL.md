@@ -2,7 +2,7 @@
 name: iterate-rules
 description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which /iterate enforces at launch. Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 argument-hint: <the rule in your own words, or "show" / "test" / "remove <rule>" / "clear">
-version: 5.0.0
+version: 5.1.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
