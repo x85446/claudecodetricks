@@ -1,7 +1,7 @@
 ---
 name: product-docs
-description: Maintains the END-USER product documentation of the current project — each invocation brings the docs to match the product as it is right now: documents new features and how to operate them, updates changed behavior, and DELETES documentation for removed features. Invoked as iterate plans' standing final task, or directly ("update the product docs", "sync the user docs", "document the new features"). Developer/internal docs are out of scope.
-argument-hint: <optional scope hint — default: everything that changed since docs were last true>
+description: "Maintains the END-USER product documentation of the current project — each invocation brings the docs to match the product as it is right now: documents new features and how to operate them, updates changed behavior, and DELETES documentation for removed features. Invoked as iterate plans' standing final task, or directly (\"update the product docs\", \"sync the user docs\", \"document the new features\"). Developer/internal docs are out of scope."
+argument-hint: "<optional scope hint — default: everything that changed since docs were last true>"
 version: 1.0.0
 ---
 

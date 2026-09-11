@@ -1,6 +1,6 @@
 ---
-name: testmaster-adopt
-description: TESTMASTER child (invoked via $testmaster): brings an existing repo's test suite into the framework — discovers every test, seeds the catalog, and computes which source files each test covers.
+name: "testmaster-adopt"
+description: "TESTMASTER child (invoked via $testmaster): brings an existing repo's test suite into the framework — discovers every test, seeds the catalog, and computes which source files each test covers."
 ---
 
 <!-- version: shared across the family; see the **Version:** line above. -->

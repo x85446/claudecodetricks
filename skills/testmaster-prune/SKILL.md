@@ -1,6 +1,6 @@
 ---
 name: testmaster-prune
-description: TESTMASTER child (invoked via /testmaster): deletes dead tests, consolidates duplicates, and conforms headers to the registry.
+description: "TESTMASTER child (invoked via /testmaster): deletes dead tests, consolidates duplicates, and conforms headers to the registry."
 argument-hint: <optional scope, e.g. "the export tests" — default whole suite>
 version: 1.1.0
 ---

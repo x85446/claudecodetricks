@@ -1,6 +1,6 @@
 ---
-name: testmaster-derive
-description: TESTMASTER child (invoked via $testmaster): derives test-case specs from a stated requirement, including the negative, every-path, restore-state, and interrupted cases. Specs only, no code.
+name: "testmaster-derive"
+description: "TESTMASTER child (invoked via $testmaster): derives test-case specs from a stated requirement, including the negative, every-path, restore-state, and interrupted cases. Specs only, no code."
 ---
 
 

@@ -255,13 +255,34 @@ if [[ -d "$OUT_ROOT" ]]; then
 fi
 
 # --- stamp, now that the output is final ------------------------------------
-for codex_name in "${R_MANUAL[@]:-}" "${R_SKIPPED[@]:-}"; do
+# The version and diet passes above rewrite port bodies mechanically, on every
+# port, every run. Any port they touch without a matching out= refresh reads as
+# hand-edited on the next run (cur_out != old_out) and is then protected from
+# regeneration forever — confirmed live: iterate-triage's source changed and
+# the port kept its old body while its version line said the new release.
+# So refresh out= for every port this run left in place, EXCEPT a manual=false
+# port whose source changed and whose output already differed at decision time:
+# that one really was hand-edited, and keeping its stale stamp is what keeps
+# it reported until --force.
+for codex_name in "${R_SKIPPED[@]:-}"; do
+    [[ -z "$codex_name" ]] && continue
+    st="$OUT_ROOT/$codex_name/.portstamp"
+    [[ -f "$st" ]] || continue
+    m="$(sed -n 's/^manual=//p' "$st")"
+    # Digest BEFORE opening the redirection: `> "$st.new"` creates the file
+    # first, and .portstamp.new is not excluded from the digest, so hashing
+    # inside the group records a value the finished tree never matches.
+    o="$(sha_of "$OUT_ROOT/$codex_name")"
+    { sed -n 's/^\(src=.*\)/\1/p' "$st"; echo "out=$o"; echo "manual=${m:-false}"; } \
+        > "$st.new" && mv "$st.new" "$st"
+done
+for codex_name in "${R_MANUAL[@]:-}"; do
     [[ -z "$codex_name" ]] && continue
     st="$OUT_ROOT/$codex_name/.portstamp"
     [[ -f "$st" ]] || continue
     grep -q '^manual=true' "$st" || continue
-    # keep src= and manual=, refresh out= to absorb this run's diet pass
-    { sed -n 's/^\(src=.*\)/\1/p' "$st"; echo "out=$(sha_of "$OUT_ROOT/$codex_name")"; echo "manual=true"; } \
+    o="$(sha_of "$OUT_ROOT/$codex_name")"
+    { sed -n 's/^\(src=.*\)/\1/p' "$st"; echo "out=$o"; echo "manual=true"; } \
         > "$st.new" && mv "$st.new" "$st"
 done
 for codex_name in "${!STAMP_SRC[@]}"; do
@@ -284,6 +305,9 @@ if [[ $VALIDATE_RC -ne 0 ]]; then
     printf '%s\n' "$VALIDATE_OUT" >&2
     echo "REFUSING TO INSTALL — generated ports are broken or over the ${MANIFEST_BUDGET}-char cap." >&2
     echo "The ports in $OUT_ROOT are left as generated so the diff is inspectable." >&2
+    # The run report still matters on refusal — a broken port that was NOT
+    # regenerated this run is usually one this list names as protected.
+    echo "converted: ${#R_CONVERTED[@]}  unchanged: ${#R_SKIPPED[@]}  source changed, port protected (NOT overwritten): ${#R_MANUAL[@]} ${R_MANUAL[*]:-}  failed: ${#R_FAILED[@]} ${R_FAILED[*]:-}" >&2
     exit 1
 fi
 

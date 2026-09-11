@@ -1,6 +1,6 @@
 ---
 name: uxmaster-macos
-description: UXMASTER child (invoked via /uxmaster): judges an interface against the Apple Human Interface Guidelines for macOS.
+description: "UXMASTER child (invoked via /uxmaster): judges an interface against the Apple Human Interface Guidelines for macOS."
 argument-hint: <surface to review, e.g. "the settings window">
 version: 1.1.0
 ---

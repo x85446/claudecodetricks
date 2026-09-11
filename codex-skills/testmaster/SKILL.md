@@ -1,6 +1,6 @@
 ---
 name: testmaster
-description: Route ALL test-suite work here; the meta picks the child. Use for any test-suite work: "testmaster", "testmaster init", "adopt this suite", "onboard testmaster", "set up testmaster here", "run the tests", "maintain the test suite", "add tests for <x>", "derive tests for <requirement>", "should this have a test", "what tests does this need", "prune the tests", "consolidate duplicate tests", "clean up the suite", "test report card", "how are the tests", "what's untested", "test coverage", "what did this change invalidate", "which tests drifted", "set up nightly tests".
+description: "Route ALL test-suite work here; the meta picks the child. Use for any test-suite work: \"testmaster\", \"testmaster init\", \"adopt this suite\", \"onboard testmaster\", \"set up testmaster here\", \"run the tests\", \"maintain the test suite\", \"add tests for <x>\", \"derive tests for <requirement>\", \"should this have a test\", \"what tests does this need\", \"prune the tests\", \"consolidate duplicate tests\", \"clean up the suite\", \"test report card\", \"how are the tests\", \"what's untested\", \"test coverage\", \"what did this change invalidate\", \"which tests drifted\", \"set up nightly tests\"."
 ---
 
 <!-- version: shared across the family; see the **Version:** line above. -->
