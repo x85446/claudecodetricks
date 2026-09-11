@@ -8,7 +8,7 @@ description: Use when the status line shows a feature branch instead of "main âœ
 
 # $iterate-triage â€” what happened here, and what gets me back to main
 
-**Version:** iterate family 5.0.0
+**Version:** iterate family 5.1.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

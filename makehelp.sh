@@ -173,11 +173,34 @@ cmd_chrome_status() {
     echo "log:     $LOG_DIR/chrome.log"
 }
 
+
+# ---------------------------------------------------------------------------
+# run — the headline thing this repo does
+# ---------------------------------------------------------------------------
+
+# `make run` serves the iterate dashboard. It binds --port 0 rather than the
+# default 8420 on purpose: the always-on launchd agent installed by
+# `make serve-install` already holds 8420, and a run target that dies on
+# "address already in use" the moment the daemon is working is a bad first
+# impression. Port 0 lets the kernel pick, and serve prints the URL.
+cmd_run() {
+    local bin="$1"; shift
+    if [[ ! -x "$bin" ]]; then
+        echo "error: $bin not found — run 'make build' first" >&2
+        exit 1
+    fi
+    if [[ $# -gt 0 ]]; then
+        exec "$bin" "$@"
+    fi
+    exec "$bin" serve --port 0
+}
+
 # ---------------------------------------------------------------------------
 # Dispatcher
 # ---------------------------------------------------------------------------
 
 case "${1:-}" in
+    run)               shift; cmd_run "$@" ;;
     serve-install)     shift; cmd_serve_install "$@" ;;
     serve-uninstall)   shift; cmd_serve_uninstall "$@" ;;
     serve-status)      shift; cmd_serve_status "$@" ;;
@@ -185,7 +208,7 @@ case "${1:-}" in
     chrome-uninstall)  shift; cmd_chrome_uninstall "$@" ;;
     chrome-status)     shift; cmd_chrome_status "$@" ;;
     *)
-        echo "Usage: $0 {serve-install|serve-uninstall|serve-status|chrome-install|chrome-uninstall|chrome-status}" >&2
+        echo "Usage: $0 {run|serve-install|serve-uninstall|serve-status|chrome-install|chrome-uninstall|chrome-status}" >&2
         exit 1
         ;;
 esac

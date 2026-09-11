@@ -5,7 +5,7 @@ description: Alias for $iterate-notes. Typing $in <anything> behaves exactly as 
 
 # $in — alias for $iterate-notes
 
-**Version:** iterate family 5.0.0
+**Version:** iterate family 5.1.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
