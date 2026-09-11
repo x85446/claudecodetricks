@@ -1,6 +1,6 @@
 ---
 name: testmaster-derive
-description: TESTMASTER child (invoked via /testmaster): derives test-case specs from a stated requirement, including the negative, every-path, restore-state, and interrupted cases. Specs only, no code.
+description: "TESTMASTER child (invoked via /testmaster): derives test-case specs from a stated requirement, including the negative, every-path, restore-state, and interrupted cases. Specs only, no code."
 argument-hint: <the requirement in the user's words, e.g. "hitting play mutes the device when mute-devices is on">
 version: 1.1.0
 ---

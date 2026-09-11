@@ -1,6 +1,6 @@
 ---
 name: testmaster-report
-description: TESTMASTER child (invoked via /testmaster): regenerates the self-contained HTML report card from the registry and run history.
+description: "TESTMASTER child (invoked via /testmaster): regenerates the self-contained HTML report card from the registry and run history."
 argument-hint: (none — regenerates and opens the report)
 version: 1.1.0
 ---

@@ -1,6 +1,6 @@
 ---
 name: testmaster-run
-description: TESTMASTER child (invoked via /testmaster): executes a tier or named tests, measures real wall-clock durations, and updates the timing registry.
+description: "TESTMASTER child (invoked via /testmaster): executes a tier or named tests, measures real wall-clock durations, and updates the timing registry."
 argument-hint: <fast | standard | slow | all | <test-id> — bare/empty = fast+standard>
 version: 1.1.0
 ---

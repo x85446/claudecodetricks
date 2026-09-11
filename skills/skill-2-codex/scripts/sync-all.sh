@@ -35,7 +35,8 @@ INSTALL_ROOT="$HOME/.agents/skills"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DO_INSTALL=false; FORCE=""; ONLY=""; QUIET=false; PORT_ALL=false; PRUNE=false
-MANIFEST_BUDGET=7600   # Codex's real cap is 8000; hold slack so adding a skill does not immediately overflow
+MANIFEST_BUDGET=8000   # Codex's cap, used as-is. A margin is unused capacity
+                       # that hides the real rule: 8000 is fine, 8001 is not.
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --install) DO_INSTALL=true; shift ;;
@@ -254,13 +255,34 @@ if [[ -d "$OUT_ROOT" ]]; then
 fi
 
 # --- stamp, now that the output is final ------------------------------------
-for codex_name in "${R_MANUAL[@]:-}" "${R_SKIPPED[@]:-}"; do
+# The version and diet passes above rewrite port bodies mechanically, on every
+# port, every run. Any port they touch without a matching out= refresh reads as
+# hand-edited on the next run (cur_out != old_out) and is then protected from
+# regeneration forever — confirmed live: iterate-triage's source changed and
+# the port kept its old body while its version line said the new release.
+# So refresh out= for every port this run left in place, EXCEPT a manual=false
+# port whose source changed and whose output already differed at decision time:
+# that one really was hand-edited, and keeping its stale stamp is what keeps
+# it reported until --force.
+for codex_name in "${R_SKIPPED[@]:-}"; do
+    [[ -z "$codex_name" ]] && continue
+    st="$OUT_ROOT/$codex_name/.portstamp"
+    [[ -f "$st" ]] || continue
+    m="$(sed -n 's/^manual=//p' "$st")"
+    # Digest BEFORE opening the redirection: `> "$st.new"` creates the file
+    # first, and .portstamp.new is not excluded from the digest, so hashing
+    # inside the group records a value the finished tree never matches.
+    o="$(sha_of "$OUT_ROOT/$codex_name")"
+    { sed -n 's/^\(src=.*\)/\1/p' "$st"; echo "out=$o"; echo "manual=${m:-false}"; } \
+        > "$st.new" && mv "$st.new" "$st"
+done
+for codex_name in "${R_MANUAL[@]:-}"; do
     [[ -z "$codex_name" ]] && continue
     st="$OUT_ROOT/$codex_name/.portstamp"
     [[ -f "$st" ]] || continue
     grep -q '^manual=true' "$st" || continue
-    # keep src= and manual=, refresh out= to absorb this run's diet pass
-    { sed -n 's/^\(src=.*\)/\1/p' "$st"; echo "out=$(sha_of "$OUT_ROOT/$codex_name")"; echo "manual=true"; } \
+    o="$(sha_of "$OUT_ROOT/$codex_name")"
+    { sed -n 's/^\(src=.*\)/\1/p' "$st"; echo "out=$o"; echo "manual=true"; } \
         > "$st.new" && mv "$st.new" "$st"
 done
 for codex_name in "${!STAMP_SRC[@]}"; do
@@ -270,6 +292,24 @@ for codex_name in "${!STAMP_SRC[@]}"; do
       echo "out=$(sha_of "$out")"
       echo "manual=false"; } > "$out/.portstamp"
 done
+
+# --- gate: nothing ships broken or over the cap -----------------------------
+# Both failure modes are silent on the far side — a port whose YAML does not
+# parse is skipped at load, and a manifest past the cap loses content without
+# naming what. So they fail HERE, loudly, before install.
+VALIDATE_OUT=""; VALIDATE_RC=0
+if [[ -d "$OUT_ROOT" ]]; then
+    VALIDATE_OUT="$(python3 "$HERE/validate.py" "$OUT_ROOT" --budget "$MANIFEST_BUDGET" 2>&1)" || VALIDATE_RC=$?
+fi
+if [[ $VALIDATE_RC -ne 0 ]]; then
+    printf '%s\n' "$VALIDATE_OUT" >&2
+    echo "REFUSING TO INSTALL — generated ports are broken or over the ${MANIFEST_BUDGET}-char cap." >&2
+    echo "The ports in $OUT_ROOT are left as generated so the diff is inspectable." >&2
+    # The run report still matters on refusal — a broken port that was NOT
+    # regenerated this run is usually one this list names as protected.
+    echo "converted: ${#R_CONVERTED[@]}  unchanged: ${#R_SKIPPED[@]}  source changed, port protected (NOT overwritten): ${#R_MANUAL[@]} ${R_MANUAL[*]:-}  failed: ${#R_FAILED[@]} ${R_FAILED[*]:-}" >&2
+    exit 1
+fi
 
 if $DO_INSTALL; then
     mkdir -p "$INSTALL_ROOT"

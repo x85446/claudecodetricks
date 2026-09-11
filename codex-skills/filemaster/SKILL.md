@@ -1,6 +1,6 @@
 ---
-name: filemaster
-description: >-
+name: "filemaster"
+description: "Use when someone asks to process an intake folder, identify/rename/route a scanned document, invoice or statement, stand up a new intake with init, or resolve a file filemaster escalated to review. The judgment layer for the filemaster CLI: recognize the document, then route up / route down / act."
 ---
 
 

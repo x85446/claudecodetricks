@@ -1,6 +1,6 @@
 ---
-name: testmaster-maintain
-description: TESTMASTER child (invoked via $testmaster): writes new test cases and updates existing ones to match current product behavior.
+name: "testmaster-maintain"
+description: "TESTMASTER child (invoked via $testmaster): writes new test cases and updates existing ones to match current product behavior."
 ---
 
 

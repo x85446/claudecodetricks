@@ -1,6 +1,6 @@
 ---
-name: tutorial
-description: Builds and maintains self-running bash tutorials that live in the codebase. A tutorial walks a human through a program by showing each real command pre-filled and editable, running it on Enter — no copy-paste, no setup, no thinking. Menu-driven and extensible; also updates, reorganizes, deletes, and audits existing tutorials as the code changes.
+name: "tutorial"
+description: "Builds and maintains self-running bash tutorials that live in the codebase. A tutorial walks a human through a program by showing each real command pre-filled and editable, running it on Enter — no copy-paste, no setup, no thinking. Menu-driven and extensible; also updates, reorganizes, deletes, and audits existing tutorials as the code changes."
 ---
 
 <!-- version: shared across the family; see the **Version:** line above. -->
@@ -18,7 +18,7 @@ Builds a **bash tutorial the human drives with the Enter key**. Every step print
 
 ## Usage
 
-Argument: <what to build a tutorial for, or: list | update <name> | audit | reorganize | delete <name>>. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: "<what to build a tutorial for, or: list | update <name> | audit | reorganize | delete <name>>". `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 

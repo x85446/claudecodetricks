@@ -25,7 +25,9 @@ Conservative by construction:
 
 Usage: diet.py <skills-root> [--budget 8000] [--apply] [--json]
 """
-import argparse, glob, json, os, re, sys
+import argparse
+
+import yaml, glob, json, os, re, sys
 
 # Any of these in a sentence means it carries routing signal -- keep it.
 TRIGGER = re.compile(
@@ -57,13 +59,29 @@ def split_description(desc):
     return keep, move
 
 
+MIN_DESC = 40   # below this a description carries no routing signal
+
+
 def read_desc(path):
     txt = open(path).read()
     parts = txt.split("---", 2)
     if len(parts) < 3:
         return None, None, None
     m = re.search(r'^description: (.+)$', parts[1], re.M)
-    return (m.group(1).strip() if m else None), parts, txt
+    if not m:
+        return None, parts, txt
+    raw = m.group(1).strip()
+    # A block scalar's text lives on the FOLLOWING lines, so this match is only
+    # the ">-" header. Trimming that wrote `description: >-` with nothing under
+    # it and shipped a port Codex refused to load. Never edit what cannot be
+    # seen whole here.
+    if raw in (">", ">-", ">+", "|", "|-", "|+"):
+        return None, parts, txt
+    try:
+        val = yaml.safe_load(raw)
+    except yaml.YAMLError:
+        return None, parts, txt
+    return (val.strip() if isinstance(val, str) else None), parts, txt
 
 
 def cost(path):
@@ -79,10 +97,19 @@ def is_implicit(skill_dir):
 def apply_diet(path, move):
     """Relocate `move` sentences from the description into the body."""
     desc, parts, txt = read_desc(path)
-    keep = [s for s in re.split(r'(?<=[.!?])\s+', desc.strip())
-            if s.strip() and s.strip() not in move]
+    sentences = [s for s in re.split(r'(?<=[.!?])\s+', desc.strip()) if s.strip()]
+    keep = [s for s in sentences if s.strip() not in move]
     new_desc = " ".join(keep)
-    fm = re.sub(r'^description: .+$', "description: " + new_desc, parts[1], count=1, flags=re.M)
+    # A description trimmed to nothing routes nothing — and an empty value is a
+    # missing required field on the far side. Refuse rather than ship that.
+    if len(new_desc) < MIN_DESC:
+        return
+    quoted = yaml.dump(new_desc, default_style='"', width=10**9,
+                       allow_unicode=True).rstrip("\n")
+    if quoted.endswith("\n..."):
+        quoted = quoted[:-4]
+    fm = re.sub(r'^description: .+$', "description: " + quoted.strip(),
+                parts[1], count=1, flags=re.M)
     body = parts[2]
 
     para = " ".join(move)
@@ -126,7 +153,19 @@ def main():
         if not d:
             continue
         keep, move = split_description(d)
+        # The remainder must still route. Decide that HERE — a candidate that
+        # would leave too little behind is not a candidate. Deciding it later,
+        # at write time, made the report claim trims that never happened and
+        # left the manifest over the cap.
+        #
+        # The opening sentence is NOT protected: "The planning half of the
+        # iterate stack." is exactly the documentation this pass exists to
+        # relocate. What must never happen is an EMPTY description, and
+        # MIN_DESC is what prevents that.
         if not keep or not move:      # nothing safe to move, or nothing to keep
+            continue
+        remainder = len(d) - sum(len(m) + 1 for m in move)
+        if remainder < MIN_DESC:
             continue
         cands.append((sum(len(s) + 1 for s in move), f, move))
     cands.sort(reverse=True)

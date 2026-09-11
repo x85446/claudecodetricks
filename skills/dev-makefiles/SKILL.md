@@ -1,7 +1,7 @@
 ---
 name: dev-makefiles
 description: Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation. Use when creating or modifying a Makefile, adding make targets, setting up a build system, creating makehelp.sh, migrating to the 2-layer convention, or whenever a plan step builds, compiles, or scripts a repeatable dev task — that work goes through make targets per this skill, not ad-hoc shell commands.
-argument-hint: [action] [details]
+argument-hint: "[action] [details]"
 version: 1.3.0
 ---
 

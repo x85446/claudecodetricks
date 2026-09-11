@@ -1,6 +1,6 @@
 ---
-name: uxmaster-analysis
-description: UXMASTER child (invoked via $uxmaster): platform-agnostic UX audit — task flow, information architecture, state and error handling, accessibility fundamentals.
+name: "uxmaster-analysis"
+description: "UXMASTER child (invoked via $uxmaster): platform-agnostic UX audit — task flow, information architecture, state and error handling, accessibility fundamentals."
 ---
 
 
