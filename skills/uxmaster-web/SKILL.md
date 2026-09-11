@@ -1,6 +1,6 @@
 ---
 name: uxmaster-web
-description: UXMASTER child (invoked via /uxmaster): judges a web interface against web platform conventions and WCAG 2.2 AA.
+description: "UXMASTER child (invoked via /uxmaster): judges a web interface against web platform conventions and WCAG 2.2 AA."
 argument-hint: <page or flow to review, e.g. "the signup flow">
 version: 1.1.0
 ---

@@ -1,12 +1,18 @@
 ---
-name: dev-makefiles
-description: Use when creating or modifying a Makefile, adding make targets, setting up a build system, creating makehelp.sh, migrating to the 2-layer convention, or whenever a plan step builds, compiles, or scripts a repeatable dev task — that work goes through make targets per this skill, not ad-hoc shell commands.
+name: "dev-makefiles"
+description: "Use when creating or modifying a Makefile, adding make targets, setting up a build system, creating makehelp.sh, migrating to the 2-layer convention, or whenever a plan step builds, compiles, or scripts a repeatable dev task — that work goes through make targets per this skill, not ad-hoc shell commands."
 ---
 
 
 # Building Makefiles
 
 **Version:** 1.3.0
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -15,15 +21,9 @@ description: Use when creating or modifying a Makefile, adding make targets, set
 
 Create and maintain Makefiles using the 2-layer system. If `$ARGUMENTS` is provided, interpret it as the task (e.g., "add test-e2e target", "create new Makefile for Python project", "migrate existing Makefile").
 
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation.
-
 ## Usage
 
-Argument: [action] [details]. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: "[action] [details]". `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 

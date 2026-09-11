@@ -1,6 +1,6 @@
 ---
 name: uxmaster-implement
-description: UXMASTER child (invoked via /uxmaster): writes the actual UI code for an approved design in the project's real framework. The only UXMASTER child that edits code.
+description: "UXMASTER child (invoked via /uxmaster): writes the actual UI code for an approved design in the project's real framework. The only UXMASTER child that edits code."
 argument-hint: <finding ids (e.g. "F3 F7") or a design to implement; empty = all open findings>
 version: 1.2.0
 ---

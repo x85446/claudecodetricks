@@ -1,6 +1,6 @@
 ---
 name: testmaster-maintain
-description: TESTMASTER child (invoked via /testmaster): writes new test cases and updates existing ones to match current product behavior.
+description: "TESTMASTER child (invoked via /testmaster): writes new test cases and updates existing ones to match current product behavior."
 argument-hint: <what changed / what needs coverage, e.g. "cover the new export endpoint">
 version: 1.1.0
 ---

@@ -1,6 +1,6 @@
 ---
-name: uxmaster-linux
-description: UXMASTER child (invoked via $uxmaster): judges an interface against the GNOME HIG (GTK4/libadwaita) or KDE HIG (Qt/Kirigami).
+name: "uxmaster-linux"
+description: "UXMASTER child (invoked via $uxmaster): judges an interface against the GNOME HIG (GTK4/libadwaita) or KDE HIG (Qt/Kirigami)."
 ---
 
 

@@ -1,6 +1,6 @@
 ---
-name: uxmaster-web
-description: UXMASTER child (invoked via $uxmaster): judges a web interface against web platform conventions and WCAG 2.2 AA.
+name: "uxmaster-web"
+description: "UXMASTER child (invoked via $uxmaster): judges a web interface against web platform conventions and WCAG 2.2 AA."
 ---
 
 

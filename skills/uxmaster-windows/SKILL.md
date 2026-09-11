@@ -1,6 +1,6 @@
 ---
 name: uxmaster-windows
-description: UXMASTER child (invoked via /uxmaster): judges an interface against Windows 11 Fluent design and WinUI 3 conventions.
+description: "UXMASTER child (invoked via /uxmaster): judges an interface against Windows 11 Fluent design and WinUI 3 conventions."
 argument-hint: <surface to review, e.g. "the settings page">
 version: 1.1.0
 ---
