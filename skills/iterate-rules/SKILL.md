@@ -2,10 +2,10 @@
 name: iterate-rules
 description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which /iterate enforces at launch. Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 argument-hint: <the rule in your own words, or "show" / "test" / "remove <rule>" / "clear">
-version: 1.1.0
+version: 5.1.0
 ---
 
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema changes, patch for wording). The schema here is the contract /iterate reads; changing it means changing /iterate too. -->
+<!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # /iterate-rules — say when a run is allowed to start
 
@@ -19,6 +19,14 @@ writes the schema `/iterate` actually enforces.
 | `/iterate-planner` (`/ip`) | **Plan** |
 | `/iterate-rules` | **Gate** — when a run may start |
 | `/iterate` (`/i`) | **Execute** |
+
+**`/iterate-conductor` delegates here.** `/ic schedule <rule>` routes to this
+skill — the conductor reads `policy.md` but never writes it. That separation is
+deliberate: this file gates every launch in the project, human or conductor, so
+a supervisor that could rewrite it would have escaped the thing meant to contain
+it. The conductor's own `conductor-schedule:` is separate, lives in
+`conductor.md`, and is intersected with the schedule here — it can narrow the
+conductor's hours but never widen them.
 
 **Scope, and it is narrow.** These rules gate *starting* a run. They never
 touch plans, never change what a run does, and — this one matters — never stop
@@ -189,3 +197,18 @@ file and its reason text, so the intent survives a temporary lift. Deleting
 6. **Don't argue with the rule.** If they want runs only between 03:00 and
    03:05, write it. Warn once if a rule can never match (`allow mon 22:00-22:00`
    is an empty window), then do as asked.
+
+## `version`
+
+`version` (or "what version") on **any** iterate skill reports the same thing —
+the family version, because the stack is versioned as one unit:
+
+```
+iterate family 5.0.0
+iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
+```
+
+Run `iterate-run version` for the second line — a real installed binary, never a
+recalled string. If members disagree, say so and name them: drift inside the
+family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
+only correct way to bump.

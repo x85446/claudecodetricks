@@ -3,12 +3,19 @@ name: uxmaster
 description: Route ALL interface work here; the meta picks the child. Use for any UX/UI work: "uxmaster", "review the UX", "audit the UI", "what's wrong with this interface", "design this screen", "design the settings", "make the interface better", "is this right for macOS/Windows/GNOME/Linux", "does this feel native", "check accessibility", "WCAG audit", "review the CLI's UX", "review the web UI", "implement this design", "build the design", "implement F3".
 ---
 
-<!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 
 <!-- codex-port: no confirmed structured-picker equivalent in Codex; every structured picker in this file became an ordinary numbered-list question -- verify the wording reads naturally where it mattered. -->
 
 # $uxmaster — UX/UI design orchestrator (UXMASTER)
+
+**Version:** 1.2.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Meta skill. Routes to one child per concern and owns the shared contracts below. Do the routed work via explicit `$name` invocation — never inline a child's job here.
 

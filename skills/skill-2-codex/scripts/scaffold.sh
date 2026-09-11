@@ -34,9 +34,15 @@ NORMALIZED="$(mktemp)"
 trap 'rm -f "$NORMALIZED"' EXIT
 tr -d '\r' < "$SRC_SKILL_MD" > "$NORMALIZED"
 
-# --- Extract frontmatter fields (single-line name:/description: only) -----
-name=$(awk -F': *' '/^name:/{print $2; exit}' "$NORMALIZED")
-description=$(awk -F': *' '/^description:/{sub(/^description: */,""); print; exit}' "$NORMALIZED")
+# --- Extract frontmatter fields (real YAML, not the first line) -----------
+# awk could only ever see the first line of a value, so a block scalar
+# (`description: >-` with the text indented beneath) arrived as the literal
+# ">-" and the port shipped with no description at all — Codex then refused to
+# load it. fmfield.py parses the frontmatter properly and folds any multi-line
+# value to the single line Codex wants.
+HERE_SCAFFOLD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+name=$(python3 "$HERE_SCAFFOLD/fmfield.py" get "$NORMALIZED" name)
+description=$(python3 "$HERE_SCAFFOLD/fmfield.py" get "$NORMALIZED" description)
 
 # Codex has exactly one trigger field. Claude Code's `when_to_use` is a second
 # one; dropping it would silently discard every trigger phrase it holds, so it
@@ -44,7 +50,7 @@ description=$(awk -F': *' '/^description:/{sub(/^description: */,""); print; exi
 # "Include all 'when to use' information here -- not in the body."
 when_to_use=""
 if grep -q '^when_to_use:' "$NORMALIZED"; then
-    when_to_use=$(awk '/^when_to_use:/{sub(/^when_to_use: */,""); print; exit}' "$NORMALIZED")
+    when_to_use=$(python3 "$HERE_SCAFFOLD/fmfield.py" get "$NORMALIZED" when_to_use)
     if [[ -n "$when_to_use" ]]; then
         description="$description $when_to_use"
     fi
@@ -68,8 +74,11 @@ name="${name#-}"
 body_start=$(awk '/^---$/{c++; if(c==2){print NR+1; exit}}' "$NORMALIZED")
 {
     echo "---"
-    echo "name: $name"
-    echo "description: $description"
+    printf '%s' "$name" | python3 "$HERE_SCAFFOLD/fmfield.py" quote name
+    # Always double-quoted: a plain scalar opening with a YAML indicator does
+    # not parse (`**Always invoke` reads as an alias), and quoting every value
+    # kills the whole class rather than the one that bit us.
+    printf '%s' "$description" | python3 "$HERE_SCAFFOLD/fmfield.py" quote description
     echo "---"
     echo ""
     tail -n "+$body_start" "$NORMALIZED"

@@ -157,15 +157,51 @@ language + `/agent` CLI commands**, not a tool schema:
   expose these to skill authors — **do not hardcode them.** Write the
   orchestration intent in plain language and let Codex's runtime map it.
 
-## Scheduled / recurring re-firing — Cron tools are the confirmed analog
+## Scheduled / recurring re-firing — NO in-session equivalent
 
-Codex has `CronCreate` / `CronList` / `CronDelete`: standard 5-field cron
-jobs, recurring or one-shot. Session-only by default, or durable to
-`.codex/scheduled_tasks.json`. Recurring jobs auto-expire after 7 days. This
-is the closest match to Claude Code's `/loop` + `ScheduleWakeup` auto-resume,
-with one caveat: **the 7-day expiry has no Claude Code equivalent** — anything
-ported from an `/iterate`-style indefinite auto-resume loop needs an explicit
-"re-arm the cron job" note.
+**`CronCreate` / `CronList` / `CronDelete` are Claude Code tools, not Codex
+tools.** An earlier version of this file asserted Codex had them, with Claude
+Code's own tool description attached ("session-only by default, durable to
+`.codex/scheduled_tasks.json`, recurring jobs expire after 7 days"). That was
+wrong and it shipped: ported skills instructed Codex to call tools that do not
+exist, and Codex reported `this session doesn't expose them`.
+
+For Codex they are an **open feature request** — [openai/codex#25466][1], filed
+2026-05-31 by panbergco, still open with no maintainer response. The proposal
+describes `CronCreate`/`CronList`/`CronDelete` plus `ScheduleWakeup`, "session-only
+by default or durable to `.codex/scheduled_tasks.json`", and a `/loop` command.
+
+**That wording is where this file's error came from.** The earlier version
+transcribed the proposal as shipped capability, right down to the
+`scheduled_tasks.json` path. A proposal read as documentation is the specific
+failure mode to watch for here: check the issue state, not just the prose.
+
+A working implementation exists on the author's fork —
+`github.com/panbergco/codex/tree/feat/session-scheduling-tools`, ~12 files
+registering handlers in `ToolExecutor`/`CoreToolRuntime` — filed as an issue
+because PRs to openai/codex are collaborator-only. Running it means running an
+unofficial Codex build: rebasing against upstream forever, no support, and a
+port that silently breaks the day it diverges. Not worth it when an OS cron job
+gets the same outcome. Re-check the issue before trusting any claim that these
+landed.
+
+[1]: https://github.com/openai/codex/issues/25466
+
+**What Codex actually has:**
+
+| Mechanism | Who sets it up | Notes |
+|---|---|---|
+| **Automations / Scheduled Tasks** | the **user**, in the ChatGPT desktop or web UI | natural-language creation, a "Scheduled" view for active/paused/completed runs, RFC 5545 RRULE for advanced patterns; runs unattended under the sandbox settings; can run standalone or inside an existing chat, and on a dedicated worktree for git repos |
+| **External OS scheduler + `codex exec`** | the **user**, via cron/launchd/systemd | `codex exec` is the single-shot scriptable entry point; the OS owns the schedule |
+
+**The consequence for any ported skill: it cannot arm its own resumption.**
+Claude Code's `/loop` and Cron tools let a skill schedule *itself*. Codex has no
+in-session primitive for that, so a skill that depended on self-scheduling must
+be rewritten to **ask the user to set up an Automation or an OS cron job**, and
+must state plainly that it cannot do so itself. Do not invent a tool call.
+
+Anything ported from an `/iterate`-style auto-resume loop needs that
+substitution made explicitly, not papered over.
 
 ## No confirmed equivalent (flag, don't fabricate)
 
@@ -192,7 +228,7 @@ ported from an `/iterate`-style indefinite auto-resume loop needs an explicit
 | `scripts/`, `assets/` | `scripts/`, `assets/` | confirmed |
 | Agent/Task tool, `run_in_background` | natural-language subagent orchestration; Codex waits and consolidates | orchestration confirmed; exact API shape not — write intent, not tool calls |
 | background-completion notification / polling loop | **drop the poll** — Codex returns a consolidated result synchronously | confirmed |
-| `/loop` + `ScheduleWakeup` auto-resume | `CronCreate`/`CronList`/`CronDelete`, note the 7-day recurring expiry | confirmed close analog, one caveat |
+| `/loop` + `ScheduleWakeup` auto-resume | **no in-session equivalent** — the skill must ask the user to create a Codex Automation or an OS cron job running `codex exec` | confirmed absent; Cron tools are Claude Code's, and an open feature request for Codex (issue #25466) |
 | `Skill(child)` delegation, `/other-skill` | `$other-skill` explicit invocation | confirmed syntax; requires child also ported |
 | `AskUserQuestion` | no equivalent — plain-language ask | unconfirmed, flag |
 | MCP/tool prerequisites stated in prose | `agents/openai.yaml` → `dependencies.tools[]` | confirmed schema; optional to populate |

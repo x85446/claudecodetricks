@@ -38,7 +38,7 @@ func main() {
 	case "name":
 		nameCmd(os.Args[2:])
 	case "version", "--version", "-v":
-		fmt.Printf("iterate-run %s (commit %s, built %s)\n", Version, Commit, BuildTime)
+		fmt.Println(versionLine())
 	default:
 		usage()
 		os.Exit(2)
@@ -53,10 +53,19 @@ Usage:
   iterate-run status
   iterate-run hook pre|post          (wired into PreToolUse/PostToolUse in settings.json, not run by hand)
   iterate-run timeline [--plan <name>] [--home <dir>] [scan-dir...]
-  iterate-run serve [--port N]       (dashboard at http://localhost:N, default 8420)
+  iterate-run serve [--port N]       (dashboard at http://localhost:N, default 8420; --port 0 picks an ephemeral port and prints it; GET /healthz for a liveness check)
   iterate-run purge --plan <name> | --all-completed [--yes] [--force]
   iterate-run name next               (claims the next global, alphabetically-ordered plan codename)
   iterate-run version`)
+}
+
+// versionLine is the exact string both `iterate-run version` prints and
+// the dashboard's /healthz endpoint echoes — one source of truth so a
+// script can curl /healthz and compare its body against `iterate-run
+// version`'s stdout to catch a stale binary still serving after a
+// rebuild.
+func versionLine() string {
+	return fmt.Sprintf("iterate-run %s (commit %s, built %s)", Version, Commit, BuildTime)
 }
 
 // nameCmd claims the next plan codename in the CURRENT project's own
@@ -260,7 +269,7 @@ func serveCmd(args []string) {
 		}
 		i++
 	}
-	if err := iterrun.Serve("localhost:" + port); err != nil {
+	if err := iterrun.Serve("localhost:"+port, versionLine()); err != nil {
 		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
 		os.Exit(1)
 	}

@@ -888,3 +888,48 @@ func TestValidationGlyphOpensModalOnlyWhenNoteExists(t *testing.T) {
 		t.Errorf("a glyph with no note should not be clickable at all; got: %s", noNote)
 	}
 }
+
+// TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand confirms the plan
+// detail page never prints a command the reader's own harness doesn't
+// have: a claude-code plan shows only "/iterate <name>", a codex plan
+// shows only "$iterate <name>", and an unknown plan shows both, each
+// labelled with its harness rather than guessing.
+func TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand(t *testing.T) {
+	cases := []struct {
+		harness  string
+		wantHas  []string
+		wantMiss []string
+	}{
+		{"claude-code", []string{"/iterate cheetah"}, []string{"$iterate cheetah"}},
+		{"codex", []string{"$iterate cheetah"}, []string{"/iterate cheetah"}},
+		{"unknown", []string{"/iterate cheetah", "$iterate cheetah", "claude-code", "codex"}, nil},
+	}
+	for _, c := range cases {
+		plan := PlanSummary{Name: "cheetah", Harness: c.harness}
+		out := RenderTimelineHTML(nil, plan, "")
+		for _, want := range c.wantHas {
+			if !strings.Contains(out, want) {
+				t.Errorf("harness=%s: expected output to contain %q; output:\n%s", c.harness, want, out)
+			}
+		}
+		for _, miss := range c.wantMiss {
+			if strings.Contains(out, miss) {
+				t.Errorf("harness=%s: expected output to NOT contain %q (wrong harness's command); output:\n%s", c.harness, miss, out)
+			}
+		}
+	}
+}
+
+// TestPlanDetailShowsVersionFromEitherMarker confirms the plan detail
+// page displays PlanSummary.Version regardless of which of the two
+// marker shapes (Claude Code frontmatter vs. Codex body line) actually
+// produced it — by the time it reaches PlanSummary.Version the parser
+// has already reconciled that; the page just needs to not render it
+// blank.
+func TestPlanDetailShowsVersionFromEitherMarker(t *testing.T) {
+	plan := PlanSummary{Name: "cheetah", Harness: "codex", Version: "5.1.0"}
+	out := RenderTimelineHTML(nil, plan, "")
+	if !strings.Contains(out, "iterate family 5.1.0") {
+		t.Errorf("expected the plan detail page to show the resolved version; output:\n%s", out)
+	}
+}

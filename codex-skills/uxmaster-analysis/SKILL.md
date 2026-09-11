@@ -6,6 +6,13 @@ description: UXMASTER child (invoked via $uxmaster): platform-agnostic UX audit 
 
 # $uxmaster-analysis — is the experience right, regardless of platform
 
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Obey the shared contracts in `$uxmaster`'s SKILL.md (findings format, exercise-never-guess, state paths) — read it if not already in context.
 
 ## Usage

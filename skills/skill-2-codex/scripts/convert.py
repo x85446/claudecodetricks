@@ -24,8 +24,9 @@ import argparse, json, os, re, sys, glob
 
 # Constructs with no single correct port. Reported, never auto-rewritten.
 FLAGS = {
-    "loop":       (r'(?<![\w./-])/loop\b',
-                   "Claude Code /loop auto-resume -> CronCreate/CronDelete (note the 7-day recurring expiry)"),
+    "loop":       (r'(?<![\w./-])/loop\b|\bCronCreate\b|\bCronList\b|\bCronDelete\b|\bScheduleWakeup\b',
+                   "self-scheduling has NO Codex equivalent -- Cron*/ScheduleWakeup are Claude Code tools; "
+                   "rewrite to ask the user for a Codex Automation or an OS cron running `codex exec`"),
     "askuser":    (r'\bAskUserQuestion\b',
                    "structured picker -> plain numbered prose list; no confirmed Codex equivalent"),
     "agenttool":  (r'\bAgent tool\b|\bsubagent_type\b|\brun_in_background\b',
@@ -105,6 +106,14 @@ def convert(path, all_skills, moved_refs):
     had_ask = bool(re.search(r'\bAskUserQuestion\b', out))
     for pat, rep in ASK:
         out = re.sub(pat, rep, out)
+    # 7. A plan schema's `harness:` default names the harness whose planner
+    #    wrote the file. There is exactly one correct value for a Codex port
+    #    to stamp -- its own identity, never Claude Code's -- so the swap is
+    #    SAFE, not a judgment call. Anchored to frontmatter-style line start so
+    #    it only touches the literal schema default, never prose mentioning
+    #    "claude-code" elsewhere.
+    out = re.sub(r'^harness: claude-code\b', 'harness: codex', out, flags=re.MULTILINE)
+
     if had_ask and "codex-port: no confirmed structured-picker" not in out:
         marker = ("\n<!-- codex-port: no confirmed structured-picker equivalent in Codex; every "
                   "structured picker in this file became an ordinary numbered-list question -- "

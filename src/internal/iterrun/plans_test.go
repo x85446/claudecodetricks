@@ -117,6 +117,84 @@ func TestParsePlanFileGoalTruncation(t *testing.T) {
 	}
 }
 
+// TestParsePlanFileHarness confirms the three-value contract for
+// harness: exactly "claude-code" and "codex" are carried through
+// verbatim; everything else — the field absent entirely, present but
+// blank, or holding any other text — resolves to "unknown" rather than
+// guessing between the two real harnesses.
+func TestParsePlanFileHarness(t *testing.T) {
+	dir := t.TempDir()
+	plansDir := filepath.Join(dir, ".claude", "iterate", "plans")
+	if err := os.MkdirAll(plansDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		file    string
+		content string
+		want    string
+	}{
+		{"claude.md", "name: claude\nharness: claude-code\n\n## Goal\nWork.\n", "claude-code"},
+		{"codex.md", "name: codex\nharness: codex\n\n## Goal\nWork.\n", "codex"},
+		{"absent.md", "name: absent\n\n## Goal\nWork.\n", "unknown"},
+		{"blank.md", "name: blank\nharness:\n\n## Goal\nWork.\n", "unknown"},
+		{"garbage.md", "name: garbage\nharness: some-other-thing\n\n## Goal\nWork.\n", "unknown"},
+	}
+	for _, c := range cases {
+		if err := os.WriteFile(filepath.Join(plansDir, c.file), []byte(c.content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, c := range cases {
+		name := strings.TrimSuffix(c.file, ".md")
+		ps, err := GetPlanSummary(dir, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ps.Harness != c.want {
+			t.Errorf("%s: Harness = %q, want %q", c.file, ps.Harness, c.want)
+		}
+	}
+}
+
+// TestParsePlanFileVersion confirms Version resolves from three possible
+// markers, most-authoritative first: executor-version: (a live run's
+// actual code) beats planner-version: (drafting time) beats the Codex
+// port's own body-line marker, since that port's frontmatter permits
+// only name and description and so can't carry either of the other two.
+// A plan with none of the three stays version-less rather than guessing.
+func TestParsePlanFileVersion(t *testing.T) {
+	dir := t.TempDir()
+	plansDir := filepath.Join(dir, ".claude", "iterate", "plans")
+	if err := os.MkdirAll(plansDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		file    string
+		content string
+		want    string
+	}{
+		{"executor.md", "name: executor\nplanner-version: 5.0.0\nexecutor-version: 5.1.0\n\n## Goal\nWork.\n", "5.1.0"},
+		{"planner.md", "name: planner\nplanner-version: 5.1.0\n\n## Goal\nWork.\n", "5.1.0"},
+		{"codexver.md", "# Iterate Task — codex plan\n\n**Version:** iterate family 5.1.0\n\nname: codexver\nharness: codex\n\n## Goal\nWork.\n", "5.1.0"},
+		{"noversion.md", "name: noversion\n\n## Goal\nWork.\n", ""},
+	}
+	for _, c := range cases {
+		if err := os.WriteFile(filepath.Join(plansDir, c.file), []byte(c.content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, c := range cases {
+		name := strings.TrimSuffix(c.file, ".md")
+		ps, err := GetPlanSummary(dir, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ps.Version != c.want {
+			t.Errorf("%s: Version = %q, want %q", c.file, ps.Version, c.want)
+		}
+	}
+}
+
 // TestParsePlanFileExecutingDistinctFromStarted confirms Started: (drafting
 // time, set once by /iterate-planner) and Executing: (real execution-start
 // time, set once by /iterate at the planned->executing transition) parse

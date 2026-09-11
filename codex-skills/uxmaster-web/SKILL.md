@@ -6,6 +6,13 @@ description: UXMASTER child (invoked via $uxmaster): judges a web interface agai
 
 # $uxmaster-web — does this behave like the web
 
+**Version:** 1.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Obey the shared contracts in `$uxmaster`'s SKILL.md. Findings are `kind: platform-convention` or `a11y`, with the WCAG/spec rule cited in `rule:`.
 
 ## Usage

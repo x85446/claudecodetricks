@@ -6,6 +6,13 @@ description: TESTMASTER child (invoked via $testmaster): the organizing index â€
 
 # $testmaster-catalog â€” keep the suite organized and know what's still true
 
+**Version:** 1.3.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Obey the shared contracts in `$testmaster`'s SKILL.md. This child owns the organizing layer: what exists, what it proves, what it covers, and whether it's still valid after the code moved.
 
 ## Usage

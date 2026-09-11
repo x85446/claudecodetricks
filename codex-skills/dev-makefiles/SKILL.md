@@ -6,6 +6,13 @@ description: Use when creating or modifying a Makefile, adding make targets, set
 
 # Building Makefiles
 
+**Version:** 1.3.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Create and maintain Makefiles using the 2-layer system. If `$ARGUMENTS` is provided, interpret it as the task (e.g., "add test-e2e target", "create new Makefile for Python project", "migrate existing Makefile").
 
 ## What this skill does

@@ -6,6 +6,13 @@ description: UXMASTER child (invoked via $uxmaster): the command-line expert —
 
 # $uxmaster-cli — the terminal is the interface, and it has a grammar
 
+**Version:** 2.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Obey the shared contracts in `$uxmaster`'s SKILL.md. This skill owns two references — **read the one your
 task needs before doing anything else**, and cite its section in every finding:
 

@@ -6,6 +6,13 @@ description: Invoked as iterate plans' standing final task, or directly ("update
 
 # $product-docs — keep the user docs true to the product
 
+**Version:** 1.0.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 End-user documentation only: what the product does and how to operate it, written for someone who uses it and has never seen the code. Internal/dev docs (architecture, build, contributing) are out of scope.
 
 ## What this skill does

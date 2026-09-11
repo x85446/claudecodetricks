@@ -3,9 +3,16 @@ name: testmaster
 description: Route ALL test-suite work here; the meta picks the child. Use for any test-suite work: "testmaster", "testmaster init", "adopt this suite", "onboard testmaster", "set up testmaster here", "run the tests", "maintain the test suite", "add tests for <x>", "derive tests for <requirement>", "should this have a test", "what tests does this need", "prune the tests", "consolidate duplicate tests", "clean up the suite", "test report card", "how are the tests", "what's untested", "test coverage", "what did this change invalidate", "which tests drifted", "set up nightly tests".
 ---
 
-<!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $testmaster — SQA suite orchestrator (TESTMASTER)
+
+**Version:** 1.4.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Meta skill. Routes to one child per concern and owns the shared contracts below. Do the routed work via explicit `$name` invocation — never inline a child's job here.
 
@@ -76,7 +83,7 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → invoke `$testmaster-prune` explicitly, args verbatim.
 3. **run** ("run", "run fast", "run standard", "run slow", "run <test-id>") → invoke `$testmaster-run` explicitly, args verbatim. Bare "run" = fast+standard (the iterate-safe set).
 4. **report** ("report", "report card", "how are the tests") → invoke `$testmaster-report` explicitly.
-5. **nightly** ("nightly", "set up nightly tests") → arm a scheduled full run (all tiers incl. slow) at local midnight via the harness's cron/schedule mechanism, prompt `$testmaster run all`. **Record the mechanism + job id in `./.claude/testmaster/nightly.json`** and tell the user the exact cancel command (cancel with `CronDelete <job-id>`, then confirm with `CronList`). Never arm a second nightly if `nightly.json` already records a live one.
+5. **nightly** ("nightly", "set up nightly tests") → Codex cannot schedule itself, so tell the user to create the nightly run once: a ChatGPT Automation firing `$testmaster run all` at local midnight, or an OS cron job running `codex exec`. **Record `mechanism: user-managed` in `./.claude/testmaster/nightly.json`** along with what you told them, and note that pausing it is theirs to do. Never arm a second nightly if `nightly.json` already records a live one.
 6. **status** ("status") → one screen from `registry.json`: counts per tier, pass/fail split, slowest 5, last full-run date. Read-only. For the *organized* view (by requirement, with validity) route to `catalog` instead.
 7. **default** (anything else describing test work) → decide maintain vs prune vs run by the work's nature and route as above.
 

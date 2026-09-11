@@ -1,15 +1,28 @@
 ---
 name: iterate-rules
-description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which $iterate enforces at launch. Rules gate launching a run; they never touch plans, and never stop a run that is already going.
+description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which $iterate enforces at launch.
 ---
 
 
-<!-- version: bump on EVERY behavioral change (minor for additions, major for schema changes, patch for wording). The schema here is the contract $iterate reads; changing it means changing $iterate too. -->
+<!-- version: shared across the family; see the **Version:** line above. -->
 
 # $iterate-rules — say when a run is allowed to start
 
+**Version:** iterate family 5.1.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 The front door to `./.claude/iterate/policy.md`. You describe the rule; this
 writes the schema `$iterate` actually enforces.
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 
 ## Usage
 
@@ -23,10 +36,12 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$i` — ported.
 - `$ibs` — ported.
+- `$ic` — ported.
 - `$in` — ported.
 - `$ip` — ported.
 - `$iterate` — ported.
 - `$iterate-brainstorm` — ported.
+- `$iterate-conductor` — ported.
 - `$iterate-notes` — ported.
 - `$iterate-planner` — ported.
 
@@ -37,6 +52,14 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 | `$iterate-planner` (`$ip`) | **Plan** |
 | `$iterate-rules` | **Gate** — when a run may start |
 | `$iterate` (`$i`) | **Execute** |
+
+**`$iterate-conductor` delegates here.** `$ic schedule <rule>` routes to this
+skill — the conductor reads `policy.md` but never writes it. That separation is
+deliberate: this file gates every launch in the project, human or conductor, so
+a supervisor that could rewrite it would have escaped the thing meant to contain
+it. The conductor's own `conductor-schedule:` is separate, lives in
+`conductor.md`, and is intersected with the schedule here — it can narrow the
+conductor's hours but never widen them.
 
 **Scope, and it is narrow.** These rules gate *starting* a run. They never
 touch plans, never change what a run does, and — this one matters — never stop

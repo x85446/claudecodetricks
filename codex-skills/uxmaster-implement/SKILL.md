@@ -6,6 +6,13 @@ description: UXMASTER child (invoked via $uxmaster): writes the actual UI code f
 
 # $uxmaster-implement — turn findings and designs into real UI code
 
+**Version:** 1.2.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 Obey the shared contracts in `$uxmaster`'s SKILL.md. This is the ONLY child that writes code, and the only one (besides the user) that flips a finding's `status:`.
 
 ## Usage
