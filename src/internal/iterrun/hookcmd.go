@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -152,45 +153,85 @@ func extractCodexSpawnTaskName(raw json.RawMessage) (string, bool) {
 }
 
 // resolvePlanTeam figures out which plan (and, for a team member, which
-// team) this event belongs to. Two paths, tried in order:
+// team) this event belongs to.
 //
-//  1. cwd carries a .claude/iterate/current pointer — true for the
-//     coordinator, which always runs from the plan's own project, and for
-//     any team that happens to still be working there. plan comes from the
-//     pointer file directly; team is empty (this is coordinator-level work).
-//  2. agentID is already labeled — true for a team working in a directory
-//     with no relation to the plan's project at all (confirmed live: a team
-//     can and does clone an entirely separate workspace). The label is
-//     always "<plan>-<team>" per /iterate's own dispatch convention, and
-//     plan names are always a single word, so splitting on the first
-//     hyphen is unambiguous.
+// **A non-empty agentID is a subagent, never the coordinator.** That is the
+// whole ordering rule here, and getting it backwards is what made every
+// team's work show up as the coordinator's: teams share the plan's working
+// tree by design (they never switch branches), so a cwd-first resolver
+// matched `.claude/iterate/current` for team events too and returned them as
+// coordinator-level work. Confirmed live on plan galago: 498 of the 881
+// spans filed under its coordinator were actually its five teams', and the
+// team rows — left with only their log file and their `iterate-run run`
+// wrapped commands — showed 45 minutes of "severe downtime" during which
+// reporting alone made 77 tool calls.
 //
-// Neither may resolve yet (a label lags its own dispatch's first events) —
-// that just means this one event goes untagged, not an error.
+// Resolution order:
+//
+//  1. agentID non-empty → a team. The id is self-describing,
+//     "a<plan>-<team>-<16 hex>", because /iterate names each dispatch
+//     `<plan>-<team>`; parse it. A re-dispatch of the same team arrives as
+//     `<team>-2`, and that trailing counter is dropped so the second
+//     dispatch lands in the same row as the first — one team, one lane.
+//  2. Still a team but the id does not parse → the label map, which is how
+//     the older generation of agent ids was resolved.
+//  3. Neither → keep the plan (from cwd when it is there) but key the row by
+//     the raw agentID. An unrecognized subagent gets its own honest lane;
+//     what it must never get is team "", which is the coordinator's key.
+//  4. agentID empty → the coordinator. plan comes from cwd's
+//     `.claude/iterate/current` pointer.
 func resolvePlanTeam(cwd, agentID string) (plan, team string) {
-	if cwd != "" {
-		if data, err := os.ReadFile(filepath.Join(cwd, ".claude", "iterate", "current")); err == nil {
-			if p := strings.TrimSpace(string(data)); p != "" {
-				return p, ""
+	planFromCWD := func() string {
+		if cwd == "" {
+			return ""
+		}
+		data, err := os.ReadFile(filepath.Join(cwd, ".claude", "iterate", "current"))
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(string(data))
+	}
+
+	if agentID == "" {
+		return planFromCWD(), ""
+	}
+
+	if p, t := parseAgentID(agentID); t != "" {
+		return p, t
+	}
+	if labels, err := ReadLabels(); err == nil {
+		if label, ok := labels[agentID]; ok {
+			if p, t, found := strings.Cut(label, "-"); found {
+				return p, t
 			}
+			return label, ""
 		}
 	}
-	if agentID == "" {
+	return planFromCWD(), agentID
+}
+
+// agentIDPattern matches the self-describing subagent id the harness builds
+// from /iterate's dispatch name: a leading "a", the Agent call's own
+// "<plan>-<team>" name, then a 16-hex-digit suffix.
+var agentIDPattern = regexp.MustCompile(`^a([a-z0-9]+)-(.+)-[0-9a-f]{16}$`)
+
+// redispatchSuffix matches the "-2", "-3" a re-dispatch of the same team
+// carries, so both dispatches resolve to one team.
+var redispatchSuffix = regexp.MustCompile(`-[0-9]+$`)
+
+// parseAgentID pulls the plan and team out of a subagent id, returning
+// empty strings for anything that is not one. Both must be non-empty for
+// the result to be usable — a caller checks team.
+func parseAgentID(agentID string) (plan, team string) {
+	m := agentIDPattern.FindStringSubmatch(agentID)
+	if m == nil {
 		return "", ""
 	}
-	labels, err := ReadLabels()
-	if err != nil {
+	team = redispatchSuffix.ReplaceAllString(m[2], "")
+	if team == "" {
 		return "", ""
 	}
-	label, ok := labels[agentID]
-	if !ok {
-		return "", ""
-	}
-	p, t, found := strings.Cut(label, "-")
-	if !found {
-		return label, ""
-	}
-	return p, t
+	return m[1], team
 }
 
 // summarize extracts a short, tool-appropriate description from tool_input.

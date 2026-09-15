@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-15T17:01:07Z",
+ "updated": "2026-09-15T19:22:05Z",
  "project": "claudecodetricks",
  "requirements": [
   {
@@ -124,6 +124,36 @@
       "src/internal/iterrun/events.go",
       "src/internal/iterrun/hookcmd.go",
       "src/internal/iterrun/projects.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator",
+     "test": "TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/labels.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParseAgentIDFoldsRedispatchesIntoOneTeam",
+     "test": "TestParseAgentIDFoldsRedispatchesIntoOneTeam",
+     "covers": [
+      "src/internal/iterrun/hookcmd.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents",
+     "test": "TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents",
+     "covers": [
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/timeline.go"
      ],
      "covers_source": "coverage",
      "validity": "valid"
@@ -601,6 +631,33 @@
      "covers": [
       "src/internal/iterrun/plans.go",
       "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane",
+     "test": "TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBusyAndGapsUseTheUnionOfOverlappingSpans",
+     "test": "TestBusyAndGapsUseTheUnionOfOverlappingSpans",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestCoarseLogSpanIsAFallbackNotASupplement",
+     "test": "TestCoarseLogSpanIsAFallbackNotASupplement",
+     "covers": [
       "src/internal/iterrun/timeline.go"
      ],
      "covers_source": "coverage",

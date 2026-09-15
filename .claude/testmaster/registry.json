@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-15T17:00:28Z",
+ "updated": "2026-09-15T19:21:59Z",
  "tests": {
   "git.TestScreenPath": {
    "name": "TestScreenPath",
@@ -841,6 +841,78 @@
    "last_ms": 690,
    "last_result": "pass",
    "updated": "2026-09-15T17:00:28Z"
+  },
+  "TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator": {
+   "name": "TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator",
+   "file": "src/internal/iterrun/hookcmd_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator$'",
+   "runs": 1,
+   "avg_ms": 815,
+   "tier": "fast",
+   "last_ms": 815,
+   "last_result": "pass",
+   "updated": "2026-09-15T19:21:59Z"
+  },
+  "TestParseAgentIDFoldsRedispatchesIntoOneTeam": {
+   "name": "TestParseAgentIDFoldsRedispatchesIntoOneTeam",
+   "file": "src/internal/iterrun/hookcmd_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestParseAgentIDFoldsRedispatchesIntoOneTeam$'",
+   "runs": 1,
+   "avg_ms": 751,
+   "tier": "fast",
+   "last_ms": 751,
+   "last_result": "pass",
+   "updated": "2026-09-15T19:21:59Z"
+  },
+  "TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane": {
+   "name": "TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane",
+   "file": "src/internal/iterrun/hookcmd_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane$'",
+   "runs": 1,
+   "avg_ms": 786,
+   "tier": "fast",
+   "last_ms": 786,
+   "last_result": "pass",
+   "updated": "2026-09-15T19:21:59Z"
+  },
+  "TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents": {
+   "name": "TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents",
+   "file": "src/internal/iterrun/timeline_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents$'",
+   "runs": 1,
+   "avg_ms": 731,
+   "tier": "fast",
+   "last_ms": 731,
+   "last_result": "pass",
+   "updated": "2026-09-15T19:21:59Z"
+  },
+  "TestBusyAndGapsUseTheUnionOfOverlappingSpans": {
+   "name": "TestBusyAndGapsUseTheUnionOfOverlappingSpans",
+   "file": "src/internal/iterrun/timeline_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestBusyAndGapsUseTheUnionOfOverlappingSpans$'",
+   "runs": 1,
+   "avg_ms": 753,
+   "tier": "fast",
+   "last_ms": 753,
+   "last_result": "pass",
+   "updated": "2026-09-15T19:21:59Z"
+  },
+  "TestCoarseLogSpanIsAFallbackNotASupplement": {
+   "name": "TestCoarseLogSpanIsAFallbackNotASupplement",
+   "file": "src/internal/iterrun/timeline_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestCoarseLogSpanIsAFallbackNotASupplement$'",
+   "runs": 1,
+   "avg_ms": 787,
+   "tier": "fast",
+   "last_ms": 787,
+   "last_result": "pass",
+   "updated": "2026-09-15T19:21:59Z"
   }
  }
 }

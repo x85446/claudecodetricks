@@ -1,8 +1,11 @@
 package iterrun
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestPendingSpawnLabelFIFOOrdering(t *testing.T) {
@@ -145,5 +148,103 @@ func TestHandleHookSubagentStopIsNoop(t *testing.T) {
 	}
 	if len(events) != 0 {
 		t.Fatalf("expected subagent-stop to record no Event, got %d", len(events))
+	}
+}
+
+func TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator(t *testing.T) {
+	// A team shares the plan's working tree — that is the design, teams never
+	// switch branches — so cwd carries the plan pointer for team events too.
+	// Resolving cwd first returned team "" (the coordinator's key) for every
+	// one of them, which is the bug this pins shut.
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".claude", "iterate"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".claude", "iterate", "current"), []byte("galago\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	plan, team := resolvePlanTeam(dir, "agalago-reporting-f68431d4419554c9")
+	if plan != "galago" || team != "reporting" {
+		t.Errorf("team event resolved to (%q, %q), want (galago, reporting)", plan, team)
+	}
+
+	// The coordinator is the one that legitimately has no agent id.
+	plan, team = resolvePlanTeam(dir, "")
+	if plan != "galago" || team != "" {
+		t.Errorf("coordinator event resolved to (%q, %q), want (galago, \"\")", plan, team)
+	}
+
+	// An unrecognized subagent gets its own lane, never the coordinator's.
+	plan, team = resolvePlanTeam(dir, "some-unlabeled-agent")
+	if team == "" {
+		t.Error("an unresolvable subagent was filed under the coordinator")
+	}
+	if plan != "galago" {
+		t.Errorf("plan = %q, want galago from cwd even when the team is unknown", plan)
+	}
+}
+
+func TestParseAgentIDFoldsRedispatchesIntoOneTeam(t *testing.T) {
+	cases := []struct {
+		id, plan, team string
+	}{
+		{"agalago-reporting-f68431d4419554c9", "galago", "reporting"},
+		{"agalago-trees-2-ad83a94607dcf3c4", "galago", "trees"},
+		{"agalago-ledger-2-582347734cd7356f", "galago", "ledger"},
+		{"akagu-app-b8bb3f96baf442e5", "kagu", "app"},
+		{"agalago-skills-harness-1234567890abcdef", "galago", "skills-harness"},
+		// Not subagent ids: a session uuid, a short hash, an empty team.
+		{"019ffc85-3f60-7e40-bb89-aac9f9c5904f", "", ""},
+		{"a32fb967a117a0a81", "", ""},
+		{"", "", ""},
+	}
+	for _, c := range cases {
+		plan, team := parseAgentID(c.id)
+		if plan != c.plan || team != c.team {
+			t.Errorf("parseAgentID(%q) = (%q, %q), want (%q, %q)", c.id, plan, team, c.plan, c.team)
+		}
+	}
+}
+
+func TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane(t *testing.T) {
+	base := time.Date(2026, 9, 15, 17, 0, 0, 0, time.UTC)
+	ev := func(hook, tid, agent, team string, off time.Duration) Event {
+		return Event{
+			Hook: hook, ToolUseID: tid, AgentID: agent, Team: team,
+			Plan: "galago", CWD: "/p", TS: base.Add(off), ToolName: "Bash",
+		}
+	}
+	events := []Event{
+		// coordinator
+		ev("pre", "c1", "", "", 0), ev("post", "c1", "", "", 2*time.Second),
+		// reporting, working in the plan's own tree — the case that used to
+		// land in the coordinator's row
+		ev("pre", "r1", "agalago-reporting-f68431d4419554c9", "reporting", time.Minute),
+		ev("post", "r1", "agalago-reporting-f68431d4419554c9", "reporting", time.Minute+30*time.Second),
+		ev("pre", "r2", "agalago-reporting-f68431d4419554c9", "reporting", 20*time.Minute),
+		ev("post", "r2", "agalago-reporting-f68431d4419554c9", "reporting", 20*time.Minute+5*time.Second),
+	}
+	rows := BuildRowsFromHookEvents(events, nil, "galago", "/p", time.Time{})
+	byKey := map[string]Row{}
+	for _, r := range rows {
+		byKey[r.key] = r
+	}
+	coord, ok := byKey[""]
+	if !ok {
+		t.Fatal("no coordinator row")
+	}
+	if len(coord.spans) != 1 {
+		t.Errorf("coordinator has %d spans, want 1 — team calls are leaking into it", len(coord.spans))
+	}
+	rep, ok := byKey["reporting"]
+	if !ok {
+		t.Fatal("no reporting row — its calls went somewhere else")
+	}
+	if len(rep.spans) != 2 {
+		t.Errorf("reporting has %d spans, want 2", len(rep.spans))
+	}
+	if len(rep.gaps) != 1 {
+		t.Errorf("reporting has %d gaps, want 1 (its own 18m idle stretch)", len(rep.gaps))
 	}
 }

@@ -1050,3 +1050,107 @@ func TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack(t *testing.T) {
 		t.Error("tick axis is missing the label/duration column spacers")
 	}
 }
+
+func TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents(t *testing.T) {
+	// Every event written before resolvePlanTeam was fixed carries agent_id
+	// but no team. The team must be recovered from the id, or a finished
+	// plan's whole history reads as coordinator work and its teams look idle.
+	base := time.Date(2026, 9, 15, 17, 0, 0, 0, time.UTC)
+	ev := func(hook, tid, agent string, off time.Duration) Event {
+		return Event{
+			Hook: hook, ToolUseID: tid, AgentID: agent, Team: "", // never recorded
+			Plan: "galago", CWD: "/p", TS: base.Add(off), ToolName: "Edit",
+		}
+	}
+	events := []Event{
+		ev("pre", "c1", "", 0), ev("post", "c1", "", time.Second),
+		ev("pre", "r1", "agalago-reporting-f68431d4419554c9", time.Minute),
+		ev("post", "r1", "agalago-reporting-f68431d4419554c9", time.Minute+time.Second),
+		// a re-dispatch of the same team folds into the one lane
+		ev("pre", "t1", "agalago-trees-2-ad83a94607dcf3c4", 2*time.Minute),
+		ev("post", "t1", "agalago-trees-2-ad83a94607dcf3c4", 2*time.Minute+time.Second),
+		ev("pre", "t2", "agalago-trees-4a81c2f3eaa2171b", 3*time.Minute),
+		ev("post", "t2", "agalago-trees-4a81c2f3eaa2171b", 3*time.Minute+time.Second),
+	}
+	byKey := map[string]Row{}
+	for _, r := range BuildRowsFromHookEvents(events, nil, "galago", "/p", time.Time{}) {
+		byKey[r.key] = r
+	}
+	if got := len(byKey[""].spans); got != 1 {
+		t.Errorf("coordinator has %d spans, want 1 — old team events are still leaking in", got)
+	}
+	if got := len(byKey["reporting"].spans); got != 1 {
+		t.Errorf("reporting has %d spans, want 1", got)
+	}
+	if got := len(byKey["trees"].spans); got != 2 {
+		t.Errorf("trees has %d spans, want 2 (both dispatches in one lane)", got)
+	}
+}
+
+func TestBusyAndGapsUseTheUnionOfOverlappingSpans(t *testing.T) {
+	base := time.Date(2026, 9, 15, 11, 0, 0, 0, time.UTC)
+	at := func(m int) time.Time { return base.Add(time.Duration(m) * time.Minute) }
+	// The real shape of a team row: one coarse log-file span covering the
+	// whole 90 minutes, plus three tool calls inside it.
+	spans := []span{
+		{start: at(0), end: at(90), tool: "team-log"},
+		{start: at(5), end: at(6), tool: "Bash"},
+		{start: at(40), end: at(41), tool: "Edit"},
+		{start: at(88), end: at(89), tool: "Bash"},
+	}
+	if got, want := busyDuration(spans), 90*time.Minute; got != want {
+		t.Errorf("busy = %v, want %v — overlapping spans are being summed, not unioned", got, want)
+	}
+	if got := computeGaps(spans); len(got) != 0 {
+		t.Errorf("gaps = %v, want none: a span the row already holds covers every minute", got)
+	}
+
+	// With no covering span, the holes are real and must still be reported.
+	// The 19-minute hole is notable; the 30-second one is normal think-time.
+	sparse := []span{
+		{start: at(0), end: at(1)},
+		{start: at(20), end: at(21)},
+		{start: at(21).Add(30 * time.Second), end: at(22)},
+	}
+	if got, want := busyDuration(sparse), 2*time.Minute+30*time.Second; got != want {
+		t.Errorf("busy = %v, want %v", got, want)
+	}
+	gaps := computeGaps(sparse)
+	if len(gaps) != 1 {
+		t.Fatalf("gaps = %v, want exactly the 19-minute hole", gaps)
+	}
+	if got, want := gaps[0].dur(), 19*time.Minute; got != want {
+		t.Errorf("gap = %v, want %v", got, want)
+	}
+}
+
+func TestCoarseLogSpanIsAFallbackNotASupplement(t *testing.T) {
+	base := time.Date(2026, 9, 15, 4, 0, 0, 0, time.UTC)
+	at := func(m int) time.Time { return base.Add(time.Duration(m) * time.Minute) }
+
+	// A team with real per-call data: the log-file bounding box must not
+	// count as work, or the six hours its model was exhausted read as busy.
+	instrumented := []span{
+		{start: at(0), end: at(420), tool: teamLogTool},
+		{start: at(1), end: at(2), tool: "Bash"},
+		{start: at(410), end: at(411), tool: "Edit"},
+	}
+	got := dropCoarseSpans(instrumented)
+	if len(got) != 2 {
+		t.Fatalf("kept %d spans, want the 2 real calls", len(got))
+	}
+	if d := busyDuration(got); d != 2*time.Minute {
+		t.Errorf("busy = %v, want 2m — the bounding box is still counted as work", d)
+	}
+	gaps := computeGaps(got)
+	if len(gaps) != 1 || gaps[0].dur() < SevereGap {
+		t.Errorf("gaps = %v, want the real multi-hour outage reported", gaps)
+	}
+
+	// A team with nothing but its log file keeps that span — it is all the
+	// evidence there is, and dropping it would erase the row entirely.
+	bare := []span{{start: at(0), end: at(30), tool: teamLogTool}}
+	if got := dropCoarseSpans(bare); len(got) != 1 {
+		t.Errorf("an uninstrumented team lost its only span: %v", got)
+	}
+}
