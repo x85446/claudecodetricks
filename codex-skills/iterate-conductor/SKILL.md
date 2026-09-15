@@ -8,7 +8,7 @@ description: "Works the whole plan queue unattended. When started, sweeps every 
 
 # $iterate-conductor — keep the whole queue moving
 
-**Version:** iterate family 5.1.1
+**Version:** iterate family 5.2.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -235,7 +235,9 @@ One tick. Do these in order and stop at the first that applies.
 
 3. **`current:` is set and that plan is still executing** → exit silently.
    `$iterate` owns it and has its own resumption loop; a conductor tick here has
-   no job.
+   no job. If that plan is `status: paused`, `$iterate pause` already set
+   `paused: true` here as well, so this tick never ran; if it somehow did, set
+   it now and exit — the plan box must not run against a plan a human stopped.
 
 4. **`current:` is set and that plan reached a terminal state** → handle the
    ending (next section), clear `current:`, continue to 5.
@@ -249,7 +251,10 @@ One tick. Do these in order and stop at the first that applies.
    3. `phase: planned` — oldest `Started:` first.
 
    Skip `status: blocked-on-operator` / `awaiting-human-gate` (red) entirely,
-   except for the one cheap re-test per completed cycle described below. Set
+   except for the one cheap re-test per completed cycle described below. Skip
+   `status: paused` entirely and always — a human parked it with
+   `$iterate pause`, and only `$iterate resume` unparks it. It is never stalled,
+   never re-tested, never picked. Set
    `current:`, clear any `status: unblocked` you just picked up, log the start,
    exit.
 

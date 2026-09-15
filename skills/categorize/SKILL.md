@@ -1,6 +1,6 @@
 ---
 name: categorize
-description: "Primary categorization orchestrator. Use when someone asks to categorize transactions, fix a merchant, classify descriptions, run categorization on a date range, find miscategorizations, or says 'categorize', 'fix all <merchant>', 'merchantify', 'clean up June', or 'run the categorize'."
+description: "Primary categorization orchestrator. Use when someone asks to categorize transactions, fix a merchant, classify descriptions, run categorization on a date range, find miscategorizations, or says 'categorize', 'fix all <merchant>', 'merchantify', 'clean up June', or 'run the categorizer'."
 argument-hint: "<instruction: date range | merchant name | 'all' | free text>"
 disable-model-invocation: false
 ---
@@ -20,7 +20,7 @@ link_group, or orphans (e.g. "links for 2026", "my links are needed for 2026
 paypal"), invoke `/categorize-linker` via the Skill tool with the remaining
 scope as its arguments — do not run the categorization pipeline for a linking
 request. `/categorize-linker` builds chain-of-custody links, enforces the PB
-invariant, and handles paypal/venmo 3-leg chains and paypal→ebay quad chains.
+invariant, and handles paypal/venmo 3-leg chains.
 
 **Supporting files (read when needed):**
 - `rules.md` (next to this file) — the learned rule book. Read it at the START of every run.
@@ -46,7 +46,7 @@ a row where `human_verified = 1`** (Stage 5 may flag them, only).
 
 1. Read `rules.md`.
 2. Confirm the app is not writing: this skill writes the live DB. If >50 rows will
-   change, back up first: `sqlite3 db/personaldb.sqlite "VACUUM INTO 'db/personaldb.pre-categorize.$(date -u +%Y%m%dT%H%M%SZ).sqlite'"`.
+   change, back up first: `sqlite3 db/personaldb.sqlite "VACUUM INTO 'db/personaldb.pre-categorizer.$(date -u +%Y%m%dT%H%M%SZ).sqlite'"`.
 3. Pick one free A-column (`python3 scripts/ai_flag.py count`) and set it on every
    row you touch this run. Report which column at the end.
 
@@ -69,26 +69,12 @@ MARKET AUSTIN TX", "EXXON NEIGHBORHOOD C-STOR", "EXXON TIME WISE # 835" are all
 3. Apply: `python3 scripts/merchant_hunter.py tag --name "Exxon" --pattern "%EXXON%" [--tier1 N --tier2 N]`
    — prefer broad LIKE patterns; give specific patterns higher priority than general ones.
 4. Consolidate duplicates when found: `python3 scripts/merchant_hunter.py consolidate` (review, then `--fix`).
-5. **PayPal merchant law (2021+): exactly two paypal merchants exist —
-   `PayPal` and `PayPal-internal`.** `PayPal` goes on any card/bank leg paying
-   the platform (`PAYPAL *X`, `PAYPAL INST XFER`, `PAYPAL PURCHASE` — the `*X`
-   suffix is a link hint, never a merchant). `PayPal-internal` goes on
-   paypal-site internal legs (`Ref ID:` rows, General Card/Credit Card
-   Deposits, Bank Deposit to PP Account, currency conversions, funding
-   credits). Never create or keep `PayPal *Vendor` / `PayPal Instant Transfer`
-   style merchants — rename or merge them on sight. The end vendor's merchant
-   belongs on the real leg only (the paypal payout row, or the tracked site's
-   line items). Same principle for venmo.
-   **Merchant PayPal-internal ⇒ category `Finance / transfer-out /
-   paypal-internal`** (dash tree `- paypal-internal` for non-Personal) and item
-   = the statement's own description ("General Credit Card Deposit"), never the
-   funded purchase's product title.
 
 ### Stage 2 — Venue
 
 For every merchant in scope with `venue_type IS NULL`, invoke the
-**`categorize-venue`** skill (Skill tool) scoped to those merchants. Its vocabulary
-is `../categorize-venue/classification_map.json`; it is idempotent and only fills NULLs.
+**`venue-classifier`** skill (Skill tool) scoped to those merchants. Its vocabulary
+is `../venue-classifier/classification_map.json`; it is idempotent and only fills NULLs.
 Venue is the keystone: merchant + venue makes categorization mostly mechanical.
 
 ### Stage 3 — Category (AI judgment is the mechanism; Python is a draft)
@@ -137,7 +123,7 @@ Travis's verified rows are the weights, but he makes mistakes too. Scan in-scope
 - cost-center formation-date violations
 - rule violations from `rules.md`
 
-For business-expense detection in Personal rows, invoke the **`categorize-cost-center`**
+For business-expense detection in Personal rows, invoke the **`cost-center-review`**
 skill (Skill tool) scoped to the run's years — it writes suggestions to the
 `cc_suggestions` table for review in the app (Tools → Cost Center Review) and
 never edits transactions directly.
@@ -163,8 +149,8 @@ Remaining unfinished in scope: N
 | Tool | Role |
 |---|---|
 | `scripts/merchant_hunter.py` | discover / consolidate / audit / tag / stats for merchants |
-| `categorize-venue` skill | fill merchants.venue_type (controlled vocabulary) |
-| `categorize-cost-center` skill | suggest business cost centers for Personal rows (cc_suggestions) |
+| `venue-classifier` skill | fill merchants.venue_type (controlled vocabulary) |
+| `cost-center-review` skill | suggest business cost centers for Personal rows (cc_suggestions) |
 | `scripts/suggest_categories.py` | pattern-matched category suggestions |
 | `scripts/gas_or_food.py` | gas-station $25 fuel/snacks split |
 | `scripts/ai_flag.py` | A-column management |

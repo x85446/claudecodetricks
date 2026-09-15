@@ -2,6 +2,7 @@
 name: categorize-venue
 description: "Use when someone asks to classify merchant venue types, run venue classification, backfill venue_type, or asks what kind of business merchants are (restaurant, coffee shop, hotel, etc.). Trigger phrases: 'classify venues', 'venue types', 'run the venue classifier'."
 argument-hint: "[--years 2024,2025,2026] [--dry-run]"
+disable-model-invocation: true
 ---
 
 ## What This Skill Does
@@ -26,7 +27,7 @@ project root; pass `--db` if running from elsewhere).
 
 2. **List candidates:**
    ```bash
-   python3 .claude/skills/categorize-venue/scripts/venue_classify.py list --years <years> --limit 500
+   python3 .claude/skills/venue-classifier/scripts/venue_classify.py list --years <years> --limit 500
    ```
    Output: `id  name  txn-count  sites  sample-item` — the sample item text and
    sites give context for ambiguous names.
@@ -52,7 +53,7 @@ project root; pass `--db` if running from elsewhere).
 
 6. **Apply:**
    ```bash
-   python3 .claude/skills/categorize-venue/scripts/venue_classify.py apply --json <file> [--dry-run]
+   python3 .claude/skills/venue-classifier/scripts/venue_classify.py apply --json <file> [--dry-run]
    ```
    The script validates vocabulary/source/confidence, skips already-classified
    rows, and reports `applied / skipped / errors`. Fix any errors and re-apply.
@@ -62,7 +63,7 @@ project root; pass `--db` if running from elsewhere).
 
 8. **Report:**
    ```bash
-   python3 .claude/skills/categorize-venue/scripts/venue_classify.py stats --years <years>
+   python3 .claude/skills/venue-classifier/scripts/venue_classify.py stats --years <years>
    ```
    Show the coverage line and per-type counts, plus how many needed websearch
    and how many ended `unknown`.

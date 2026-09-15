@@ -1,6 +1,6 @@
 # Categorizer rule book
 
-Read at the start of every `/categorize` run. Deterministic rules first, then
+Read at the start of every `/categorizer` run. Deterministic rules first, then
 heuristics, then learned rules the AI appends over time (Stage 4). Every learned
 rule carries a date and evidence count so it can be challenged later.
 
@@ -28,20 +28,6 @@ rule carries a date and evidence count so it can be challenged later.
 - Tier1+2+3 is atomic — write all three together.
 - Plumbing (CC payments to platforms, inter-account transfers) →
   `Finance / transfer-in|out / <target>` + `is_plumbing = 1`.
-- **Card→tracked-site payments (Travis, 2026-07-25, hard — merchant defaults
-  never override):** a credit-card transaction paying **paypal, ebay,
-  homedepot, lowes, or godaddy** is `Finance / transfer-out / <site>` +
-  `is_plumbing = 1` whenever the site's own imported data covers the
-  transaction date — paypal, lowes, homedepot from **2021-01-01**; godaddy
-  from **2003-01-01**; ebay from **2018-01-01**. Before the site's coverage
-  start the card row is the only record and keeps its real category.
-  Positive-price rows (refunds/credits FROM the site) are not payments —
-  classify per their nature. `scripts/tracked_platforms.py` implements the
-  patterns and coverage dates.
-- **Bank→credit-card payments (same directive):** a bank transaction paying a
-  credit card is `Finance / transfer-out / <credit-card-account>` +
-  `is_plumbing = 1`, tier3 per the established names (`amex`, `chase-9878`,
-  `citi`, …).
 
 ## Price-split rules
 
@@ -81,8 +67,3 @@ rule carries a date and evidence count so it can be challenged later.
 - [2026-07-24, n=8] ATM refinement: only ATM rows whose description NAMES a bank ("capital one,…", "ufcu,…", "a+ federal cred,…") get that bank as merchant; bare-street-address ATM rows ("6600 S Mo Pac Expy", "4970 Hwy 290 West") have no identifiable bank and stay unmerchanted (they are already verified `Finance / transfer-out`).
 - [2026-07-24, n=40] The gas-station <$25 → Food/Snacks split is a DEFAULT for *uncategorized* rows only. Do NOT flag verified sub-$25 gas rows tagged `Transportation / Fuel` as mistakes — small fuel fill-ups ($8-$24) are legitimately Fuel; verified human judgment overrides the price heuristic.
 - [2026-07-24, caution] `merchant_hunter.py tag` with a broad LIKE pattern re-tags rows that already have a *different* merchant (retag_others). A generic catch-all pattern (e.g. "%.com domain renewal%") will STEAL rows from more-specific merchants tagged earlier — always tag specific/business patterns AFTER any catch-all, or re-run the specific ones last to reclaim.
-- [2026-07-25, n=220] Any credit-card/bank payment TO GoDaddy (descriptor names GODADDY on amex/chase/paypal/usaa/etrade) is plumbing: `Finance / transfer-out / godaddy` (dash-prefixed tree for non-Personal cost centers), `is_plumbing=1` — never a real expense; the GoDaddy line items are the canonical records. Positive-price rows (refunds/credits FROM GoDaddy) are NOT payments — classify per their nature. Directed by Travis.
-- [2026-07-25, directed] Card rows paying a platform get the PLATFORM as merchant: `PAYPAL *X` on amex/chase is a transfer TO PayPal → merchant = PayPal, never X (Artome, GoDaddy, Quantech…). The `*X` suffix is only the link hint; the end-vendor merchant belongs on the paypal-side payout row where the real category lives. (Exception: rows tracked_platforms classifies to another site, e.g. PAYPAL *EBAY → ebay conventions.) Same principle for venmo.
-- [2026-07-25, n=17] USAA "ACH WITHDRAWAL … PAYPAL INST XFER" (and "PAYPAL PURCHASE") rows are always PB `Finance / transfer-out / paypal`, merchant PayPal Instant Transfer. The bank leg posts 1–3 days AFTER the paypal-side transaction; link it into the paypal row's EXISTING link_group (which already ties GoDaddy chains to godaddy line items). When two same-amount candidates tie, pair FIFO — bank ACH posts preserve initiation order.
-- [2026-07-25, directed] Merchant PayPal-internal ⇒ category `Finance / transfer-out / paypal-internal` (tier3 425 Personal; `- paypal-internal` tier3 426 in the MAPT dash tree) and item = the paypal statement's own description ("General Credit Card Deposit", "Bank Deposit to PP Account", "Ref ID: …"), NEVER the funded purchase's product title — the product text lives only on the real payout leg. Applied retroactively to all 78 PayPal-internal rows.
-- [2026-07-26, directed] `transfer-out / cash` is NEVER PB — cash is real untracked outflow (321 rows, deliberate). Citi 2021+ = `Debt & Insurance / Credit card payments` non-PB (61 rows fixed); pre-2021 citi rows stay `transfer-out/citi` legacy. A card leg LINKED to site line items must be PB — linked-but-not-PB double-counts (19 verified lowes rows fixed).
