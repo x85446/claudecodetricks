@@ -3,7 +3,7 @@ name: ibs
 description: Alias for /iterate-brainstorm. Typing /ibs <anything> behaves exactly as /iterate-brainstorm <anything> — investigate, present 3 label-locked options with one recommended, discuss, then emit a numbered summary for /ip. Exists purely as a shorthand.
 argument-hint: <same arguments as /iterate-brainstorm>
 disable-model-invocation: true
-version: 5.2.0
+version: 5.3.0
 ---
 
 # /ibs — alias for /iterate-brainstorm
