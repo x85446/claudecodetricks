@@ -1,712 +1,750 @@
 {
-  "schema": 1,
-  "updated": "2026-09-11T02:02:57Z",
-  "project": "claudecodetricks",
-  "requirements": [
+ "schema": 1,
+ "updated": "2026-09-15T17:01:07Z",
+ "project": "claudecodetricks",
+ "requirements": [
+  {
+   "id": "req-screen",
+   "statement": "Behavior of src/internal/git/screen.go, as exercised by screen_test.go.",
+   "source": "adopted",
+   "cases": [
     {
-      "id": "req-screen",
-      "statement": "Behavior of src/internal/git/screen.go, as exercised by screen_test.go.",
-      "source": "adopted",
-      "cases": [
-        {
-          "id": "git.TestScreenPath",
-          "test": "TestScreenPath",
-          "covers": [
-            "src/internal/git/screen.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "git.TestStageFilesKeepsBinaryOutOfObjectStore",
-          "test": "TestStageFilesKeepsBinaryOutOfObjectStore",
-          "covers": [
-            "src/internal/git/commit.go",
-            "src/internal/git/screen.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        }
-      ]
+     "id": "git.TestScreenPath",
+     "test": "TestScreenPath",
+     "covers": [
+      "src/internal/git/screen.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
     },
     {
-      "id": "req-hookcmd",
-      "statement": "Behavior of src/internal/iterrun/hookcmd.go, as exercised by hookcmd_test.go.",
-      "source": "adopted",
-      "cases": [
-        {
-          "id": "iterrun.TestPendingSpawnLabelFIFOOrdering",
-          "test": "TestPendingSpawnLabelFIFOOrdering",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/pendinglabels.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestPendingSpawnLabelEmptyQueueUnknownSession",
-          "test": "TestPendingSpawnLabelEmptyQueueUnknownSession",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/pendinglabels.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestHandleHookSubagentStartClaimsQueuedLabel",
-          "test": "TestHandleHookSubagentStartClaimsQueuedLabel",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/hookcmd.go",
-            "src/internal/iterrun/labels.go",
-            "src/internal/iterrun/pendinglabels.go",
-            "src/internal/iterrun/projects.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestHandleHookSubagentStartNoQueuedLabelIsNoop",
-          "test": "TestHandleHookSubagentStartNoQueuedLabelIsNoop",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/hookcmd.go",
-            "src/internal/iterrun/labels.go",
-            "src/internal/iterrun/pendinglabels.go",
-            "src/internal/iterrun/projects.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel",
-          "test": "TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/hookcmd.go",
-            "src/internal/iterrun/pendinglabels.go",
-            "src/internal/iterrun/projects.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestHandleHookPostIgnoresNonSpawnToolForQueue",
-          "test": "TestHandleHookPostIgnoresNonSpawnToolForQueue",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/hookcmd.go",
-            "src/internal/iterrun/pendinglabels.go",
-            "src/internal/iterrun/projects.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestHandleHookPostAgentToolStillResolvesLabelDirectly",
-          "test": "TestHandleHookPostAgentToolStillResolvesLabelDirectly",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/hookcmd.go",
-            "src/internal/iterrun/labels.go",
-            "src/internal/iterrun/pendinglabels.go",
-            "src/internal/iterrun/projects.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestHandleHookSubagentStopIsNoop",
-          "test": "TestHandleHookSubagentStopIsNoop",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/hookcmd.go",
-            "src/internal/iterrun/projects.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        }
-      ]
-    },
-    {
-      "id": "req-names",
-      "statement": "Behavior of src/internal/iterrun/names.go, as exercised by names_test.go.",
-      "source": "adopted",
-      "cases": [
-        {
-          "id": "iterrun.TestNextPlanNameWalksAlphabetInOrderPerProject",
-          "test": "TestNextPlanNameWalksAlphabetInOrderPerProject",
-          "covers": [
-            "src/internal/iterrun/names.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestNextPlanNameNeverRepeats",
-          "test": "TestNextPlanNameNeverRepeats",
-          "covers": [
-            "src/internal/iterrun/names.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestNextPlanNameSeedsFromDisk",
-          "test": "TestNextPlanNameSeedsFromDisk",
-          "covers": [
-            "src/internal/iterrun/names.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestNextPlanNameConcurrentCallsNeverCollide",
-          "test": "TestNextPlanNameConcurrentCallsNeverCollide",
-          "covers": [
-            "src/internal/iterrun/names.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestNextPlanNamePerProjectSequenceGloballyUniqueWords",
-          "test": "TestNextPlanNamePerProjectSequenceGloballyUniqueWords",
-          "covers": [
-            "src/internal/iterrun/names.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        }
-      ]
-    },
-    {
-      "id": "req-plans",
-      "statement": "Behavior of src/internal/iterrun/plans.go, as exercised by plans_test.go.",
-      "source": "adopted",
-      "cases": [
-        {
-          "id": "iterrun.TestParsePlanFileBlockedOnOperator",
-          "test": "TestParsePlanFileBlockedOnOperator",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParsePlanFileNotBlocked",
-          "test": "TestParsePlanFileNotBlocked",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParsePlanFileGoalTruncation",
-          "test": "TestParsePlanFileGoalTruncation",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParsePlanFileExecutingDistinctFromStarted",
-          "test": "TestParsePlanFileExecutingDistinctFromStarted",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParsePlanFileExecutingAbsent",
-          "test": "TestParsePlanFileExecutingAbsent",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestListArchivedPlans",
-          "test": "TestListArchivedPlans",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestGetArchivedPlanSummarySetsArchived",
-          "test": "TestGetArchivedPlanSummarySetsArchived",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestFinishedAtParsesIndependentlyOfExecuting",
-          "test": "TestFinishedAtParsesIndependentlyOfExecuting",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestEffectiveStartPrefersExecutingOverStarted",
-          "test": "TestEffectiveStartPrefersExecutingOverStarted",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
-          "test": "TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        }
-      ]
-    },
-    {
-      "id": "req-serve",
-      "statement": "Behavior of src/internal/iterrun/serve.go, as exercised by serve_test.go.",
-      "source": "adopted",
-      "cases": [
-        {
-          "id": "iterrun.TestLiveBadgePrioritizesBlockedOverEverything",
-          "test": "TestLiveBadgePrioritizesBlockedOverEverything",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestArchivedBadgeReflectsBlockedAndPhase",
-          "test": "TestArchivedBadgeReflectsBlockedAndPhase",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestDashboardSeparatesActiveAndArchivedTabs",
-          "test": "TestDashboardSeparatesActiveAndArchivedTabs",
-          "covers": [
-            "src/internal/iterrun/conductor.go",
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
-          "test": "TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
-          "covers": [
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        }
-      ]
-    },
-    {
-      "id": "req-timeline",
-      "statement": "Behavior of src/internal/iterrun/timeline.go, as exercised by timeline_test.go.",
-      "source": "adopted",
-      "cases": [
-        {
-          "id": "iterrun.TestBuildRowsGapDetection",
-          "test": "TestBuildRowsGapDetection",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBuildRowsFromHookEventsScopesCoordinatorByProject",
-          "test": "TestBuildRowsFromHookEventsScopesCoordinatorByProject",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag",
-          "test": "TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParsePlanStarted",
-          "test": "TestParsePlanStarted",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParsePlanStartedRespectsUTCSuffix",
-          "test": "TestParsePlanStartedRespectsUTCSuffix",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBuildRowsFromArchivePreservesGoalAndSteps",
-          "test": "TestBuildRowsFromArchivePreservesGoalAndSteps",
-          "covers": [
-            "src/internal/iterrun/birthtime_darwin.go",
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/registry.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator",
-          "test": "TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/registry.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParseCoordinatorStepStatusRangesAndCase",
-          "test": "TestParseCoordinatorStepStatusRangesAndCase",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParseCoordinatorStepStatusCapturesNote",
-          "test": "TestParseCoordinatorStepStatusCapturesNote",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
-          "test": "TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/registry.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestOrderTeamRowsNestsByDependency",
-          "test": "TestOrderTeamRowsNestsByDependency",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
-          "test": "TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
-          "covers": [
-            "src/internal/iterrun/birthtime_darwin.go",
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/registry.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
-          "test": "TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestRunboxPrefersExecutingOverStarted",
-          "test": "TestRunboxPrefersExecutingOverStarted",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
-          "test": "TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
-          "test": "TestRunboxHandlesZeroConfirmedActivity",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
-          "test": "TestRunboxPrefersFinishedOverActivityForArchivedPlans",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
-          "test": "TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBurndownChartShadesByValidationState",
-          "test": "TestBurndownChartShadesByValidationState",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBurndownChartDistinguishesGaveUpFromActive",
-          "test": "TestBurndownChartDistinguishesGaveUpFromActive",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary",
-          "test": "TestBurndownChartShowsFullDependsOnListNotJustPrimary",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestBurndownChartOmittedWhenNoStepDetail",
-          "test": "TestBurndownChartOmittedWhenNoStepDetail",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists",
-          "test": "TestValidationGlyphOpensModalOnlyWhenNoteExists",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        }
-      ]
-    },
-    {
-      "id": "req-axolotl-added",
-      "statement": "Behavior added by plan axolotl: harness identification, conductor status rendering, dual-shape version resolution, and the codename pool's integrity.",
-      "source": "adopted",
-      "cases": [
-        {
-          "id": "iterrun.TestAnimalPool",
-          "test": "TestAnimalPool",
-          "covers": [],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestConductorStatusLineNoTrigger",
-          "test": "TestConductorStatusLineNoTrigger",
-          "covers": [
-            "src/internal/iterrun/conductor.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestConductorStatusLineNotEnabledHidden",
-          "test": "TestConductorStatusLineNotEnabledHidden",
-          "covers": [
-            "src/internal/iterrun/conductor.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestConductorStatusLineStoodDown",
-          "test": "TestConductorStatusLineStoodDown",
-          "covers": [
-            "src/internal/iterrun/conductor.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestConductorStatusLineWorkingShowsNextTickMinutes",
-          "test": "TestConductorStatusLineWorkingShowsNextTickMinutes",
-          "covers": [
-            "src/internal/iterrun/conductor.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestHarnessBadgeCoversAllThreeValues",
-          "test": "TestHarnessBadgeCoversAllThreeValues",
-          "covers": [
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestHarnessRollupOnlyWhenMixed",
-          "test": "TestHarnessRollupOnlyWhenMixed",
-          "covers": [
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestLivePlanCardsCarryHarnessBadge",
-          "test": "TestLivePlanCardsCarryHarnessBadge",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParsePlanFileHarness",
-          "test": "TestParsePlanFileHarness",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestParsePlanFileVersion",
-          "test": "TestParsePlanFileVersion",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand",
-          "test": "TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestPlanDetailShowsVersionFromEitherMarker",
-          "test": "TestPlanDetailShowsVersionFromEitherMarker",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestReadConductorStateMissingFile",
-          "test": "TestReadConductorStateMissingFile",
-          "covers": [
-            "src/internal/iterrun/conductor.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        },
-        {
-          "id": "iterrun.TestWriteLiveProjectSectionRendersConductorStatus",
-          "test": "TestWriteLiveProjectSectionRendersConductorStatus",
-          "covers": [
-            "src/internal/iterrun/conductor.go",
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid"
-        }
-      ]
+     "id": "git.TestStageFilesKeepsBinaryOutOfObjectStore",
+     "test": "TestStageFilesKeepsBinaryOutOfObjectStore",
+     "covers": [
+      "src/internal/git/commit.go",
+      "src/internal/git/screen.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
     }
-  ],
-  "notes": "Covers measured by per-test coverage profile against the tree at commit 81f75486, with an init baseline subtracted at statement-block granularity. covers_source 'coverage' means measured; nothing here is a naming-convention guess."
+   ]
+  },
+  {
+   "id": "req-hookcmd",
+   "statement": "Behavior of src/internal/iterrun/hookcmd.go, as exercised by hookcmd_test.go.",
+   "source": "adopted",
+   "cases": [
+    {
+     "id": "iterrun.TestPendingSpawnLabelFIFOOrdering",
+     "test": "TestPendingSpawnLabelFIFOOrdering",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/pendinglabels.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPendingSpawnLabelEmptyQueueUnknownSession",
+     "test": "TestPendingSpawnLabelEmptyQueueUnknownSession",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/pendinglabels.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHandleHookSubagentStartClaimsQueuedLabel",
+     "test": "TestHandleHookSubagentStartClaimsQueuedLabel",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/labels.go",
+      "src/internal/iterrun/pendinglabels.go",
+      "src/internal/iterrun/projects.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHandleHookSubagentStartNoQueuedLabelIsNoop",
+     "test": "TestHandleHookSubagentStartNoQueuedLabelIsNoop",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/labels.go",
+      "src/internal/iterrun/pendinglabels.go",
+      "src/internal/iterrun/projects.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel",
+     "test": "TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/pendinglabels.go",
+      "src/internal/iterrun/projects.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHandleHookPostIgnoresNonSpawnToolForQueue",
+     "test": "TestHandleHookPostIgnoresNonSpawnToolForQueue",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/pendinglabels.go",
+      "src/internal/iterrun/projects.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHandleHookPostAgentToolStillResolvesLabelDirectly",
+     "test": "TestHandleHookPostAgentToolStillResolvesLabelDirectly",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/labels.go",
+      "src/internal/iterrun/pendinglabels.go",
+      "src/internal/iterrun/projects.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHandleHookSubagentStopIsNoop",
+     "test": "TestHandleHookSubagentStopIsNoop",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/projects.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    }
+   ]
+  },
+  {
+   "id": "req-names",
+   "statement": "Behavior of src/internal/iterrun/names.go, as exercised by names_test.go.",
+   "source": "adopted",
+   "cases": [
+    {
+     "id": "iterrun.TestNextPlanNameWalksAlphabetInOrderPerProject",
+     "test": "TestNextPlanNameWalksAlphabetInOrderPerProject",
+     "covers": [
+      "src/internal/iterrun/names.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestNextPlanNameNeverRepeats",
+     "test": "TestNextPlanNameNeverRepeats",
+     "covers": [
+      "src/internal/iterrun/names.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestNextPlanNameSeedsFromDisk",
+     "test": "TestNextPlanNameSeedsFromDisk",
+     "covers": [
+      "src/internal/iterrun/names.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestNextPlanNameConcurrentCallsNeverCollide",
+     "test": "TestNextPlanNameConcurrentCallsNeverCollide",
+     "covers": [
+      "src/internal/iterrun/names.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestNextPlanNamePerProjectSequenceGloballyUniqueWords",
+     "test": "TestNextPlanNamePerProjectSequenceGloballyUniqueWords",
+     "covers": [
+      "src/internal/iterrun/names.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    }
+   ]
+  },
+  {
+   "id": "req-plans",
+   "statement": "Behavior of src/internal/iterrun/plans.go, as exercised by plans_test.go.",
+   "source": "adopted",
+   "cases": [
+    {
+     "id": "iterrun.TestParsePlanFileBlockedOnOperator",
+     "test": "TestParsePlanFileBlockedOnOperator",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParsePlanFileNotBlocked",
+     "test": "TestParsePlanFileNotBlocked",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParsePlanFileGoalTruncation",
+     "test": "TestParsePlanFileGoalTruncation",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParsePlanFileExecutingDistinctFromStarted",
+     "test": "TestParsePlanFileExecutingDistinctFromStarted",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParsePlanFileExecutingAbsent",
+     "test": "TestParsePlanFileExecutingAbsent",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestListArchivedPlans",
+     "test": "TestListArchivedPlans",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestGetArchivedPlanSummarySetsArchived",
+     "test": "TestGetArchivedPlanSummarySetsArchived",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestFinishedAtParsesIndependentlyOfExecuting",
+     "test": "TestFinishedAtParsesIndependentlyOfExecuting",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestEffectiveStartPrefersExecutingOverStarted",
+     "test": "TestEffectiveStartPrefersExecutingOverStarted",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
+     "test": "TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    }
+   ]
+  },
+  {
+   "id": "req-serve",
+   "statement": "Behavior of src/internal/iterrun/serve.go, as exercised by serve_test.go.",
+   "source": "adopted",
+   "cases": [
+    {
+     "id": "iterrun.TestLiveBadgePrioritizesBlockedOverEverything",
+     "test": "TestLiveBadgePrioritizesBlockedOverEverything",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestArchivedBadgeReflectsBlockedAndPhase",
+     "test": "TestArchivedBadgeReflectsBlockedAndPhase",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestDashboardSeparatesActiveAndArchivedTabs",
+     "test": "TestDashboardSeparatesActiveAndArchivedTabs",
+     "covers": [
+      "src/internal/iterrun/conductor.go",
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
+     "test": "TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
+     "covers": [
+      "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    }
+   ]
+  },
+  {
+   "id": "req-timeline",
+   "statement": "Behavior of src/internal/iterrun/timeline.go, as exercised by timeline_test.go.",
+   "source": "adopted",
+   "cases": [
+    {
+     "id": "iterrun.TestBuildRowsGapDetection",
+     "test": "TestBuildRowsGapDetection",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBuildRowsFromHookEventsScopesCoordinatorByProject",
+     "test": "TestBuildRowsFromHookEventsScopesCoordinatorByProject",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag",
+     "test": "TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParsePlanStarted",
+     "test": "TestParsePlanStarted",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParsePlanStartedRespectsUTCSuffix",
+     "test": "TestParsePlanStartedRespectsUTCSuffix",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBuildRowsFromArchivePreservesGoalAndSteps",
+     "test": "TestBuildRowsFromArchivePreservesGoalAndSteps",
+     "covers": [
+      "src/internal/iterrun/birthtime_darwin.go",
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator",
+     "test": "TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParseCoordinatorStepStatusRangesAndCase",
+     "test": "TestParseCoordinatorStepStatusRangesAndCase",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParseCoordinatorStepStatusCapturesNote",
+     "test": "TestParseCoordinatorStepStatusCapturesNote",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
+     "test": "TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestOrderTeamRowsNestsByDependency",
+     "test": "TestOrderTeamRowsNestsByDependency",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
+     "test": "TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
+     "covers": [
+      "src/internal/iterrun/birthtime_darwin.go",
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
+     "test": "TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestRunboxPrefersExecutingOverStarted",
+     "test": "TestRunboxPrefersExecutingOverStarted",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
+     "test": "TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
+     "test": "TestRunboxHandlesZeroConfirmedActivity",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
+     "test": "TestRunboxPrefersFinishedOverActivityForArchivedPlans",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
+     "test": "TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBurndownChartShadesByValidationState",
+     "test": "TestBurndownChartShadesByValidationState",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBurndownChartDistinguishesGaveUpFromActive",
+     "test": "TestBurndownChartDistinguishesGaveUpFromActive",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary",
+     "test": "TestBurndownChartShowsFullDependsOnListNotJustPrimary",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestBurndownChartOmittedWhenNoStepDetail",
+     "test": "TestBurndownChartOmittedWhenNoStepDetail",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists",
+     "test": "TestValidationGlyphOpensModalOnlyWhenNoteExists",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestAxisTicksLandOnWallClockBoundaries",
+     "test": "TestAxisTicksLandOnWallClockBoundaries",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes",
+     "test": "TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestAxisTicksSurviveASpringForwardTransition",
+     "test": "TestAxisTicksSurviveASpringForwardTransition",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack",
+     "test": "TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    }
+   ]
+  },
+  {
+   "id": "req-axolotl-added",
+   "statement": "Behavior added by plan axolotl: harness identification, conductor status rendering, dual-shape version resolution, and the codename pool's integrity.",
+   "source": "adopted",
+   "cases": [
+    {
+     "id": "iterrun.TestAnimalPool",
+     "test": "TestAnimalPool",
+     "covers": [],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestConductorStatusLineNoTrigger",
+     "test": "TestConductorStatusLineNoTrigger",
+     "covers": [
+      "src/internal/iterrun/conductor.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestConductorStatusLineNotEnabledHidden",
+     "test": "TestConductorStatusLineNotEnabledHidden",
+     "covers": [
+      "src/internal/iterrun/conductor.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestConductorStatusLineStoodDown",
+     "test": "TestConductorStatusLineStoodDown",
+     "covers": [
+      "src/internal/iterrun/conductor.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestConductorStatusLineWorkingShowsNextTickMinutes",
+     "test": "TestConductorStatusLineWorkingShowsNextTickMinutes",
+     "covers": [
+      "src/internal/iterrun/conductor.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHarnessBadgeCoversAllThreeValues",
+     "test": "TestHarnessBadgeCoversAllThreeValues",
+     "covers": [
+      "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHarnessRollupOnlyWhenMixed",
+     "test": "TestHarnessRollupOnlyWhenMixed",
+     "covers": [
+      "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestLivePlanCardsCarryHarnessBadge",
+     "test": "TestLivePlanCardsCarryHarnessBadge",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParsePlanFileHarness",
+     "test": "TestParsePlanFileHarness",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParsePlanFileVersion",
+     "test": "TestParsePlanFileVersion",
+     "covers": [
+      "src/internal/iterrun/plans.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand",
+     "test": "TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPlanDetailShowsVersionFromEitherMarker",
+     "test": "TestPlanDetailShowsVersionFromEitherMarker",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestReadConductorStateMissingFile",
+     "test": "TestReadConductorStateMissingFile",
+     "covers": [
+      "src/internal/iterrun/conductor.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestWriteLiveProjectSectionRendersConductorStatus",
+     "test": "TestWriteLiveProjectSectionRendersConductorStatus",
+     "covers": [
+      "src/internal/iterrun/conductor.go",
+      "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    }
+   ]
+  }
+ ],
+ "notes": "Covers measured by per-test coverage profile against the tree at commit 81f75486, with an init baseline subtracted at statement-block granularity. covers_source 'coverage' means measured; nothing here is a naming-convention guess."
 }

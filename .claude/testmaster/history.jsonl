@@ -64,3 +64,7 @@
 {"ts": "2026-09-11T02:10:26Z", "id": "iterrun.TestPlanDetailShowsVersionFromEitherMarker", "ms": 462, "result": "pass", "tier": "fast", "runner": "testmaster-run"}
 {"ts": "2026-09-11T02:10:26Z", "id": "iterrun.TestReadConductorStateMissingFile", "ms": 486, "result": "pass", "tier": "fast", "runner": "testmaster-run"}
 {"ts": "2026-09-11T02:10:26Z", "id": "iterrun.TestWriteLiveProjectSectionRendersConductorStatus", "ms": 468, "result": "pass", "tier": "fast", "runner": "testmaster-run"}
+{"ts": "2026-09-15T17:00:28Z", "id": "TestAxisTicksLandOnWallClockBoundaries", "ms": 1529, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T17:00:28Z", "id": "TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes", "ms": 772, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T17:00:28Z", "id": "TestAxisTicksSurviveASpringForwardTransition", "ms": 692, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T17:00:28Z", "id": "TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack", "ms": 690, "result": "pass", "tier": "fast", "runner": "go test"}

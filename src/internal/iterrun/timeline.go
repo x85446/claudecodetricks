@@ -1158,6 +1158,9 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 	if coordRow != nil {
 		b.WriteString(`<h2>Coordinator</h2><div class="gantt">`)
 		writeGanttRow(&b, *coordRow, pct, false)
+		if hasActivity {
+			writeTimeAxis(&b, minT.Local(), maxT.Local(), pct)
+		}
 		b.WriteString(`</div>`)
 	}
 
@@ -1179,6 +1182,7 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		writeGanttRow(&b, r, pct, divider)
 	}
 	if hasActivity {
+		writeTimeAxis(&b, minT.Local(), maxT.Local(), pct)
 		fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
 			minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
 	}
@@ -1432,6 +1436,105 @@ function bdShow(num){
 </script>`)
 }
 
+// tickIntervals are the only spacings a clock axis may use: each one is a
+// span a person reads without arithmetic, and each divides an hour or a day
+// evenly so the marks land on real wall-clock boundaries (:00, :15, 06:00)
+// rather than at "1h17m after whenever this plan happened to start".
+var tickIntervals = []time.Duration{
+	time.Minute, 2 * time.Minute, 5 * time.Minute, 10 * time.Minute,
+	15 * time.Minute, 30 * time.Minute, time.Hour, 2 * time.Hour,
+	3 * time.Hour, 6 * time.Hour, 12 * time.Hour, 24 * time.Hour,
+}
+
+// axisTicks returns the wall-clock instants to mark between minT and maxT,
+// in minT's own location, plus the interval chosen. It aims for 6-10 marks:
+// fewer and the scale stops being readable, more and the labels collide at
+// phone width.
+//
+// Boundaries are computed from local midnight with time.Date rather than by
+// repeatedly adding the interval, because time.Date normalizes through a DST
+// transition. Adding 1h across a spring-forward boundary walks the wall clock
+// off by an hour and every later label is then wrong — on the one night a
+// year when an overnight run is most likely to be the thing being read.
+func axisTicks(minT, maxT time.Time) ([]time.Time, time.Duration) {
+	total := maxT.Sub(minT)
+	if total <= 0 {
+		return nil, 0
+	}
+	interval := tickIntervals[len(tickIntervals)-1]
+	for _, c := range tickIntervals {
+		if int64(total/c) <= 10 {
+			interval = c
+			break
+		}
+	}
+	loc := minT.Location()
+	day := time.Date(minT.Year(), minT.Month(), minT.Day(), 0, 0, 0, 0, loc)
+	step := int(interval / time.Minute)
+	var ticks []time.Time
+	// Start a full interval before the span so a span opening at 03:35 still
+	// finds 03:30 as a candidate, and stop one past maxT for the same reason.
+	for k := -1; ; k++ {
+		t := time.Date(day.Year(), day.Month(), day.Day(), 0, step*k, 0, 0, loc)
+		if t.After(maxT) {
+			break
+		}
+		// A wall-clock time that does not exist — 02:00 on a spring-forward
+		// morning — is normalized by time.Date back onto a time already
+		// marked, so require strict advance. The skipped hour genuinely has
+		// no mark, which is the truth about that morning.
+		if !t.Before(minT) && (len(ticks) == 0 || t.After(ticks[len(ticks)-1])) {
+			ticks = append(ticks, t)
+		}
+		if k > 4000 { // a runaway guard; 4000 one-minute steps is ~2.8 days
+			break
+		}
+	}
+	return ticks, interval
+}
+
+// tickLabel is the shortest thing that still says which instant this is at
+// the chosen scale: bare hour numbers for an hour-or-coarser axis (the
+// "10 11 12 13" a clock reads as), HH:MM when the marks are minutes apart,
+// and a date once a mark can be a different day.
+func tickLabel(t time.Time, interval time.Duration) string {
+	switch {
+	case interval >= 24*time.Hour:
+		return t.Format("Jan 2")
+	case interval >= time.Hour:
+		if t.Hour() == 0 {
+			return t.Format("Jan 2")
+		}
+		return t.Format("15")
+	default:
+		return t.Format("15:04")
+	}
+}
+
+// writeTimeAxis draws the hash marks under a gantt. It repeats the row's own
+// flex geometry — label-col spacer, track, duration-column spacer — so a mark
+// at 40% sits exactly above the pixel a bar at 40% starts on; a plain
+// full-width axis would be offset by the 172px label column and silently
+// misreport every time by that much.
+func writeTimeAxis(b *strings.Builder, minT, maxT time.Time, pct func(time.Time) float64) {
+	ticks, interval := axisTicks(minT, maxT)
+	if len(ticks) == 0 {
+		return
+	}
+	b.WriteString(`<div class="axis-ticks"><div class="ax-pad"></div><div class="tick-track">`)
+	for _, t := range ticks {
+		p := pct(t)
+		// A mark within a hair of either end has its label clipped by the
+		// track edge and says nothing the endpoint line below does not.
+		if p < 1.5 || p > 98.5 {
+			continue
+		}
+		fmt.Fprintf(b, `<span class="tick" style="left:%.3f%%"><span class="tick-lab">%s</span></span>`,
+			p, html.EscapeString(tickLabel(t, interval)))
+	}
+	b.WriteString(`</div><div class="ax-pad-r"></div></div>`)
+}
+
 func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divider bool) {
 	pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
 	var busy time.Duration
@@ -1676,7 +1779,13 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .gapmark{position:absolute;top:-3px;height:calc(100% + 6px);background:repeating-linear-gradient(45deg,var(--danger-a),var(--danger-a) 4px,var(--danger-b) 4px,var(--danger-b) 8px);border-radius:3px;border:1px solid var(--danger)}
 .busy{width:60px;flex:0 0 auto;text-align:right;font-size:12px;color:var(--text-dim)}
 .track-note{position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;padding-left:8px;font-size:11px;font-style:italic;color:var(--text-faint)}
-.axis{display:flex;justify-content:space-between;padding:8px 10px 2px;font-size:10.5px;color:var(--text-faint)}
+.axis{display:flex;justify-content:space-between;padding:2px 10px 2px;font-size:10.5px;color:var(--text-faint)}
+.axis-ticks{display:flex;align-items:flex-start;gap:14px;padding:4px 10px 0}
+.axis-ticks .ax-pad{width:172px;flex:0 0 auto}
+.axis-ticks .ax-pad-r{width:60px;flex:0 0 auto}
+.tick-track{position:relative;flex:1 1 auto;height:20px}
+.tick{position:absolute;top:0;width:1px;height:6px;background:var(--text-faint);opacity:.85}
+.tick-lab{position:absolute;top:7px;left:50%;transform:translateX(-50%);font-size:10.5px;color:var(--text-faint);white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
 .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:12px;color:var(--text-dim)}
 .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--busy)}
 .legend .sw-open{background:repeating-linear-gradient(115deg,var(--busy),var(--busy) 3px,var(--busy-dim) 3px,var(--busy-dim) 6px)}

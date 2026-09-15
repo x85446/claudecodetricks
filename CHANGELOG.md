@@ -3,6 +3,17 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased]
+
+### Added
+- Dashboard activity timelines carry wall-clock hash marks, aligned to the bar track: hourly for a multi-hour run, `HH:MM` under 20 minutes apart for a short one, dates for a multi-day one. Marks land on real boundaries (:00, :15, 06:00) computed from local midnight with `time.Date`, so a run spanning a DST transition still labels real local hours and the hour that does not exist gets no mark.
+- `/iterate pause [<plan>]` and `/iterate resume [<plan>]` — stop a run cleanly at a turn boundary and pick it back up. Paused plans show magenta in the status line, are skipped by the conductor, and report as `broken: 0` in triage.
+- `## Running resources` ledger in every plan: each VM, container, background process or agent a step leaves running, with its exact stop and start commands. `pause` and `/ic kill` stop them (plus a leak sweep across the project's other and archived plans); `resume` starts them again; every ending stops the `scratch` ones.
+
+### Changed
+- `/iterate-triage` reports only what is broken — `complete: x of y`, `broken: z of y`, `Detail`, `Fix` — with every `Fix` ending in one human act.
+- Every skill's frontmatter is valid strict YAML; the Codex sync no longer freezes ports whose bodies its own version and diet passes rewrote.
+
 ## [axolotl] - 2026-09-10
 
 ### Added
