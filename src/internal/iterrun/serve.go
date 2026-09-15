@@ -1,8 +1,10 @@
 package iterrun
 
 import (
+	"errors"
 	"fmt"
 	"html"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/url"
@@ -400,6 +402,39 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 	if proj == "" || name == "" {
 		http.Error(w, "missing project or name", http.StatusBadRequest)
 		return
+	}
+
+	// A plan's own page keeps working after /iterate archives it. Without
+	// this, the moment a run finished its page silently degraded to a
+	// summary-less shell: no plan file means no Steps (the Requirements
+	// row vanishes), no Teams table (every row reads "running", none
+	// "done"), and — worst — no Executing:, so the activity floor is gone
+	// and planning-phase tool calls from days earlier flow in. Confirmed
+	// live on galago the minute it archived: "Running for 70h28m55s since
+	// 2026-09-12" against a run that actually executed for 10h46m on
+	// 2026-09-15, its Requirements row gone and 10 severe gaps invented
+	// out of the drafting session. Following the archive is what the
+	// bookmarked URL means: show me this plan.
+	if _, err := GetPlanSummary(proj, name); err != nil && errors.Is(err, fs.ErrNotExist) {
+		if archived, aerr := ListArchivedPlans(proj); aerr == nil {
+			var newest *PlanSummary
+			for i := range archived {
+				if archived[i].Name != name {
+					continue
+				}
+				// Archive filenames lead with a UTC timestamp, so the
+				// lexically greatest is the most recent run of this
+				// codename — the one a bare name means.
+				if newest == nil || archived[i].ArchiveFile > newest.ArchiveFile {
+					newest = &archived[i]
+				}
+			}
+			if newest != nil {
+				q := url.Values{"project": {proj}, "file": {newest.ArchiveFile}}
+				http.Redirect(w, r, "/archive?"+q.Encode(), http.StatusFound)
+				return
+			}
+		}
 	}
 
 	rows, err := BuildRowsFromFilesystem(name, proj, nil)

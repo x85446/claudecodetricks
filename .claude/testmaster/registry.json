@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-15T19:21:59Z",
+ "updated": "2026-09-15T19:34:06Z",
  "tests": {
   "git.TestScreenPath": {
    "name": "TestScreenPath",
@@ -913,6 +913,18 @@
    "last_ms": 787,
    "last_result": "pass",
    "updated": "2026-09-15T19:21:59Z"
+  },
+  "TestPlanRouteFollowsAPlanIntoTheArchive": {
+   "name": "TestPlanRouteFollowsAPlanIntoTheArchive",
+   "file": "src/internal/iterrun/serve_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestPlanRouteFollowsAPlanIntoTheArchive$'",
+   "runs": 1,
+   "avg_ms": 1950,
+   "tier": "fast",
+   "last_ms": 1950,
+   "last_result": "pass",
+   "updated": "2026-09-15T19:34:06Z"
   }
  }
 }
