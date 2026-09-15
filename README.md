@@ -266,6 +266,7 @@ Each plan card carries:
 - **Which assistant produced it** — a badge reading `claude-code` or `codex`. Plans made before this was recorded show `unknown` rather than guessing.
 - **The right command to run it** — `/iterate <name>` for Claude Code plans, `$iterate <name>` for Codex ones. A project holding both shows both, labelled.
 - **The version** that produced it, read from whichever marker the plan carries.
+- **When the work actually happened** — the activity timelines carry hash marks on your own clock: hour numbers for a run of a few hours, `HH:MM` for a short one, dates for a long one. A bar under the `15` mark means that work ran at 3pm, so the chart can be read against your day rather than only against itself.
 - **Conductor state per project** — whether the unattended runner is working, watching, or stood down, and when it next checks. A conductor that is switched on but has nothing to trigger it reads `NO TRIGGER`, so a runner that will never actually fire cannot look healthy.
 
 ### Plan names

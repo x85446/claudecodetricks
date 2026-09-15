@@ -933,3 +933,120 @@ func TestPlanDetailShowsVersionFromEitherMarker(t *testing.T) {
 		t.Errorf("expected the plan detail page to show the resolved version; output:\n%s", out)
 	}
 }
+
+func TestAxisTicksLandOnWallClockBoundaries(t *testing.T) {
+	loc := time.FixedZone("TST", -7*3600)
+	// The span from the live dashboard: 03:35:44 → 11:51:31, 8h16m.
+	minT := time.Date(2026, 9, 15, 3, 35, 44, 0, loc)
+	maxT := time.Date(2026, 9, 15, 11, 51, 31, 0, loc)
+	ticks, interval := axisTicks(minT, maxT)
+	if interval != time.Hour {
+		t.Fatalf("interval = %v, want 1h for an 8h16m span", interval)
+	}
+	if len(ticks) != 8 {
+		t.Fatalf("len(ticks) = %d, want 8 (04:00 through 11:00): %v", len(ticks), ticks)
+	}
+	for _, tk := range ticks {
+		if tk.Minute() != 0 || tk.Second() != 0 {
+			t.Errorf("tick %v is not on an hour boundary", tk)
+		}
+		if tk.Before(minT) || tk.After(maxT) {
+			t.Errorf("tick %v outside the span", tk)
+		}
+	}
+	if got := ticks[0].Hour(); got != 4 {
+		t.Errorf("first tick hour = %d, want 4", got)
+	}
+	if got := tickLabel(ticks[0], interval); got != "04" {
+		t.Errorf("tickLabel = %q, want \"04\"", got)
+	}
+}
+
+func TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes(t *testing.T) {
+	loc := time.FixedZone("TST", 0)
+	short := time.Date(2026, 9, 15, 10, 2, 0, 0, loc)
+	ticks, interval := axisTicks(short, short.Add(24*time.Minute))
+	if interval != 5*time.Minute {
+		t.Fatalf("interval = %v, want 5m for a 24m span", interval)
+	}
+	if got := tickLabel(ticks[0], interval); got != "10:05" {
+		t.Errorf("short-span label = %q, want \"10:05\"", got)
+	}
+
+	// 5 days lands on 12h marks (10 of them) — dates at midnight, "12" at noon.
+	midStart := time.Date(2026, 9, 10, 8, 0, 0, 0, loc)
+	mticks, minterval := axisTicks(midStart, midStart.Add(120*time.Hour))
+	if minterval != 12*time.Hour {
+		t.Fatalf("interval = %v, want 12h for a 5-day span", minterval)
+	}
+	if got := tickLabel(mticks[0], minterval); got != "12" {
+		t.Errorf("12h-scale label = %q, want \"12\" (noon)", got)
+	}
+
+	// Past what 12h marks can cover, the axis goes daily and labels dates.
+	longStart := time.Date(2026, 9, 10, 8, 0, 0, 0, loc)
+	lticks, linterval := axisTicks(longStart, longStart.Add(15*24*time.Hour))
+	if linterval != 24*time.Hour {
+		t.Fatalf("interval = %v, want 24h for a 15-day span", linterval)
+	}
+	if got := tickLabel(lticks[0], linterval); got != "Sep 11" {
+		t.Errorf("long-span label = %q, want \"Sep 11\"", got)
+	}
+}
+
+func TestAxisTicksSurviveASpringForwardTransition(t *testing.T) {
+	loc, err := time.LoadLocation("America/Denver")
+	if err != nil {
+		t.Skipf("tzdata unavailable: %v", err)
+	}
+	// 2026-03-08: 02:00 MST jumps to 03:00 MDT. A run spanning it must still
+	// label real local hours — the bug a naive t.Add(interval) loop produces
+	// is every post-transition mark reading an hour early.
+	minT := time.Date(2026, 3, 8, 0, 30, 0, 0, loc)
+	maxT := time.Date(2026, 3, 8, 7, 30, 0, 0, loc)
+	ticks, interval := axisTicks(minT, maxT)
+	if interval != time.Hour {
+		t.Fatalf("interval = %v, want 1h", interval)
+	}
+	for _, tk := range ticks {
+		if tk.Minute() != 0 {
+			t.Errorf("tick %v not on the hour", tk)
+		}
+	}
+	var hours []int
+	for _, tk := range ticks {
+		hours = append(hours, tk.Hour())
+	}
+	// 01:00 exists, 02:00 does not, then 03:00-07:00.
+	want := []int{1, 3, 4, 5, 6, 7}
+	if len(hours) != len(want) {
+		t.Fatalf("hours = %v, want %v", hours, want)
+	}
+	for i := range want {
+		if hours[i] != want[i] {
+			t.Fatalf("hours = %v, want %v", hours, want)
+		}
+	}
+}
+
+func TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack(t *testing.T) {
+	start := time.Now().Add(-4 * time.Hour)
+	rows := []Row{{
+		key:    "app",
+		label:  "app",
+		status: "done",
+		spans:  []span{{start: start, end: start.Add(3 * time.Hour)}},
+	}}
+	out := RenderTimelineHTML(rows, PlanSummary{Name: "ticktest"}, "")
+	if !strings.Contains(out, `class="axis-ticks"`) {
+		t.Fatal("no tick axis rendered")
+	}
+	if !strings.Contains(out, `class="tick-lab"`) {
+		t.Fatal("tick marks carry no labels")
+	}
+	// The axis must repeat the row geometry, or every mark is offset by the
+	// width of the label column.
+	if !strings.Contains(out, `class="ax-pad"`) || !strings.Contains(out, `class="ax-pad-r"`) {
+		t.Error("tick axis is missing the label/duration column spacers")
+	}
+}
