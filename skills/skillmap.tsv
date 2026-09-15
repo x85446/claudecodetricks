@@ -30,12 +30,11 @@ auditor-sourcetable-inspector	personaldb	self	-
 auto-recover	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/auto-recover	-
 build-dod	-	~/workspace/x85446/kilroy/skills/build-dod	-
 bump	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/bump	-
-categorize	cctricks	self	-
+categorize	personaldb	self	-
 categorize-cost-center	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-cost-center	-
 categorize-linker	personaldb	self	-
 categorize-recurring	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-recurring	-
 categorize-venue	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/categorize-venue	-
-categorizer	personaldb	self	-
 chopper2-doctor	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/chopper2-doctor	-
 chopper2-serve	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/chopper2-serve	-
 claim-bug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/claim-bug	-
@@ -202,7 +201,6 @@ uxmaster-linux	userglobal	self	-
 uxmaster-macos	userglobal	self	-
 uxmaster-web	userglobal	self	-
 uxmaster-windows	userglobal	self	-
-venue-classifier	personaldb	self	-
 vm	userglobal	self	-
 window-schedule	houses	self	-
 zot-populate	-	~/workspace/gravhl/GROUPS/backend/.claude/skills/zot-populate	-

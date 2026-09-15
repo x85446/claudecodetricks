@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Venue classifier helper for personaldb.
 
-Mechanical half of the categorize-venue skill: lists unclassified merchants
+Mechanical half of the venue-classifier skill: lists unclassified merchants
 (with sample transaction items for context), validates and applies
 classification JSON produced by Claude, and reports coverage. The actual
 classification (merchant name -> venue type) is done by Claude in the skill
