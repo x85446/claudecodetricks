@@ -166,13 +166,86 @@ func orderTeamRows(rows []Row) []Row {
 	return out
 }
 
-// computeGaps finds the idle stretches between consecutive (already sorted)
-// spans that clear the NotableGap threshold — shared by every row source,
-// hook-derived or filesystem-derived alike.
+// teamLogTool marks the one span kind that is a bounding box rather than
+// work: a team's log file existed from its birth to its last write, which
+// says nothing about whether the agent was running in between.
+const teamLogTool = "team-log"
+
+// dropCoarseSpans removes the log-file bounding box from a row that has real
+// per-call data, and leaves it alone on a row that has nothing else.
+//
+// Keeping both is what let a team claim more busy time than its span is long
+// and, worse, hid real outages: ledger's log file spanned the six hours its
+// model was exhausted, so counting that file's existence as work erased the
+// gap the coordinator correctly reported for the same window. A coarse span
+// is the fallback for a team with no instrumentation, never a supplement to
+// a team that has it.
+func dropCoarseSpans(spans []span) []span {
+	fine := false
+	for _, s := range spans {
+		if s.tool != teamLogTool {
+			fine = true
+			break
+		}
+	}
+	if !fine {
+		return spans
+	}
+	out := spans[:0:0]
+	for _, s := range spans {
+		if s.tool != teamLogTool {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// mergeSpans unions overlapping spans from an already start-sorted list.
+// A row routinely holds spans at two resolutions — one coarse span covering
+// the whole life of a team's log file, plus every fine-grained tool call
+// inside it — and treating those as separate work double-counts the same
+// minutes. Confirmed live: reporting on plan galago reported "1h48m41s
+// busy" inside a 93-minute span, which cannot be true of one agent.
+func mergeSpans(spans []span) []span {
+	if len(spans) == 0 {
+		return nil
+	}
+	out := []span{spans[0]}
+	for _, s := range spans[1:] {
+		last := &out[len(out)-1]
+		if !s.start.After(last.end) {
+			if s.end.After(last.end) {
+				last.end = s.end
+			}
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+// busyDuration is the wall-clock time a row was actually working: the length
+// of the union of its spans, never the sum of their lengths.
+func busyDuration(spans []span) time.Duration {
+	var d time.Duration
+	for _, s := range mergeSpans(spans) {
+		d += s.end.Sub(s.start)
+	}
+	return d
+}
+
+// computeGaps finds the idle stretches that clear the NotableGap threshold —
+// shared by every row source, hook-derived or filesystem-derived alike.
+//
+// Gaps are the holes in the UNION of the spans, not the distance between
+// consecutive ones: a row carrying both a coarse log-file span and the tool
+// calls inside it would otherwise report idle time that a span it already
+// holds proves was busy.
 func computeGaps(spans []span) []gap {
+	merged := mergeSpans(spans)
 	var gaps []gap
-	for i := 1; i < len(spans); i++ {
-		g := gap{start: spans[i-1].end, end: spans[i].start}
+	for i := 1; i < len(merged); i++ {
+		g := gap{start: merged[i-1].end, end: merged[i].start}
 		if g.dur() >= NotableGap {
 			gaps = append(gaps, g)
 		}
@@ -282,7 +355,22 @@ func BuildRowsFromHookEvents(events []Event, labels map[string]string, plan, pro
 		if !planStarted.IsZero() && p.TS.Before(planStarted) {
 			continue
 		}
-		byKey[p.Team] = append(byKey[p.Team], span{start: p.TS, end: e.TS, tool: e.ToolName, summary: e.Summary})
+		// Recover the team for events already on disk. Every event written
+		// before resolvePlanTeam was fixed carries agent_id but no team —
+		// the resolver matched cwd first and returned team "" for team
+		// members, so a plan's whole history reads as coordinator work. The
+		// id is self-describing, so the team is recoverable rather than
+		// lost: 215,000 stored events keep their real owner instead of
+		// needing the plan re-run to be readable.
+		team := p.Team
+		if team == "" && p.AgentID != "" {
+			if _, t := parseAgentID(p.AgentID); t != "" {
+				team = t
+			} else {
+				team = p.AgentID // its own lane; never the coordinator's
+			}
+		}
+		byKey[team] = append(byKey[team], span{start: p.TS, end: e.TS, tool: e.ToolName, summary: e.Summary})
 	}
 
 	var rows []Row
@@ -343,6 +431,7 @@ func MergeRows(a, b []Row) []Row {
 
 	var rows []Row
 	for _, r := range byKey {
+		r.spans = dropCoarseSpans(r.spans)
 		sort.Slice(r.spans, func(i, j int) bool { return r.spans[i].start.Before(r.spans[j].start) })
 		r.gaps = computeGaps(r.spans)
 		rows = append(rows, *r)
@@ -491,7 +580,7 @@ func buildRowsFrom(planFilePath, teamsDir, plan, homeDir string, scanDirs []stri
 			}
 		}
 		r := get(team)
-		r.spans = append(r.spans, span{start: start, end: end, tool: "team-log", summary: summary})
+		r.spans = append(r.spans, span{start: start, end: end, tool: teamLogTool, summary: summary})
 	}
 
 	seenDirs := map[string]bool{}
@@ -642,6 +731,7 @@ func buildRowsFrom(planFilePath, teamsDir, plan, homeDir string, scanDirs []stri
 
 	var rows []Row
 	for _, r := range byTeam {
+		r.spans = dropCoarseSpans(r.spans)
 		sort.Slice(r.spans, func(i, j int) bool { return r.spans[i].start.Before(r.spans[j].start) })
 		r.gaps = computeGaps(r.spans)
 		rows = append(rows, *r)
@@ -897,10 +987,7 @@ func PrintTimelineSummary(w io.Writer, rows []Row) {
 		return
 	}
 	for _, r := range rows {
-		var busy time.Duration
-		for _, s := range r.spans {
-			busy += s.end.Sub(s.start)
-		}
+		busy := busyDuration(r.spans)
 		fmt.Fprintf(w, "%s — %d tool calls, %s busy", r.label, len(r.spans), busy.Round(time.Second))
 		if len(r.spans) > 0 {
 			fmt.Fprintf(w, ", active %s to %s", r.spans[0].start.Local().Format("15:04:05"), r.spans[len(r.spans)-1].end.Local().Format("15:04:05"))
@@ -1537,10 +1624,7 @@ func writeTimeAxis(b *strings.Builder, minT, maxT time.Time, pct func(time.Time)
 
 func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divider bool) {
 	pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
-	var busy time.Duration
-	for _, s := range r.spans {
-		busy += s.end.Sub(s.start)
-	}
+	busy := busyDuration(r.spans)
 
 	hasSteps := len(r.steps) > 0
 	dividerClass := ""

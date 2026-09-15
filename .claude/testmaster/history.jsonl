@@ -68,3 +68,9 @@
 {"ts": "2026-09-15T17:00:28Z", "id": "TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes", "ms": 772, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-09-15T17:00:28Z", "id": "TestAxisTicksSurviveASpringForwardTransition", "ms": 692, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-09-15T17:00:28Z", "id": "TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack", "ms": 690, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T19:21:59Z", "id": "TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator", "ms": 815, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T19:21:59Z", "id": "TestParseAgentIDFoldsRedispatchesIntoOneTeam", "ms": 751, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T19:21:59Z", "id": "TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane", "ms": 786, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T19:21:59Z", "id": "TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents", "ms": 731, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T19:21:59Z", "id": "TestBusyAndGapsUseTheUnionOfOverlappingSpans", "ms": 753, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T19:21:59Z", "id": "TestCoarseLogSpanIsAFallbackNotASupplement", "ms": 787, "result": "pass", "tier": "fast", "runner": "go test"}
