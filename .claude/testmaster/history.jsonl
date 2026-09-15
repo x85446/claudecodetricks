@@ -74,3 +74,4 @@
 {"ts": "2026-09-15T19:21:59Z", "id": "TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents", "ms": 731, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-09-15T19:21:59Z", "id": "TestBusyAndGapsUseTheUnionOfOverlappingSpans", "ms": 753, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-09-15T19:21:59Z", "id": "TestCoarseLogSpanIsAFallbackNotASupplement", "ms": 787, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-15T19:34:06Z", "id": "TestPlanRouteFollowsAPlanIntoTheArchive", "ms": 1950, "result": "pass", "tier": "fast", "runner": "go test"}

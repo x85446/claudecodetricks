@@ -1,6 +1,9 @@
 package iterrun
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -220,5 +223,57 @@ sweeps: 3
 	writeLiveProjectSection(&b, dir, "proj", nil)
 	if !strings.Contains(b.String(), "stood down") {
 		t.Errorf("expected the project section to surface the conductor's stood-down state; output:\n%s", b.String())
+	}
+}
+
+func TestPlanRouteFollowsAPlanIntoTheArchive(t *testing.T) {
+	proj := t.TempDir()
+	plans := filepath.Join(proj, ".claude", "iterate", "plans")
+	arch := filepath.Join(proj, ".claude", "iterate", "archive")
+	for _, d := range []string{plans, arch} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Two runs of the same codename; the bare name means the most recent.
+	body := "# Iterate Task — t\n\nname: galago\nStarted: 2026-09-12 (planned)\nExecuting: 2026-09-15T08:35:38Z\nFinished: 2026-09-15T19:22:10Z\nphase: executing\n\n## Goal\ng\n"
+	for _, f := range []string{"20260901T000000Z-galago-done.md", "20260915T192210Z-galago-done.md"} {
+		if err := os.WriteFile(filepath.Join(arch, f), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	req := httptest.NewRequest("GET", "/plan?project="+url.QueryEscape(proj)+"&name=galago", nil)
+	rec := httptest.NewRecorder()
+	handlePlan(rec, req)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status = %d, want %d — an archived plan's own page must not degrade to a summary-less shell", rec.Code, http.StatusFound)
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "/archive?") {
+		t.Fatalf("Location = %q, want the archive route", loc)
+	}
+	if !strings.Contains(loc, "20260915T192210Z-galago-done.md") {
+		t.Errorf("Location = %q, want the most recent run of this codename", loc)
+	}
+
+	// A live plan still renders in place.
+	if err := os.WriteFile(filepath.Join(plans, "civet.md"), []byte("# Iterate Task — t\n\nname: civet\nphase: executing\n\n## Goal\ng\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	req = httptest.NewRequest("GET", "/plan?project="+url.QueryEscape(proj)+"&name=civet", nil)
+	rec = httptest.NewRecorder()
+	handlePlan(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("live plan status = %d, want 200", rec.Code)
+	}
+
+	// A name that never existed is not a redirect loop.
+	req = httptest.NewRequest("GET", "/plan?project="+url.QueryEscape(proj)+"&name=nosuch", nil)
+	rec = httptest.NewRecorder()
+	handlePlan(rec, req)
+	if rec.Code == http.StatusFound {
+		t.Error("an unknown plan name redirected; want it rendered or errored, never bounced")
 	}
 }

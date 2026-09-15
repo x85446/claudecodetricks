@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-15T19:22:05Z",
+ "updated": "2026-09-15T19:34:06Z",
  "project": "claudecodetricks",
  "requirements": [
   {
@@ -350,6 +350,21 @@
      "test": "TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
      "covers": [
       "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPlanRouteFollowsAPlanIntoTheArchive",
+     "test": "TestPlanRouteFollowsAPlanIntoTheArchive",
+     "covers": [
+      "src/internal/iterrun/events.go",
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/labels.go",
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go"
      ],
      "covers_source": "coverage",
      "validity": "valid"
