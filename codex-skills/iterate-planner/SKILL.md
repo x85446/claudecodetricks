@@ -7,7 +7,7 @@ description: "Never executes — the user runs $iterate for that. Triggers on \"
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
 
-**Version:** iterate family 5.2.0
+**Version:** iterate family 5.3.0
 
 ## What this skill does
 
@@ -470,6 +470,9 @@ human-gate: <step N>           # only when Step 5.5 found a terminal human-decis
 - Testing: <entry> → strengthened validation N
 - Gotcha: <entry> → added as Constraint
 - ...
+
+## Running resources
+(empty at planning time. `$iterate` records here every VM, container, background process or agent a step leaves running — with its stop and start commands — so `pause`, `kill` and every ending can give the machine back.)
 
 ## Decisions log
 (empty until execution)

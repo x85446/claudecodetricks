@@ -8,7 +8,7 @@ description: "Works the whole plan queue unattended. When started, sweeps every 
 
 # $iterate-conductor — keep the whole queue moving
 
-**Version:** iterate family 5.2.0
+**Version:** iterate family 5.3.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -191,8 +191,11 @@ imported   0 issues
 
 ### `kill`
 **The one verb that does not wait.** Halt now, mid-plan: cancel the conductor
-cron AND the current plan's own loop, set `enabled: false`, and leave the plan
-exactly where it stands (resumable with `$iterate <name>`).
+cron AND the current plan's own loop, set `enabled: false`, **stop every
+`scratch` entry in the plan's `## Running resources`** (its VMs and containers
+are the reason someone reaches for kill; halting the plan and leaving them
+burning would change nothing), and leave the plan itself exactly where it
+stands (resumable with `$iterate <name>`, which restarts what it needs).
 
 `stop` and `pause` deliberately finish the current plan, so neither can halt a
 plan that is misbehaving. `kill` is that lever, under a name that does not

@@ -7,7 +7,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.2.0
+**Version:** iterate family 5.3.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -64,10 +64,11 @@ Resolve in this order:
    - Set `status: paused: <UTC now> at step <n>/<m>` in the frontmatter. `phase: executing` stays — paused is a run state, not an ending.
    - There is no loop to cancel here: under Codex the resumption trigger is the user's own Automation (see "Auto-resume"). Say so — `pause your Automation for <name> if you set one; its ticks are no-ops while paused, which is safe, just not silent` — and leave `loop-mechanism:` as it is.
    - **If the conductor is driving this plan** (`conductor.md` has `enabled: true` and `current:` naming it), set `paused: true` there too and log it in both files. A paused plan under a running conductor is indistinguishable from a stalled one: the plan box would park it as blocked within 45 minutes. `resume` clears both.
+   - **Stop what the plan left running** — every entry in `## Running resources` still up, then the leak sweep — exactly as "Running resources" describes. This is the half of pause that gives the machine back: a paused plan whose VMs keep running has not paused anything that costs.
    - Commit loose work on the feature branch, as `$iterate-triage` does — a paused run is exactly the idle branch that loses work. A real message, never "wip".
-   - Touch nothing else: not the branch, not the tree, not `running:`. Log one line — `paused by operator at step <n> — <k> files committed as <sha>` — and report the same line plus `resume with $iterate resume`.
+   - Touch nothing else: not the branch, not the tree, not `running:`. Log one line — `paused by operator at step <n> — <k> files committed as <sha>, <j> resources stopped (<names>)` — and report the same line plus `resume with $iterate resume`.
 
-   **`resume`** — remove `status: paused`, log `resumed by operator`, clear the conductor's `paused:` if the pause log line says it set it, then continue exactly as `$iterate <name>` does on an executing plan: re-check the branch, pick up at the first unchecked step, and print the one-line auto-resume note from "Auto-resume". `$iterate <name>` on a paused plan does the same — an explicit human invocation is a resume. A no-arg tick never is (0.5).
+   **`resume`** — remove `status: paused`, log `resumed by operator`, clear the conductor's `paused:` if the pause log line says it set it, then continue exactly as `$iterate <name>` does on an executing plan: re-check the branch, **start every resource pause stopped** (the `paused-by: pause` entries, in order, each verified up before the next), pick up at the first unchecked step, and print the one-line auto-resume note from "Auto-resume". `$iterate <name>` on a paused plan does the same — an explicit human invocation is a resume. A no-arg tick never is (0.5).
 0.5. **Re-entry guard — a terminal plan does not resume on a no-arg tick.** If `$1` is empty and the resolved executing plan has `status: blocked-on-operator` (or `status: awaiting-human-gate`, or `status: paused`) already set, AND nothing material has changed since it was written (no new user message addressing the blocker, no change to the gate's input files): this tick has no job. **First check whether the loop is somehow still armed** (`loop-mechanism:` non-empty in the plan file) — it shouldn't be, the terminal path cancels it, but if it is (a prior run died before canceling, or canceled the wrong mechanism), cancel it NOW with verification, log one line `re-entry guard: killed leftover <mechanism>`, and exit. Otherwise **exit immediately and silently** — no status re-verification, no environment audits, no "handoff document" polishing, no re-asserting the wall. Confirmed live (civet): 13+ hours of once-a-minute ticks against an already-blocked plan, each manufacturing self-generated audit work because nothing told a resuming tick that "already terminal, nothing changed" means *stop*, not *find something to do*. A user-typed `$iterate <name>` (non-empty `$1`) bypasses this guard — an explicit human invocation IS a material change, so re-check the blocker for real then. For `status: paused` nothing else counts as material — not a new message, not a changed file; a paused plan stays paused until `$iterate resume` or `$iterate <name>` says otherwise.
 1. **A plan is already `phase: executing`** (scan `plans/`): resume THAT plan from its "Status / Log", honoring the concurrency lock. This takes precedence over everything below — it's what makes the cron re-fires (which pass no argument) continue the live run instead of prompting. If several are somehow executing, pick the one named by `current`, else the most-recently-heartbeated.
 1.5. **Project launch gate (only if this project set one).** Read `./.claude/iterate/policy.md` if it exists (see "Project policy" below). If it sets `require-launch-keyword: <word>` and that word is **not** present anywhere in the argument, do NOT launch: print the policy's stated reason plus `re-run as \`$iterate <plan> <word>\`` and **stop**. Nothing is transitioned, no lock taken, no cron armed.
@@ -181,6 +182,60 @@ Every plan in a git repo runs on its own feature branch — `branch: feature/<na
 4. Report the merge in the success summary: PR URL, merge commit, branch deleted.
 5. **If the merge itself fails** (conflicts with a moved main, required CI checks, protected-branch rules): the PLAN is still complete — don't un-archive, don't count it as a failed validation, don't retry-loop the merge. Report success WITH a plainly-flagged exception: "⚠ plan complete but NOT merged — PR <url> open, blocked by <reason>; branch `<branch>` preserved." Resolving that is the user's call.
 
+## Running resources — the ledger (what this plan has left running on the machine)
+
+A plan starts things that outlive the step that started them: a VM or
+container (`izmachine`, `lume`, `limactl`, `incus`, `docker`, `tart`, `utmctl`),
+a server or watcher put in the background, a launchd agent, a fixture stack.
+Every one of them costs CPU and memory *after* the step is checked off, and a
+newcorder plan left a 4-CPU macOS VM up for days because nothing wrote down
+that it existed. **The ledger is that writing-down**, and it is what `pause`,
+`kill`, and every ending act on.
+
+**Record at start, in the plan file, under `## Running resources`** — the
+moment the thing is up, before the step continues:
+
+```
+- vm seal-ui (lume) · step 7 · scratch · stop: izmachine direct stop seal-ui · start: izmachine direct start seal-ui
+- ctr symmail-fixture-dovecot (docker) · step 3 · scratch · stop: docker stop symmail-fixture-dovecot · start: docker start symmail-fixture-dovecot
+- proc dev-server pid 48122 · step 9 · scratch · stop: kill 48122 · start: make serve &
+- launchd com.x85446.iterate-run-serve · step 9 · deliverable · stop: launchctl bootout gui/$(id -u)/com.x85446.iterate-run-serve · start: make serve-install
+```
+
+One line each: kind and name (provider in parentheses), the step, **`scratch`
+or `deliverable`**, and the exact stop and start commands. The stop command
+stops — never destroys: a VM's disk, a container's filesystem, a launchd
+plist all survive so `start` brings the same thing back. `scratch` is the
+default; `deliverable` is only for something the plan exists to leave running
+(the always-on dashboard, a daemon a step installs). **A team records its own
+in its log** under the same heading, and the coordinator folds them into the
+plan's ledger at every merge or poll — a resource only a team knows about is
+one nothing can stop.
+
+**What acts on it:**
+
+- **`pause`** stops every ledger entry still running and marks each
+  `· paused-by: pause`. Then it sweeps for leaks: `izmachine list` (plus
+  `docker ps`, `launchctl list | grep <project>` where relevant) against the
+  names in this plan, this project's other plans, and its `archive/` — a guest
+  named in any of those is this project's, and it is stopped too, logged as
+  `leak from <plan>`. Anything running that no plan of this project names is
+  **listed, never touched**: `also running, not this project's: seal-ui (lume),
+  family-chat (incus) — izmachine direct stop <name> if you want it down`.
+- **`resume`** runs the `start` command of every entry marked `paused-by:
+  pause`, in ledger order, verifies each is up (`izmachine direct status`,
+  `docker ps`, `pgrep`), clears the mark, and only then continues. Leaks stay
+  down.
+- **Every ending** — success, landing, gate, blocked, stuck — **stops every
+  `scratch` entry still running** and says so in the report. A parked plan
+  with a VM burning four cores for a day is the failure this exists to
+  prevent; the `start` command is in the file and brings it back in seconds
+  if the operator needs it to unblock. `deliverable` entries stay up and are
+  named in the report.
+- **`$iterate-conductor kill`** stops `scratch` entries the same way — halting
+  the plan and leaving its VMs running would keep the machine exactly as
+  unusable as before.
+
 ## Changelog (drafted while working, published once at the end)
 
 Every plan produces two changelog entries in the project root — the git-worthy distillation of the run (plan files themselves stay local):
@@ -241,6 +296,7 @@ When a plan IS teamed, on each `$iterate` entry (a fresh dispatch, the return of
    - **Mandatory progress checkins, real content, real tooling — not a guess.** Run any operation likely to take more than ~1 minute through `iterate-run` instead of invoking it bare: `iterate-run run --plan <plan> --team <team> --unit <step-id> -- <command...>`. It wraps the command, tees its output, ticks a heartbeat every 10s, and — critically — makes the *wake-up* decision itself: it stays silent on its own stdout for routine ticks, and only prints when something is actually worth reacting to (`ALERT stalled ...` after 6 quiet ticks / 60s of genuine inactivity, `RESUMED ...`, `DONE ... exit=0`, `FAILED ... exit=<code>`). Relay whatever `iterate-run` reports into your own outward checkin log at least once a minute — that's real observability, not a paraphrase. **If you are writing a new script/tool as part of this step** (not just invoking an existing one), have it emit `##ITERATE-PROGRESS## {"done":N,"total":M,"message":"..."}` lines as it works (a line per item or per batch) — `iterate-run` parses that exactly, instead of guessing at arbitrary output; a silent loop over thousands of items is exactly the black-box case this exists to prevent. If a Constraint carries a known duration for this exact operation (see "Know the baseline" below), that's real evidence — trust it over `iterate-run`'s own generic stall window. The team must also log a line every time it finishes a step, and `iterate-run status` (run from any directory, no plan file parsing needed) is always available as an independent cross-check of current state — yours or any other team's.
    - **Structured per-validation reporting, not just a final summary.** As each numbered Validation (Nb) is actually assessed — not reconstructed retroactively at the end — append a line to this team's own log: `##ITERATE-VALIDATION## {"step":N,"status":"met|partial|not-met","note":"one line, specific"}`. `met` = the validation's own wording is satisfied in full. `partial` = some of it is proven and the rest is either infeasible as written or genuinely not yet attempted — say which, specifically, in the note (e.g. "file push/pull and SSH login both proven; utmctl exec cannot return output on this host, no invocation satisfies that clause"). `not-met` = attempted and failed, or not yet attempted at all. This is what lets anything reading the plan — a dashboard, a status check, the next agent — see real per-step state instead of one blanket team-level status; a team can be `in-progress` overall while several of its own validations are already `met`.
    - A condensed restatement of `$iterate`'s own non-negotiable execution rules (see "Rules" below) — never ask a question, Nb is the contract and Na is a hint, pick the most reasonable default and log it, validation must exercise the system not just read code, 5-cycle cap per failing check, pre-existing breakage isn't a blocker, "more of the same shape" is never a stop reason.
+   - **Record every VM, container, background process, or agent the team starts** under a `## Running resources` heading in its own log, in the ledger's one-line shape (see "Running resources") — the moment it is up, with the exact stop and start commands. The coordinator folds these into the plan's ledger; a team that starts something and does not write it down has hidden a cost nothing can stop.
    - The instruction to end its log file with exactly one terminal line when finished: `TEAM DONE: <one-line summary>` or `TEAM BLOCKED: <specific reason + what's needed>`.
    - Name each dispatched agent `<plan-name>-<team-name>` (e.g. `owl-database`) — this is how you tell whose result is whose in the consolidated response, and how you address one directly via `/agent` if you need to steer or stop it mid-run.
 5. **Log the dispatch** in the main plan file's Status/Log: `dispatched teams: <names> (parallel)`. Update the heartbeat and write the file before the dispatch returns.
@@ -357,6 +413,11 @@ human-gate: <step N>           # only when the plan marks a terminal human-decis
 `- [added|changed|fixed|removed|security|internal] <product-level phrasing> (step N)`.
 Distilled into CHANGELOG.md + RELEASES.md once, at the success path — see "Changelog" above.)
 
+## Running resources
+(one line per VM / container / background process / agent this plan started and
+has not stopped — kind, name, step, scratch|deliverable, stop:, start:. See
+"Running resources" above. Empty is the normal state; a line here is a cost.)
+
 ## Decisions log
 (append-only. Each entry: timestamp + decision made + why.)
 
@@ -426,6 +487,7 @@ If any check fails:
 - Set `running: false` in the plan file.
 - **Publish the changelogs** (see "Changelog" above): distill `## Changelog draft` into `CHANGELOG.md` + `RELEASES.md`, commit them on the plan's branch — they ride the PR.
 - **Run the merge flow** (see "Feature branch" above): `$feature-branch finish` → merge the PR → branch deleted, back on the default branch. All-green is the merge trigger; no separate approval needed. A failed merge does NOT un-succeed the plan — flag it in the summary (`⚠ complete but NOT merged — <reason>, branch preserved`) and continue archiving.
+- **Stop every `scratch` entry in `## Running resources`** still up (see "Running resources") and name any `deliverable` left running in the report.
 - **Add a `Finished: <UTC timestamp now>` line** (same `date -u +%Y-%m-%dT%H:%M:%SZ` format as `Executing:`) right before archiving — this is the real "done at" instant the dashboard's "Ran for" figure reads once archived. Without it, that figure falls back to the latest CONFIRMED activity span (hook/registry data), which can simply not exist for a project with neither wired up — confirmed live: a flat plan showed "Running for 0s" despite a correct `Executing:`, because there was no activity data to compute a span against at all. Set once, never touched again.
 - Cancel the auto-resume loop — the exact mechanism recorded in `loop-mechanism:`, per "Auto-resume" — nothing was armed by this skill, so clear the field and tell the user if their Automation is still firing.
 - Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`. If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it. If the plan was teamed, also move `./.claude/iterate/plans/<name>.teams/` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.teams/` (the per-team logs are already merged into the archived plan file — this just keeps the raw team logs around for audit, don't leave the working `.teams/` dir behind).
@@ -435,11 +497,13 @@ If any check fails:
 **On human-gate reached (every agent-completable validation green; only the plan's marked `human-gate` step remains):** this is the DESIGNED ending of a plan that ends in a human decision session — it is success-with-handoff, not "blocked", and it must not fall through to the stuck path below.
 - Set `running: false`. Set `status: awaiting-human-gate: <one-line what's needed>` in the frontmatter (leave `phase: executing`). Do NOT archive; do NOT merge the feature branch (⚠-line in the report as always).
 - **Cancel the auto-resume loop, verified** (see "Auto-resume" — exact mechanism from `loop-mechanism:`, confirm the cancel result, clear the field). The loop's job is finished; only the human can advance the plan now, and ticks against a waiting gate produce nothing but manufactured work.
+- **Stop every `scratch` resource** still running (see "Running resources") — the gate may sit for a day, and the `start` command is in the file.
 - **Then ASK the user directly in the conversation, not only in a markdown file.** This is the second sanctioned exception to "never ask" (alongside entry rule 5's plan picker), and it's principled: autonomy is over by definition at a human gate, so interrupting is the job. Ask the gate's actual question(s) — or, when the gate is a decision *session* too big for one prompt (like a 21-item agenda), ask the meta-question: point at the prepared agenda file and offer "start the session now / I'll come back later". If the user answers now, work the decisions conversationally, record them into the gate's artifacts, then re-run full Validation → normal success path (including the merge flow). If they defer (or the question times out unanswered), leave the awaiting state — the plan resumes when they type `$iterate` again.
 - Report shape: 2-3 lines of what's done + `awaiting human gate: <what>` + where the prepared material lives + the ⚠ branch-not-merged line.
 
 **On stuck (5-cycle cap hit AND every other outcome also stuck — genuinely no forward motion possible), OR every validation is met except one clause that only a human can clear** (billing, an external approval, physical/credential access no agent has — a wall, not a failing check — and the plan did NOT mark it as a `human-gate`, else use the human-gate path above):
 - Set `running: false`. Update the plan file: mark which steps completed, which validation checks pass, which fail and why.
+- **Stop every `scratch` resource** still running (see "Running resources"); list what was stopped and any `deliverable` left up. A parked plan must not keep the machine busy.
 - Write the "Next attempt" hint in the ONE standardized shape the dashboard tool actually parses — this was previously freeform prose per-run, which the dashboard couldn't recognize at all (it just kept reading as plain `executing` no matter how done the plan actually was):
   - At the very top of the file, above the frontmatter, a blockquote banner: `> **Next attempt (one operator action):** <what's blocking, one or two sentences> <the exact command(s) to run once it's cleared>`.
   - In the frontmatter, `status: blocked-on-operator: <one-line reason>` — that exact `blocked-on-operator` prefix is the literal string the dashboard matches on; don't paraphrase it into "waiting on user" or similar. This is IN ADDITION to `phase:`, not a replacement — leave `phase: executing` as-is.

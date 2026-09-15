@@ -7,7 +7,7 @@ description: Triggers on "$iterate-notes", "take a note", "note this", "add a no
 
 # $iterate-notes — Write it down, don't work it out
 
-**Version:** iterate family 5.2.0
+**Version:** iterate family 5.3.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
