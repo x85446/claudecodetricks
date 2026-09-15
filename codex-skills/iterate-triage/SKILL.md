@@ -8,7 +8,7 @@ description: "Use when the status line shows a feature branch instead of \"main 
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.1.1
+**Version:** iterate family 5.2.0
 
 ## What this skill does
 
@@ -122,6 +122,7 @@ fits.
 | `phase: executing`, `status: blocked-on-operator` / `awaiting-human-gate` | **Blocked on you.** Each blocker is a problem; plan its `Fix` down to one human act before you answer. |
 | `phase: executing`, stopped mid-run, no terminal status | **Died mid-run** (session killed, context ran out, cron lost). Commit anything loose; the `Fix` is `$iterate <name>` — one command. |
 | Feature branch with no matching plan | **Orphan branch.** Say whose it looks like from the name and what it carries that main lacks. `Fix` is one script to land it and one to drop it; the human runs the one they mean. Never delete unasked. |
+| `status: paused` (magenta) | Not broken — a human stopped it with `$iterate pause`. `broken: 0`; say the step it stopped at and that `$iterate resume <name>` continues. Commit loose work as always. |
 | `status: unblocked` (cyan) | Already cleared, waiting its turn. Say which plan; the conductor takes it next. If the conductor is off, `Fix` is `$iterate-conductor start` — one command. |
 | Several plans all-green but unmerged | Batch them: one merge session landing every branch, in dependency order, rather than N separate ones. |
 | `phase: closed` sitting in `plans/` | Should have been archived. Archive it now (nothing is lost, it is the step `$iterate` owed) and report `done — archived`. |

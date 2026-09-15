@@ -1,9 +1,9 @@
 ---
 name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
-argument-hint: <paragraph describing the work to do AND how to validate success>
+argument-hint: "<task + how to validate> | <plan> | pause [<plan>] | resume [<plan>] | version"
 disable-model-invocation: true
-version: 5.1.1
+version: 5.2.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -33,6 +33,45 @@ Two separate timestamps, don't conflate them: `Started:` is when the plan was **
 Resolve in this order:
 
 0. **`$1` is exactly "version"** (or "what version", "iterate version"): print the family version from this skill's own frontmatter, then run `iterate-run version` and print its output verbatim — real installed binary, not a memory recall, works from any directory. Every iterate skill answers `version` identically because the family shares one number; `skillctl family iterate` shows the members and flags drift. If not found, report "iterate-run isn't installed — run `make install` in claudecodetricks." Then **stop**, no plan involved.
+0.2. **`$1` starts with `pause` or `resume`** (optionally followed by a plan
+name): an operator verb, not a launch — no keyword gate, no schedule, no picker.
+Resolve the plan the way rule 1 does (the name if given, else `current`, else
+the sole executing plan); with nothing executing, print `nothing running` and
+stop.
+
+   **`pause`** — stop at the next turn boundary and leave the state safe to walk
+   away from:
+   - If `running:` is a fresh heartbeat (<90s), a tick is mid-step somewhere.
+     Do not interrupt it: set the flag below and say `pausing — step <n>
+     finishes, then nothing more runs`. That tick ends its turn as normal; the
+     next one hits the guard in 0.5.
+   - Set `status: paused: <UTC now> at step <n>/<m>` in the frontmatter.
+     `phase: executing` stays — paused is a run state, not an ending.
+   - Cancel the loop **exactly as a terminal exit does**: the mechanism in
+     `loop-mechanism:`, result read, confirmed dead, field cleared. If the
+     cancel comes back "not found", the loop was armed by another session and
+     cannot be killed from here — leave the field and say so. Its ticks are
+     no-ops while paused (0.5), which is safe, just not silent.
+   - **If the conductor is driving this plan** (`conductor.md` has
+     `enabled: true` and `current:` naming it), set `paused: true` there too
+     and log it in both files. A paused plan under a running conductor is
+     indistinguishable from a stalled one: the plan box would park it as
+     blocked within 45 minutes. `resume` clears both.
+   - Commit loose work on the feature branch, as `/iterate-triage` does — a
+     paused run is exactly the idle branch that loses work. A real message,
+     never "wip".
+   - Touch nothing else: not the branch, not the tree, not `running:`. Log one
+     line — `paused by operator at step <n> — <mechanism> cancelled, <k> files
+     committed as <sha>` — and report the same line plus `resume with
+     /iterate resume`.
+
+   **`resume`** — remove `status: paused`, log `resumed by operator`, clear the
+   conductor's `paused:` if the pause log line says it set it, then continue
+   exactly as `/iterate <name>` does on an executing plan: re-check the branch,
+   re-arm the loop, record the new `loop-mechanism:`, pick up at the first
+   unchecked step. `/iterate <name>` on a paused plan does the same — an
+   explicit human invocation is a resume. A no-arg tick never is (0.5).
+
 0.4. **`status: unblocked` clears on entry.** If the resolved plan carries
 `status: unblocked` (a human cleared its blocker — see `/iterate-triage`),
 remove that field before doing anything else and log one line naming what was
@@ -40,7 +79,7 @@ cleared. It is a queue signal, not a run state: leaving it set would keep the
 plan cyan in the status line while it is actually executing, and would make the
 conductor re-prioritise a plan it has already picked up.
 
-0.5. **Re-entry guard — a terminal plan does not resume on a no-arg tick.** If `$1` is empty and the resolved executing plan has `status: blocked-on-operator` (or `status: awaiting-human-gate`) already set, AND nothing material has changed since it was written (no new user message addressing the blocker, no change to the gate's input files): this tick has no job. **First check whether the loop is somehow still armed** (`loop-mechanism:` non-empty in the plan file) — it shouldn't be, the terminal path cancels it, but if it is (a prior run died before canceling, or canceled the wrong mechanism), cancel it NOW with verification, log one line `re-entry guard: killed leftover <mechanism>`, and exit. Otherwise **exit immediately and silently** — no status re-verification, no environment audits, no "handoff document" polishing, no re-asserting the wall. Confirmed live (civet): 13+ hours of once-a-minute ticks against an already-blocked plan, each manufacturing self-generated audit work because nothing told a resuming tick that "already terminal, nothing changed" means *stop*, not *find something to do*. A user-typed `/iterate <name>` (non-empty `$1`) bypasses this guard — an explicit human invocation IS a material change, so re-check the blocker for real then.
+0.5. **Re-entry guard — a terminal plan does not resume on a no-arg tick.** If `$1` is empty and the resolved executing plan has `status: blocked-on-operator` (or `status: awaiting-human-gate`, or `status: paused`) already set, AND nothing material has changed since it was written (no new user message addressing the blocker, no change to the gate's input files): this tick has no job. **First check whether the loop is somehow still armed** (`loop-mechanism:` non-empty in the plan file) — it shouldn't be, the terminal path cancels it, but if it is (a prior run died before canceling, or canceled the wrong mechanism), cancel it NOW with verification, log one line `re-entry guard: killed leftover <mechanism>`, and exit. Otherwise **exit immediately and silently** — no status re-verification, no environment audits, no "handoff document" polishing, no re-asserting the wall. Confirmed live (civet): 13+ hours of once-a-minute ticks against an already-blocked plan, each manufacturing self-generated audit work because nothing told a resuming tick that "already terminal, nothing changed" means *stop*, not *find something to do*. A user-typed `/iterate <name>` (non-empty `$1`) bypasses this guard — an explicit human invocation IS a material change, so re-check the blocker for real then. For `status: paused` nothing else counts as material — not a new message, not a changed file; a paused plan stays paused until `/iterate resume` or `/iterate <name>` says otherwise.
 1. **A plan is already `phase: executing`** (scan `plans/`): resume THAT plan from its "Status / Log", honoring the concurrency lock. This takes precedence over everything below — it's what makes the `/loop` re-fires (which pass no `$1`) continue the live run instead of prompting. If several are somehow executing, pick the one named by `current`, else the most-recently-heartbeated.
 1.5. **Project launch gate (only if this project set one).** Read `./.claude/iterate/policy.md` if it exists (see "Project policy" below). If it sets `require-launch-keyword: <word>` and that word is **not** present anywhere in `$1`, do NOT launch: print the policy's stated reason plus `re-run as \`/iterate <plan> <word>\`` and **stop**. Nothing is transitioned, no lock taken, no loop armed.
 
@@ -304,6 +343,7 @@ harness: claude-code           # this direct fresh-task path has no planner run 
 running: <UTC timestamp>       # heartbeat — update at every step boundary
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo) — see "Feature branch" above
 loop-mechanism: cron <job-id>  # or "/loop" — EXACTLY what the auto-resume armed; cancellation targets this; cleared on verified cancel
+status: paused: <UTC> at step <n>/<m>  # set by `/iterate pause`; no-arg ticks exit; cleared by `/iterate resume` or an explicit `/iterate <name>`
 human-gate: <step N>           # only when the plan marks a terminal human-decision step (written by /iterate-planner) — see Step 5's human-gate path
 
 ## Goal

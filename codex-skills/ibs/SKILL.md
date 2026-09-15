@@ -5,7 +5,7 @@ description: Alias for $iterate-brainstorm. Typing $ibs <anything> behaves exact
 
 # $ibs — alias for $iterate-brainstorm
 
-**Version:** iterate family 5.1.1
+**Version:** iterate family 5.2.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

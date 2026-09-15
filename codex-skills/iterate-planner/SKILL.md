@@ -7,7 +7,7 @@ description: "Never executes — the user runs $iterate for that. Triggers on \"
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
 
-**Version:** iterate family 5.1.1
+**Version:** iterate family 5.2.0
 
 ## What this skill does
 
