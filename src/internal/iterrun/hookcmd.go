@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -181,16 +179,7 @@ func extractCodexSpawnTaskName(raw json.RawMessage) (string, bool) {
 //  4. agentID empty → the coordinator. plan comes from cwd's
 //     `.claude/iterate/current` pointer.
 func resolvePlanTeam(cwd, agentID string) (plan, team string) {
-	planFromCWD := func() string {
-		if cwd == "" {
-			return ""
-		}
-		data, err := os.ReadFile(filepath.Join(cwd, ".claude", "iterate", "current"))
-		if err != nil {
-			return ""
-		}
-		return strings.TrimSpace(string(data))
-	}
+	planFromCWD := func() string { return CurrentPlanName(cwd) }
 
 	if agentID == "" {
 		return planFromCWD(), ""

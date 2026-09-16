@@ -85,6 +85,20 @@ type PlanSummary struct {
 // (flat plans) are never reported completed here — there's no reliable
 // signal for "done" on a flat plan short of the coordinator saying so, and
 // guessing wrong is the one place that matters for a purge command.
+// CurrentPlanName reads a project's `.claude/iterate/current` pointer —
+// the plan `/iterate` is working right now. Empty when there is no
+// pointer, which is the normal resting state between runs.
+func CurrentPlanName(cwd string) string {
+	if cwd == "" {
+		return ""
+	}
+	data, err := os.ReadFile(filepath.Join(cwd, ".claude", "iterate", "current"))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
+
 func (p PlanSummary) IsCompleted() bool {
 	return p.HasTeams && p.TeamsTotal > 0 && p.TeamsDone == p.TeamsTotal
 }

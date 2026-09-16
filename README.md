@@ -269,6 +269,18 @@ Each plan card carries:
 - **When the work actually happened** — the activity timelines carry hash marks on your own clock: hour numbers for a run of a few hours, `HH:MM` for a short one, dates for a long one. A bar under the `15` mark means that work ran at 3pm, so the chart can be read against your day rather than only against itself.
 - **Conductor state per project** — whether the unattended runner is working, watching, or stood down, and when it next checks. A conductor that is switched on but has nothing to trigger it reads `NO TRIGGER`, so a runner that will never actually fire cannot look healthy.
 
+### What a run cost in tokens
+
+A plan's own page carries a **Token spend** panel, in three tables:
+
+- **Who spent it** — one row for the coordinator and one per team, with context sent, tokens generated, thinking, peak context and request count. Share is of the whole run, so "the coordinator took two thirds of this" is one glance.
+- **What it went on, by tool** — per tool, how much bigger the next request got because the call happened (the real price of a read, paid again every later turn) alongside what the model spent writing the call itself.
+- **What each wake-up cost** — one row per kind of wake-up: a cron or `/loop` firing, a coordinator nudge to a team, something you typed. A firing that arrived mid-turn and never got its own request is counted **coalesced** and cost nothing; one that ran and then made no tool call is **idle**, and those are the expensive ones.
+
+`iterate-run tokens [--plan <name>]` prints the same three tables in the terminal.
+
+Numbers come from the session transcripts Claude Code already writes, joined to the hook event log by session and agent id — nothing extra is recorded and no plan needs re-running. Session cost in dollars is Claude Code's own figure for the whole session, which usually covers more than one plan; it is labelled as such and never divided between lanes.
+
 ### Plan names
 
 Plans are named after animals, drawn from a pool of 1,442 across every letter. Each project works through the alphabet in its own order, and no two plans anywhere on your machine ever get the same name.

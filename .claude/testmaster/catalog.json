@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-15T19:34:06Z",
+ "updated": "2026-09-16T15:04:55Z",
  "project": "claudecodetricks",
  "requirements": [
   {
@@ -811,6 +811,195 @@
      "covers": [
       "src/internal/iterrun/conductor.go",
       "src/internal/iterrun/serve.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    }
+   ]
+  },
+  {
+   "id": "req-token-spend",
+   "statement": "\"can we add token consumption to the website? I am thinking that we would be interested in how much the orchestrator is taking and how much each agent is taking. Not only that, I'd want to know token consumption per task bucket. Like how much time was taking reading and launching tools? Not time, but how many tokens? How much token use is in each loop? Like to wake up Cron?\"",
+   "source": "user",
+   "asked": "2026-09-16",
+   "cases": [
+    {
+     "id": "iterrun.TestTranscriptDedupeKeepsTheFinalStreamingWrite",
+     "test": "TestTranscriptDedupeKeepsTheFinalStreamingWrite",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestSyntheticZeroUsageRecordsAreNotCountedAsRequests",
+     "test": "TestSyntheticZeroUsageRecordsAreNotCountedAsRequests",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPromptTickClassifiesEveryRealWakeupShape",
+     "test": "TestPromptTickClassifiesEveryRealWakeupShape",
+     "covers": [
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam",
+     "test": "TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam",
+     "covers": [
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestRedispatchedTeamsShareOneLane",
+     "test": "TestRedispatchedTeamsShareOneLane",
+     "covers": [
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPlanTokenUsageExcludesSpendOutsideTheRunWindow",
+     "test": "TestPlanTokenUsageExcludesSpendOutsideTheRunWindow",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject",
+     "test": "TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestToolAttributionChargesGrowthToTheCallThatCausedIt",
+     "test": "TestToolAttributionChargesGrowthToTheCallThatCausedIt",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestParallelCallsSplitTheirSharedContextGrowth",
+     "test": "TestParallelCallsSplitTheirSharedContextGrowth",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestTickGroupsSeparateCoalescedFiringsFromIdleOnes",
+     "test": "TestTickGroupsSeparateCoalescedFiringsFromIdleOnes",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect",
+     "test": "TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestATornFinalLineIsPickedUpOnceItIsComplete",
+     "test": "TestATornFinalLineIsPickedUpOnceItIsComplete",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/tokens.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestALaneWithNoTranscriptIsReportedNotZeroed",
+     "test": "TestALaneWithNoTranscriptIsReportedNotZeroed",
+     "covers": [
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go",
+      "src/internal/iterrun/tokens.go",
+      "src/internal/iterrun/tokens_html.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestTokenPanelRendersLanesToolsAndWakeups",
+     "test": "TestTokenPanelRendersLanesToolsAndWakeups",
+     "covers": [
+      "src/internal/iterrun/hookcmd.go",
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go",
+      "src/internal/iterrun/tokens.go",
+      "src/internal/iterrun/tokens_html.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
+     "test": "TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go",
+      "src/internal/iterrun/tokens.go",
+      "src/internal/iterrun/tokens_html.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestHumanTokensStaysExactWherePrecisionMatters",
+     "test": "TestHumanTokensStaysExactWherePrecisionMatters",
+     "covers": [
+      "src/internal/iterrun/tokens_html.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPrintPlanTokensSaysSoWhenThereIsNoData",
+     "test": "TestPrintPlanTokensSaysSoWhenThereIsNoData",
+     "covers": [
+      "src/internal/iterrun/tokens.go",
+      "src/internal/iterrun/tokens_html.go"
      ],
      "covers_source": "coverage",
      "validity": "valid"
