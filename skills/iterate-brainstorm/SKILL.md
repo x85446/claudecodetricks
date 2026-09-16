@@ -3,7 +3,7 @@ name: iterate-brainstorm
 description: "The decide-between-options half of the iterate stack. Investigates the project, its current implementation, and its available toolsets, then presents 3 label-locked options — comparison table first, then a paragraph each (what it is, how to implement it, pros, cons) — with one marked Recommended. The user interrogates, expands, and chooses; on request the skill emits a numbered summary the user hands to /ip. Chat-only: writes no files, no notes, no plans, no branches."
 argument-hint: <the decision you need help with, e.g. "need some help deciding on a communications protocol">
 disable-model-invocation: true
-version: 5.5.0
+version: 5.5.1
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -142,7 +142,21 @@ iterate family 5.0.0
 iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
 ```
 
-Run `iterate-run version` for the second line — a real installed binary, never a
-recalled string. If members disagree, say so and name them: drift inside the
-family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
-only correct way to bump.
+**Both lines come from a real read, never from memory — the family line
+included.** Run these two, from any directory:
+
+```bash
+grep -m1 '^version:' ~/.claude/skills/iterate/SKILL.md   # the family version
+iterate-run version                                      # the binary
+```
+
+**Never quote the `version:` in the skill body you already have in context.**
+A session loads a skill body once and keeps it, so after a `skillctl family
+iterate set` and reinstall, the copy in context is stale — and reporting its
+number is precisely the memory recall this rule already forbids for the
+binary. Confirmed live: a session answered `iterate family 5.4.0` ten minutes
+after 5.5.0 was installed and verified on disk.
+
+If members disagree, say so and name them: drift inside the family is a
+defect, not a state, and `skillctl family iterate set X.Y.Z` is the only
+correct way to bump.

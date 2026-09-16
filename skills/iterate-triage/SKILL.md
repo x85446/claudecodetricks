@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, with the one act that clears each. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: (none — reads the project state)
-version: 5.5.0
+version: 5.5.1
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -214,7 +214,21 @@ iterate family 5.0.0
 iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
 ```
 
-Run `iterate-run version` for the second line — a real installed binary, never a
-recalled string. If members disagree, say so and name them: drift inside the
-family is a defect, not a state, and `skillctl family iterate set X.Y.Z` is the
-only correct way to bump.
+**Both lines come from a real read, never from memory — the family line
+included.** Run these two, from any directory:
+
+```bash
+grep -m1 '^version:' ~/.claude/skills/iterate/SKILL.md   # the family version
+iterate-run version                                      # the binary
+```
+
+**Never quote the `version:` in the skill body you already have in context.**
+A session loads a skill body once and keeps it, so after a `skillctl family
+iterate set` and reinstall, the copy in context is stale — and reporting its
+number is precisely the memory recall this rule already forbids for the
+binary. Confirmed live: a session answered `iterate family 5.4.0` ten minutes
+after 5.5.0 was installed and verified on disk.
+
+If members disagree, say so and name them: drift inside the family is a
+defect, not a state, and `skillctl family iterate set X.Y.Z` is the only
+correct way to bump.
