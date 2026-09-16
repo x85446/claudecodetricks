@@ -7,7 +7,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.3.0
+**Version:** iterate family 5.4.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -400,9 +400,18 @@ human-gate: <step N>           # only when the plan marks a terminal human-decis
 ...
 
 ## Validation
-- [ ] check 1: <criterion>     # paired 1:1 with Steps by index
-- [ ] check 2: <criterion>
+- [ ] 1. <criterion>           # paired 1:1 with Steps by index
+- [ ] 2. <criterion>
 ...
+
+**The checkbox is the format, in this file and in one written by
+`$iterate-planner`.** It is the only place in a plan where progress lives —
+you check a step off when its validation passes, and triage, the conductor
+and the dashboard all read those boxes to answer "where is this plan". Never
+rewrite a plan's lists into a plain `N.` form, and never append to an
+existing plan in a form the rest of that file does not already use: a single
+file carrying both is the one case that reads as correct while being half
+wrong.
 
 ## Constraints
 - <rule>

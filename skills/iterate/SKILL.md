@@ -3,7 +3,7 @@ name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: "<task + how to validate> | <plan> | pause [<plan>] | resume [<plan>] | version"
 disable-model-invocation: true
-version: 5.3.0
+version: 5.4.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -415,9 +415,18 @@ human-gate: <step N>           # only when the plan marks a terminal human-decis
 ...
 
 ## Validation
-- [ ] check 1: <criterion>     # paired 1:1 with Steps by index
-- [ ] check 2: <criterion>
+- [ ] 1. <criterion>           # paired 1:1 with Steps by index
+- [ ] 2. <criterion>
 ...
+
+**The checkbox is the format, in this file and in one written by
+`/iterate-planner`.** It is the only place in a plan where progress lives —
+you check a step off when its validation passes, and triage, the conductor
+and the dashboard all read those boxes to answer "where is this plan". Never
+rewrite a plan's lists into a plain `N.` form, and never append to an
+existing plan in a form the rest of that file does not already use: a single
+file carrying both is the one case that reads as correct while being half
+wrong.
 
 ## Constraints
 - <rule>
