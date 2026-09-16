@@ -53,6 +53,23 @@ func humanTokens(n int64) string {
 	}
 }
 
+// laneLabel trims a lane name to something a table column can hold. Most
+// lanes are short team names, but a plain Agent-tool dispatch is labelled
+// with its own description — "Map profile editor for Destination control"
+// — which is a sentence, not a name. Seen live on newcorder's xenops.
+func laneLabel(s string) string {
+	const max = 26
+	if len(s) <= max {
+		return s
+	}
+	cut := s[:max-1]
+	// Prefer a word boundary, but only if it does not eat most of the name.
+	if i := strings.LastIndexByte(cut, ' '); i > max/2 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,-") + "\u2026"
+}
+
 func shareBar(pct float64, warn bool) string {
 	if pct < 0 {
 		pct = 0
@@ -110,7 +127,7 @@ func writeTokenPanel(b *strings.Builder, pt *PlanTokens) {
 		if l.Key == "" {
 			cls = ` class="tk-coord"`
 		}
-		label := l.Label
+		label := laneLabel(l.Label)
 		if l.Missing {
 			fmt.Fprintf(b, `<tr%s><td>%s</td><td colspan="7" class="tk-miss" style="text-align:left">no transcript found for this lane — its spend is not counted above</td></tr>`,
 				cls, html.EscapeString(label))
@@ -138,7 +155,7 @@ func writeTokenPanel(b *strings.Builder, pt *PlanTokens) {
 				per = (t.ContextGrowth + t.Emitting) / int64(t.Calls)
 			}
 			fmt.Fprintf(b, `<tr><td>%s</td><td class="tk-barcell">%s</td><td class="tk-pct">%.1f%%</td><td class="tk-dim">%d</td><td>%s</td><td>%s</td><td class="tk-dim">%s</td></tr>`,
-				html.EscapeString(t.Tool), shareBar(t.Share, false), t.Share, t.Calls,
+				html.EscapeString(laneLabel(t.Tool)), shareBar(t.Share, false), t.Share, t.Calls,
 				humanTokens(t.ContextGrowth), humanTokens(t.Emitting), humanTokens(per))
 		}
 		b.WriteString(`</table></div>`)

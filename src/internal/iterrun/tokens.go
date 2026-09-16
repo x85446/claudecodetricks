@@ -890,13 +890,13 @@ func PrintPlanTokens(w io.Writer, pt PlanTokens) {
 	}
 	fmt.Fprintln(w)
 
-	fmt.Fprintf(w, "\n%-18s %7s %10s %10s %10s %10s %6s\n", "LANE", "SHARE", "CONTEXT", "GENERATED", "THINKING", "PEAK CTX", "REQS")
+	fmt.Fprintf(w, "\n%-26s %7s %10s %10s %10s %10s %6s\n", "LANE", "SHARE", "CONTEXT", "GENERATED", "THINKING", "PEAK CTX", "REQS")
 	for _, l := range pt.Lanes {
 		if l.Missing {
-			fmt.Fprintf(w, "%-18s %7s %s\n", l.Label, "-", "no transcript found")
+			fmt.Fprintf(w, "%-26s %7s %s\n", laneLabel(l.Label), "-", "no transcript found")
 			continue
 		}
-		fmt.Fprintf(w, "%-18s %6.1f%% %10s %10s %10s %10s %6d\n", l.Label, l.Share,
+		fmt.Fprintf(w, "%-26s %6.1f%% %10s %10s %10s %10s %6d\n", laneLabel(l.Label), l.Share,
 			humanTokens(l.Usage.Context()), humanTokens(l.Usage.Output),
 			humanTokens(l.Usage.Thinking), humanTokens(l.PeakContext), l.Usage.Messages)
 	}
@@ -907,7 +907,7 @@ func PrintPlanTokens(w io.Writer, pt PlanTokens) {
 			if i >= 12 {
 				break
 			}
-			fmt.Fprintf(w, "%-26s %6.1f%% %6d %12s %10s\n", t.Tool, t.Share, t.Calls,
+			fmt.Fprintf(w, "%-26s %6.1f%% %6d %12s %10s\n", laneLabel(t.Tool), t.Share, t.Calls,
 				humanTokens(t.ContextGrowth), humanTokens(t.Emitting))
 		}
 	}

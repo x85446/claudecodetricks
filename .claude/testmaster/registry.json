@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-16T15:04:55Z",
+ "updated": "2026-09-16T15:07:42Z",
  "tests": {
   "git.TestScreenPath": {
    "name": "TestScreenPath",
@@ -1129,6 +1129,18 @@
    "last_ms": 728,
    "last_result": "pass",
    "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn": {
+   "name": "TestLongLaneLabelsAreTrimmedToFitAColumn",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestLongLaneLabelsAreTrimmedToFitAColumn$'",
+   "runs": 1,
+   "avg_ms": 1342,
+   "tier": "fast",
+   "last_ms": 1342,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:07:42Z"
   }
  }
 }
