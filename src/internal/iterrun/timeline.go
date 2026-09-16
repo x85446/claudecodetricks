@@ -554,7 +554,7 @@ func buildRowsFrom(planFilePath, teamsDir, plan, homeDir string, scanDirs []stri
 	// Started: lives, needed below to keep a registry entry left over from
 	// an earlier, unrelated run that reused this same codename from
 	// silently merging into this run's picture.
-	teams, steps, validations, planStarted, statusLog := readPlanTeamsAndSteps(planFilePath)
+	teams, steps, validations, planStarted, statusLog, boxes := readPlanTeamsStepsAndBoxes(planFilePath)
 
 	logFiles, _ := filepath.Glob(filepath.Join(teamsDir, "*.log.md"))
 	for _, lf := range logFiles {
@@ -630,6 +630,11 @@ func buildRowsFrom(planFilePath, teamsDir, plan, homeDir string, scanDirs []stri
 		for _, n := range meta.stepNums {
 			stepOwner[n] = team
 			sd := StepDetail{Num: n, Step: steps[n], Validation: validations[n]}
+			// The plan's own checkbox is the fallback when this team's log
+			// has no ##ITERATE-VALIDATION## marker for the step — the
+			// coordinator ticks a team's boxes when it merges that team's
+			// log, so on a boxed plan this is often the only record.
+			sd.VStatus = boxes[n].vstatus()
 			if sd.Step == "" && sd.Validation == "" {
 				continue // step number in the table but not found in either list — skip rather than show a blank pair
 			}
@@ -682,6 +687,10 @@ func buildRowsFrom(planFilePath, teamsDir, plan, homeDir string, scanDirs []stri
 			if sd.Step == "" && sd.Validation == "" {
 				continue
 			}
+			// The checkbox is the baseline; an explicit "step N DONE:"
+			// line in the Status/Log wins, because it is more specific and
+			// carries the note explaining a partial or a blocker.
+			sd.VStatus = boxes[n].vstatus()
 			if m, ok := coordMarks[n]; ok {
 				sd.VStatus, sd.VNote = m.status, m.note
 			}
@@ -746,7 +755,54 @@ type teamMeta struct {
 	dependsOn []string
 }
 
-var reNumberedItem = regexp.MustCompile(`^(\d+)\.\s+(.*)$`)
+// The iterate family writes plan items in three different shapes, and the
+// dashboard has to read all of them because its own skills disagree:
+// `/iterate-planner`'s template emits `1. <task>`, while `/iterate`'s
+// emits `- [ ] 1. <step>` for Steps and `- [ ] check 1: <criterion>` for
+// Validation. Measured across all 136 plan files on this machine: 3,193
+// plain items, 422 boxed-numbered, 79 boxed `check N:`. Reading only the
+// plain form left 31 plan files with no Requirements row at all — and 8
+// MIXED files showing only *some* of their steps, which is worse, because
+// a partial row looks correct.
+var (
+	rePlanItem      = regexp.MustCompile(`^(?:[-*]\s*\[([ xX~/-]?)\]\s*)?(\d+)[.)]\s+(.*)$`)
+	rePlanCheckItem = regexp.MustCompile(`(?i)^(?:[-*]\s*\[([ xX~/-]?)\]\s*)?check\s+(\d+)\s*:\s*(.*)$`)
+)
+
+// planItem is one parsed `## Steps` / `## Validation` line.
+type planItem struct {
+	Num     int
+	Text    string
+	Boxed   bool // the line carried a checkbox at all
+	Checked bool // ...and it was ticked
+}
+
+// parsePlanItem reads one line of a Steps or Validation section. Returns
+// ok=false for anything that isn't a numbered item — prose, a bare
+// unnumbered checkbox (`- [ ] CLEANUP: ...`), a blank line.
+func parsePlanItem(line string) (planItem, bool) {
+	for _, re := range []*regexp.Regexp{rePlanItem, rePlanCheckItem} {
+		m := re.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		n, err := strconv.Atoi(m[2])
+		if err != nil {
+			continue
+		}
+		box := m[1]
+		return planItem{
+			Num:   n,
+			Text:  m[3],
+			Boxed: strings.Contains(line, "["),
+			// Only a literal x counts as done. The other markers people
+			// use in a box (~, /, -) mean "started" at best, and this
+			// must never turn an unproven step green.
+			Checked: box == "x" || box == "X",
+		}, true
+	}
+	return planItem{}, false
+}
 
 // readPlanTeamsAndSteps reads the plan file once and returns everything
 // the dashboard needs from it beyond raw activity: each team's status and
@@ -770,13 +826,47 @@ var reNumberedItem = regexp.MustCompile(`^(\d+)\.\s+(.*)$`)
 // finished one (see BuildRowsFromArchive); this function doesn't care
 // which. Returns nils (not an error) if the file can't be read.
 func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, steps, validations map[int]string, started time.Time, statusLog string) {
+	teams, steps, validations, started, statusLog, _ = readPlanTeamsStepsAndBoxes(planFilePath)
+	return
+}
+
+// boxState records what a plan's own checkboxes say about one numbered
+// requirement. Kept separate from the Step/Validation text because the two
+// boxes routinely DISAGREE, and the disagreement is the interesting part:
+// halibut has step 1 ticked and validation 1 unticked, which is exactly
+// true — the step ran and named the sites behind login walls, and its
+// validation ("the sites with gaps are signed in") is what the plan is
+// blocked on. Collapsing them would report that step as proven.
+type boxState struct {
+	StepBoxed, StepChecked             bool
+	ValidationBoxed, ValidationChecked bool
+}
+
+// vstatus maps a requirement's checkboxes onto the validation vocabulary
+// the burndown already speaks. Nothing here can claim "met" without a
+// ticked box, and a ticked STEP whose validation box is explicitly
+// unticked is "partial" — attempted, not proven — never green.
+func (b boxState) vstatus() string {
+	switch {
+	case b.ValidationChecked:
+		return "met"
+	case b.StepChecked && b.ValidationBoxed:
+		return "partial"
+	case b.StepChecked:
+		return "met"
+	}
+	return ""
+}
+
+func readPlanTeamsStepsAndBoxes(planFilePath string) (teams map[string]teamMeta, steps, validations map[int]string, started time.Time, statusLog string, boxes map[int]boxState) {
 	data, err := os.ReadFile(planFilePath)
 	if err != nil {
-		return nil, nil, nil, time.Time{}, ""
+		return nil, nil, nil, time.Time{}, "", nil
 	}
 	teams = map[string]teamMeta{}
 	steps = map[int]string{}
 	validations = map[int]string{}
+	boxes = map[int]boxState{}
 	var statusLines []string
 	var executing time.Time
 	section := ""
@@ -809,16 +899,20 @@ func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, step
 		}
 		switch section {
 		case "steps":
-			if m := reNumberedItem.FindStringSubmatch(trimmed); m != nil {
-				if n, err := strconv.Atoi(m[1]); err == nil {
-					steps[n] = m[2]
-				}
+			if it, ok := parsePlanItem(trimmed); ok {
+				steps[it.Num] = it.Text
+				bs := boxes[it.Num]
+				bs.StepBoxed = bs.StepBoxed || it.Boxed
+				bs.StepChecked = bs.StepChecked || it.Checked
+				boxes[it.Num] = bs
 			}
 		case "validation":
-			if m := reNumberedItem.FindStringSubmatch(trimmed); m != nil {
-				if n, err := strconv.Atoi(m[1]); err == nil {
-					validations[n] = m[2]
-				}
+			if it, ok := parsePlanItem(trimmed); ok {
+				validations[it.Num] = it.Text
+				bs := boxes[it.Num]
+				bs.ValidationBoxed = bs.ValidationBoxed || it.Boxed
+				bs.ValidationChecked = bs.ValidationChecked || it.Checked
+				boxes[it.Num] = bs
 			}
 		case "teams":
 			if cells, ok := parseTeamRowCells(line); ok {
@@ -838,7 +932,7 @@ func readPlanTeamsAndSteps(planFilePath string) (teams map[string]teamMeta, step
 	if !executing.IsZero() {
 		started = executing
 	}
-	return teams, steps, validations, started, strings.Join(statusLines, "\n")
+	return teams, steps, validations, started, strings.Join(statusLines, "\n"), boxes
 }
 
 // reCoordStepStatus matches the coordinator's own inline per-step self
@@ -1268,22 +1362,28 @@ func RenderTimelineHTMLWithTokens(rows []Row, plan PlanSummary, homeURL string, 
 	// (e.g. cli-frame -> selection -> reports) is one visual unit now that
 	// orderTeamRows nests it together, so a line splitting it back apart
 	// would undo the point of the nesting.
-	b.WriteString(`<h2>Activity by team</h2><div class="gantt">`)
-	firstRoot := true
-	for _, r := range teamRows {
-		divider := false
-		if r.depth == 0 {
-			divider = !firstRoot
-			firstRoot = false
+	// An unteamed plan has exactly one row — the coordinator — already
+	// rendered above. Emitting this heading anyway left a section with a
+	// title and nothing under it, which reads as missing data rather than
+	// as "this plan has no teams".
+	if len(teamRows) > 0 {
+		b.WriteString(`<h2>Activity by team</h2><div class="gantt">`)
+		firstRoot := true
+		for _, r := range teamRows {
+			divider := false
+			if r.depth == 0 {
+				divider = !firstRoot
+				firstRoot = false
+			}
+			writeGanttRow(&b, r, pct, divider)
 		}
-		writeGanttRow(&b, r, pct, divider)
+		if hasActivity {
+			writeTimeAxis(&b, minT.Local(), maxT.Local(), pct)
+			fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
+				minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
+		}
+		b.WriteString(`</div>`)
 	}
-	if hasActivity {
-		writeTimeAxis(&b, minT.Local(), maxT.Local(), pct)
-		fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
-			minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
-	}
-	b.WriteString(`</div>`)
 
 	b.WriteString(`<div class="legend"><span><span class="sw" style="background:var(--busy)"></span>confirmed activity</span><span><span class="sw sw-open"></span>still running</span><span><span class="sw" style="background:var(--danger)"></span>severe gap (5m+)</span><span>unmarked gaps under 5m are normal think-time</span></div>`)
 
@@ -1392,6 +1492,7 @@ type burnStep struct {
 	Team       string
 	DependsOn  []string // this step's owning team's OWN full Depends-on list from the Teams table, resolved to display labels — every team that must finish first, not just one. A team can list several (tech-debt genuinely depends on all seven of the others in a real plan); showing only a single "primary" parent (the shortcut orderTeamRows takes purely for indentation) would silently hide the rest.
 	VNote      string   // the team's own explanation for why this landed where it did (##ITERATE-VALIDATION## note, or the coordinator's own inline log text on a flat plan) — empty when nothing was reported. This is the actual "what happened" a click on the cell should surface, not just the bare status.
+	VStatus    string   // the raw validation status this State was derived from — kept because the orange bucket has two different causes
 	State      string   // "done" (met), "active" (currently being worked, or reported partial), "gaveup" (reported not-met — attempted and failed, or a hard blocker; NOT the same bucket as "still working"), "queued" (white — no signal yet)
 }
 
@@ -1451,7 +1552,7 @@ func collectSteps(rows []Row) []burnStep {
 			case sd.Num == working:
 				state = "active"
 			}
-			out = append(out, burnStep{Num: sd.Num, Step: sd.Step, Validation: sd.Validation, Team: r.label, DependsOn: deps, VNote: sd.VNote, State: state})
+			out = append(out, burnStep{Num: sd.Num, Step: sd.Step, Validation: sd.Validation, Team: r.label, DependsOn: deps, VNote: sd.VNote, State: state, VStatus: sd.VStatus})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Num < out[j].Num })
@@ -1504,10 +1605,11 @@ func writeBurndownChart(b *strings.Builder, rows []Row) {
 		DependsOn  []string `json:"dependsOn"`
 		VNote      string   `json:"note"`
 		State      string   `json:"state"`
+		VStatus    string   `json:"vstatus"`
 	}
 	data := make(map[string]burnStepJSON, len(steps))
 	for _, s := range steps {
-		data[strconv.Itoa(s.Num)] = burnStepJSON{Step: s.Step, Validation: s.Validation, Team: s.Team, DependsOn: s.DependsOn, VNote: s.VNote, State: s.State}
+		data[strconv.Itoa(s.Num)] = burnStepJSON{Step: s.Step, Validation: s.Validation, Team: s.Team, DependsOn: s.DependsOn, VNote: s.VNote, State: s.State, VStatus: s.VStatus}
 	}
 	// json.Marshal HTML-escapes '<', '>' and '&' by default — exactly what
 	// keeps a plan's own step/validation text (arbitrary markdown, could
@@ -1523,6 +1625,12 @@ function bdShow(num){
   var el=document.getElementById('bd-detail');
   if(!d){el.style.display='none';return;}
   var stateLabel={done:'done',active:'active',gaveup:'gave up',queued:'not yet worked on'}[d.state]||d.state;
+  // The orange bucket covers two different outcomes and "gave up" is only
+  // one of them: a validation reported not-met was attempted and failed,
+  // while a step ticked off whose validation is still unticked was done
+  // but never proven — which is what a plan blocked on its operator looks
+  // like, and calling that "gave up" is simply false.
+  if(d.state==='gaveup'&&d.vstatus!=='not-met'){stateLabel='done, not yet proven';}
   var html='<div class="bd-detail-num bd-detail-'+d.state+'">Requirement '+num+' &middot; '+bdEsc(d.team)+' &middot; '+bdEsc(stateLabel)+'</div>';
   html+='<div class="bd-detail-chain">depends on: '+bdEsc(d.dependsOn.length?d.dependsOn.join(', '):'none')+'</div>';
   if(d.step){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'a.</span><span>'+bdEsc(d.step)+'</span></div>';}

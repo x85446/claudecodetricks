@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-16T15:07:42Z",
+ "updated": "2026-09-16T16:06:50Z",
  "tests": {
   "git.TestScreenPath": {
    "name": "TestScreenPath",
@@ -1141,6 +1141,90 @@
    "last_ms": 1342,
    "last_result": "pass",
    "updated": "2026-09-16T15:07:42Z"
+  },
+  "iterrun.TestParsePlanItemReadsEveryFormatTheFamilyWrites": {
+   "name": "TestParsePlanItemReadsEveryFormatTheFamilyWrites",
+   "file": "src/internal/iterrun/planitems_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanItemReadsEveryFormatTheFamilyWrites$'",
+   "runs": 1,
+   "avg_ms": 1374,
+   "tier": "fast",
+   "last_ms": 1374,
+   "last_result": "pass",
+   "updated": "2026-09-16T16:06:50Z"
+  },
+  "iterrun.TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet": {
+   "name": "TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet",
+   "file": "src/internal/iterrun/planitems_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet$'",
+   "runs": 1,
+   "avg_ms": 791,
+   "tier": "fast",
+   "last_ms": 791,
+   "last_result": "pass",
+   "updated": "2026-09-16T16:06:50Z"
+  },
+  "iterrun.TestABoxedUnteamedPlanStillGetsItsRequirements": {
+   "name": "TestABoxedUnteamedPlanStillGetsItsRequirements",
+   "file": "src/internal/iterrun/planitems_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestABoxedUnteamedPlanStillGetsItsRequirements$'",
+   "runs": 1,
+   "avg_ms": 714,
+   "tier": "fast",
+   "last_ms": 714,
+   "last_result": "pass",
+   "updated": "2026-09-16T16:06:50Z"
+  },
+  "iterrun.TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem": {
+   "name": "TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem",
+   "file": "src/internal/iterrun/planitems_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem$'",
+   "runs": 1,
+   "avg_ms": 745,
+   "tier": "fast",
+   "last_ms": 745,
+   "last_result": "pass",
+   "updated": "2026-09-16T16:06:50Z"
+  },
+  "iterrun.TestAnExplicitStatusLogMarkOverridesTheCheckbox": {
+   "name": "TestAnExplicitStatusLogMarkOverridesTheCheckbox",
+   "file": "src/internal/iterrun/planitems_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestAnExplicitStatusLogMarkOverridesTheCheckbox$'",
+   "runs": 1,
+   "avg_ms": 732,
+   "tier": "fast",
+   "last_ms": 732,
+   "last_result": "pass",
+   "updated": "2026-09-16T16:06:50Z"
+  },
+  "iterrun.TestPlainFormatPlansAreUnaffected": {
+   "name": "TestPlainFormatPlansAreUnaffected",
+   "file": "src/internal/iterrun/planitems_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestPlainFormatPlansAreUnaffected$'",
+   "runs": 1,
+   "avg_ms": 754,
+   "tier": "fast",
+   "last_ms": 754,
+   "last_result": "pass",
+   "updated": "2026-09-16T16:06:50Z"
+  },
+  "iterrun.TestUnteamedPlanOmitsTheEmptyTeamSection": {
+   "name": "TestUnteamedPlanOmitsTheEmptyTeamSection",
+   "file": "src/internal/iterrun/planitems_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestUnteamedPlanOmitsTheEmptyTeamSection$'",
+   "runs": 1,
+   "avg_ms": 751,
+   "tier": "fast",
+   "last_ms": 751,
+   "last_result": "pass",
+   "updated": "2026-09-16T16:06:50Z"
   }
  }
 }

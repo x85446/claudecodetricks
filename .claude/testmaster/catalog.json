@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-16T15:07:42Z",
+ "updated": "2026-09-16T16:06:50Z",
  "project": "claudecodetricks",
  "requirements": [
   {
@@ -1008,6 +1008,88 @@
      "id": "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn",
      "test": "TestLongLaneLabelsAreTrimmedToFitAColumn",
      "covers": [
+      "src/internal/iterrun/tokens_html.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    }
+   ]
+  },
+  {
+   "id": "req-plan-item-formats",
+   "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" \u2014 the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams.",
+   "source": "user",
+   "asked": "2026-09-16",
+   "cases": [
+    {
+     "id": "iterrun.TestParsePlanItemReadsEveryFormatTheFamilyWrites",
+     "test": "TestParsePlanItemReadsEveryFormatTheFamilyWrites",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet",
+     "test": "TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet",
+     "covers": [
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestABoxedUnteamedPlanStillGetsItsRequirements",
+     "test": "TestABoxedUnteamedPlanStillGetsItsRequirements",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem",
+     "test": "TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestAnExplicitStatusLogMarkOverridesTheCheckbox",
+     "test": "TestAnExplicitStatusLogMarkOverridesTheCheckbox",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestPlainFormatPlansAreUnaffected",
+     "test": "TestPlainFormatPlansAreUnaffected",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/registry.go",
+      "src/internal/iterrun/timeline.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestUnteamedPlanOmitsTheEmptyTeamSection",
+     "test": "TestUnteamedPlanOmitsTheEmptyTeamSection",
+     "covers": [
+      "src/internal/iterrun/plans.go",
+      "src/internal/iterrun/serve.go",
+      "src/internal/iterrun/timeline.go",
       "src/internal/iterrun/tokens_html.go"
      ],
      "covers_source": "coverage",
