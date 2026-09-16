@@ -70,10 +70,10 @@ You run the Teamify procedure: step 1 (deploy) and step 3 (link tree) are both "
 plan amended owl
 
 **Teams** (run in parallel at /iterate time where independent):
-| Team | Steps | Focus | Depends on | Agent | Status |
-|---|---|---|---|---|---|
-| deploy | 2 | Build and deploy the metrics-service container | — | backend-expert | pending |
-| link-tree | 3 | Wire the new service into the mgmt.gravhl.com GUI link tree | deploy | documentation-expert | pending |
+| Team | Steps | Focus | Depends on | Agent | Model | Status |
+|---|---|---|---|---|---|---|
+| deploy | 2 | Build and deploy the metrics-service container | — | backend-expert | opus | pending |
+| link-tree | 3 | Wire the new service into the mgmt.gravhl.com GUI link tree | deploy | documentation-expert | sonnet | pending |
 
 Grouped into 2 teams — link-tree depends on deploy finishing first, so they run sequentially, not in parallel, at /iterate time.
 
