@@ -1,40 +1,76 @@
 ---
-name: product
-description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture and engineering docs. Routes all product-definition work; picks the child."
-when_to_use: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions (/user-docs), NOT building it (/iterate)."
-argument-hint: "[status | next | <stage> | maintain | unlock <stage>] [--fast]"
-version: 1.0.0
+name: "product"
+description: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions ($user-docs), NOT building it ($iterate)."
 ---
 
-# /product — idea to engineering-ready definition
+
+
+<!-- codex-port: no confirmed structured-picker equivalent in Codex; every structured picker in this file became an ordinary numbered-list question -- verify the wording reads naturally where it mattered. -->
+
+# $product — idea to engineering-ready definition
+
+**Version:** product family 1.0.0
+
+## What this skill does
+
+<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+
+PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture and engineering docs. Routes all product-definition work; picks the child.
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
 
 Eight documents, each earned from the one before it. The chain exists so that by the end **the MVP is not an opinion**: it is the top release slice of a feature inventory that came from a story map, built on a PRD that came from a real competitive landscape.
+
+## Usage
+
+Argument: "[status | next | <stage> | maintain | unlock <stage>] [--fast]". `$1` is its first word; `$ARGUMENTS` is the whole thing.
+
+<!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
+
+## Dependencies
+
+Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
+
+- `$ip` — ported.
+- `$iterate` — ported.
+- `$product-architecture` — ported.
+- `$product-brief` — ported.
+- `$product-competitors` — ported.
+- `$product-engineering` — ported.
+- `$product-features` — ported.
+- `$product-prd` — ported.
+- `$product-requirements` — ported.
+- `$product-roadmap` — ported.
+- `$user-docs` — ported.
 
 ## Children
 
 | # | Stage | Child | Writes |
 |---|---|---|---|
-| 0 | Brief | `/product-brief` | `docs/brief.md` |
-| 1 | Competitors | `/product-competitors` | `docs/competitors.md` |
-| 2 | PRD | `/product-prd` | `docs/prd.md` |
-| 3 | Features | `/product-features` | `docs/features.md` |
-| 4 | Roadmap | `/product-roadmap` | `docs/roadmap.md` |
-| 5 | Requirements | `/product-requirements` | `docs/requirements.md` |
-| 6 | Architecture | `/product-architecture` | `docs/architecture.md` |
-| 7 | Engineering | `/product-engineering` | `docs/engineering.md` |
+| 0 | Brief | `$product-brief` | `docs/brief.md` |
+| 1 | Competitors | `$product-competitors` | `docs/competitors.md` |
+| 2 | PRD | `$product-prd` | `docs/prd.md` |
+| 3 | Features | `$product-features` | `docs/features.md` |
+| 4 | Roadmap | `$product-roadmap` | `docs/roadmap.md` |
+| 5 | Requirements | `$product-requirements` | `docs/requirements.md` |
+| 6 | Architecture | `$product-architecture` | `docs/architecture.md` |
+| 7 | Engineering | `$product-engineering` | `docs/engineering.md` |
 
-Invoke children with the Skill tool. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
+Invoke children with explicit `$name` invocation. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
 
 ## Invocation
 
 ```
-/product                      # resume at the first unfinished stage
-/product status               # the state table, nothing else
-/product next                 # run exactly one stage, then stop
-/product <stage>              # jump to a stage by name or number
-/product maintain             # all eight done: reconcile docs against reality
-/product unlock <stage>       # reopen a locked document for revision
-/product --fast               # run the whole chain unattended
+$product                      # resume at the first unfinished stage
+$product status               # the state table, nothing else
+$product next                 # run exactly one stage, then stop
+$product <stage>              # jump to a stage by name or number
+$product maintain             # all eight done: reconcile docs against reality
+$product unlock <stage>       # reopen a locked document for revision
+$product --fast               # run the whole chain unattended
 ```
 
 ## Step 1 — Read state, or establish it
@@ -43,7 +79,7 @@ State lives at `./.claude/product/state.md`. Read it first, every invocation.
 
 If it does not exist, create it — and **detect the mode before asking the user anything**:
 
-- **Brownfield** — the repo contains source (any language's project file, a `src/`, a `Makefile`, a non-trivial git history). The product partly exists. Read the code, the README, and `/user-docs` output if present, and pre-fill what the product already does. The user then confirms and fills gaps rather than dictating from scratch.
+- **Brownfield** — the repo contains source (any language's project file, a `src/`, a `Makefile`, a non-trivial git history). The product partly exists. Read the code, the README, and `$user-docs` output if present, and pre-fill what the product already does. The user then confirms and fills gaps rather than dictating from scratch.
 - **Greenfield** — no source, or source is scaffolding only. Everything comes from the user.
 
 Say which mode you detected and what you found, in one line. A wrong detection is cheap to correct and expensive to hide.
@@ -74,7 +110,7 @@ started: <YYYY-MM-DD>
 <maintain-mode findings, newest first>
 ```
 
-`status`: `pending` · `in-progress` · `done` · `blocked`. `locked`: `yes` once the user approves it, and a locked document is never rewritten without `/product unlock <stage>`.
+`status`: `pending` · `in-progress` · `done` · `blocked`. `locked`: `yes` once the user approves it, and a locked document is never rewritten without `$product unlock <stage>`.
 
 ## Step 2 — Pick the stage
 
@@ -106,7 +142,7 @@ Findings are fixed before the gate, not filed for later. The exception is a mark
 
 ## Step 5 — The gate
 
-**`gate: on` (default).** Present the document's headline content, the analyze block, and any open questions. Then ask for approval with AskUserQuestion: approve and continue · approve and stop · revise (say what) · skip this stage. On approval set `done` and `locked: yes`, stamp the date, and continue to the next stage — or stop if that is what they chose.
+**`gate: on` (default).** Present the document's headline content, the analyze block, and any open questions. Then ask for approval with a plain numbered-list question: approve and continue · approve and stop · revise (say what) · skip this stage. On approval set `done` and `locked: yes`, stamp the date, and continue to the next stage — or stop if that is what they chose.
 
 **`gate: fast` (`--fast`).** Run the whole chain without stopping, then present all eight documents and every analyze block together. Set every completed stage `done` but `locked: no` — nothing the user has not seen gets locked.
 
@@ -143,6 +179,6 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 4. **A locked document needs an explicit unlock.** The user approved that text; do not quietly improve it.
 5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW.**
 6. **Traceability is enforced, not decorative.** Every requirement names its feature and its release. Orphans are reported as defects.
-7. **This family stops at documents.** It does not implement, and it does not write an iterate plan — handing the docs to `/ip` is the user's move, when they choose to make it.
-8. **`docs/` is the home**, alongside the code, in whatever repo `/product` runs in. Never a parallel doc tree beside a live one.
-9. **`/user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.
+7. **This family stops at documents.** It does not implement, and it does not write an iterate plan — handing the docs to `$ip` is the user's move, when they choose to make it.
+8. **`docs/` is the home**, alongside the code, in whatever repo `$product` runs in. Never a parallel doc tree beside a live one.
+9. **`$user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.

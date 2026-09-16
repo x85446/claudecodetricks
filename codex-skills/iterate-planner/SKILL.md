@@ -7,13 +7,13 @@ description: "Never executes — the user runs $iterate for that. Triggers on \"
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
 
-**Version:** iterate family 5.5.1
+**Version:** iterate family 5.5.2
 
 ## What this skill does
 
 <!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
-The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it — planning stays on your current branch, so the status line reads main until execution starts; plans are teamed by default and end with three standing finishers (Makefile, TESTMASTER, product-docs). Plans are saved and animal-named under ./.claude/iterate/plans/.
+The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it — planning stays on your current branch, so the status line reads main until execution starts; plans are teamed by default and end with three standing finishers (Makefile, TESTMASTER, user-docs). Plans are saved and animal-named under ./.claude/iterate/plans/.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -39,12 +39,13 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$ip` — ported.
 - `$iterate` — ported.
 - `$iterate-notes` — ported.
+- `$iterate-triage` — ported.
 - `$oracle` — ported.
-- `$product-docs` — ported.
 - `$testmaster` — ported.
 - `$testmaster-adopt` — ported.
 - `$testmaster-catalog` — ported.
 - `$testmaster-derive` — ported.
+- `$user-docs` — ported.
 - `$uxmaster` — ported.
 
 | Skill | Role |
@@ -361,7 +362,7 @@ Every plan ends with the same three finisher steps, appended automatically at cr
 
 0. **Makefile pass** — `Na: Maintain the project Makefile against this plan's work — add/update targets for anything this plan made buildable, runnable, or testable; remove targets whose subject this plan deleted; keep help output current. [skill: $dev-makefiles]` / `Nb: every repeatable dev task this plan introduced is reachable via a make target (run each new/changed target once, real invocation); no target references removed code; \`make help\` (or equivalent) lists them accurately.`
 1. **Test pass** — `Na: Run the project test suite via TESTMASTER — fast+standard tiers only, all green; maintain coverage first for behavior this plan added/changed. [skill: $testmaster]` / `Nb: $testmaster run reports 0 failures across fast+standard; every feature this plan added or changed has a registered, executed test (new tests show runs ≥ 1 in ./.claude/testmaster/registry.json), and every case derived in Step 5.9 is present and passing — `$testmaster-catalog status` shows none of this plan's requirements unverified or drifted.` The slow tier is NEVER part of this step — it belongs to the nightly schedule.
-2. **Docs pass** — `Na: Sync the end-user product documentation to the final state of this plan's work — add new features' operating instructions, update changed behavior, delete removed features' docs. [skill: $product-docs]` / `Nb: $product-docs reports docs synced (or "already true"); no doc section describes behavior absent from the final tree; new user-visible features each have an operating section.`
+2. **Docs pass** — `Na: Sync the end-user product documentation to the final state of this plan's work — add new features' operating instructions, update changed behavior, delete removed features' docs. [skill: $user-docs]` / `Nb: $user-docs reports docs synced (or "already true"); no doc section describes behavior absent from the final tree; new user-visible features each have an operating section.`
 
 Placement: **Makefile → tests → docs** (targets must exist before TESTMASTER runs them; docs describe what survived the tests), and all three are the **last agent steps** — only a `human-gate` (Step 5.5) may follow; refinement adds always insert before them, and they keep their end position through every renumbering. All stay team-unassigned (coordinator-run after all teams merge — they sweep the whole plan's work) with provenance `Standing rule: end-of-plan finisher (tests then docs).` A project with genuinely no end-user product may drop the docs finisher (audit-trail note: `docs finisher skipped: no end-user product`).
 
@@ -379,7 +380,7 @@ Scope, narrowest match wins:
 |---|---|
 | `skip makefile` / `skip the makefile pass` | the Makefile finisher |
 | `skip tests` / `skip testmaster` / `skip the test pass` | the test finisher |
-| `skip docs` / `skip product-docs` | the docs finisher |
+| `skip docs` / `skip user-docs` | the docs finisher |
 | `skip` / `skip finishers` / `skip the canned steps` / `skip the pre-baked steps` | **all three** |
 
 Two behaviours, depending on what the target plan already has:
@@ -619,26 +620,29 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 27. **Every step carries a skill tag — `[skill: /x]` or an explicit `[skill: none — why]`.** Written at step creation from the always-loaded skills list (Step 5.7), never left implicit. A prose-only step that silently implies tool usage is the failure mode this kills: the executor must see, inline, which installed skill governs the work. Tags renumber/carry exactly like provenance lines.
 27.4. **`harness:` records which harness's planner produced the plan, and no operation ever changes it once written.** Set once, at creation, to this skill's own harness identity (`claude-code` for this Claude Code skill; `codex` for its Codex port). Refinement, roll-forward, teamify/flatify, execution transitions, resume, and close all leave it exactly as found — same treatment as `branch:`. A plan file where the field is missing, blank, or unrecognized reads as `unknown`; that is a parser fallback for pre-existing plans, never a value this skill writes on purpose.
 
-27.5. **Every plan carries the three standing finishers — dev-makefiles, then TESTMASTER, then product-docs — as its last agent steps.** Appended automatically at creation (Step 5.8), never waiting for the user to ask: a `$dev-makefiles` maintenance pass (targets for everything the plan made buildable/runnable/testable; dead targets removed), a fast+standard `$testmaster` pass, then a `$product-docs` sync. Refinement adds insert before them; only a human-gate follows them; the slow test tier never runs mid-plan. The docs finisher may be dropped for projects with no end-user product, and **any or all three are suppressed when the request carries the `skip` modifier** (Step 5.8) — `skip` parses in any position, scopes to `makefile`/`tests`/`docs` or all three, removes them from a plan that already has them, and requires one `finisher skipped by explicit request: <which>` audit line each. Absent `skip`, all three are automatic and never wait for the user to ask.
+27.5. **Every plan carries the three standing finishers — dev-makefiles, then TESTMASTER, then user-docs — as its last agent steps.** Appended automatically at creation (Step 5.8), never waiting for the user to ask: a `$dev-makefiles` maintenance pass (targets for everything the plan made buildable/runnable/testable; dead targets removed), a fast+standard `$testmaster` pass, then a `$user-docs` sync. Refinement adds insert before them; only a human-gate follows them; the slow test tier never runs mid-plan. The docs finisher may be dropped for projects with no end-user product, and **any or all three are suppressed when the request carries the `skip` modifier** (Step 5.8) — `skip` parses in any position, scopes to `makefile`/`tests`/`docs` or all three, removes them from a plan that already has them, and requires one `finisher skipped by explicit request: <which>` audit line each. Absent `skip`, all three are automatic and never wait for the user to ask.
 27.6. **Every plan is scanned for testable requirements, and the user's own words become the test cases.** Step 5.9 runs on every plan: behavioral statements go to `$testmaster-derive`, whose derived cases (negative, every-path, restore-state, interrupted) land in the plan's validations and in the catalog. A stated behavior that ships with no case for it is the gap this closes — and an `AMBIGUOUS` case is resolved by the planner as a logged `Decision:` constraint, never bounced back as a question.
 27.7. **A nonzero `could effect` always FFIVs.** If `$testmaster-catalog impact` says this plan can put existing cases into drift, the plan carries the step that sweeps them (Step 7's testmaster block) — never merely reports the number. The sweep targets the *derived* drifted set after execution, not the predicted count. An `unknown` count (unadopted project, no `covers` recorded) is treated as nonzero: it means the blast radius is unmeasured, not empty, and the plan gets a `$testmaster-adopt` step before the sweep.
 28. **Free and permissive by default — a paid service or a copyleft dependency is the user's decision, never the plan's assumption.** Name the free/permissive equivalent, say what the alternative does that it can't, and say whether the obligation actually attaches (linking vs. running a container); if it still wins, route it through a `human-gate` step or `$ibs` with those three answers attached. Emit `License:` and `Cost:` constraints for everything a plan adopts. See "The free-and-permissive default" above.
 
-29. **Write Steps and Validation as checkboxes — `- [ ] N. <text>` — in the plan FILE.** The file is a state machine, and the checkbox is the only place in it where progress can live: `$iterate` checks a step off when its validation passes, and `$iterate-triage`, the conductor and the dashboard all read those boxes to answer "where is this plan". A plain `N.` list gives them nowhere to look, which is why a parallel prose channel (`Status / Log` "step N done:") had to exist at all. This is the FILE format only — the chat reprint stays paired `1a`/`1b` (see "Output format" above), and the two are not in tension: one is state, the other is presentation.
+29. **Write Steps and Validation as checkboxes — `- [ ] N. <text>` — in the plan FILE.** The file is a state machine, and the checkbox is the only place in it where progress can live: `$iterate` checks a step off when its validation passes, and `$iterate-triage`, the conductor and the dashboard all read those boxes to answer "where is this plan". A plain `N.` list gives them nowhere to look, which is why a parallel prose channel (`Status / Log` "step N done:") had to exist at all. This is the FILE format only — the chat reprint stays paired `1a`/`1b` (see "Output format" above), and the two are not in tension: one is state, the other is presentation. Confirmed live: two writers of this same file disagreed on this line for months, leaving 31 of 136 plan files with no Requirements row on the dashboard and 8 more showing only some of their steps.
 
 30. **Every team carries a model tier, picked from the work it does — never from how important the work feels.** Write it in the Teams table's `Model` column. This is the only place the mapping lives; `$iterate` reads the cell and passes it through at dispatch, so it never has to know the mapping and the two can never disagree.
 
     | `Model` cell | the work it is for |
     |---|---|
-    | `fable` | **Coordination only** — plan-level judgment, merging a team's log, deciding what "done" means, choosing a different approach after a blocker. The orchestrator's own tier, not a team's. |
+    | `fable` | **Coordination only** — plan-level judgment, merging a team's log, deciding what "done" means, choosing a different approach after a blocker. This is the orchestrator's own tier, not a team's; see the note below. |
     | `opus` | **Building** — writing and changing code, schema and migration work, anything where being wrong costs a debugging session rather than a re-read. |
     | `sonnet` | **Reading and reporting** — research, documentation, parsing tool output, triaging a log, summarising a suite run, extracting an answer from a file or a screenshot. |
     | `haiku` | **Mechanical extraction** with a fixed output shape and an obvious right answer. |
 
-    Use the **alias**, not a pinned id, so a model release does not mean editing twelve skills. Pin a full id only when one plan genuinely needs one specific model, and say in the row's Focus why. **The orchestrator's own model is not settable from here** — a skill cannot change the model of the session running it, so `fable` is a recommendation to the operator, and the plan records it, nothing more.
+    Use the **alias**, not a pinned id. `fable`/`opus`/`sonnet`/`haiku` track the newest model in each family, so a model release does not mean editing twelve skills — which is exactly the drift this family exists to avoid. Pin a full id (`claude-fable-5-1`, or a `[1m]` suffix for the 1M-context variant) only when one plan genuinely needs one specific model, and say in the row's Focus why.
 
-31. **A team is one tightly-defined task with a named deliverable, not a topic.** "Parse the failing suite output and report which cases regressed, as a list of case ids" is a team. "Help with testing" is not. Narrowness is what makes the tier assignment mean anything — a vague team drifts into work its tier was not chosen for. It is also the cheap shape: a subagent's context dies when it returns, so everything it read never reaches the coordinator's context, where it would be re-sent on every later request for the rest of the run.
+    **The orchestrator's own model is not settable from here.** A skill cannot change the model of the session running it. `fable` is a recommendation to the operator — start the session on it before `$iterate` — and the plan records it, nothing more. Do not write a step that claims to switch the coordinator's model; it cannot.
 
+31. **A team is one tightly-defined task with a named deliverable, not a topic.** "Parse the failing suite output and report which cases regressed, as a list of case ids" is a team. "Help with testing" is not. Narrowness is what makes the tier assignment meaningful in the first place — a vague team drifts into work its tier was not chosen for, and a `sonnet` team asked to refactor is a worse outcome than never having split.
+
+    It is also the cheap shape: a subagent's context dies when it returns, so everything it read — the 400 KB log, the screenshot, the whole vendored file — never reaches the coordinator's context, where it would otherwise be re-sent on every later request for the rest of the run.
 
 ## Examples
 
@@ -657,19 +661,16 @@ iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
 included.** Run these two, from any directory:
 
 ```bash
-grep -m1 '^version:' ~/.claude/skills/iterate/SKILL.md   # the family version
+grep -m1 '^version:' ~/.agents/skills/iterate/SKILL.md   # the family version
 iterate-run version                                      # the binary
 ```
 
-The path is the Claude-side file on purpose: `skillctl` stamps the family
-number there, and the Codex ports are generated from it without the field.
-
-**Never quote a `version:` from the skill body you already have in context.**
-A session loads a skill body once and keeps it, so after a bump and reinstall
-the copy in context is stale — and reporting its number is precisely the
-memory recall this rule already forbids for the binary. Confirmed live: a
-session answered `iterate family 5.4.0` ten minutes after 5.5.0 was installed
-and verified on disk.
+**Never quote the `version:` in the skill body you already have in context.**
+A session loads a skill body once and keeps it, so after a `skillctl family
+iterate set` and reinstall, the copy in context is stale — and reporting its
+number is precisely the memory recall this rule already forbids for the
+binary. Confirmed live: a session answered `iterate family 5.4.0` ten minutes
+after 5.5.0 was installed and verified on disk.
 
 If members disagree, say so and name them: drift inside the family is a
 defect, not a state, and `skillctl family iterate set X.Y.Z` is the only
