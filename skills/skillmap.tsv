@@ -131,7 +131,15 @@ pause	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/oper
 pdf2name	userglobal	self	-
 pipelinelogs	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/pipelinelogs	-
 prd-generator	-	~/workspace/gravhl/GROUPS/backend/extra/design/.claude/skills/prd-generator	-
+product	userglobal	self	product
+product-architecture	userglobal	self	product
+product-brief	userglobal	self	product
 product-competitors	userglobal,imarketing	self	product
+product-engineering	userglobal	self	product
+product-features	userglobal	self	product
+product-prd	userglobal	self	product
+product-requirements	userglobal	self	product
+product-roadmap	userglobal	self	product
 production-process-ai	-	~/workspace/izuma/fintool/.claude/skills/production-process-ai	-
 profile-tools	userglobal	self	-
 promote-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/promote-dead-letter	-
