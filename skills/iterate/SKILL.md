@@ -3,7 +3,7 @@ name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: "<task + how to validate> | <plan> | pause [<plan>] | resume [<plan>] | version"
 disable-model-invocation: true
-version: 5.5.0
+version: 5.5.1
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -32,7 +32,7 @@ Two separate timestamps, don't conflate them: `Started:` is when the plan was **
 
 Resolve in this order:
 
-0. **`$1` is exactly "version"** (or "what version", "iterate version"): print the family version from this skill's own frontmatter, then run `iterate-run version` and print its output verbatim — real installed binary, not a memory recall, works from any directory. Every iterate skill answers `version` identically because the family shares one number; `skillctl family iterate` shows the members and flags drift. If not found, report "iterate-run isn't installed — run `make install` in claudecodetricks." Then **stop**, no plan involved.
+0. **`$1` is exactly "version"** (or "what version", "iterate version"): read the family version off DISK with `grep -m1 '^version:` `~/.claude/skills/iterate/SKILL.md'` — never from this skill's own frontmatter as you have it in context, which goes stale the moment the family is bumped and reinstalled while this session is open (confirmed live: a session answered `iterate family 5.4.0` ten minutes after 5.5.0 was installed). Then run `iterate-run version` and print its output verbatim — real installed binary, not a memory recall, works from any directory. Every iterate skill answers `version` identically because the family shares one number; `skillctl family iterate` shows the members and flags drift. If not found, report "iterate-run isn't installed — run `make install` in claudecodetricks." Then **stop**, no plan involved.
 0.2. **`$1` starts with `pause` or `resume`** (optionally followed by a plan
 name): an operator verb, not a launch — no keyword gate, no schedule, no picker.
 Resolve the plan the way rule 1 does (the name if given, else `current`, else
