@@ -92,3 +92,4 @@
 {"ts": "2026-09-16T15:02:36Z", "id": "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured", "ms": 721, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-09-16T15:02:36Z", "id": "iterrun.TestHumanTokensStaysExactWherePrecisionMatters", "ms": 703, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-09-16T15:02:36Z", "id": "iterrun.TestPrintPlanTokensSaysSoWhenThereIsNoData", "ms": 728, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-16T15:07:42Z", "id": "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn", "ms": 1342, "result": "pass", "tier": "fast", "runner": "go test"}

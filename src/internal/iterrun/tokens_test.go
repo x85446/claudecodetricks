@@ -622,3 +622,31 @@ func TestPrintPlanTokensSaysSoWhenThereIsNoData(t *testing.T) {
 		}
 	}
 }
+
+// TESTMASTER: id=tokens-lane-label-trim tier=fast parallel=yes
+//
+// Most lanes are short team names, but a plain Agent-tool dispatch is
+// labelled with its own description, which is a sentence. Seen live on
+// newcorder's xenops: "Map profile editor for Destination control" broke
+// the CLI table's column alignment outright.
+func TestLongLaneLabelsAreTrimmedToFitAColumn(t *testing.T) {
+	cases := []struct {
+		in, want string
+	}{
+		{"coordinator", "coordinator"},
+		{"notes-core", "notes-core"},
+		{"Map profile editor for Destination control", "Map profile editor for…"},
+		{"Map History tab and tab dispatch", "Map History tab and tab…"},
+		// No usable word boundary early enough: a hard cut.
+		{strings.Repeat("x", 40), strings.Repeat("x", 25) + "…"},
+	}
+	for _, c := range cases {
+		got := laneLabel(c.in)
+		if got != c.want {
+			t.Errorf("laneLabel(%q) = %q, want %q", c.in, got, c.want)
+		}
+		if len([]rune(got)) > 26 {
+			t.Errorf("laneLabel(%q) = %q, %d runes — wider than the column", c.in, got, len([]rune(got)))
+		}
+	}
+}

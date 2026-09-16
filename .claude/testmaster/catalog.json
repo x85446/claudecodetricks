@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-16T15:04:55Z",
+ "updated": "2026-09-16T15:07:42Z",
  "project": "claudecodetricks",
  "requirements": [
   {
@@ -999,6 +999,15 @@
      "test": "TestPrintPlanTokensSaysSoWhenThereIsNoData",
      "covers": [
       "src/internal/iterrun/tokens.go",
+      "src/internal/iterrun/tokens_html.go"
+     ],
+     "covers_source": "coverage",
+     "validity": "valid"
+    },
+    {
+     "id": "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn",
+     "test": "TestLongLaneLabelsAreTrimmedToFitAColumn",
+     "covers": [
       "src/internal/iterrun/tokens_html.go"
      ],
      "covers_source": "coverage",
