@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "updated": "2026-09-15T19:34:06Z",
+ "updated": "2026-09-16T15:04:55Z",
  "tests": {
   "git.TestScreenPath": {
    "name": "TestScreenPath",
@@ -925,6 +925,210 @@
    "last_ms": 1950,
    "last_result": "pass",
    "updated": "2026-09-15T19:34:06Z"
+  },
+  "iterrun.TestTranscriptDedupeKeepsTheFinalStreamingWrite": {
+   "name": "TestTranscriptDedupeKeepsTheFinalStreamingWrite",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestTranscriptDedupeKeepsTheFinalStreamingWrite$'",
+   "runs": 1,
+   "avg_ms": 1826,
+   "tier": "fast",
+   "last_ms": 1826,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestSyntheticZeroUsageRecordsAreNotCountedAsRequests": {
+   "name": "TestSyntheticZeroUsageRecordsAreNotCountedAsRequests",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestSyntheticZeroUsageRecordsAreNotCountedAsRequests$'",
+   "runs": 1,
+   "avg_ms": 770,
+   "tier": "fast",
+   "last_ms": 770,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestPromptTickClassifiesEveryRealWakeupShape": {
+   "name": "TestPromptTickClassifiesEveryRealWakeupShape",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestPromptTickClassifiesEveryRealWakeupShape$'",
+   "runs": 1,
+   "avg_ms": 688,
+   "tier": "fast",
+   "last_ms": 688,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam": {
+   "name": "TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam$'",
+   "runs": 1,
+   "avg_ms": 721,
+   "tier": "fast",
+   "last_ms": 721,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestRedispatchedTeamsShareOneLane": {
+   "name": "TestRedispatchedTeamsShareOneLane",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestRedispatchedTeamsShareOneLane$'",
+   "runs": 1,
+   "avg_ms": 710,
+   "tier": "fast",
+   "last_ms": 710,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestPlanTokenUsageExcludesSpendOutsideTheRunWindow": {
+   "name": "TestPlanTokenUsageExcludesSpendOutsideTheRunWindow",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestPlanTokenUsageExcludesSpendOutsideTheRunWindow$'",
+   "runs": 1,
+   "avg_ms": 710,
+   "tier": "fast",
+   "last_ms": 710,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject": {
+   "name": "TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject$'",
+   "runs": 1,
+   "avg_ms": 937,
+   "tier": "fast",
+   "last_ms": 937,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestToolAttributionChargesGrowthToTheCallThatCausedIt": {
+   "name": "TestToolAttributionChargesGrowthToTheCallThatCausedIt",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestToolAttributionChargesGrowthToTheCallThatCausedIt$'",
+   "runs": 1,
+   "avg_ms": 964,
+   "tier": "fast",
+   "last_ms": 964,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestParallelCallsSplitTheirSharedContextGrowth": {
+   "name": "TestParallelCallsSplitTheirSharedContextGrowth",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestParallelCallsSplitTheirSharedContextGrowth$'",
+   "runs": 1,
+   "avg_ms": 1391,
+   "tier": "fast",
+   "last_ms": 1391,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestTickGroupsSeparateCoalescedFiringsFromIdleOnes": {
+   "name": "TestTickGroupsSeparateCoalescedFiringsFromIdleOnes",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestTickGroupsSeparateCoalescedFiringsFromIdleOnes$'",
+   "runs": 1,
+   "avg_ms": 949,
+   "tier": "fast",
+   "last_ms": 949,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect": {
+   "name": "TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect$'",
+   "runs": 1,
+   "avg_ms": 694,
+   "tier": "fast",
+   "last_ms": 694,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestATornFinalLineIsPickedUpOnceItIsComplete": {
+   "name": "TestATornFinalLineIsPickedUpOnceItIsComplete",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestATornFinalLineIsPickedUpOnceItIsComplete$'",
+   "runs": 1,
+   "avg_ms": 706,
+   "tier": "fast",
+   "last_ms": 706,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestALaneWithNoTranscriptIsReportedNotZeroed": {
+   "name": "TestALaneWithNoTranscriptIsReportedNotZeroed",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestALaneWithNoTranscriptIsReportedNotZeroed$'",
+   "runs": 1,
+   "avg_ms": 782,
+   "tier": "fast",
+   "last_ms": 782,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestTokenPanelRendersLanesToolsAndWakeups": {
+   "name": "TestTokenPanelRendersLanesToolsAndWakeups",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestTokenPanelRendersLanesToolsAndWakeups$'",
+   "runs": 1,
+   "avg_ms": 698,
+   "tier": "fast",
+   "last_ms": 698,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured": {
+   "name": "TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestTokenPanelIsOmittedWhenThereIsNothingMeasured$'",
+   "runs": 1,
+   "avg_ms": 721,
+   "tier": "fast",
+   "last_ms": 721,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestHumanTokensStaysExactWherePrecisionMatters": {
+   "name": "TestHumanTokensStaysExactWherePrecisionMatters",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestHumanTokensStaysExactWherePrecisionMatters$'",
+   "runs": 1,
+   "avg_ms": 703,
+   "tier": "fast",
+   "last_ms": 703,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
+  },
+  "iterrun.TestPrintPlanTokensSaysSoWhenThereIsNoData": {
+   "name": "TestPrintPlanTokensSaysSoWhenThereIsNoData",
+   "file": "src/internal/iterrun/tokens_test.go",
+   "pkg": "./src/internal/iterrun",
+   "cmd": "go test ./src/internal/iterrun -run '^TestPrintPlanTokensSaysSoWhenThereIsNoData$'",
+   "runs": 1,
+   "avg_ms": 728,
+   "tier": "fast",
+   "last_ms": 728,
+   "last_result": "pass",
+   "updated": "2026-09-16T15:04:55Z"
   }
  }
 }

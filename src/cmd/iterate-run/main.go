@@ -31,6 +31,8 @@ func main() {
 		hookCmd(os.Args[2:])
 	case "timeline", "graph":
 		timelineCmd(os.Args[2:])
+	case "tokens":
+		tokensCmd(os.Args[2:])
 	case "serve":
 		serveCmd(os.Args[2:])
 	case "purge":
@@ -53,6 +55,7 @@ Usage:
   iterate-run status
   iterate-run hook pre|post          (wired into PreToolUse/PostToolUse in settings.json, not run by hand)
   iterate-run timeline [--plan <name>] [--home <dir>] [scan-dir...]
+  iterate-run tokens [--plan <name>]  (token spend by lane, tool and wake-up; defaults to this project's current plan)
   iterate-run serve [--port N]       (dashboard at http://localhost:N, default 8420; --port 0 picks an ephemeral port and prints it; GET /healthz for a liveness check)
   iterate-run purge --plan <name> | --all-completed [--yes] [--force]
   iterate-run name next               (claims the next global, alphabetically-ordered plan codename)
@@ -247,6 +250,66 @@ func runCmd(args []string) {
 	if err := iterrun.Run(opts); err != nil {
 		os.Exit(1)
 	}
+}
+
+// tokensCmd reports token spend for one plan. Defaults to the project's
+// current plan so the common case is a bare `iterate-run tokens`, and
+// follows a finished plan into the archive for the same reason the
+// dashboard's /plan route does: a bare name means "show me this plan",
+// whether or not it has been archived yet.
+func tokensCmd(args []string) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		os.Exit(1)
+	}
+	registerCWD()
+
+	var plan string
+	i := 0
+	for i < len(args) {
+		switch args[i] {
+		case "--plan":
+			i++
+			if i >= len(args) {
+				fmt.Fprintln(os.Stderr, "iterate-run: --plan needs a name")
+				os.Exit(2)
+			}
+			plan = args[i]
+		default:
+			fmt.Fprintf(os.Stderr, "iterate-run: unknown flag %q\n", args[i])
+			usage()
+			os.Exit(2)
+		}
+		i++
+	}
+	if plan == "" {
+		plan = iterrun.CurrentPlanName(cwd)
+	}
+	if plan == "" {
+		fmt.Fprintln(os.Stderr, "iterate-run: no current plan here — pass --plan <name>")
+		os.Exit(2)
+	}
+
+	summary, err := iterrun.GetPlanSummary(cwd, plan)
+	if err != nil {
+		summary = iterrun.PlanSummary{Name: plan, ProjectDir: cwd}
+		if archived, aerr := iterrun.ListArchivedPlans(cwd); aerr == nil {
+			for _, a := range archived {
+				if a.Name == plan && a.ArchiveFile > summary.ArchiveFile {
+					summary = a
+				}
+			}
+		}
+	}
+
+	events, err := iterrun.ReadEvents()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		os.Exit(1)
+	}
+	labels, _ := iterrun.ReadLabels()
+	iterrun.PrintPlanTokens(os.Stdout, iterrun.PlanTokenUsage(summary, events, labels))
 }
 
 func statusCmd(_ []string) {

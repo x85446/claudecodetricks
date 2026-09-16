@@ -449,13 +449,16 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 	}
 	planStarted, _ := plan.EffectiveStart()
 
+	var tokens *PlanTokens
 	if events, err := ReadEvents(); err == nil {
 		labels, _ := ReadLabels()
 		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, name, proj, planStarted))
+		pt := PlanTokenUsage(plan, events, labels)
+		tokens = &pt
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(RenderTimelineHTML(rows, plan, "/")))
+	_, _ = w.Write([]byte(RenderTimelineHTMLWithTokens(rows, plan, "/", tokens)))
 }
 
 // handleArchive is handlePlan's counterpart for a finished/given-up run —
@@ -485,13 +488,16 @@ func handleArchive(w http.ResponseWriter, r *http.Request) {
 	}
 
 	planStarted, _ := plan.EffectiveStart()
+	var tokens *PlanTokens
 	if events, err := ReadEvents(); err == nil {
 		labels, _ := ReadLabels()
 		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, plan.Name, proj, planStarted))
+		pt := PlanTokenUsage(plan, events, labels)
+		tokens = &pt
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(RenderTimelineHTML(rows, plan, "/")))
+	_, _ = w.Write([]byte(RenderTimelineHTMLWithTokens(rows, plan, "/", tokens)))
 }
 
 func dashboardHead(title string) string {

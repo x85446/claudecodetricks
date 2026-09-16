@@ -1047,6 +1047,16 @@ func planMetaLine(plan PlanSummary) string {
 // so it's equally usable for iterate-run timeline's file output and the
 // dashboard server's inline HTTP responses.
 func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
+	return RenderTimelineHTMLWithTokens(rows, plan, homeURL, nil)
+}
+
+// RenderTimelineHTMLWithTokens is RenderTimelineHTML plus the token-spend
+// panel. Split rather than folded into one signature because the timeline
+// is renderable from the filesystem alone, while tokens need session
+// transcripts that may not exist — a plan from before this data was kept,
+// or one whose teams ran on another machine. A nil *PlanTokens renders
+// exactly the page that shipped before.
+func RenderTimelineHTMLWithTokens(rows []Row, plan PlanSummary, homeURL string, tokens *PlanTokens) string {
 	planName := plan.Name
 	title := "iterate-run timeline"
 	if planName != "" {
@@ -1286,6 +1296,8 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 		}
 		b.WriteString(`</div>`)
 	}
+
+	writeTokenPanel(&b, tokens)
 
 	b.WriteString(`<footer>Built from what's already on disk — each team's own log file plus any iterate-run-wrapped unit's registry timestamps, merged with hook-derived tool-call data wherever it's been captured.</footer>`)
 	writeNoteModal(&b)
@@ -1781,6 +1793,10 @@ func statusPill(status string, hasActivity bool) (class, label string) {
 }
 
 func timelineHead(title string) string {
+	return timelineHeadCSS(title) + tokenPanelCSS + timelineHeadTail()
+}
+
+func timelineHeadCSS(title string) string {
 	return `<!doctype html><html><head><meta charset="utf-8"><title>` + html.EscapeString(title) + `</title><style>
 :root{
   --bg:#f7f4ef; --surface:#fff; --surface-2:#fbf9f5; --border:#e4ddd0;
@@ -1925,7 +1941,11 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .gap-item .dur{font-weight:700;color:var(--danger)}
 .gap-item .ctx{color:var(--text-dim);font-size:12px}
 footer{margin-top:32px;font-size:11.5px;color:var(--text-faint);border-top:1px solid var(--border);padding-top:14px}
-</style></head><body><div>
+`
+}
+
+func timelineHeadTail() string {
+	return `</style></head><body><div>
 `
 }
 
