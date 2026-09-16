@@ -3,7 +3,7 @@ name: iterate-planner
 description: "The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it — planning stays on your current branch, so the status line reads main until execution starts; plans are teamed by default and end with three standing finishers (Makefile, TESTMASTER, product-docs). Plans are saved and animal-named under ./.claude/iterate/plans/. Never executes — the user runs /iterate for that."
 when_to_use: "Triggers on \"/iterate-planner\" or its alias \"/ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\" (git + plans snapshot), \"publish\" / \"show plan\" (re-render read-only), \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch left unmerged), \"roll <name>\" (carry unfinished steps to a new plan, same branch), \"turn these notes into a plan\" / \"notes-to-plan\". Teaming: \"team this\", \"teamify\", \"team up the plan\", \"reorganize into teams\"; reverse with \"flat\", \"flatify\", \"un-team\", \"remove teams\". Also recognizes the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps over a named scope, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip the pre-baked steps\", \"skip tests/docs/makefile\") which suppresses the standing end-of-plan finishers for that plan."
 argument-hint: "<optional context, e.g. \"restate the plan from above\", \"plan: 1. do X, 2. validate Y\", or \"flat\" / \"flatify\" to un-team the current plan>"
-version: 5.4.0
+version: 5.5.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -57,11 +57,11 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 
 ```markdown
 ## Teams
-| Team | Steps | Focus | Depends on | Agent | Status |
-|---|---|---|---|---|---|
-| code | 1,2,4 | Backend service changes | — | backend-expert | pending |
-| database | 3,5 | Schema migration + data backfill | — | backend-expert | pending |
-| docs | 6 | Update README | code | documentation-expert | pending |
+| Team | Steps | Focus | Depends on | Agent | Model | Status |
+|---|---|---|---|---|---|---|
+| code | 1,2,4 | Backend service changes | — | backend-expert | opus | pending |
+| database | 3,5 | Schema migration + data backfill | — | backend-expert | opus | pending |
+| docs | 6 | Update README | code | documentation-expert | sonnet | pending |
 ```
 
 - **Team** — short kebab-case name, inferred from the plan's actual content (no fixed vocabulary — could be `code`/`database`/`infra`/`docs`/`frontend`/`tests`/whatever the plan naturally divides into).
@@ -69,6 +69,7 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 - **Focus** — one line, what makes these steps a coherent unit.
 - **Depends on** — other team name(s) that must be `status: done` before this team can start, or `—` for none. Infer from real ordering constraints (e.g. a migration must land before code that reads the new column), not from step number order alone.
 - **Agent** — suggested Agent-tool `subagent_type` for `/iterate` to dispatch this team to (`backend-expert`, `frontend-engineer`, `documentation-expert`, `operations-engineer`, `quality-engineer`, `architecture-expert`, or `general-purpose` as the default when nothing fits better).
+- **Model** — the model tier this team's work needs, as a bare alias: `opus` for building, `sonnet` for reading and reporting, `haiku` for mechanical extraction. `/iterate` passes this cell straight through as the dispatch's `model`. Rule 30 holds the full mapping and is the only place it lives.
 - **Status** — always written as `pending` by teamify/auto-classify. This is the one cell `/iterate` updates as it runs (`pending` → `in-progress` → `done` / `blocked (<reason>)`) — see below.
 - **Unassigned steps** (steps not listed under any team) are executed directly by the `/iterate` coordinator itself, serially, same as an un-teamed plan — never forced into a bad-fit team.
 
@@ -508,11 +509,11 @@ If the plan is teamed (`teamed: true`), insert the Teams table between Constrain
 
 ```
 **Teams** (run in parallel at /iterate time where independent):
-| Team | Steps | Focus | Depends on | Agent | Status |
-|---|---|---|---|---|---|
-| code | 1,2,4 | Backend service changes | — | backend-expert | pending |
-| database | 3,5 | Schema migration + data backfill | — | backend-expert | pending |
-| docs | 6 | Update README | code | documentation-expert | pending |
+| Team | Steps | Focus | Depends on | Agent | Model | Status |
+|---|---|---|---|---|---|---|
+| code | 1,2,4 | Backend service changes | — | backend-expert | opus | pending |
+| database | 3,5 | Schema migration + data backfill | — | backend-expert | opus | pending |
+| docs | 6 | Update README | code | documentation-expert | sonnet | pending |
 ```
 
 ### 8. Handle refinements
@@ -588,6 +589,23 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 28. **Free and permissive by default — a paid service or a copyleft dependency is the user's decision, never the plan's assumption.** Name the free/permissive equivalent, say what the alternative does that it can't, and say whether the obligation actually attaches (linking vs. running a container); if it still wins, route it through a `human-gate` step or `/ibs` with those three answers attached. Emit `License:` and `Cost:` constraints for everything a plan adopts. See "The free-and-permissive default" above.
 
 29. **Write Steps and Validation as checkboxes — `- [ ] N. <text>` — in the plan FILE.** The file is a state machine, and the checkbox is the only place in it where progress can live: `/iterate` checks a step off when its validation passes, and `/iterate-triage`, the conductor and the dashboard all read those boxes to answer "where is this plan". A plain `N.` list gives them nowhere to look, which is why a parallel prose channel (`Status / Log` "step N done:") had to exist at all. This is the FILE format only — the chat reprint stays paired `1a`/`1b` (see "Output format" above), and the two are not in tension: one is state, the other is presentation. Confirmed live: two writers of this same file disagreed on this line for months, leaving 31 of 136 plan files with no Requirements row on the dashboard and 8 more showing only some of their steps.
+
+30. **Every team carries a model tier, picked from the work it does — never from how important the work feels.** Write it in the Teams table's `Model` column. This is the only place the mapping lives; `/iterate` reads the cell and passes it through at dispatch, so it never has to know the mapping and the two can never disagree.
+
+    | `Model` cell | the work it is for |
+    |---|---|
+    | `fable` | **Coordination only** — plan-level judgment, merging a team's log, deciding what "done" means, choosing a different approach after a blocker. This is the orchestrator's own tier, not a team's; see the note below. |
+    | `opus` | **Building** — writing and changing code, schema and migration work, anything where being wrong costs a debugging session rather than a re-read. |
+    | `sonnet` | **Reading and reporting** — research, documentation, parsing tool output, triaging a log, summarising a suite run, extracting an answer from a file or a screenshot. |
+    | `haiku` | **Mechanical extraction** with a fixed output shape and an obvious right answer. |
+
+    Use the **alias**, not a pinned id. `fable`/`opus`/`sonnet`/`haiku` track the newest model in each family, so a model release does not mean editing twelve skills — which is exactly the drift this family exists to avoid. Pin a full id (`claude-fable-5-1`, or a `[1m]` suffix for the 1M-context variant) only when one plan genuinely needs one specific model, and say in the row's Focus why.
+
+    **The orchestrator's own model is not settable from here.** A skill cannot change the model of the session running it. `fable` is a recommendation to the operator — start the session on it before `/iterate` — and the plan records it, nothing more. Do not write a step that claims to switch the coordinator's model; it cannot.
+
+31. **A team is one tightly-defined task with a named deliverable, not a topic.** "Parse the failing suite output and report which cases regressed, as a list of case ids" is a team. "Help with testing" is not. Narrowness is what makes the tier assignment meaningful in the first place — a vague team drifts into work its tier was not chosen for, and a `sonnet` team asked to refactor is a worse outcome than never having split.
+
+    It is also the cheap shape: a subagent's context dies when it returns, so everything it read — the 400 KB log, the screenshot, the whole vendored file — never reaches the coordinator's context, where it would otherwise be re-sent on every later request for the rest of the run.
 
 ## Examples
 
