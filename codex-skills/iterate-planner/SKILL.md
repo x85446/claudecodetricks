@@ -7,7 +7,7 @@ description: "Never executes — the user runs $iterate for that. Triggers on \"
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
 
-**Version:** iterate family 5.3.0
+**Version:** iterate family 5.4.0
 
 ## What this skill does
 
@@ -420,13 +420,13 @@ human-gate: <step N>           # only when Step 5.5 found a terminal human-decis
 <one sentence>
 
 ## Steps
-1. <task>
-2. <task>
+- [ ] 1. <task>
+- [ ] 2. <task>
 ...
 
 ## Validation
-1. <how to verify step 1 — concrete, runnable assertion, including interactive checks where required>
-2. <how to verify step 2>
+- [ ] 1. <how to verify step 1 — concrete, runnable assertion, including interactive checks where required>
+- [ ] 2. <how to verify step 2>
 ...
 
 ## Constraints
@@ -621,11 +621,13 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 27.5. **Every plan carries the three standing finishers — dev-makefiles, then TESTMASTER, then product-docs — as its last agent steps.** Appended automatically at creation (Step 5.8), never waiting for the user to ask: a `$dev-makefiles` maintenance pass (targets for everything the plan made buildable/runnable/testable; dead targets removed), a fast+standard `$testmaster` pass, then a `$product-docs` sync. Refinement adds insert before them; only a human-gate follows them; the slow test tier never runs mid-plan. The docs finisher may be dropped for projects with no end-user product, and **any or all three are suppressed when the request carries the `skip` modifier** (Step 5.8) — `skip` parses in any position, scopes to `makefile`/`tests`/`docs` or all three, removes them from a plan that already has them, and requires one `finisher skipped by explicit request: <which>` audit line each. Absent `skip`, all three are automatic and never wait for the user to ask.
 27.6. **Every plan is scanned for testable requirements, and the user's own words become the test cases.** Step 5.9 runs on every plan: behavioral statements go to `$testmaster-derive`, whose derived cases (negative, every-path, restore-state, interrupted) land in the plan's validations and in the catalog. A stated behavior that ships with no case for it is the gap this closes — and an `AMBIGUOUS` case is resolved by the planner as a logged `Decision:` constraint, never bounced back as a question.
 27.7. **A nonzero `could effect` always FFIVs.** If `$testmaster-catalog impact` says this plan can put existing cases into drift, the plan carries the step that sweeps them (Step 7's testmaster block) — never merely reports the number. The sweep targets the *derived* drifted set after execution, not the predicted count. An `unknown` count (unadopted project, no `covers` recorded) is treated as nonzero: it means the blast radius is unmeasured, not empty, and the plan gets a `$testmaster-adopt` step before the sweep.
+28. **Free and permissive by default — a paid service or a copyleft dependency is the user's decision, never the plan's assumption.** Name the free/permissive equivalent, say what the alternative does that it can't, and say whether the obligation actually attaches (linking vs. running a container); if it still wins, route it through a `human-gate` step or `$ibs` with those three answers attached. Emit `License:` and `Cost:` constraints for everything a plan adopts. See "The free-and-permissive default" above.
+
+29. **Write Steps and Validation as checkboxes — `- [ ] N. <text>` — in the plan FILE.** The file is a state machine, and the checkbox is the only place in it where progress can live: `$iterate` checks a step off when its validation passes, and `$iterate-triage`, the conductor and the dashboard all read those boxes to answer "where is this plan". A plain `N.` list gives them nowhere to look, which is why a parallel prose channel (`Status / Log` "step N done:") had to exist at all. This is the FILE format only — the chat reprint stays paired `1a`/`1b` (see "Output format" above), and the two are not in tension: one is state, the other is presentation.
+
 ## Examples
 
 Two full worked examples (a plain restate-the-plan run with oracle merge, and a teamify + rapid-fire-adds streak) live in [examples.md](references/examples.md) — load that file when you need to see the exact output shape end to end, e.g. building a similar plan-writing skill from this one as a template, or checking an edge case in the operation router / auto-classify / rapid-fire terse-mode logic against a concrete run.
-28. **Free and permissive by default — a paid service or a copyleft dependency is the user's decision, never the plan's assumption.** Name the free/permissive equivalent, say what the alternative does that it can't, and say whether the obligation actually attaches (linking vs. running a container); if it still wins, route it through a `human-gate` step or `$ibs` with those three answers attached. Emit `License:` and `Cost:` constraints for everything a plan adopts. See "The free-and-permissive default" above.
-
 ## `version`
 
 `version` (or "what version") on **any** iterate skill reports the same thing —

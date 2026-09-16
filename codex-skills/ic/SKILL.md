@@ -6,7 +6,7 @@ description: "Alias for $iterate-conductor. Typing $ic <anything> behaves exactl
 
 # $ic — alias for $iterate-conductor
 
-**Version:** iterate family 5.3.0
+**Version:** iterate family 5.4.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
