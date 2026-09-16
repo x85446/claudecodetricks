@@ -93,3 +93,10 @@
 {"ts": "2026-09-16T15:02:36Z", "id": "iterrun.TestHumanTokensStaysExactWherePrecisionMatters", "ms": 703, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-09-16T15:02:36Z", "id": "iterrun.TestPrintPlanTokensSaysSoWhenThereIsNoData", "ms": 728, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-09-16T15:07:42Z", "id": "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn", "ms": 1342, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-16T16:06:50Z", "id": "iterrun.TestParsePlanItemReadsEveryFormatTheFamilyWrites", "ms": 1374, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-16T16:06:50Z", "id": "iterrun.TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet", "ms": 791, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-16T16:06:50Z", "id": "iterrun.TestABoxedUnteamedPlanStillGetsItsRequirements", "ms": 714, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-16T16:06:50Z", "id": "iterrun.TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem", "ms": 745, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-16T16:06:50Z", "id": "iterrun.TestAnExplicitStatusLogMarkOverridesTheCheckbox", "ms": 732, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-16T16:06:50Z", "id": "iterrun.TestPlainFormatPlansAreUnaffected", "ms": 754, "result": "pass", "tier": "fast", "runner": "go test"}
+{"ts": "2026-09-16T16:06:50Z", "id": "iterrun.TestUnteamedPlanOmitsTheEmptyTeamSection", "ms": 751, "result": "pass", "tier": "fast", "runner": "go test"}
