@@ -109,6 +109,9 @@ THE SYSTEM SHALL return results within 500ms at p95 for catalogs up to 100k item
 
 ## Open questions
 - [NEEDS CLARIFICATION] <question>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
 ```
 
 ## Rules

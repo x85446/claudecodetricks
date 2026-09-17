@@ -68,6 +68,9 @@ A story map, not a list. The structure is the work: features hung under the user
 
 ## Open questions
 - [NEEDS CLARIFICATION] <question>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
 ```
 
 Brownfield adds a `Status` column: `built` · `partial` · `none`.
@@ -88,7 +91,7 @@ Brownfield adds a `Status` column: `built` · `partial` · `none`.
 1. **The backbone is user activity, in chronological order.** Not modules, not teams, not screens. A backbone that mirrors the system architecture has stopped being a story map.
 2. **Every feature gets a stable `F-NN`.** Stage 5 traces requirements to these ids and stage 4 slices on them. Never renumber; retired ids are never reused.
 3. **No implementation.** "Export to CSV" is a feature; "CSV writer with streaming encoder" is stage 7's problem.
-4. **Every feature cites its source** — a PRD capability, a landscape finding, or a persona pain. A feature nobody asked for is a finding: name it and ask.
+4. **Every feature cites its source** — a PRD capability, a `CF-NN`, or a persona pain. A feature nobody asked for is a finding: name it and ask — as a choice (keep / cut / defer), not a paragraph.
 5. **Table stakes are all Must**, by definition — and "table stakes" means a `table-stakes` row in `competitive_features.md`, computed from competitor coverage, not a phrase from the prose. If one isn't `Must`, either the matrix is wrong (re-crawl) or we've chosen not to compete — and that belongs in the PRD's non-goals, not quietly in this table.
 6. **Do not draw release lines here.** Vertical priority is this stage; horizontal release slices are stage 4.
 7. **Report an over-full Must column** rather than recording it silently.

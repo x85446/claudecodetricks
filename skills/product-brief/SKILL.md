@@ -51,6 +51,9 @@ A PRFAQ written as though the product already shipped. Amazon's rule is the whol
 
 ## Open questions
 - [NEEDS CLARIFICATION] <each internal FAQ you could not answer>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
 ```
 
 ## The verdict

@@ -208,6 +208,9 @@ The `product` family's stage-1 output. One page, written for whoever reads `docs
 
 ## Open questions
 - [NEEDS CLARIFICATION] <what research could not settle>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
 ```
 
 In matrix mode, `render` derives every cell from `v_comparison` rather than restating prose. Features tagged `roadmap-gap` are listed under "Where we lose today" and carried into `/product-roadmap`.
@@ -255,6 +258,9 @@ CF-04 — <which competitors are UNKNOWN, and the crawl that would settle it>
 
 ## Open questions
 - [NEEDS CLARIFICATION] <a capability whose definition competitors interpret so differently that one row can't hold it>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
 ```
 
 `CF-NN` ids are stable and never reused. `/product-features` cites them as the source of every table-stakes feature (`competitive_features:CF-01`), so a capability that changes class on a re-crawl is traceable forward to the feature it drove.
@@ -295,7 +301,7 @@ The three collateral formats are written by a writer agent reading the research 
 1. **Never exaggerate our advantages.** Objective evidence only.
 2. **Never downplay a competitor's strengths.** If they beat us, document it.
 3. **Always cite sources** — `source_url` and `researched_at` on every assessment.
-4. **Mark uncertainty.** `UNKNOWN` in matrix mode, `[NEEDS CLARIFICATION]` in document mode. Never guess.
+4. **Mark uncertainty — then go clear it.** `UNKNOWN` is a cell that needs a crawl, and this is the stage that crawls. A `[NEEDS RESEARCH]` is a to-do for *you*; it never leaves this stage. `[NEEDS CLARIFICATION]` is only for what the user alone can answer — which competitors matter to *them*, which tier, which market. "Research I owe; still open" is not a disposition this stage may emit: research is done, or its absence is cited with the sources checked and the date.
 5. **Include context.** "200+ integrations vs our 45 (2026-03)" beats "they win".
 6. **Separate fact from opinion.** Quantify where possible.
 7. **Set confidence.** `high` = official source, `medium` = inferred, `low` = secondhand.

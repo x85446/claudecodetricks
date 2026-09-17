@@ -70,6 +70,9 @@ Release lines drawn horizontally across the story map from stage 3. This is wher
 
 ## Open questions
 - [NEEDS CLARIFICATION] <question>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
 ```
 
 ## Rules

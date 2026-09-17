@@ -107,6 +107,9 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 ## Open questions
 - [NEEDS CLARIFICATION] <question>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
 ```
 
 ## Rules

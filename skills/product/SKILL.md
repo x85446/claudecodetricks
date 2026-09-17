@@ -95,7 +95,15 @@ Set `in-progress`, invoke the child, let it write its document.
 
 Two rules the children inherit and the meta enforces:
 
-- **Never guess a fact you were not given.** Write `[NEEDS CLARIFICATION] <the question>` into the document and add it to the state file's list. An assumption that reads like a finding is the one failure that corrupts every downstream stage.
+- **Never guess a fact you were not given** — an assumption that reads like a finding is the one failure that corrupts every downstream stage. But an unknown has three dispositions, and only one of them is a question for the user:
+
+  | The unknown is… | Marker | Who clears it |
+  |---|---|---|
+  | Something a person with a browser could find out — a competitor's capability, a pricing tier, whether a product does X | `[NEEDS RESEARCH] <what to find>` | **The child, before its stage ends.** Go crawl, fetch, search. This marker is a to-do, not an output; it never reaches the gate. |
+  | Something only the user knows or decides — preference, scope, priority, budget, a business fact with no public source | `[NEEDS CLARIFICATION] <the question>` | The user, in Step 4.5. |
+  | Something nobody can know until the product or its data exists — "how does it perform on Melissa's real documents" | No marker. Write it under `## Deferred validations` as a planned check. | Stage 5 turns it into a requirement's acceptance criterion; stage 7 into a test. |
+
+  The test between the first two: *could I find this out myself if I tried?* If yes, it is research and you owe it. Research that genuinely comes up empty — site blocked, nothing public — becomes a **cited absence**: "Not publicly documented as of <date>; checked <sources>." That is a finding with a source, not a marker. On symude, "which reusable engines provide learned indexes" and "does enCodePlus connect cross-city research to AI drafting" were both research the child owed, filed as questions for the user and labelled "research I owe; still open" — the exact thing this table forbids.
 - **Stages 0–4 describe WHAT and WHY only.** No tech stack, no schema, no API shape, no library names. HOW begins at stage 6. A technology named in the PRD is a decision nobody made, smuggled past the architecture stage.
 
 ## Step 4 — Analyze before the gate
@@ -107,15 +115,16 @@ Every stage ends with a consistency pass over what now exists. Report it as a sh
 - **Orphans and dangling ids** — an `R-NN` naming a nonexistent `F-NN`, a feature in no release slice, a release slice with no features, a competitor claim with no source.
 - **Altitude violations** — HOW leaking into stages 0–4.
 - **Unresolved markers** — every `[NEEDS CLARIFICATION]` still open, named.
+- **Unfinished research** — any `[NEEDS RESEARCH]` still in the document. This is a defect in the child's work, not a question for the user: **re-enter the child's research on exactly those items** (one subagent per item, in parallel) and re-run analyze. Two passes without progress → write the cited absence and move on. The user never sees a `[NEEDS RESEARCH]`.
 
-Findings are fixed before the gate, not filed for later. Markers are not filed either — they are resolved, next.
+Findings are fixed before the gate, not filed for later. Markers are not filed either — research is done, clarifications are asked, next.
 
 ## Step 4.5 — Resolve every marker before the gate
 
 A `[NEEDS CLARIFICATION]` is a question the child could not answer. The user can. Ask them now, marker by marker, before anything is presented for approval — never fold the questions into the approval prompt, because "approve and continue" then silently approves the gaps too. That is exactly how markers survived stages 0–1 on symude.
 
 1. Collect every open marker in this stage's document (and any earlier document still carrying one).
-2. Ask with AskUserQuestion, up to four per call, each option set drawn from what the research actually turned up; "I don't know yet" is always an option.
+2. Ask with AskUserQuestion, up to four per call. **Choices, not essays**: every option set is drawn from what the research actually turned up, and `multiSelect: true` whenever the honest answer could be several things (which formats, which platforms, which categories). Free text is for answers that are genuinely a name, a number, or a sentence nobody could enumerate — and even then, offer the likely candidates and let "Other" carry the rest. "I don't know yet" is always an option. Never ask in prose what a question block could ask in options: a paragraph that ends "should we use UDCs, PRDs and SOPs?" is a three-checkbox question wearing a coat.
 3. Write each answer into the document at the marker's position, delete the marker, and tick the state-file line with the answer and date.
 4. "I don't know yet" keeps the marker and the state line open. It is a legitimate answer, and it is the only way a marker reaches the gate still open.
 
