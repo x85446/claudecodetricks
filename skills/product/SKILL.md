@@ -15,7 +15,7 @@ Eight documents, each earned from the one before it. The chain exists so that by
 | # | Stage | Child | Writes |
 |---|---|---|---|
 | 0 | Brief | `/product-brief` | `docs/brief.md` |
-| 1 | Competitors | `/product-competitors` | `docs/competitors.md` |
+| 1 | Competitors | `/product-competitors` | `docs/competitors.md` + `docs/competitive_features.md` |
 | 2 | PRD | `/product-prd` | `docs/prd.md` |
 | 3 | Features | `/product-features` | `docs/features.md` |
 | 4 | Roadmap | `/product-roadmap` | `docs/roadmap.md` |
@@ -68,11 +68,17 @@ started: <YYYY-MM-DD>
 | 7 | engineering | docs/engineering.md | pending | no | — |
 
 ## Open clarifications
-<one line per [NEEDS CLARIFICATION] marker anywhere in the docs, with its stage>
+- [ ] <stage> — <the question, verbatim from the marker>
+- [x] <stage> — <question> → <the answer, dated>
+
+## Stage notes
+<decisions and corrections the user gave mid-stage, dated, newest first>
 
 ## Drift log
 <maintain-mode findings, newest first>
 ```
+
+One line per marker, checkbox unchecked while it is open. The gate counts unchecked lines; prose here is not countable and does not exist as far as the gate is concerned.
 
 `status`: `pending` · `in-progress` · `done` · `blocked`. `locked`: `yes` once the user approves it, and a locked document is never rewritten without `/product unlock <stage>`.
 
@@ -102,13 +108,26 @@ Every stage ends with a consistency pass over what now exists. Report it as a sh
 - **Altitude violations** — HOW leaking into stages 0–4.
 - **Unresolved markers** — every `[NEEDS CLARIFICATION]` still open, named.
 
-Findings are fixed before the gate, not filed for later. The exception is a marker that genuinely needs the user — it goes to the gate as a question.
+Findings are fixed before the gate, not filed for later. Markers are not filed either — they are resolved, next.
+
+## Step 4.5 — Resolve every marker before the gate
+
+A `[NEEDS CLARIFICATION]` is a question the child could not answer. The user can. Ask them now, marker by marker, before anything is presented for approval — never fold the questions into the approval prompt, because "approve and continue" then silently approves the gaps too. That is exactly how markers survived stages 0–1 on symude.
+
+1. Collect every open marker in this stage's document (and any earlier document still carrying one).
+2. Ask with AskUserQuestion, up to four per call, each option set drawn from what the research actually turned up; "I don't know yet" is always an option.
+3. Write each answer into the document at the marker's position, delete the marker, and tick the state-file line with the answer and date.
+4. "I don't know yet" keeps the marker and the state line open. It is a legitimate answer, and it is the only way a marker reaches the gate still open.
+
+Only when this loop has run does the gate open.
 
 ## Step 5 — The gate
 
-**`gate: on` (default).** Present the document's headline content, the analyze block, and any open questions. Then ask for approval with AskUserQuestion: approve and continue · approve and stop · revise (say what) · skip this stage. On approval set `done` and `locked: yes`, stamp the date, and continue to the next stage — or stop if that is what they chose.
+**`gate: on` (default).** Present the document's headline content and the analyze block. Then ask for approval with AskUserQuestion: approve and continue · approve and stop · revise (say what) · skip this stage. On approval set `done` and `locked: yes`, stamp the date, and continue to the next stage — or stop if that is what they chose.
 
-**`gate: fast` (`--fast`).** Run the whole chain without stopping, then present all eight documents and every analyze block together. Set every completed stage `done` but `locked: no` — nothing the user has not seen gets locked.
+**Open markers block approval.** If the state file still has an unchecked clarification for this stage after Step 4.5, the approval options are not offered. Instead: list the open questions, and offer revise · ask me again · **approve with open questions** (override). The override is the only way through, it must be chosen explicitly, and it is recorded on the stage row as `override: N open` — a locked document with a known hole says so in the state table forever, and every later stage's analyze pass names the inherited marker. Nobody arrives at stage 5 surprised that stage 1 never settled who the competitors were.
+
+**`gate: fast` (`--fast`).** Run the whole chain without stopping, then present all eight documents and every analyze block together. Set every completed stage `done` but `locked: no` — nothing the user has not seen gets locked. Markers accumulate during the run; the final review runs Step 4.5 over all of them first, then gates each stage in order under the same open-marker rule.
 
 **`--fast` does not override a `kill`.** If stage 0 returns `kill`, stop there and report it even in fast mode. Running six more stages on an idea the brief just killed is precisely the waste stage 0 exists to prevent. A `needs-clarification` verdict stops fast mode too — it means the brief could not answer its own questions, and everything downstream would inherit the guesswork.
 
@@ -139,7 +158,7 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 
 1. **The meta never writes a stage document.** It routes, gates, and keeps state.
 2. **Order is the product, not bureaucracy.** Each stage consumes its predecessors; skipping one means the skipped reasoning is now an assumption, and the analyze pass will say so.
-3. **`[NEEDS CLARIFICATION]` over a plausible guess**, always.
+3. **`[NEEDS CLARIFICATION]` over a plausible guess**, always — and every marker is put to the user before the gate, one question each. Approval with a marker still open exists only as an explicit, recorded override.
 4. **A locked document needs an explicit unlock.** The user approved that text; do not quietly improve it.
 5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW.**
 6. **Traceability is enforced, not decorative.** Every requirement names its feature and its release. Orphans are reported as defects.
