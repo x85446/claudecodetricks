@@ -1,6 +1,6 @@
--- Feature Tracker Schema (additive — shares DB with competitive-intel)
+-- Feature Tracker Schema (additive — shares DB with product-competitors)
 -- DB Path: .claude/db/marketing.sqlite
--- Run AFTER competitive-intel schema.sql (reuses: our_products, tags)
+-- Run AFTER product-competitors schema.sql (reuses: our_products, tags)
 
 PRAGMA foreign_keys=ON;
 

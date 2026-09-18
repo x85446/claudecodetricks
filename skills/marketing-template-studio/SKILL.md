@@ -24,7 +24,7 @@ This skill is **conversational**. Each invocation does one turn:
    - **Hard stop.**
 
 3. **Check sample source exists:** Verify `products/device-management/one-pager.md` exists (the sample content source).
-   - If missing: "The device-management sample content is not present. Run `/product-discovery` for device-management first, or pick a different sample product."
+   - If missing: "The device-management sample content is not present. Run `/product-competitors discover` for device-management first, or pick a different sample product."
    - **Hard stop.**
 
 4. **Check tools:** `wkhtmltopdf`, `pdfinfo`, `pdftoppm` all available on PATH.

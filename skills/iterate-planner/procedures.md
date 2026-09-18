@@ -97,7 +97,7 @@ The user wants the unfinished work to continue as a fresh plan without losing th
 **Standing FFIV finding rules** — patterns every FFIV sweep hunts by default, beyond ad-hoc mistakes (append here as the user declares new ones):
 - **Settings informational text** → any informational/help/explainer text sitting inline in a settings screen is a finding; the standard fix is relocating it under an **(i)** info affordance (tooltip, popover, or expandable) so the setting's control stands alone and the explanation is one tap away.
 
-The four steps get normal treatment — skill tags, provenance (`You asked for FFIV over <scope>.` on all four), team classification (they usually stay one team or unassigned: each phase needs the previous phase's context). Findings fixed during the sweep feed `## Changelog draft` like any other change. FFIV never replaces the standing finishers (Step 5.8) — TESTMASTER and product-docs still run after it.
+The four steps get normal treatment — skill tags, provenance (`You asked for FFIV over <scope>.` on all four), team classification (they usually stay one team or unassigned: each phase needs the previous phase's context). Findings fixed during the sweep feed `## Changelog draft` like any other change. FFIV never replaces the standing finishers (Step 5.8) — TESTMASTER and user-docs still run after it.
 
 ## The testmaster block
 

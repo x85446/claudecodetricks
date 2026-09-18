@@ -72,7 +72,7 @@ declare -a SKIP_SKILLS=(skill-2-codex skill-builder skill-maker)
 # The iterate stack is deliberately absent: it is a peer pipeline (notes ->
 # brainstorm -> plan -> execute), not a meta with workers, and each stage is a
 # front door the user routes to by natural language.
-declare -a FOLD_CHILDREN_OF=(testmaster uxmaster codeconverter categorize importer downloader auditor)
+declare -a FOLD_CHILDREN_OF=(testmaster uxmaster product codeconverter categorize importer downloader auditor)
 
 EXT_CONF="$(dirname "$HERE")/external-sources.conf"
 ext_source_for() {

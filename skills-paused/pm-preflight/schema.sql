@@ -1,6 +1,6 @@
--- PM Skill System Schema (additive — shares DB with competitive-intel + feature-tracker)
+-- PM Skill System Schema (additive — shares DB with product-competitors + feature-tracker)
 -- DB Path: .claude/db/marketing.sqlite
--- Run AFTER competitive-intel schema.sql (reuses: our_products, tags)
+-- Run AFTER product-competitors schema.sql (reuses: our_products, tags)
 -- Run AFTER feature-tracker schema.sql (extends: product_features, product_feature_tests)
 
 PRAGMA foreign_keys=ON;
