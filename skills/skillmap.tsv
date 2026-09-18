@@ -106,6 +106,7 @@ incus	userglobal	self	-
 infra-access	-	~/workspace/izuma/site-infra/.claude/skills/infra-access	-
 investigating-kilroy-runs	-	~/workspace/x85446/kilroy/skills/investigating-kilroy-runs	-
 ip	userglobal	self	iterate
+it	userglobal	self	iterate
 iterate	userglobal	self	iterate
 iterate-brainstorm	userglobal	self	iterate
 iterate-conductor	userglobal	self	iterate
