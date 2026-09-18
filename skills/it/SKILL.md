@@ -3,7 +3,7 @@ name: it
 description: Alias for /iterate-triage. Typing /it behaves exactly as /iterate-triage — walk up to a stale terminal and get one short answer naming only what is broken and the one act that clears each. Exists purely as a shorthand.
 argument-hint: (none — reads the project state)
 disable-model-invocation: true
-version: 5.5.1
+version: 5.6.0
 ---
 
 # /it — alias for /iterate-triage
