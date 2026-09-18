@@ -29,6 +29,7 @@ Argument: "<product> [init|discover <url>|add-competitor <name>|crawl <competito
 Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
 
 - `$product` — ported.
+- `$product-features` — ported.
 - `$product-roadmap` — ported.
 
 ## Invocation
@@ -45,7 +46,7 @@ $product-competitors <product> audit                    # Gaps, staleness, win/l
 $product-competitors <product> tag <tag> [filters]      # Tag rows for downstream use
 $product-competitors <product> matrix [filters]         # Show the matrix
 $product-competitors <product> categories               # Show/edit category hierarchy
-$product-competitors <product> render                   # Write docs/competitors.md
+$product-competitors <product> render                   # Write docs/competitors.md + docs/competitive_features.md
 $product-competitors <product> export <format>          # tsv|web-detailed|web-summary|ppt|xlsx|one-pager|multi-pager|whitepaper
 ```
 
@@ -56,7 +57,7 @@ $product-competitors <product> export <format>          # tsv|web-detailed|web-s
 | Mode | When | Storage | Verbs available |
 |---|---|---|---|
 | **Matrix** | `.claude/db/marketing.sqlite` exists, or the project has a `products/` tree (the marketing repo) | SQLite, shared with `feature-tracker` | all of them |
-| **Document** | Anything else — a normal code repo running the `product` family | `docs/competitors.md` + `.claude/product/competitors/research/*.md` | `discover`, `crawl`, `audit`, `render` |
+| **Document** | Anything else — a normal code repo running the `product` family | `docs/competitors.md`, `docs/competitive_features.md` + `.claude/product/competitors/research/*.md` | `discover`, `crawl`, `audit`, `render` |
 
 Document mode is not a degraded fallback to apologize for — it is the mode the `product` family runs in. Never create `marketing.sqlite` in a repo that didn't already have it, and never require it before answering.
 
@@ -135,7 +136,7 @@ Launch all three in a single message so they run concurrently. Each receives the
 1. Compile all three agents' output into one research file: `.claude/product/competitors/research/<name>.md` (document mode) or the same path in the marketing repo (matrix mode), with sections Site map · Features & capabilities (categorized, source-cited) · Positioning (value props, personas, use cases, differentiation, tone) · Raw content index.
 2. **Present findings with a plain numbered-list question before writing any assessment.** Research is a proposal, never a commit.
 3. Matrix mode: map findings onto existing features or propose new ones, then UPDATE/INSERT assessments with `researched_at = date('now')`, `UPDATE competitors SET last_crawled = date('now')`, and INSERT into `crawl_log`.
-4. Document mode: the research file is the record; `render` turns it into `docs/competitors.md`.
+4. Document mode: the research file is the record; `render` turns it into `docs/competitors.md` and `docs/competitive_features.md`.
 
 If a crawl is blocked or fails, report exactly what was reachable and what wasn't. Never silently skip content.
 
@@ -230,9 +231,66 @@ The `product` family's stage-1 output. One page, written for whoever reads `docs
 
 ## Open questions
 - [NEEDS CLARIFICATION] <what research could not settle>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
 ```
 
 In matrix mode, `render` derives every cell from `v_comparison` rather than restating prose. Features tagged `roadmap-gap` are listed under "Where we lose today" and carried into `$product-roadmap`.
+
+The "Table stakes vs differentiators" section of this document is a summary of the next file, never an independent opinion.
+
+### Render — `docs/competitive_features.md`
+
+The second output of `render`, and the one `$product-features` actually reads. A capability × competitor matrix with one derived number per row — **coverage**, the share of competitors that have it — and a class that follows mechanically from the number. Table stakes stops being a judgment call and becomes arithmetic.
+
+**Coverage** = (YES + ½·PARTIAL) ÷ (competitors assessed), where assessed excludes `UNKNOWN` and `N/A`. A row with more than 30% of competitors `UNKNOWN` is classed `insufficient evidence` regardless of its number — it needs a crawl, not a verdict.
+
+| Class | Coverage | Meaning |
+|---|---|---|
+| **table-stakes** | ≥ 70% | Required to be considered at all. Every one becomes a `Must` feature at stage 3. |
+| **contested** | 30–70% | Common but not universal — a real choice. |
+| **differentiator** | < 30% | Rare in the market. Where we can win, or something nobody wants. |
+| **insufficient evidence** | — | Too many `UNKNOWN`s to classify. |
+
+The 70% line is the default and is stated in the file header; a product with two competitors or twenty may set it differently, but the number used is always written down.
+
+```markdown
+# Competitive Features — <product>
+
+**As of:** <date>  ·  **Competitors assessed:** <n>  ·  **Table-stakes threshold:** 70%
+
+| id | Capability | <A> | <B> | <C> | <D> | Coverage | Class |
+|---|---|---|---|---|---|---|---|
+| CF-01 | Maintains a table of contents | YES | YES | YES | PARTIAL | 88% | table-stakes |
+| CF-02 | Concurrent multi-user editing | YES | NO | YES | UNKNOWN | 67% | contested |
+| CF-03 | Corpus-derived section templates | NO | NO | NO | NO | 0% | differentiator |
+| CF-04 | Offline mode | UNKNOWN | UNKNOWN | YES | NO | — | insufficient evidence |
+
+## Table stakes (≥ 70%)
+CF-01, …  — <one line each: what "has it" concretely means, with the source>
+
+## Contested (30–70%)
+…
+
+## Differentiators (< 30%)
+…
+
+## Insufficient evidence
+CF-04 — <which competitors are UNKNOWN, and the crawl that would settle it>
+
+## Open questions
+- [NEEDS CLARIFICATION] <a capability whose definition competitors interpret so differently that one row can't hold it>
+
+## Deferred validations
+- <what can only be checked once the product or its data exists — carried forward, never a marker>
+```
+
+`CF-NN` ids are stable and never reused. `$product-features` cites them as the source of every table-stakes feature (`competitive_features:CF-01`), so a capability that changes class on a re-crawl is traceable forward to the feature it drove.
+
+**Matrix mode:** run the `Competitive Features` query in [queries.sql](queries.sql) with `:stakes = 0.70` (or the threshold the header states) — one row per `features` entry, coverage computed over that product's competitors. Never hand-compute the classes; the query and the file header must agree.
+
+**Document mode:** the feature extractor already returns YES / NO / PARTIAL per capability per site. Take the union of capabilities across every research file, normalize names that are the same thing said differently (state each merge), fill the grid, and mark anything a research file never mentions `UNKNOWN` — never `NO`. Absence of evidence is a crawl gap, not a competitor weakness.
 
 ### Export
 
@@ -266,7 +324,7 @@ The three collateral formats are written by a writer agent reading the research 
 1. **Never exaggerate our advantages.** Objective evidence only.
 2. **Never downplay a competitor's strengths.** If they beat us, document it.
 3. **Always cite sources** — `source_url` and `researched_at` on every assessment.
-4. **Mark uncertainty.** `UNKNOWN` in matrix mode, `[NEEDS CLARIFICATION]` in document mode. Never guess.
+4. **Mark uncertainty — then go clear it.** `UNKNOWN` is a cell that needs a crawl, and this is the stage that crawls. A `[NEEDS RESEARCH]` is a to-do for *you*; it never leaves this stage. `[NEEDS CLARIFICATION]` is only for what the user alone can answer — which competitors matter to *them*, which tier, which market. "Research I owe; still open" is not a disposition this stage may emit: research is done, or its absence is cited with the sources checked and the date.
 5. **Include context.** "200+ integrations vs our 45 (2026-03)" beats "they win".
 6. **Separate fact from opinion.** Quantify where possible.
 7. **Set confidence.** `high` = official source, `medium` = inferred, `low` = secondhand.

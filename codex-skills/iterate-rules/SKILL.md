@@ -8,7 +8,7 @@ description: "Read and write the iterate launch policy for THIS project in plain
 
 # $iterate-rules — say when a run is allowed to start
 
-**Version:** iterate family 5.5.2
+**Version:** iterate family 5.6.0
 
 ## What this skill does
 
