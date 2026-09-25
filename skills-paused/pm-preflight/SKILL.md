@@ -52,7 +52,7 @@ sqlite3 .claude/db/marketing.sqlite ".tables" 2>/dev/null | grep -q epics
 
 If `epics` table is missing, run the PM schema migration:
 
-1. Check if competitive-intel base tables exist (`our_products`, `tags`). If not, warn user to initialize competitive-intel first.
+1. Check if product-competitors base tables exist (`our_products`, `tags`). If not, warn user to initialize product-competitors first.
 2. Check if feature-tracker tables exist (`product_features`). If not, run feature-tracker schema.sql first.
 3. Run [schema.sql](schema.sql) to add PM tables (epics, requirements, iterators, etc.)
 4. Handle ALTER TABLE for existing tables — add columns if missing:

@@ -126,3 +126,41 @@ SELECT
      WHERE f.product_id = op.id AND ft.tag_id IS NULL) AS untagged_features
 FROM our_products op
 WHERE op.code = :product_code;
+
+-- ═══════════════════════════════════════════════════════════════
+-- Competitive Features (docs/competitive_features.md)
+-- One row per feature: coverage = share of assessed competitors that
+-- have it, PARTIAL counting half. UNKNOWN and N/A are excluded from the
+-- denominator; a row where UNKNOWN exceeds 30% of competitors is classed
+-- 'insufficient evidence' regardless of coverage. Threshold is a
+-- parameter so the file header and the query agree: :stakes = 0.70.
+-- ═══════════════════════════════════════════════════════════════
+WITH per_feature AS (
+  SELECT f.id,
+         f.name,
+         f.display_order,
+         COUNT(*)                                                    AS n_total,
+         SUM(ca.status = 'YES')                                      AS n_yes,
+         SUM(ca.status = 'PARTIAL')                                  AS n_partial,
+         SUM(ca.status = 'UNKNOWN')                                  AS n_unknown,
+         SUM(ca.status IN ('YES','NO','PARTIAL','PLANNED','BETA'))   AS n_assessed
+  FROM features f
+  JOIN competitor_assessments ca ON ca.feature_id = f.id
+  JOIN our_products p ON p.id = f.product_id
+  WHERE p.code = :product_code
+  GROUP BY f.id
+)
+SELECT printf('CF-%02d', ROW_NUMBER() OVER (ORDER BY display_order, id)) AS cf_id,
+       name,
+       n_assessed,
+       n_unknown,
+       CASE WHEN n_assessed = 0 THEN NULL
+            ELSE ROUND(100.0 * (n_yes + 0.5 * n_partial) / n_assessed) END AS coverage_pct,
+       CASE
+         WHEN n_total = 0 OR 1.0 * n_unknown / n_total > 0.30          THEN 'insufficient evidence'
+         WHEN (n_yes + 0.5 * n_partial) / n_assessed >= :stakes         THEN 'table-stakes'
+         WHEN (n_yes + 0.5 * n_partial) / n_assessed <  0.30            THEN 'differentiator'
+         ELSE                                                               'contested'
+       END AS class
+FROM per_feature
+ORDER BY display_order, id;

@@ -3,7 +3,7 @@ name: ip
 description: Alias for /iterate-planner. Typing /ip <anything> behaves exactly as /iterate-planner <anything> — plan building, adds, teamify/flatify, close/roll, list, status. Exists purely as a shorthand for rapid-fire planning streaks.
 argument-hint: <same arguments as /iterate-planner>
 disable-model-invocation: true
-version: 5.5.1
+version: 5.5.2
 ---
 
 # /ip — alias for /iterate-planner

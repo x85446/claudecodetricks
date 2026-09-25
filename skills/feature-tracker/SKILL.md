@@ -61,13 +61,13 @@ or any other format as a workaround. The database is the source of truth.
 
 Present this message to the user and stop. Do not attempt alternative approaches.
 
-**If DB exists but tables are missing**, run [schema.sql](schema.sql) and the competitive-intel schema first.
+**If DB exists but tables are missing**, run [schema.sql](schema.sql) and the product-competitors schema first.
 
 ## Database
 
-**Path:** `.claude/db/marketing.sqlite` (shared with competitive-intel)
+**Path:** `.claude/db/marketing.sqlite` (shared with product-competitors)
 
-Schema is in [schema.sql](schema.sql). Queries are in [queries.sql](queries.sql). Reuses `our_products` and `tags` tables from competitive-intel.
+Schema is in [schema.sql](schema.sql). Queries are in [queries.sql](queries.sql). Reuses `our_products` and `tags` tables from product-competitors.
 
 Always run `PRAGMA foreign_keys=ON;` before writes.
 
@@ -262,7 +262,7 @@ Sources: 31 interview, 10 docs, 6 code
 ```
 
 1. Run [schema.sql](schema.sql) against `.claude/db/marketing.sqlite`
-2. Ensure product exists in `our_products` (reuse if already there from competitive-intel)
+2. Ensure product exists in `our_products` (reuse if already there from product-competitors)
 3. Confirm ready
 
 ### Scan Docs
@@ -460,7 +460,7 @@ When tags are provided as argument, save them to `publish_tag_order` for next ti
 
 ## Rules
 
-1. **SQLite at `.claude/db/marketing.sqlite`** — shared with competitive-intel.
+1. **SQLite at `.claude/db/marketing.sqlite`** — shared with product-competitors.
 2. **Always `PRAGMA foreign_keys=ON`** before writes.
 3. **UUID for every feature and test** — stable cross-database references.
 4. **Version on every edit** — no silent overwrites.
