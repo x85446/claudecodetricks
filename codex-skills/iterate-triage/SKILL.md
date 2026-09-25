@@ -8,7 +8,7 @@ description: "Use when the status line shows a feature branch instead of \"main 
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.5.2
+**Version:** iterate family 5.6.0
 
 ## What this skill does
 

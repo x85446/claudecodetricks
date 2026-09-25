@@ -48,8 +48,6 @@
       "Bash(bash /Users/travis/workspace/x85446/claudecodetricks/skills/skillinstall.sh pptx)",
       "Bash(bash *)",
       "Bash(rm -rf ~/.claude/skills/building-makefiles)",
-      "Bash(mkdir -p ~/.claude/skills/dev-makefiles)",
-      "Bash(cp -r /home/travis/workspace/x85446/claudecodetricks/skills/dev-makefiles/* ~/.claude/skills/dev-makefiles/)",
       "Read(//home/travis/.claude/skills/**)",
       "Bash(rm -rf ~/.claude/skills/incus)",
       "Bash(cp -r /home/travis/workspace/x85446/claudecodetricks/skills/incus ~/.claude/skills/)",
