@@ -159,7 +159,17 @@ Two rules matter when editing a ported skill:
   non-zero with the skills named, and nothing is installed. Descriptions are
   always emitted double-quoted — an unquoted `**Always invoke…` is a YAML alias,
   not text, and Codex skips the skill.
-- **Codex's manifest budget is 2% of the context window, or 8,000 chars when that window is unknown** — half Claude Code's 16,000 fallback. Overflow is not a warning you can ignore: descriptions are **shortened first**, and the tail is where the least-common trigger phrases live; skills are omitted entirely only under severe overcrowding, and only that case warns. 8,000 is therefore the worst-case floor, and `sync-all.sh` targets it with no safety margin — 8,000 fits, 8,001 does not ship. Only
+- **Codex's catalog budget is pinned at `[skills] max_context_tokens = 10000`**
+  in `~/.codex/config.toml` — the maximum Codex accepts. Unset, it is 2% of the
+  model's context window in tokens, or 8,000 characters when the window is
+  unknown, so the budget would change with the model; pinned, it doesn't. Each
+  implicitly-invocable skill costs one line, `- name: description (file: path)`,
+  at ⌈bytes/4⌉ tokens, with descriptions cut at 1,024 chars — the **path counts**.
+  The budget is shared with Codex's own `.system` skills and every enabled
+  plugin's skills. `scripts/manifest.py` is that cost model; `validate.py` and
+  `diet.py` both use it. Overflow is silent: descriptions are **shortened
+  first**, round-robin, and the tail is where the least-common trigger phrases
+  live; skills are omitted, with a warning, only after that. Only
   implicitly-invocable skills spend it, and in Codex disabling implicit
   invocation does *not* block delegation — so children of a meta are folded to
   explicit-only for free (`FOLD_CHILDREN_OF` in `sync-all.sh`).
@@ -167,9 +177,10 @@ Two rules matter when editing a ported skill:
   routing signal. `scripts/diet.py` instead relocates the non-routing prose in a
   description (what the skill does, where it stores state) into a
   `## What this skill does` body section, which loads on trigger. Trigger
-  phrases and negative scope always stay. Runs automatically at
-  `MANIFEST_BUDGET=8000` — the real cap, no margin; `validate.py` refuses to
-  install a broken or over-cap port.
+  phrases and negative scope always stay. It runs automatically against what
+  the other listed skills leave of the budget, with no margin; `validate.py`
+  refuses to install a broken or over-budget port, and fails outright when no
+  budget is configured.
 
 ## Build & Development Commands
 
