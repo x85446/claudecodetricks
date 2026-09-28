@@ -10,7 +10,10 @@ set -uo pipefail
 # without parsing logs.
 # ============================================================================
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+# pyenv's shims come first: validate.py, diet.py and manifest.py import yaml,
+# and PyYAML is installed only in the pyenv interpreter, not Homebrew's or the
+# system python3.
+export PATH="$HOME/.pyenv/shims:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 REPO="$HOME/workspace/x85446/claudecodetricks"
 HERE="$REPO/skills/skill-2-codex/scripts"
 LOG_DIR="$HOME/.claude/log/codex-sync"
