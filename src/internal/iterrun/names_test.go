@@ -5,82 +5,6 @@ import (
 	"testing"
 )
 
-// animalPoolFloor is the minimum number of names any single letter's pool
-// may hold. It caps how many plans ANY project on this machine can name
-// before that letter starts forcing an advance-and-log skip (see
-// nextPlanName) — so the floor, not the average, is what matters.
-// 12 is the user's own "twelve times as big" applied per letter: the
-// scarcest letters (u, x) each held exactly 1, so 12 is their 12x figure,
-// and it lifts the cap those letters put on plans-per-project twelvefold.
-// It is deliberately NOT higher. There are only about 10-12 real animals
-// beginning with x (xerus, xenops, xantus, xoloitzcuintli, xiphias,
-// xenopus, xema, xantusia, xylocopa, xiphosura); a floor of 40 would be
-// unsatisfiable without fabricating species, and a test that passes on
-// invented data is worse than one that fails honestly.
-const animalPoolFloor = 12
-
-// animalPoolMinTotal is the minimum total pool size across all 26 letters.
-// It is NOT animalPoolFloor*26 (312) — it is set higher (1,320) on
-// purpose, since 26 letters sitting exactly at the floor is the unhealthy
-// case this check exists to catch: real letters (a, e, s, ...) have far
-// more common one-word animal names than the scarce ones (q, u, x) and
-// should carry more than the bare floor, or the pool is thin everywhere
-// instead of appropriately uneven.
-const animalPoolMinTotal = 1320
-
-// TestAnimalPool is the pool's integrity check: every letter present, every
-// letter at or above the floor, the total at or above the machine-wide
-// minimum, no duplicate name anywhere in the pool (across ALL letters, not
-// just within one), and every entry lowercase ASCII starting with its own
-// key letter. Written before the pool was grown from its original 110
-// entries to the 1,320+ target, so until that growth lands this test is
-// EXPECTED to fail on the floor and total assertions — that is the point:
-// it is the growth's progress meter, not a regression the growth work
-// introduced.
-func TestAnimalPool(t *testing.T) {
-	seen := make(map[string]byte, animalPoolMinTotal)
-	total := 0
-
-	for _, letter := range alphabet {
-		names, ok := animalsByLetter[letter]
-		if !ok || len(names) == 0 {
-			t.Errorf("letter %q: missing from animalsByLetter entirely", letter)
-			continue
-		}
-		if len(names) < animalPoolFloor {
-			t.Errorf("letter %q: pool has %d names, want at least %d (floor)", letter, len(names), animalPoolFloor)
-		}
-		total += len(names)
-
-		for _, name := range names {
-			if name == "" {
-				t.Errorf("letter %q: empty name in pool", letter)
-				continue
-			}
-			if name[0] != letter {
-				t.Errorf("letter %q: entry %q does not start with its own key letter", letter, name)
-			}
-			for i := 0; i < len(name); i++ {
-				c := name[i]
-				isLower := c >= 'a' && c <= 'z'
-				if !isLower {
-					t.Errorf("letter %q: entry %q is not lowercase ASCII (offending byte %q)", letter, name, c)
-					break
-				}
-			}
-			if prevLetter, dup := seen[name]; dup {
-				t.Errorf("entry %q appears under both letter %q and letter %q — duplicate in pool", name, prevLetter, letter)
-				continue
-			}
-			seen[name] = letter
-		}
-	}
-
-	if total < animalPoolMinTotal {
-		t.Errorf("pool total = %d names, want at least %d", total, animalPoolMinTotal)
-	}
-}
-
 func TestNextPlanNameWalksAlphabetInOrderPerProject(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "plan-names.json")
@@ -129,30 +53,32 @@ func TestNextPlanNameNeverRepeats(t *testing.T) {
 }
 
 // TestNextPlanNameSeedsFromDisk reproduces the reported bug directly: a
-// name ("wren") already used by an existing project must never be handed
-// out again, even on this registry's very first call.
+// name already used by an existing project must never be handed out
+// again, even on this registry's very first call.
+//
+// It also pins the contract that replaced the old letter-skip. Seeding
+// every ANIMAL beginning with 'w' used to force the claim to jump to
+// 'x', silently desynchronising this project's alphabet from its plan
+// count. The letter is owed, so the claim must stay on 'w' and fall
+// through to the next namespace (minerals: wad, wardite, ...) instead.
 func TestNextPlanNameSeedsFromDisk(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "plan-names.json")
 	lock := filepath.Join(dir, "plan-names.json.lock")
 	proj := filepath.Join(dir, "proj1")
-	// Derive the seed from the pool itself rather than hardcoding a list.
-	// A literal snapshot of w-animals silently stops meaning "every
-	// w-animal" the moment the pool grows, which is exactly what happened
-	// when animalsByLetter went from 110 entries to 1,442: the list still
-	// named five, the letter held thirty-four, and the test failed while
-	// the behaviour it guards was perfectly correct.
+	// Derive the seed from the table itself rather than hardcoding a
+	// list: a literal snapshot stops meaning "every w-animal" the moment
+	// the pool grows, which is exactly what bit this test before.
 	preUsed := func() map[string]bool {
-		used := make(map[string]bool, len(animalsByLetter['w']))
-		for _, name := range animalsByLetter['w'] {
+		used := map[string]bool{}
+		for _, name := range pools["animals"]['w'] {
 			used[name] = true
 		}
 		return used
 	}
 
 	// Drain every letter before 'w' so this project's own sequence
-	// actually reaches 'w' and has to prove it skips the whole
-	// (seeded-exhausted) pool.
+	// actually reaches 'w'.
 	for range 22 { // a..v
 		if _, err := nextPlanName(path, lock, proj, preUsed); err != nil {
 			t.Fatal(err)
@@ -163,8 +89,11 @@ func TestNextPlanNameSeedsFromDisk(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if name[0] == 'w' {
-		t.Errorf("got %q — every w-animal was pre-seeded as used, so this should have skipped to 'x'", name)
+	if name[0] != 'w' {
+		t.Errorf("got %q — the project was owed 'w'; a spent namespace must fall through to the next one, not skip the letter", name)
+	}
+	if preUsed()[name] {
+		t.Errorf("got %q, which was seeded as already used", name)
 	}
 }
 

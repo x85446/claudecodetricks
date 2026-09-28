@@ -58,7 +58,9 @@ Usage:
   iterate-run tokens [--plan <name>]  (token spend by lane, tool and wake-up; defaults to this project's current plan)
   iterate-run serve [--port N]       (dashboard at http://localhost:N, default 8420; --port 0 picks an ephemeral port and prints it; GET /healthz for a liveness check)
   iterate-run purge --plan <name> | --all-completed [--yes] [--force]
-  iterate-run name next               (claims the next global, alphabetically-ordered plan codename)
+  iterate-run name next               (claims this project's next codename, in its own a-z sequence)
+  iterate-run name release <word>     (checks a codename back in so it can be issued again)
+  iterate-run name depth              (word-pool depth per letter and namespace)
   iterate-run version`)
 }
 
@@ -79,21 +81,45 @@ func versionLine() string {
 // plan's name. Registering the codename IS the point of this call: run it
 // once per new plan, not speculatively.
 func nameCmd(args []string) {
-	if len(args) != 1 || args[0] != "next" {
-		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next")
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next | release <word> | depth")
 		os.Exit(2)
 	}
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
-		os.Exit(1)
+	switch args[0] {
+	case "next":
+		cwd, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+		name, err := iterrun.NextPlanName(cwd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println(name)
+	case "release":
+		if len(args) != 2 {
+			fmt.Fprintln(os.Stderr, "iterate-run: name release takes exactly one word")
+			os.Exit(2)
+		}
+		held, err := iterrun.ReleasePlanName(args[1])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+		// Silent on success, one fact per line -- house style. A word
+		// that was not held is not an error: releasing twice is the
+		// same end state as releasing once.
+		if !held {
+			fmt.Fprintf(os.Stderr, "iterate-run: %s was not held\n", args[1])
+		}
+	case "depth":
+		iterrun.PrintPoolDepth(os.Stdout)
+	default:
+		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next | release <word> | depth")
+		os.Exit(2)
 	}
-	name, err := iterrun.NextPlanName(cwd)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Println(name)
 }
 
 // registerCWD best-effort-registers the current directory as a known
