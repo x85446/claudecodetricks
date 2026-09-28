@@ -251,8 +251,15 @@ if [ -n "$ITER_ROOT" ]; then
   for pf in "$ITER_ROOT"/.claude/iterate/plans/*.md; do
     [ -e "$pf" ] || continue
     b=$(basename "$pf" .md)
-    # only the frontmatter matters; stop at the closing delimiter
-    fm=$(awk 'NR>1 && /^---$/{exit} {print}' "$pf" 2>/dev/null)
+    # Only the key block at the top matters, and it must stop at the first
+    # `## ` heading. Plans do not fence their keys with `---`, so stopping
+    # only at that delimiter read the whole file and matched every state
+    # string a changelog entry quotes about itself -- lines like
+    # "PLAN PARKED -- `status: blocked-on-operator`" are normal in a plan's
+    # history and would colour a finished plan by what it once was. Where a
+    # plan happens to contain a `---` rule that bound still applies, so a
+    # future fenced format keeps working.
+    fm=$(awk '/^## /{exit} NR>1 && /^---$/{exit} {print}' "$pf" 2>/dev/null)
     case "$fm" in
       *"teamed: true"*) L=$(printf '%s' "${b:0:1}" | tr '[:lower:]' '[:upper:]') ;;
       *)                L=$(printf '%s' "${b:0:1}" | tr '[:upper:]' '[:lower:]') ;;
@@ -261,7 +268,12 @@ if [ -n "$ITER_ROOT" ]; then
       *"status: unblocked"*)
         # cleared by a human, waiting for the conductor to pick it back up
         ITER_LETTERS="${ITER_LETTERS}${CYAN}${L}${RESET}" ;;
-      *"status: blocked-on-operator"*|*"status: awaiting-human-gate"*)
+      *"status: blocked"*|*"status: awaiting-human-gate"*)
+        # ANY blocked-* reading is red. Naming the variants individually left
+        # blocked-on-quota falling through to the `phase: executing` arm
+        # below, so a plan parked on a quota wall showed as a live run.
+        # (`status: unblocked` is matched above and does not contain
+        # "status: blocked", so it is unaffected by the wider pattern.)
         ITER_LETTERS="${ITER_LETTERS}${RED}${L}${RESET}" ;;
       *"status: paused"*)
         # a human stopped it on purpose; /iterate resume continues it
