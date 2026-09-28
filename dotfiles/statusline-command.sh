@@ -85,7 +85,7 @@ DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 
 HOST=$(hostname -s)
 
-DIM='\033[2m'; CYAN='\033[36m'; GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'; MAGENTA='\033[35m'; RESET='\033[0m'
+BOLD='\033[1m'; DIM='\033[2m'; CYAN='\033[36m'; GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'; MAGENTA='\033[35m'; RESET='\033[0m'
 
 # Pick bar color based on context usage
 if [ "$PCT" -ge 50 ]; then BAR_COLOR="$RED"
@@ -126,7 +126,7 @@ if [ -n "$RATE_PCT" ] && [ -n "$RATE_RESETS" ]; then
   RATE_FILLED=$((RATE_PCT / 10)); RATE_EMPTY=$((10 - RATE_FILLED))
   printf -v RATE_FILL "%${RATE_FILLED}s"; printf -v RATE_PAD "%${RATE_EMPTY}s"
   RATE_BAR="${RATE_FILL// /█}${RATE_PAD// /░}"
-  RATE_INFO="⚡ ${RATE_COLOR}${RATE_BAR}${RESET} ${RATE_PCT}% | -${RESET_STR}"
+  RATE_INFO="🕔 ${RATE_COLOR}${RATE_BAR}${RESET} ${RATE_PCT}% | -${RESET_STR}"
 fi
 
 # Weekly rate limit info (7-day window)
@@ -197,6 +197,14 @@ fi
 #   yellow = planned   green = executing   red = blocked   cyan = unblocked,
 #   ready to re-queue   magenta = paused by /iterate pause   dim = closed but
 #   not archived
+# Intensity carries liveness, the one thing colour could not: BOLD green
+# means a hook fired in this project inside the live window, so something
+# is really driving the run right now; plain green means the plan file
+# still says executing but nothing has touched a tool in a while. That
+# gap is not hypothetical -- a killed or crashed run never gets to write
+# its ending, so "executing" persists forever and green used to mean
+# only "a file says so". iterate-run stamps the heartbeat on every hook;
+# ITERATE_LIVE_SECS overrides the 900s window.
 # Case carries teaming, which colour had no room left to say: UPPERCASE = the
 # plan is teamified (`teamed: true`, so /iterate dispatches one subagent per
 # team), lowercase = flat (one lane, the launching session's model — a flat
@@ -205,6 +213,17 @@ fi
 ITER=""
 if [ -d "$DIR/.claude/iterate/plans" ]; then
   ITER_LETTERS=""
+  # Liveness: mtime of this project's heartbeat, stamped by iterate-run's
+  # PreToolUse/PostToolUse hook. Missing file reads the same as stale.
+  ITER_EXEC="$GREEN"
+  ITER_LIVE=0
+  ITER_HB="$HOME/.claude/iterate-run/heartbeats/${DIR//\//-}"
+  if [ -f "$ITER_HB" ]; then
+    ITER_HB_M=$(stat -f %m "$ITER_HB" 2>/dev/null || stat -c %Y "$ITER_HB" 2>/dev/null)
+    if [ -n "$ITER_HB_M" ] && [ $(( $(date +%s) - ITER_HB_M )) -le "${ITERATE_LIVE_SECS:-900}" ]; then
+      ITER_EXEC="${BOLD}${GREEN}"
+    fi
+  fi
   for pf in "$DIR"/.claude/iterate/plans/*.md; do
     [ -e "$pf" ] || continue
     b=$(basename "$pf" .md)
@@ -224,14 +243,19 @@ if [ -d "$DIR/.claude/iterate/plans" ]; then
         # a human stopped it on purpose; /iterate resume continues it
         ITER_LETTERS="${ITER_LETTERS}${MAGENTA}${L}${RESET}" ;;
       *"phase: executing"*)
-        ITER_LETTERS="${ITER_LETTERS}${GREEN}${L}${RESET}" ;;
+        [ "$ITER_EXEC" != "$GREEN" ] && ITER_LIVE=1
+        ITER_LETTERS="${ITER_LETTERS}${ITER_EXEC}${L}${RESET}" ;;
       *"phase: planned"*)
         ITER_LETTERS="${ITER_LETTERS}${YELLOW}${L}${RESET}" ;;
       *)
         ITER_LETTERS="${ITER_LETTERS}${DIM}${L}${RESET}" ;;
     esac
   done
-  [ -n "$ITER_LETTERS" ] && ITER=" | ⚙️ ${ITER_LETTERS}"
+  # The icon lights up while a run is live: ⚡ replaces ⚙️. Emoji ignore
+  # ANSI colour, so brightness has to come from the glyph itself.
+  ITER_ICON="⚙️"
+  [ "$ITER_LIVE" = 1 ] && ITER_ICON="⚡"
+  [ -n "$ITER_LETTERS" ] && ITER=" | ${ITER_ICON} ${ITER_LETTERS}"
 fi
 
 if [[ "$HOST" == warden* ]]; then
