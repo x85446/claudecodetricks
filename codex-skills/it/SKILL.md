@@ -6,7 +6,7 @@ description: "Alias for $iterate-triage. Typing $it behaves exactly as $iterate-
 
 # $it — alias for $iterate-triage
 
-**Version:** iterate family 5.6.0
+**Version:** iterate family 5.7.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
