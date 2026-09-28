@@ -1,18 +1,12 @@
 ---
 name: "dev-makefiles"
-description: "Use when creating or modifying a Makefile, adding make targets, setting up a build system, creating makehelp.sh, migrating to the 2-layer convention, or whenever a plan step builds, compiles, or scripts a repeatable dev task — that work goes through make targets per this skill, not ad-hoc shell commands."
+description: "Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation. Use when creating or modifying a Makefile, adding make targets, setting up a build system, creating makehelp.sh, migrating to the 2-layer convention, or whenever a plan step builds, compiles, or scripts a repeatable dev task — that work goes through make targets per this skill, not ad-hoc shell commands."
 ---
 
 
 # Building Makefiles
 
 **Version:** 1.3.0
-
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
