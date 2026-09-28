@@ -8,7 +8,7 @@ description: "Use when the status line shows a feature branch instead of \"main 
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.6.0
+**Version:** iterate family 5.7.0
 
 ## What this skill does
 
@@ -59,10 +59,12 @@ Detail:
     that stops at a human gate never reaches $iterate's merge-time commit,
     so nothing protected the work.
 Fix:
-  problem 1: /tmp/wombat-p1.sh publishes the rules and runs the sweep.
-    Check the two contestable rows in docs/scanner-decisions.md, then
-    `pbcopy < /tmp/wombat-p1.sh` and paste into any terminal.
+  problem 1: launch problem 1 — the two contestable rows in
+    docs/scanner-decisions.md are yours to decide; I publish the rules and
+    run the sweep the moment you call them.
   problem 2: done — committed as 3f2a9c1 on feature/wombat-router-filer-reject.
+  problem 3: fix problem 3 — /tmp/wombat-p3.sh drops the three merged
+    branches, local and remote. Verified; nothing unmerged is touched.
 ```
 
 Two count lines, then one entry per problem in two lists that share their
@@ -81,12 +83,25 @@ numbers. Nothing before, between, or after.
 - **`Fix` says how it gets cleared with the least the human can possibly do,
   ≤50 words.** Triage plans the whole route and does every machine step
   *before* writing the line, so what is left for the human is exactly one act:
-  - **Run one command.** When the fix is commands the human must issue — a
-    `gh pr merge`, a deletion, a credential paste — write them into
-    `/tmp/<plan>-p<N>.sh`, make it executable, and give the one line that
-    puts it on the clipboard: `pbcopy < /tmp/<plan>-p<N>.sh`. The rest of the
-    50 words say what the script does. One script per problem; never a list
-    of commands to type by hand.
+  - **Say `fix problem N`.** The default whenever the whole route is
+    machine-executable and only *consent* is missing — a branch to delete, a
+    plan to archive, a stale worktree to remove, an owed merge that is not
+    all-green. Write the script, verify it, and say what it does and what it
+    costs if wrong. Their `fix problem N` is the go, and then **triage runs
+    it** — it does not hand the script back. `fix all` runs every problem
+    whose `Fix` says `fix problem N`, in the order listed.
+
+    This is what "ask first" means for anything that rewrites history or
+    discards work: the ask IS this line. Asking permission and handing over
+    the keyboard are different things, and only the first one was ever
+    required.
+  - **Run one command yourself.** Only when the human genuinely has to be the
+    one to run it — their credentials, their console, a machine triage cannot
+    reach. Write the script to `/tmp/<plan>-p<N>.sh`, make it executable, and
+    give the one line that puts it on the clipboard:
+    `pbcopy < /tmp/<plan>-p<N>.sh`. One script per problem; never a list of
+    commands to type by hand. If triage *could* have run it, this was the
+    wrong shape — use `fix problem N`.
   - **Say `launch problem N`.** When the human must do something no script
     can — sign in, create an account, click through a console, decide a row —
     say how far you get on your own (`I get us to the consent screen; you sign
@@ -153,7 +168,27 @@ does not bend for triage: blocked, partial, or failing means the branch stays.
 Say so with the branch named, and give the shortest honest route to green.
 
 Anything else that rewrites history or discards work — force-push, hard reset,
-branch delete, rebase onto a moved main — **ask first**, every time.
+branch delete, rebase onto a moved main — **ask first**, every time. The ask is
+a `fix problem N` line, not a script in the user's lap: prepare it, say what it
+does and what it costs if wrong, and run it on their word. A human who has to
+execute a fix triage could have executed has been made to do the work twice —
+once deciding, once typing.
+
+## Running a fix
+
+`fix problem N` (or `fix all`) is the go for a problem whose `Fix` offered it.
+Run the script that line named — the same one, not a fresh improvisation — then
+verify the end state from the filesystem and report it in the same counts /
+`Detail` / `Fix` shape, with that problem's `Fix` now reading `done — <what>`.
+
+**Verify before you report, always.** A fix that says done and did not is worse
+than one that failed loudly. Read back what the script claimed: the branch is
+gone, the file is non-empty, the tree is clean, the commit is reachable from
+somewhere that is not about to be deleted.
+
+**If the script fails, stop at the failure and say where.** It printed what it
+did and stopped at the first error by contract; the report is that line plus
+what it leaves half-done, not a second attempt with a different approach.
 
 ## Walking a blocker
 
@@ -227,8 +262,12 @@ stop — that plan is not yours to triage right now.
    line — a silent fix leaves the same bug to happen next week.
 6. **Safe to run mid-plan.** If a run is live, report and stop. Triage must
    never disturb a working plan.
-7. **Every `Fix` ends in one human act.** One command already on a script, or
-   `launch problem N`. If it takes two, triage has not finished planning.
+7. **Every `Fix` ends in one human act, and that act is a word wherever it
+   can be.** `fix problem N` when the route is fully machine-executable and
+   only consent is missing — the default. `launch problem N` when a human-only
+   act sits in the middle. `pbcopy` only when the human must be the one to run
+   it. If it takes two acts, triage has not finished planning; if it takes a
+   keyboard where a word would do, triage has offloaded its own job.
 
 ## `version`
 
@@ -244,19 +283,16 @@ iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
 included.** Run these two, from any directory:
 
 ```bash
-grep -m1 '^version:' ~/.claude/skills/iterate/SKILL.md   # the family version
+grep -m1 '^version:' ~/.agents/skills/iterate/SKILL.md   # the family version
 iterate-run version                                      # the binary
 ```
 
-The path is the Claude-side file on purpose: `skillctl` stamps the family
-number there, and the Codex ports are generated from it without the field.
-
-**Never quote a `version:` from the skill body you already have in context.**
-A session loads a skill body once and keeps it, so after a bump and reinstall
-the copy in context is stale — and reporting its number is precisely the
-memory recall this rule already forbids for the binary. Confirmed live: a
-session answered `iterate family 5.4.0` ten minutes after 5.5.0 was installed
-and verified on disk.
+**Never quote the `version:` in the skill body you already have in context.**
+A session loads a skill body once and keeps it, so after a `skillctl family
+iterate set` and reinstall, the copy in context is stale — and reporting its
+number is precisely the memory recall this rule already forbids for the
+binary. Confirmed live: a session answered `iterate family 5.4.0` ten minutes
+after 5.5.0 was installed and verified on disk.
 
 If members disagree, say so and name them: drift inside the family is a
 defect, not a state, and `skillctl family iterate set X.Y.Z` is the only
