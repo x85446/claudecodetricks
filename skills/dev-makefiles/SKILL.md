@@ -2,7 +2,7 @@
 name: dev-makefiles
 description: Governs ALL build/automation work in any repo that has (or should have) a Makefile — building, compiling, adding build targets, wiring test/install/run automation. Use when creating or modifying a Makefile, adding make targets, setting up a build system, creating makehelp.sh, migrating to the 2-layer convention, or whenever a plan step builds, compiles, or scripts a repeatable dev task — that work goes through make targets per this skill, not ad-hoc shell commands.
 argument-hint: "[action] [details]"
-version: 1.3.0
+version: 1.4.0
 ---
 
 # Building Makefiles
@@ -21,16 +21,18 @@ Follow these steps in order. The first decision determines which path to take.
    ```bash
    find . -name Makefile -not -path '*/vendor/*' -not -path '*/node_modules/*' -not -path '*/.git/*'
    ```
-2. For each: does a sibling `makehelp.sh` exist, how many `##@` section headers does it have, and **does it define `run`**?
+2. For each: does a sibling `makehelp.sh` exist, how many `##@` section headers does it have, and **does it define `all` and `run`**?
 3. Identify the project's language/toolchain (go.mod, package.json, Cargo.toml, pyproject.toml, etc.)
 4. **Print the inventory with a path assigned to each, before changing anything:**
 
-   | Makefile | makehelp.sh | `##@` | `run` | Path |
-   |---|---|---|---|---|
-   | `./Makefile` | no | 0 | no | **C — migrate** |
-   | `./experiment/policing/Makefile` | yes | 7 | no | B — maintain (**add `run`**) |
+   | Makefile | makehelp.sh | `##@` | `all` | `run` | Path |
+   |---|---|---|---|---|---|
+   | `./Makefile` | no | 0 | no | no | **C — migrate** |
+   | `./experiment/policing/Makefile` | yes | 7 | `proto build` | no | B — maintain (**add `run`**, **normalize `all`**) |
 
-   A missing `run` is a defect on every row it appears on, including rows that are otherwise conforming.
+   A missing `all` or `run` is a defect on every row it appears on, including rows that are otherwise
+   conforming. Record what an existing `all` actually depends on — anything other than `build` alone needs
+   normalizing, not preserving.
 
 Every first-party Makefile gets a path. Vendored and third-party Makefiles are excluded — list them as excluded rather than omitting them silently.
 
@@ -44,10 +46,12 @@ The path is chosen **per Makefile**, not per invocation. A repo with a non-confo
 3. Generate both `Makefile` and `makehelp.sh` from the templates
 4. Replace all `myapp` placeholders with the actual binary/project name
 5. **Decide what `run` does** using the run ladder below, and write that into the target's help text
-6. Make makehelp.sh executable: `chmod +x makehelp.sh`
+6. Confirm `all: build` is present — the template ships it; don't delete it as redundant
+7. Make makehelp.sh executable: `chmod +x makehelp.sh`
 
 **Path B — Add/modify targets (Makefile exists and follows 2-layer convention):**
-0. **If `run` is missing, adding it is part of this pass** — not a follow-up
+0. **If `all` or `run` is missing, adding it is part of this pass** — not a follow-up. An `all` that depends
+   on anything besides `build` gets normalized now (see `all` below)
 1. Read the existing Makefile and makehelp.sh
 2. Identify the correct `##@` section for the new target
 3. Add the target with `.PHONY`, `## help text`, and recipe
@@ -62,7 +66,9 @@ The path is chosen **per Makefile**, not per invocation. A repo with a non-confo
 5. Extract any inline shell logic >10 lines into a new makehelp.sh
 6. Create makehelp.sh with dispatcher if any logic was extracted
 7. **Add `run` if the Makefile doesn't have one** — the run ladder below picks what it does
-8. Verify: every original target still works the same way
+8. **Reconcile `all`**: absent, add `all: build`; present and depending on more than `build`, fold those
+   prerequisites into `build` and reduce `all` to the alias
+9. Verify: every original target still works the same way — `make all` included, which now goes through `build`
 
 ### Step 3: Validate
 
@@ -70,6 +76,7 @@ Validate **each** Makefile from the Step 1 inventory:
 
 - Run `make help` to verify help output renders correctly
 - Confirm all `##@` sections appear with their targets
+- **Run `make all` and confirm it builds everything**, and that it is the alias, not a second build path
 - **Confirm `run` appears in `make help`, and that its help text names the actual thing it runs** — "Run development version" is not a passing help line
 - **Actually run `make run`.** It must build and reach the software's working state. For a long-running process, start it under a timeout (`timeout 15 make run`) and confirm it reaches its ready line rather than waiting for it to exit; kill it and confirm the terminal is clean
 - If makehelp.sh was created/modified, verify it's executable and the dispatcher covers all delegated targets
@@ -96,6 +103,24 @@ Then **re-print the Step 1 inventory with an outcome on every row** — `migrate
 1. **"If it's a build-time operation, it's in make"** — compiling, testing, linting, formatting, installing dev tools
 2. **"If it's a runtime operation, it's in the CLI"** — daemon management, service lifecycle, version queries
 3. **"Complex shell logic belongs in makehelp.sh, not inline"** — anything >10 lines, OS branching, multi-step ops
+
+## `make all` — the alias, not a second build path
+
+`build` is this convention's build-everything target and `.DEFAULT_GOAL := help` means bare `make` prints
+help — but GNU convention, CI scripts and `make && make install` habits all type `all`. So **every Makefile
+ships `all` as a one-line alias for `build`**, under `##@ Build`, no recipe:
+
+```makefile
+.PHONY: all
+all: build  ## Alias for build — builds everything
+```
+
+**Never give `all` prerequisites of its own.** `all: check-tools build` and `all: proto build` are the failure
+mode: `make all` and bare `make` then produce different results and nobody can say which one CI should call.
+Whatever an existing `all` does beyond `build` belongs *in* `build`. One build path, two names for it.
+
+`all` is never the `.DEFAULT_GOAL` — `help` is. Help text calling `all` "the default target" is the artifact
+a migration leaves behind most often.
 
 ## `make run` — the target every Makefile ships
 
@@ -210,6 +235,9 @@ prereqs:  ## Check and install prerequisites
 	@./makehelp.sh prereqs
 
 ##@ Build
+
+.PHONY: all
+all: build  ## Alias for build — builds everything
 
 .PHONY: build
 build:  ## Build for local platform (debug mode)
@@ -445,6 +473,7 @@ target-name:  ## Short description  # Help text for this target
 - Reusable logic needed by multiple targets
 
 ### Key Target Relationships
+- `all` is always an **alias** for `build` (via dependency, no recipe, no extra prerequisites)
 - `install` is always an **alias** for `install-dev` (via dependency, no recipe)
 - `install-dev` depends on `build` (builds first, then symlinks)
 - `install-production` depends on `build-production` (builds optimized, then copies)
@@ -467,11 +496,11 @@ target-name:  ## Short description  # Help text for this target
 
 **Empty ##@ section**: Keep the section header even if there's only a placeholder target. All seven sections must appear for consistency. Use a comment like `# No targets yet` only as last resort — prefer adding at least the standard target for that section.
 
-**Project has no build step** (e.g., pure scripting language): Replace the `build` target recipe with `@echo "No build step required"` but keep the target so `dev` and `cycle` chains still work.
+**Project has no build step** (e.g., pure scripting language): Replace the `build` target recipe with `@echo "No build step required"` but keep the target so `all`, `dev` and `cycle` chains still work.
 
 **Project has no installable binary**: Remove `install-dev`, `install-production`, and `uninstall` target *recipes* but keep stub targets with `@echo "Nothing to install"` so `cycle` doesn't break.
 
-**Multiple binaries**: Add one `build-<name>` target per binary under `##@` Build, and have the main `build` target depend on all of them: `build: build-foo build-bar`. `run` runs the primary binary; each other binary gets `run-<name>`.
+**Multiple binaries**: Add one `build-<name>` target per binary under `##@` Build, and have the main `build` target depend on all of them: `build: build-foo build-bar` — which is what keeps `all` a plain alias. `run` runs the primary binary; each other binary gets `run-<name>`.
 
 **Nothing obvious to run** (pure library, config repo, docs site): the run ladder's bottom rows still apply — the canonical example, or the smoke path that proves the thing works, with one line of output saying so. `run` is never omitted and never a no-op echo.
 
@@ -485,6 +514,7 @@ target-name:  ## Short description  # Help text for this target
 
 - **Don't stop at the first Makefile you find** — inventory the whole repo (Step 1). A conforming subproject Makefile does not mean the repo conforms.
 - **Don't silently leave a non-conforming Makefile untouched.** If you have been told not to modify one, honor that — then report it as non-conforming *and name where the constraint came from*: the user's instruction in this session, or the file and line that states it. An "off limits" you cannot source is not a constraint; verify it before letting it block a migration.
+- **Don't ship a Makefile without `all`** — and don't give it prerequisites `build` doesn't have; that splits one build into two commands that disagree
 - **Don't ship a Makefile without `run`** — it's mandatory, and a migration that leaves it out is unfinished
 - **Don't let `run` print a help screen or a version string** — it runs the software doing its actual job
 - **Don't put runtime operations in make** — daemon start/stop, service management, and version queries belong in the CLI
