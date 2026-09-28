@@ -50,6 +50,7 @@ func HandleHook(phase string, r io.Reader) {
 	}
 
 	RegisterProject(in.CWD)
+	TouchHeartbeat(in.CWD)
 
 	// SubagentStart/SubagentStop carry no tool_name/tool_input — they're
 	// Codex-only lifecycle events (Claude Code has no equivalent hook this

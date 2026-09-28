@@ -23,8 +23,10 @@ package iterrun
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 )
 
@@ -141,16 +143,88 @@ func nextPlanName(path, lockPath, projectDir string, seed func() map[string]bool
 	}
 }
 
-// projectKey normalizes projectDir to an absolute path so the same project
-// always maps to the same entry in ProjectNextIdx regardless of which
-// relative path or cwd a given call happened to use. Falls back to the raw
-// string on a resolution error rather than failing the whole call.
+// projectKey normalizes projectDir to the one string that identifies this
+// project in ProjectNextIdx, regardless of which relative path, cwd or
+// spelling a given call happened to use. Falls back to the raw string on
+// a resolution error rather than failing the whole call.
 func projectKey(projectDir string) string {
 	abs, err := filepath.Abs(projectDir)
 	if err != nil {
 		return projectDir
 	}
+	if canonical, err := canonicalCase(abs); err == nil {
+		return canonical
+	}
 	return abs
+}
+
+// canonicalCase rewrites abs to the casing the filesystem actually
+// stores. On a case-insensitive volume -- every default macOS install --
+// two spellings name one directory but are two different map keys, so one
+// project silently grows two letter sequences. Confirmed live:
+// .../izuma/izcrOS sat at index 10 and .../izuma/izcros at index 1 for
+// the same directory, which is why that project's plans skipped letters.
+//
+// Exact matches are preferred before a fold, so on a case-sensitive
+// filesystem this is a no-op and two genuinely distinct directories are
+// never merged.
+func canonicalCase(abs string) (string, error) {
+	parent := filepath.Dir(abs)
+	if parent == abs {
+		return abs, nil // filesystem root
+	}
+	canonicalParent, err := canonicalCase(parent)
+	if err != nil {
+		return "", err
+	}
+	entries, err := os.ReadDir(canonicalParent)
+	if err != nil {
+		return "", err
+	}
+	base := filepath.Base(abs)
+	for _, e := range entries {
+		if e.Name() == base {
+			return filepath.Join(canonicalParent, base), nil
+		}
+	}
+	for _, e := range entries {
+		if strings.EqualFold(e.Name(), base) {
+			return filepath.Join(canonicalParent, e.Name()), nil
+		}
+	}
+	return "", fs.ErrNotExist
+}
+
+// migrateKeys folds any ProjectNextIdx entries that canonicalize to the
+// same directory into one. The surviving index is the HIGHEST of the
+// merged set, never the lowest: a project that has already handed out
+// letters up to 'k' must not be walked back to 'b', because every letter
+// in between would be issued a second time and two of its plans would
+// land on one statusline slot. Overshooting costs nothing -- the letter
+// sequence simply resumes further along.
+func migrateKeys(st *nameState) bool {
+	merged := make(map[string]int, len(st.ProjectNextIdx))
+	changed := false
+	for key, idx := range st.ProjectNextIdx {
+		canonical := key
+		if c, err := canonicalCase(key); err == nil {
+			canonical = c
+		}
+		if canonical != key {
+			changed = true
+		}
+		if prev, dup := merged[canonical]; dup {
+			changed = true
+			if prev > idx {
+				idx = prev
+			}
+		}
+		merged[canonical] = idx
+	}
+	if changed {
+		st.ProjectNextIdx = merged
+	}
+	return changed
 }
 
 func loadNameState(path string) (*nameState, error) {
@@ -171,6 +245,7 @@ func loadNameState(path string) (*nameState, error) {
 	if st.ProjectNextIdx == nil {
 		st.ProjectNextIdx = map[string]int{}
 	}
+	migrateKeys(&st)
 	return &st, nil
 }
 

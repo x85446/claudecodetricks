@@ -1,6 +1,7 @@
 package iterrun
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -173,5 +174,62 @@ func TestNextPlanNamePerProjectSequenceGloballyUniqueWords(t *testing.T) {
 	}
 	if p1Second[0] != 'b' {
 		t.Errorf("project 1's second name = %q, want a b-word (its own 2nd plan)", p1Second)
+	}
+}
+
+// TestProjectKeyFoldsCase is the regression test for one project holding
+// two letter sequences. On a case-insensitive filesystem the two
+// spellings are one directory and must produce one key; on a
+// case-sensitive one they are two directories and must not be merged.
+func TestProjectKeyFoldsCase(t *testing.T) {
+	root := t.TempDir()
+	real := filepath.Join(root, "izcrOS")
+	if err := os.MkdirAll(real, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	variant := filepath.Join(root, "izcros")
+	sameFilesystem := false
+	if _, err := os.Stat(variant); err == nil {
+		sameFilesystem = true // case-insensitive volume
+	}
+
+	got := projectKey(variant)
+	if sameFilesystem {
+		if got != projectKey(real) {
+			t.Errorf("projectKey(%q) = %q, want it folded onto %q", variant, got, projectKey(real))
+		}
+	} else if got == projectKey(real) {
+		t.Errorf("case-sensitive filesystem: %q and %q must stay distinct keys", variant, real)
+	}
+}
+
+// TestMigrateKeysKeepsHighestIndex pins the merge rule. Walking a project
+// back to a lower letter would reissue every letter in between, putting
+// two of its plans on one status-line slot; overshooting costs nothing.
+func TestMigrateKeysKeepsHighestIndex(t *testing.T) {
+	root := t.TempDir()
+	real := filepath.Join(root, "Proj")
+	if err := os.MkdirAll(real, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	variant := filepath.Join(root, "proj")
+	if _, err := os.Stat(variant); err != nil {
+		t.Skip("case-sensitive filesystem: nothing to merge")
+	}
+
+	st := &nameState{
+		Used:           map[string]bool{},
+		ProjectNextIdx: map[string]int{real: 10, variant: 1},
+	}
+	if !migrateKeys(st) {
+		t.Fatal("migrateKeys reported no change for two spellings of one directory")
+	}
+	if len(st.ProjectNextIdx) != 1 {
+		t.Fatalf("after merge there are %d keys, want 1: %v", len(st.ProjectNextIdx), st.ProjectNextIdx)
+	}
+	for _, idx := range st.ProjectNextIdx {
+		if idx != 10 {
+			t.Errorf("merged index = %d, want the highest (10)", idx)
+		}
 	}
 }
