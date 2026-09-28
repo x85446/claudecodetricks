@@ -63,6 +63,43 @@ Aliases: `/ip` → iterate-planner, `/i` → iterate, `/in` → iterate-notes, `
 
 **Token spend is read, never recorded.** Hook payloads carry no usage figures, so `src/internal/iterrun/tokens.go` joins the session transcripts Claude Code already writes under `~/.claude/projects/` to the hook event log on the two ids both carry: a coordinator's transcript is `<slug>/<session-id>.jsonl` and a teammate's is `<slug>/<session-id>/subagents/agent-<agent-id>.jsonl`, where `<agent-id>` is byte-for-byte the `agent_id` the hook recorded. Three rules hold that accuracy together and each fixed a real miscount: fold streaming rewrites by message id keeping the **last** write (the earlier ones carry a placeholder `output_tokens` — keeping the first undercounted one teammate 9x); drop all-zero synthetic records, which are not requests; and window every lane to the plan's own `Executing:`→`Finished:` span, because one coordinator session spans plans months apart. Dollars are only ever Claude Code's own `cost-state` figure for a whole session, reported as such and never split across lanes — the panel's own unit is tokens.
 
+## chain-guard (`src/cmd/chain-guard/`)
+
+A PreToolUse hook that refuses a Bash call which buries an allowlisted,
+classifier-sensitive command inside a compound command.
+
+A `permissions.allow` rule matches a **command, not a pipeline**. Chaining an
+allowlisted command with `&&`, `;` or `|` means the combined invocation stops
+matching the rule, so it drops out of permission decision-step 1 ("actions
+matching your allow rules resolve immediately") to step 3 ("everything else
+goes to the classifier") — and auto mode's classifier then vetoes the exact
+operation the rule was written to permit. Confirmed live: `gh pr merge 23
+--merge --delete-branch 2>&1 | tail -3 && git checkout main` was denied as
+`[Merge Without Review]` despite `Bash(gh pr merge:*)` being allowlisted; the
+same merge run bare went through instantly.
+
+The guard is deliberately narrow, because chaining is normally correct and
+saves round-trips. A command is flagged only when it is **both** allowlisted
+**and** in `sensitivePrefixes` (`gh pr merge|create|ready`, `gh release
+create`, `git push|merge|rebase`) — the cases where losing the rule actually
+costs something. A benign allowlisted command like `cat` is never guarded: the
+classifier approves that pipeline anyway, so blocking it would be pure tax.
+
+Two properties keep it from becoming the problem it solves:
+
+- **It reads the real allow rules** from `~/.claude/settings.json` and
+  `settings.local.json`, so a rule the user removes stops being guarded with
+  nothing to edit here. A prefix with no allow rule is never flagged — there is
+  no rule to lose.
+- **It fails open.** Unparseable input, a missing settings file, or a non-Bash
+  tool all pass through silently. `SplitTopLevel` errs toward seeing *fewer*
+  separators, so exotic quoting under-reports rather than blocking a command
+  that was fine. `2>&1` is a redirection, not a boundary, and an operator inside
+  quotes belongs to the argument.
+
+The matching rule for humans lives in `~/.claude/CLAUDE.md` under "Never chain
+an allowlisted command"; this hook is its enforcement.
+
 ## Skills management (`skills/skillctl`)
 
 `skillctl` is the agent-facing tool for skills. Machine-first output: silent on
