@@ -3,7 +3,7 @@ name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: "<task + how to validate> | <plan> | pause [<plan>] | resume [<plan>] | version"
 disable-model-invocation: true
-version: 5.7.0
+version: 5.8.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -13,11 +13,11 @@ The user invoked this skill because they're tired of being interrupted by clarif
 
 ## Named plans & state files (this is how resumption works)
 
-Plans are **saved, animal-named, and persistent**. Each plan is one file:
+Plans are **saved, codenamed, and persistent**. Each plan is one file:
 
     ./.claude/iterate/plans/<name>.md        (project-local, relative to cwd)
 
-`<name>` is a common animal (dog, cat, fox, owl, elk, wren, …), assigned via `iterate-run name next` — see /iterate-planner's "Named plans" for why (this project's own alphabetical sequence, a/b/c/…, drawing from one machine-wide "already used" set so two unrelated projects never land on the same codename). If `iterate-run` isn't installed, fall back to any common animal not already present in this project's own `plans/` and note that the global registry was unavailable. `./.claude/iterate/current` points at the **current** plan. **The plan file** below always means the plan being executed (resolved from `$1`'s name, or `current`, or the sole executing/only plan).
+`<name>` is a one-word codename assigned via `iterate-run name next` — see /iterate-planner's "Named plans" for why (this project's own alphabetical sequence, a/b/c/…, drawing words from six compiled tables — animals, then minerals, cities, rivers, trees, stars — against one machine-wide "already used" set, so two unrelated projects never land on the same codename and no letter is ever skipped for want of a word). **If `iterate-run` isn't installed, stop and say so rather than inventing a name.** `./.claude/iterate/current` points at the **current** plan. **The plan file** below always means the plan being executed (resolved from `$1`'s name, or `current`, or the sole executing/only plan).
 
 Each plan has a top-level `phase:` field:
 
@@ -393,7 +393,7 @@ Write `./.claude/iterate/plans/<name>.md` (name from `iterate-run name next` for
 ```markdown
 # Iterate Task — <short title>
 
-name: <animal>
+name: <codename>
 Started: <UTC timestamp>
 Executing: <UTC timestamp>     # same instant as Started: on this direct fresh-task path — set once, never touch again
 CWD: <pwd at first invocation>

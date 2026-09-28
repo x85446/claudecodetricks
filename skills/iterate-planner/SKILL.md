@@ -1,9 +1,9 @@
 ---
 name: iterate-planner
-description: "The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it — planning stays on your current branch, so the status line reads main until execution starts; plans are teamed by default and end with three standing finishers (Makefile, TESTMASTER, user-docs). Plans are saved and animal-named under ./.claude/iterate/plans/. Never executes — the user runs /iterate for that."
+description: "The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it — planning stays on your current branch, so the status line reads main until execution starts; plans are teamed by default and end with three standing finishers (Makefile, TESTMASTER, user-docs). Plans are saved and codenamed under ./.claude/iterate/plans/. Never executes — the user runs /iterate for that."
 when_to_use: "Triggers on \"/iterate-planner\" or its alias \"/ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\" (git + plans snapshot), \"publish\" / \"show plan\" (re-render read-only), \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch left unmerged), \"roll <name>\" (carry unfinished steps to a new plan, same branch), \"turn these notes into a plan\" / \"notes-to-plan\". Teaming: \"team this\", \"teamify\", \"team up the plan\", \"reorganize into teams\"; reverse with \"flat\", \"flatify\", \"un-team\", \"remove teams\". Also recognizes the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps over a named scope, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip the pre-baked steps\", \"skip tests/docs/makefile\") which suppresses the standing end-of-plan finishers for that plan."
 argument-hint: "<optional context, e.g. \"restate the plan from above\", \"plan: 1. do X, 2. validate Y\", or \"flat\" / \"flatify\" to un-team the current plan>"
-version: 5.7.0
+version: 5.8.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -16,7 +16,7 @@ The planning skill for the iterate stack:
 | `/iterate-planner` | **Plan** — formalize the task into the 1a/1b schema, baking in project lessons from the oracle |
 | `/iterate` | **Execute** the plan autonomously until validation passes |
 
-**This skill plans, it does not execute.** It writes a structured, animal-named plan under `./.claude/iterate/plans/<name>.md` with `phase: planned`, prints it back in paired 1a/1b format, and waits for either natural-language refinements or the user typing `/iterate` (or `/iterate <name>`) to kick off execution. It also manages saved plans (list / add-to / delete / remove-from) — see "Named plans" below.
+**This skill plans, it does not execute.** It writes a structured, codenamed plan under `./.claude/iterate/plans/<name>.md` with `phase: planned`, prints it back in paired 1a/1b format, and waits for either natural-language refinements or the user typing `/iterate` (or `/iterate <name>`) to kick off execution. It also manages saved plans (list / add-to / delete / remove-from) — see "Named plans" below.
 
 Before writing, it always reads `./.claude/data/oracle.md` (and the global `~/.claude/skills/oracle/known.md`) and folds any in-scope project knowledge into the plan. When no oracle exists, that step is a silent no-op — the skill still runs and produces a plain plan.
 
@@ -28,7 +28,7 @@ Plans are **saved, named, and persistent**. Each plan is one file:
 
     ./.claude/iterate/plans/<name>.md
 
-`<name>` is a common animal (dog, cat, fox, owl, elk, wren, mole, hare, lynx, crow, seal, toad, newt, ibis, …) assigned automatically when a plan is first created — one word, lowercase. **Get it by running `iterate-run name next`** from the project's own directory (a real installed binary — see "iterate-run" below), never by picking one yourself: THIS project's plans walk the alphabet on their own sequence (this project's 1st plan is an a-word, 2nd a b-word, …), while the actual word for each letter is drawn from one machine-wide "already used" set at `~/.claude/iterate-run/plan-names.json` — so this project's 1st plan and some other project's 1st plan are both a-words, just never the *same* a-word. Plain "not already present in this project's own `plans/`" used to let two unrelated projects both land on "wren" independently, which silently corrupted both their dashboards (same codename, different runs, merged as one). If `iterate-run` isn't installed, fall back to picking any common animal not already present in this project's `plans/` and tell the user the global registry is unavailable so the name isn't guaranteed unique machine-wide. The plan's `Started:` field records the date it was **drafted** (keep it forever; never reset on refinement). This is planning time, not execution time — leave `Executing:` unset here; `/iterate` writes it once, separately, at the exact moment it actually begins running the plan (see its SKILL.md). The dashboard's "Running for" figure reads `Executing:`, not `Started:`, precisely because a plan can sit drafted for hours or days before anyone runs it.
+`<name>` is a one-word codename assigned automatically when a plan is first created. **Get it by running `iterate-run name next`** from the project's own directory (a real installed binary — see "iterate-run" below), never by picking one yourself. THIS project's plans walk the alphabet on their own sequence (this project's 1st plan is an a-word, 2nd a b-word, …), while the word itself is drawn from one machine-wide "already used" set at `~/.claude/iterate-run/plan-names.json` — so this project's 1st plan and some other project's 1st plan are both a-words, just never the *same* a-word. Plain "not already present in this project's own `plans/`" used to let two unrelated projects both land on "wren" independently, which silently corrupted both their dashboards (same codename, different runs, merged as one). The words come from six tables compiled into the binary — animals, then minerals, cities, rivers, trees, stars, spent in that order — so early plans are animals and the switch happens on its own. A letter is **never** skipped for want of a word: past the real entries the pool laps and suffixes (`quail` … `quoll`, `quail2`, `quokka2`, …), so a thin letter like q can serve every project at once. **If `iterate-run` isn't installed, stop and say so** — do not invent a name. A hand-picked name can't see the global registry, which is the collision this whole mechanism exists to prevent, and the letter it lands on won't match the project's sequence. To hand a codename back (a plan abandoned before it meant anything), run `iterate-run name release <word>`; that frees the word but deliberately does not rewind the letter. The plan's `Started:` field records the date it was **drafted** (keep it forever; never reset on refinement). This is planning time, not execution time — leave `Executing:` unset here; `/iterate` writes it once, separately, at the exact moment it actually begins running the plan (see its SKILL.md). The dashboard's "Running for" figure reads `Executing:`, not `Started:`, precisely because a plan can sit drafted for hours or days before anyone runs it.
 
 A single pointer file `./.claude/iterate/current` holds the name of the **current** plan — the one you add to by default. Resolve the current plan like this:
 
@@ -75,7 +75,7 @@ Team count and categories are **discovered per plan, up to roughly 10 teams** �
 
 **Table ownership is split, not exclusive:** `/iterate-planner` owns the table's *structure* — which teams exist, their Steps/Focus/Depends on/Agent, adding/renaming/removing teams. It always writes fresh rows with `Status: pending`. `/iterate` owns only the **Status** cell per row once execution starts — it updates that one value as teams progress and never adds/removes a team, never changes Steps/Focus/Depends on/Agent. Neither side ever touches the other's part of the table.
 
-**`iterate-run`** is the real installed CLI binary (`~/go/bin/iterate-run`, built from `claudecodetricks`) that `/iterate` uses at execution time to wrap long-running commands with real heartbeat/progress tracking instead of guessed timers — see `/iterate`'s "Team dispatch" and "Know the baseline, don't guess it" for how it's used. `/iterate-planner` invokes it directly for one thing — `iterate-run name next`, to assign every new plan's codename (see "Named plans" above) — and otherwise references its version (see op 0 above) and can point to `iterate-run status` when a plan mentions wanting live visibility into a run.
+**`iterate-run`** is the real installed CLI binary (`~/go/bin/iterate-run`, built from `claudecodetricks`) that `/iterate` uses at execution time to wrap long-running commands with real heartbeat/progress tracking instead of guessed timers — see `/iterate`'s "Team dispatch" and "Know the baseline, don't guess it" for how it's used. `/iterate-planner` invokes it directly for two things — `iterate-run name next` to assign every new plan's codename, and `iterate-run name release <word>` to hand one back (see "Named plans" above) — and otherwise references its version (see op 0 above) and can point to `iterate-run status` when a plan mentions wanting live visibility into a run.
 
 ## One plan = one feature branch
 
@@ -196,7 +196,7 @@ When the current plan already has `teamed: true` and a new step is appended:
 
 ### 3. Check the target plan file
 
-Resolve the target plan per the operation router (usually the current plan, or a new animal-named file for a new plan):
+Resolve the target plan per the operation router (usually the current plan, or a new codenamed file for a new plan):
 
 - If the target plan exists with `phase: executing`: **STOP**. Report "that plan is executing; let it finish or use `/iterate` to resume it before re-planning." Do not modify the file.
 - If the target plan exists with `phase: planned`: treat as a **refinement** — preserve `name`, `Started`, `CWD`, `Goal`, `harness` (unless the user is changing it), update the Plan/Constraints sections AND re-apply the oracle merge.
@@ -369,7 +369,7 @@ Schema, written to `./.claude/iterate/plans/<name>.md`:
 ```markdown
 # Iterate Task — <short title>
 
-name: <animal>
+name: <codename>
 Started: <UTC timestamp> (planned)
 CWD: <pwd>
 phase: planned
@@ -451,8 +451,8 @@ Storage uses two parallel numbered lists (Steps + Validation, indexed 1:1). The 
 ### 7. Present the plan
 
 Always lead with a one-line **save confirmation** so the user knows it persisted:
-- created a brand-new plan → `plan written to <animal>`
-- appended to / refined an existing plan → `plan amended <animal>`
+- created a brand-new plan → `plan written to <codename>`
+- appended to / refined an existing plan → `plan amended <codename>`
 
 Then print the plan in paired 1a/1b format, AND show which oracle rules were applied:
 
@@ -527,13 +527,13 @@ The user often queues several `/iterate-planner add <thing>` calls back-to-back 
 Detect this from the conversation itself — no extra state needed: if the **immediately preceding turn** in this conversation was also an `/iterate-planner` add-type invocation (ops 4 or 7) targeting the **same current plan**, treat this as mid-streak and respond with exactly one line instead of the full reprint:
 
 ```
-+ <animal> step <N> added (team: <name>)
++ <codename> step <N> added (team: <name>)
 ```
 
 or, if unassigned/unteamed:
 
 ```
-+ <animal> step <N> added
++ <codename> step <N> added
 ```
 
 Print the **full** plan (with the complete footer, including "Want changes, or type `/iterate` to execute?") on:
@@ -547,7 +547,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 
 1. **Never execute the plan.** Only `/iterate` does that. Your responsibility ends at writing + presenting.
 2. **Never set up `/loop` or take the `running:` lock.** Those happen at `/iterate` execution time.
-2a. **Creating a new plan is explicit-only.** Default every planning request to the current plan; only create a new animal-named plan when the user says "new plan" (or there are zero plans). When unsure, add to current. See "Named plans" above.
+2a. **Creating a new plan is explicit-only.** Default every planning request to the current plan; only create a new codenamed plan when the user says "new plan" (or there are zero plans). When unsure, add to current. See "Named plans" above.
 3. **Apply oracle rules selectively, not blindly.** Only fold in rules that are plausibly in scope for the user's plan. Log skipped rules in the audit trail so the user can override.
 4. **Be transparent about what oracle changed.** The "Oracle rules applied" section is mandatory when the oracle contributed anything. The user must be able to see what got bolted on.
 5. **Pair every step (Na) with a validation (Nb).** If the user didn't specify a validation, infer the most reasonable one (a runnable command + expected output) — and if a Testing requirement from oracle applies, use it for the inferred validation. Note "(validation inferred)" so they can override.
