@@ -267,7 +267,7 @@ that once ticked a dead plan for thirteen hours. Escalation means changing
 |---|---|
 | access / credentials | substitution test (is a local conformant implementation enough? see `/iterate`) → `/accounts` self-heal → retry once → blocked |
 | dependency missing | install it (free + permissively licensed, always — a paid or copyleft substitute is the user's decision, not an escalation) → rebuild → retry once → blocked |
-| wall whose way through is a purchase, subscription, token or licence key | **never blocked-on-operator.** Take the strongest free path and record the gap (`/iterate` rule 29) → none exists → roll the step to `/iterate-planner` as a re-plan with the free alternatives tried. Nothing in the queue ever waits on someone buying something. |
+| wall whose way through is a purchase, subscription, token or licence key the plan did **not** authorize (an approved `Cost:` line is not a wall — build it; a missing credential for it is an ordinary access blocker) | **never blocked-on-operator.** Take the strongest free path and record the gap (`/iterate` rule 29) → none exists → roll the step to `/iterate-planner` as a re-plan with the free alternatives tried. Nothing in the queue ever waits on someone buying something. |
 | test fails on pre-existing breakage | confirm it predates the plan → skip that check, note it, continue |
 | merge conflict | rebase on the default branch → retry → blocked |
 | ambiguity in the plan | pick the most reasonable reading, log the decision, continue — never stop to ask |
