@@ -17,6 +17,7 @@ TOOLS_BIN_DIR := bin
 VOICE_BIN := $(BIN_DIR)/voice-announcer
 LOGGER_BIN := $(BIN_DIR)/session-logger
 GIT_BIN := $(BIN_DIR)/git-committer
+CHAIN_GUARD_BIN := $(BIN_DIR)/chain-guard
 ITERATE_RUN_BIN := $(TOOLS_BIN_DIR)/iterate-run
 
 # Where standalone tools (as opposed to hooks) get installed — already on
@@ -145,9 +146,10 @@ info:  ## Display build configuration
 	$(Q)echo -e "  voice-announcer: $(VOICE_BIN)"
 	$(Q)echo -e "  session-logger:  $(LOGGER_BIN)"
 	$(Q)echo -e "  git-committer:   $(GIT_BIN)"
+	$(Q)echo -e "  chain-guard:     $(CHAIN_GUARD_BIN)"
 	$(Q)echo ""
 	$(Q)echo -e "$(COLOR_BOLD)Build Status:$(COLOR_RESET)"
-	$(Q)for bin in $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN); do \
+	$(Q)for bin in $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN); do \
 		if [ -f $$bin ]; then \
 			echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) $$bin ($$(du -h $$bin | cut -f1))"; \
 		else \
@@ -169,7 +171,7 @@ check-tools:  ## Verify required tools are installed
 
 all: check-tools build  ## Build all binaries (default target)
 
-build: $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(ITERATE_RUN_BIN)  ## Build all binaries
+build: $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(ITERATE_RUN_BIN)  ## Build all binaries
 	$(Q)echo -e "$(COLOR_GREEN)✓ Build complete$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)Version: $(VERSION) ($(GIT_COMMIT))$(COLOR_RESET)"
 
@@ -190,6 +192,12 @@ $(GIT_BIN): $(wildcard $(CMD_DIR)/git-committer/*.go) $(GO_FILES)
 	$(Q)mkdir -p $(BIN_DIR)
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/git-committer
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) git-committer → $@"
+
+$(CHAIN_GUARD_BIN): $(wildcard $(CMD_DIR)/chain-guard/*.go) $(wildcard $(INTERNAL_DIR)/chainguard/*.go)
+	$(Q)echo -e "$(COLOR_BLUE)→ Building chain-guard...$(COLOR_RESET)"
+	$(Q)mkdir -p $(BIN_DIR)
+	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/chain-guard
+	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) chain-guard → $@"
 
 $(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(wildcard $(INTERNAL_DIR)/iterrun/*.go)
 	$(Q)echo -e "$(COLOR_BLUE)→ Building iterate-run...$(COLOR_RESET)"
@@ -300,11 +308,13 @@ install: build  ## Install hooks to Claude Code directory, and tools onto PATH
 	$(Q)cp -f $(VOICE_BIN) $(INSTALL_DIR)/
 	$(Q)cp -f $(LOGGER_BIN) $(INSTALL_DIR)/
 	$(Q)cp -f $(GIT_BIN) $(INSTALL_DIR)/
+	$(Q)cp -f $(CHAIN_GUARD_BIN) $(INSTALL_DIR)/
 	$(Q)chmod +x $(INSTALL_DIR)/voice-announcer
 	$(Q)chmod +x $(INSTALL_DIR)/session-logger
 	$(Q)chmod +x $(INSTALL_DIR)/git-committer
+	$(Q)chmod +x $(INSTALL_DIR)/chain-guard
 	$(Q)if command -v codesign >/dev/null 2>&1; then \
-		codesign --force --sign - $(INSTALL_DIR)/voice-announcer $(INSTALL_DIR)/session-logger $(INSTALL_DIR)/git-committer; \
+		codesign --force --sign - $(INSTALL_DIR)/voice-announcer $(INSTALL_DIR)/session-logger $(INSTALL_DIR)/git-committer $(INSTALL_DIR)/chain-guard; \
 	fi
 	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks installed to $(INSTALL_DIR)$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)  Note: Update ~/.claude/settings.json to enable hooks$(COLOR_RESET)"
@@ -409,7 +419,7 @@ watch:  ## Watch for changes and rebuild (requires fswatch or inotifywait)
 
 clean:  ## Remove built binaries and test artifacts
 	$(Q)echo -e "$(COLOR_YELLOW)→ Cleaning build artifacts...$(COLOR_RESET)"
-	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(ITERATE_RUN_BIN)
+	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(ITERATE_RUN_BIN)
 	$(Q)rm -f coverage.out coverage.html
 	$(Q)rm -rf $(SRC_DIR)/vendor
 	$(Q)echo -e "$(COLOR_GREEN)✓ Clean complete$(COLOR_RESET)"
