@@ -75,3 +75,42 @@ func ListProjects() ([]string, error) {
 	}
 	return live, nil
 }
+
+// ProjectRoot resolves the directory that owns dir's iterate state.
+//
+// Plans live at <project>/.claude/iterate/plans, but every caller here is
+// handed a session's cwd, and a session's cwd wanders: one `cd src` in an
+// unrelated turn, or a tool call under .claude/iterate/archive, and the
+// literal cwd no longer has a .claude/iterate at all. Everything keyed on
+// that raw path then silently detaches from the project — the heartbeat
+// lands under a bogus key so the status line never sees liveness, and
+// CurrentPlanName finds no pointer so the coordinator's events lose their
+// plan. Walking up to the owning directory fixes both at the source.
+//
+// The walk stops at the repository root (.git, a file in a worktree and a
+// directory otherwise): plans sit beside .git, never above it, so a stray
+// ~/.claude/iterate/plans can never be mistaken for an unrelated project's.
+// A dir with no plans anywhere above it resolves to itself, which is what
+// every caller already did before.
+func ProjectRoot(dir string) string {
+	if dir == "" {
+		return dir
+	}
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+	for d := abs; ; {
+		if st, err := os.Stat(filepath.Join(d, ".claude", "iterate", "plans")); err == nil && st.IsDir() {
+			return d
+		}
+		if _, err := os.Stat(filepath.Join(d, ".git")); err == nil {
+			return abs
+		}
+		parent := filepath.Dir(d)
+		if parent == d {
+			return abs
+		}
+		d = parent
+	}
+}

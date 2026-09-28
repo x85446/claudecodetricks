@@ -49,8 +49,15 @@ func HandleHook(phase string, r io.Reader) {
 		return
 	}
 
-	RegisterProject(in.CWD)
-	TouchHeartbeat(in.CWD)
+	// Everything project-scoped keys off the project root, not the raw cwd:
+	// a session that has cd'd into a subdirectory is still working on the
+	// same project, and keying on where it happens to stand detaches the
+	// heartbeat and the plan pointer from it. Event.CWD below stays raw --
+	// that field records where a tool actually ran.
+	root := ProjectRoot(in.CWD)
+
+	RegisterProject(root)
+	TouchHeartbeat(root)
 
 	// SubagentStart/SubagentStop carry no tool_name/tool_input — they're
 	// Codex-only lifecycle events (Claude Code has no equivalent hook this
@@ -65,7 +72,7 @@ func HandleHook(phase string, r io.Reader) {
 	}
 
 	summary := summarize(in.ToolName, in.ToolInput)
-	plan, team := resolvePlanTeam(in.CWD, in.AgentID)
+	plan, team := resolvePlanTeam(root, in.AgentID)
 
 	e := Event{
 		TS:        time.Now().UTC(),

@@ -79,6 +79,7 @@ echo "$input" | jq -c '{
 
 MODEL=$(echo "$input" | jq -r '.model.display_name' | sed 's/(1M context)/(1M)/')
 DIR=$(echo "$input" | jq -r '.workspace.current_dir')
+PROJ=$(echo "$input" | jq -r '.workspace.project_dir // empty')
 COST=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
 PCT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)
 DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
@@ -175,11 +176,13 @@ if [ -n "$WEEK_PCT" ] && [ -n "$WEEK_RESETS" ]; then
   WEEK_INFO="📅 ${WEEK_COLOR}${WEEK_BAR}${RESET} ${WEEK_PCT}% | -${WEEK_RESET_STR}"
 fi
 
+# -C "$DIR" everywhere: the status line is spawned with a cwd of its own and
+# must report the session's repository, not the spawner's.
 BRANCH=""
 DIRTY=""
-if git rev-parse --git-dir > /dev/null 2>&1; then
-  BRANCH=" | 🌿 $(git branch --show-current 2>/dev/null)"
-  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+if git -C "$DIR" rev-parse --git-dir > /dev/null 2>&1; then
+  BRANCH=" | 🌿 $(git -C "$DIR" branch --show-current 2>/dev/null)"
+  if [ -n "$(git -C "$DIR" status --porcelain 2>/dev/null)" ]; then
     DIRTY=" ${RED}●${RESET}"
   else
     DIRTY=" ${GREEN}✔${RESET}"
@@ -210,25 +213,53 @@ fi
 # team), lowercase = flat (one lane, the launching session's model — a flat
 # plan has no Teams table and so no per-team Model column). Two facts, one
 # column, no extra width.
+#
+# The segment is anchored to the PROJECT ROOT, never to current_dir. Plans
+# live at <project>/.claude/iterate/plans, but current_dir is wherever the
+# session last cd'd to: a single `cd src` in an unrelated turn made the whole
+# segment vanish, so the line read "this project has no plans" when what had
+# actually happened was "you are standing one directory too deep". The walk
+# stops at the repository root -- plans sit beside .git, never above it, so a
+# stray ~/.claude/iterate/plans can never leak into an unrelated project.
+iter_root_for() {
+  local base="$1" d
+  [ -n "$base" ] && [ -d "$base" ] || return 1
+  d="$base"
+  while :; do
+    [ -d "$d/.claude/iterate/plans" ] && { printf '%s' "$d"; return 0; }
+    [ -e "$d/.git" ] && return 1
+    case "$d" in /|.|"") return 1 ;; esac
+    d=$(dirname "$d")
+  done
+}
+ITER_ROOT=$(iter_root_for "$DIR") || ITER_ROOT=$(iter_root_for "$PROJ") || ITER_ROOT=""
+
 ITER=""
-if [ -d "$DIR/.claude/iterate/plans" ]; then
+if [ -n "$ITER_ROOT" ]; then
   ITER_LETTERS=""
   # Liveness: mtime of this project's heartbeat, stamped by iterate-run's
   # PreToolUse/PostToolUse hook. Missing file reads the same as stale.
   ITER_EXEC="$GREEN"
   ITER_LIVE=0
-  ITER_HB="$HOME/.claude/iterate-run/heartbeats/${DIR//\//-}"
+  ITER_HB="$HOME/.claude/iterate-run/heartbeats/${ITER_ROOT//\//-}"
   if [ -f "$ITER_HB" ]; then
     ITER_HB_M=$(stat -f %m "$ITER_HB" 2>/dev/null || stat -c %Y "$ITER_HB" 2>/dev/null)
     if [ -n "$ITER_HB_M" ] && [ $(( $(date +%s) - ITER_HB_M )) -le "${ITERATE_LIVE_SECS:-900}" ]; then
       ITER_EXEC="${BOLD}${GREEN}"
     fi
   fi
-  for pf in "$DIR"/.claude/iterate/plans/*.md; do
+  for pf in "$ITER_ROOT"/.claude/iterate/plans/*.md; do
     [ -e "$pf" ] || continue
     b=$(basename "$pf" .md)
-    # only the frontmatter matters; stop at the closing delimiter
-    fm=$(awk 'NR>1 && /^---$/{exit} {print}' "$pf" 2>/dev/null)
+    # Only the key block at the top matters, and it must stop at the first
+    # `## ` heading. Plans do not fence their keys with `---`, so stopping
+    # only at that delimiter read the whole file and matched every state
+    # string a changelog entry quotes about itself -- lines like
+    # "PLAN PARKED -- `status: blocked-on-operator`" are normal in a plan's
+    # history and would colour a finished plan by what it once was. Where a
+    # plan happens to contain a `---` rule that bound still applies, so a
+    # future fenced format keeps working.
+    fm=$(awk '/^## /{exit} NR>1 && /^---$/{exit} {print}' "$pf" 2>/dev/null)
     case "$fm" in
       *"teamed: true"*) L=$(printf '%s' "${b:0:1}" | tr '[:lower:]' '[:upper:]') ;;
       *)                L=$(printf '%s' "${b:0:1}" | tr '[:upper:]' '[:lower:]') ;;
@@ -237,7 +268,12 @@ if [ -d "$DIR/.claude/iterate/plans" ]; then
       *"status: unblocked"*)
         # cleared by a human, waiting for the conductor to pick it back up
         ITER_LETTERS="${ITER_LETTERS}${CYAN}${L}${RESET}" ;;
-      *"status: blocked-on-operator"*|*"status: awaiting-human-gate"*)
+      *"status: blocked"*|*"status: awaiting-human-gate"*)
+        # ANY blocked-* reading is red. Naming the variants individually left
+        # blocked-on-quota falling through to the `phase: executing` arm
+        # below, so a plan parked on a quota wall showed as a live run.
+        # (`status: unblocked` is matched above and does not contain
+        # "status: blocked", so it is unaffected by the wider pattern.)
         ITER_LETTERS="${ITER_LETTERS}${RED}${L}${RESET}" ;;
       *"status: paused"*)
         # a human stopped it on purpose; /iterate resume continues it
