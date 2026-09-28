@@ -49,17 +49,8 @@ for f in sorted(glob.glob(f"{ROOT}/*/SKILL.md")) + sorted(glob.glob(f"{ROOT}/*/r
                 n += 1
 print(f"residual judgment sites: {n}")
 
-# Codex charges manifest budget only for implicitly-invocable skills.
-tot = 0
-for f in glob.glob(f"{ROOT}/*/SKILL.md"):
-    y = os.path.join(os.path.dirname(f), "agents", "openai.yaml")
-    if os.path.exists(y) and "allow_implicit_invocation: false" in open(y).read():
-        continue
-    fm = open(f).read().split("---")[1]
-    m = re.search(r'^description: (.+)$', fm, re.M)
-    tot += len(os.path.basename(os.path.dirname(f))) + len(m.group(1).strip() if m else "")
-print(f"manifest: {tot}/8000 chars" + (f"  OVER BY {tot-8000}" if tot > 8000 else "  ok"))
 PY
+    python3 "$REPO/skills/skill-2-codex/scripts/validate.py" "$REPO/codex-skills" 2>&1 | grep -E "^(manifest|BROKEN)"
     # Registry audit. claudecodetricks is the registry of record for every
     # first-party skill on this machine; this reports what is unregistered or
     # has drifted from its live copy. Report-only on purpose -- deciding which

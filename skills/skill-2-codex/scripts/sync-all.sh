@@ -35,8 +35,8 @@ INSTALL_ROOT="$HOME/.agents/skills"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DO_INSTALL=false; FORCE=""; ONLY=""; QUIET=false; PORT_ALL=false; PRUNE=false
-MANIFEST_BUDGET=8000   # Codex's cap, used as-is. A margin is unused capacity
-                       # that hides the real rule: 8000 is fine, 8001 is not.
+MANIFEST_BUDGET=""     # tokens; empty reads [skills] max_context_tokens from
+                       # ~/.codex/config.toml. Used as-is, no margin.
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --install) DO_INSTALL=true; shift ;;
@@ -243,15 +243,16 @@ PYV
 done
 
 # --- fit the startup manifest ----------------------------------------------
-# Codex charges name+description of every implicitly-invocable skill against a
-# 2%-of-context / 8,000-char budget, half of Claude Code's. Descriptions written
+# Codex charges a name+description+path line for every implicitly-invocable skill
+# against [skills] max_context_tokens, shared with its bundled and plugin
+# skills (cost model: manifest.py). Descriptions written
 # for the larger budget carry material that was never routing signal; diet.py
 # moves that down a level into the body (loaded on trigger) and never touches a
 # trigger phrase. Runs BEFORE stamping so the relocation is part of the
 # generated output, not a change that later reads as a hand-edit.
 DIET_OUT=""
 if [[ -d "$OUT_ROOT" ]]; then
-    DIET_OUT="$(python3 "$HERE/diet.py" "$OUT_ROOT" --budget "$MANIFEST_BUDGET" --apply 2>&1 | head -2)"
+    DIET_OUT="$(python3 "$HERE/diet.py" "$OUT_ROOT" ${MANIFEST_BUDGET:+--budget "$MANIFEST_BUDGET"} --apply 2>&1 | head -2)"
 fi
 
 # --- stamp, now that the output is final ------------------------------------
@@ -299,11 +300,11 @@ done
 # naming what. So they fail HERE, loudly, before install.
 VALIDATE_OUT=""; VALIDATE_RC=0
 if [[ -d "$OUT_ROOT" ]]; then
-    VALIDATE_OUT="$(python3 "$HERE/validate.py" "$OUT_ROOT" --budget "$MANIFEST_BUDGET" 2>&1)" || VALIDATE_RC=$?
+    VALIDATE_OUT="$(python3 "$HERE/validate.py" "$OUT_ROOT" ${MANIFEST_BUDGET:+--budget "$MANIFEST_BUDGET"} 2>&1)" || VALIDATE_RC=$?
 fi
 if [[ $VALIDATE_RC -ne 0 ]]; then
     printf '%s\n' "$VALIDATE_OUT" >&2
-    echo "REFUSING TO INSTALL — generated ports are broken or over the ${MANIFEST_BUDGET}-char cap." >&2
+    echo "REFUSING TO INSTALL — generated ports are broken or over the skills catalog budget." >&2
     echo "The ports in $OUT_ROOT are left as generated so the diff is inspectable." >&2
     # The run report still matters on refusal — a broken port that was NOT
     # regenerated this run is usually one this list names as protected.

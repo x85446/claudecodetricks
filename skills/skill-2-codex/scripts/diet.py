@@ -2,13 +2,13 @@
 """
 diet.py — fit the ported skills inside Codex's startup manifest budget.
 
-Codex loads three levels: the manifest (name + description) at startup, the
-SKILL.md body on trigger, and references/ on demand. Only the first is charged
-against the 2%-of-context / 8,000-char budget.
+Codex loads three levels: the catalog line (name + description + path) at
+startup, the SKILL.md body on trigger, and references/ on demand. Only the first
+is charged against the catalog budget -- see manifest.py for the cost model.
 
 The description cannot be relocated -- it is the only routing signal Codex has,
 and the spec provides no trigger file. But descriptions written for Claude
-Code's 16,000-char budget routinely carry material that was never routing
+Code's larger budget routinely carry material that was never routing
 signal: what the skill does, where it stores state, which rules it enforces.
 That belongs one level down, in the body, where it is read at the moment it
 matters instead of being paid for in every session.
@@ -23,11 +23,15 @@ Conservative by construction:
     so most are never touched at all
   - explicit-only skills cost nothing and are skipped entirely
 
-Usage: diet.py <skills-root> [--budget 8000] [--apply] [--json]
+Usage: diet.py <skills-root> [--budget TOKENS] [--apply] [--json]
+--budget defaults to `[skills] max_context_tokens`; the ports get what the
+other listed skills leave of it.
 """
 import argparse
 
 import yaml, glob, json, os, re, sys
+
+import manifest
 
 # Any of these in a sentence means it carries routing signal -- keep it.
 TRIGGER = re.compile(
@@ -84,14 +88,10 @@ def read_desc(path):
     return (val.strip() if isinstance(val, str) else None), parts, txt
 
 
-def cost(path):
-    d, _, _ = read_desc(path)
-    return len(os.path.basename(os.path.dirname(path))) + len(d or "")
-
-
-def is_implicit(skill_dir):
-    y = os.path.join(skill_dir, "agents", "openai.yaml")
-    return not (os.path.exists(y) and "allow_implicit_invocation: false" in open(y).read())
+def cost(path, desc=None):
+    if desc is None:
+        desc, _, _ = read_desc(path)
+    return manifest.port_cost(os.path.basename(os.path.dirname(path)), desc or "")
 
 
 def apply_diet(path, move):
@@ -137,13 +137,18 @@ def apply_diet(path, move):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("root")
-    ap.add_argument("--budget", type=int, default=8000)
+    ap.add_argument("--budget", type=int, default=None)
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
     skills = [f for f in sorted(glob.glob(f"{a.root}/*/SKILL.md"))
-              if is_implicit(os.path.dirname(f))]
+              if manifest.is_implicit(os.path.dirname(f))]
+    total_budget = a.budget or manifest.configured_budget()
+    if not total_budget:
+        print("no budget: set [skills] max_context_tokens in ~/.codex/config.toml", file=sys.stderr)
+        return 1
+    budget = total_budget - sum(c for _, c in manifest.neighbours())
     before = sum(cost(f) for f in skills)
 
     # Largest documentation payload first, so the fewest skills are touched.
@@ -167,31 +172,32 @@ def main():
         remainder = len(d) - sum(len(m) + 1 for m in move)
         if remainder < MIN_DESC:
             continue
-        cands.append((sum(len(s) + 1 for s in move), f, move))
+        remaining = " ".join(s for s in split_description(d)[0])
+        cands.append((cost(f, d) - cost(f, remaining), f, move))
     cands.sort(reverse=True)
 
     total, touched = before, []
     for payload, f, move in cands:
-        if total <= a.budget:
+        if total <= budget:
             break
         if a.apply:
             apply_diet(f, move)
         total -= payload
         touched.append({"skill": os.path.basename(os.path.dirname(f)),
-                        "moved_chars": payload, "sentences": len(move)})
+                        "saved_tokens": payload, "sentences": len(move)})
 
-    res = {"before": before, "after": total, "budget": a.budget,
-           "fits": total <= a.budget, "touched": touched,
+    res = {"before": before, "after": total, "budget": budget, "unit": "tokens",
+           "fits": total <= budget, "touched": touched,
            "untouched": len(skills) - len(touched), "applied": a.apply}
     if a.json:
         print(json.dumps(res))
     else:
-        print(f"manifest {before} -> {total} / {a.budget}  "
-              f"({'fits' if res['fits'] else 'STILL OVER by ' + str(total - a.budget)})")
+        print(f"ports {before} -> {total} / {budget} tokens  "
+              f"({'fits' if res['fits'] else 'STILL OVER by ' + str(total - budget)})")
         print(f"trimmed {len(touched)} skills, left {res['untouched']} untouched"
               f"{'' if a.apply else '   [dry run — pass --apply]'}")
         for t in touched:
-            print(f"  -{t['moved_chars']:5d}  {t['skill']:<28} ({t['sentences']} sentences to body)")
+            print(f"  -{t['saved_tokens']:5d}  {t['skill']:<28} ({t['sentences']} sentences to body)")
     return 0
 
 
