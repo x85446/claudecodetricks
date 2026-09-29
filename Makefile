@@ -105,7 +105,7 @@ endif
 # ==================================================================================== #
 # ==================================================================================== #
 
-.PHONY: all build clean test test-integration test-unit test-hook
+.PHONY: all build check-tools clean test test-integration test-unit test-hook
 .PHONY: deps deps-check deps-update
 .PHONY: fmt fmt-check vet lint check
 .PHONY: install uninstall
@@ -169,9 +169,9 @@ check-tools:  ## Verify required tools are installed
 
 ##@ Build
 
-all: check-tools build  ## Build all binaries (default target)
+all: build  ## Alias for build — builds everything
 
-build: $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(ITERATE_RUN_BIN)  ## Build all binaries
+build: check-tools $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(ITERATE_RUN_BIN)  ## Build all binaries
 	$(Q)echo -e "$(COLOR_GREEN)✓ Build complete$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)Version: $(VERSION) ($(GIT_COMMIT))$(COLOR_RESET)"
 
