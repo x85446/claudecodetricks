@@ -300,7 +300,7 @@ else
   HOST_ICON="🖥️"
 fi
 
-echo -e "${MAGENTA}${HOST_ICON} ${HOST}${RESET} | ${CYAN}[$MODEL]${RESET} | 📁 ${DIR##*/}$BRANCH$DIRTY$ITER"
+echo -e "📁 ${DIR##*/} | ${MAGENTA}${HOST_ICON} ${HOST}${RESET} | ${CYAN}[$MODEL]${RESET}$BRANCH$DIRTY$ITER"
 COST_FMT=$(printf '$%.2f' "$COST")
 # Pick cost color based on session cost as a percentage of a $1.00 reference
 COST_INT=$(awk -v c="$COST" 'BEGIN { printf "%.0f", c * 100 }')
