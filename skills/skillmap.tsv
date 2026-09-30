@@ -142,7 +142,7 @@ product-prd	userglobal	self	product
 product-requirements	userglobal	self	product
 product-roadmap	userglobal	self	product
 production-process-ai	-	~/workspace/izuma/fintool/.claude/skills/production-process-ai	-
-profile-tools	userglobal	self	-
+profile-tools	pmt	self	-
 promote-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/promote-dead-letter	-
 provision-machine	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/ai-operator/provision-machine	-
 rack-port-table	-	~/workspace/izuma/site-infra/.claude/skills/rack-port-table	-
@@ -170,8 +170,8 @@ route-to-agent	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/sk
 safedelete	userglobal	self	-
 show	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/show	-
 simulate-cycle	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/simulate-cycle	-
-skill-2-codex	userglobal	self	-
-skill-builder	userglobal	self	-
+skill-2-codex	cctricks	self	-
+skill-builder	cctricks	self	-
 skill-maker	-	self	-
 skilltest-renaming-finance-files	-	~/workspace/izuma/fintool/.claude/skillet/skilltest-renaming-finance-files	-
 skillwork-renaming-finance-files	-	~/workspace/izuma/fintool/.claude/skillet/skillwork-renaming-finance-files	-

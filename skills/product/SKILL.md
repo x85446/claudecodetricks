@@ -4,6 +4,7 @@ description: "PRODUCT — the product-definition meta: staged brief, competitors
 when_to_use: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions (/user-docs), NOT building it (/iterate)."
 argument-hint: "[status | next | <stage> | maintain | unlock <stage>] [--fast]"
 version: 1.0.0
+disable-model-invocation: true
 ---
 
 # /product — idea to engineering-ready definition

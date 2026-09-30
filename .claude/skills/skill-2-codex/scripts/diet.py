@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""
+diet.py — fit the ported skills inside Codex's startup manifest budget.
+
+Codex loads three levels: the catalog line (name + description + path) at
+startup, the SKILL.md body on trigger, and references/ on demand. Only the first
+is charged against the catalog budget -- see manifest.py for the cost model.
+
+The description cannot be relocated -- it is the only routing signal Codex has,
+and the spec provides no trigger file. But descriptions written for Claude
+Code's larger budget routinely carry material that was never routing
+signal: what the skill does, where it stores state, which rules it enforces.
+That belongs one level down, in the body, where it is read at the moment it
+matters instead of being paid for in every session.
+
+So this moves documentation OUT of the description and INTO the body. Nothing is
+deleted; text changes level. Trigger phrases are never touched.
+
+Conservative by construction:
+  - a sentence is kept in the description on ANY hint of routing signal
+  - a skill with no clearly-trigger sentence is left completely alone
+  - skills are trimmed largest-payload-first and only until the budget is met,
+    so most are never touched at all
+  - explicit-only skills cost nothing and are skipped entirely
+
+Usage: diet.py <skills-root> [--budget TOKENS] [--apply] [--json]
+--budget defaults to `[skills] max_context_tokens`; the ports get what the
+other listed skills leave of it.
+"""
+import argparse
+
+import yaml, glob, json, os, re, sys
+
+import manifest
+
+# Any of these in a sentence means it carries routing signal -- keep it.
+TRIGGER = re.compile(
+    r'"'                                   # a quoted trigger phrase
+    r'|\btrigger'
+    r'|\buse (when|whenever|for|it for|this when)\b'
+    r'|\balways invoke\b|\buse immediately\b'
+    r'|\basks? (to|about|for|whether)\b'
+    r'|\bphrases? include\b'
+    r'|\broute .{0,30}here\b'
+    r'|\bfires? on\b|\binvoked? (with|as)\b'
+    # Negative scope is routing signal too -- the spec asks a description to say
+    # when the skill should AND should not trigger, so "out of scope" earns its
+    # place in the manifest exactly as much as a trigger phrase does.
+    r'|\bout of scope\b|\bnot for\b|\bnever use\b|\bdo(es)? not (use|apply|cover)\b'
+    r'|\$[a-z][a-z0-9-]*',                 # explicit $name self-reference
+    re.I)
+
+HEADING = "## What this skill does"
+
+
+def split_description(desc):
+    """Return (keep, move) -- sentences that route vs sentences that document."""
+    keep, move = [], []
+    for s in re.split(r'(?<=[.!?])\s+', desc.strip()):
+        if not s.strip():
+            continue
+        (keep if TRIGGER.search(s) else move).append(s.strip())
+    return keep, move
+
+
+MIN_DESC = 40   # below this a description carries no routing signal
+
+
+def read_desc(path):
+    txt = open(path).read()
+    parts = txt.split("---", 2)
+    if len(parts) < 3:
+        return None, None, None
+    m = re.search(r'^description: (.+)$', parts[1], re.M)
+    if not m:
+        return None, parts, txt
+    raw = m.group(1).strip()
+    # A block scalar's text lives on the FOLLOWING lines, so this match is only
+    # the ">-" header. Trimming that wrote `description: >-` with nothing under
+    # it and shipped a port Codex refused to load. Never edit what cannot be
+    # seen whole here.
+    if raw in (">", ">-", ">+", "|", "|-", "|+"):
+        return None, parts, txt
+    try:
+        val = yaml.safe_load(raw)
+    except yaml.YAMLError:
+        return None, parts, txt
+    return (val.strip() if isinstance(val, str) else None), parts, txt
+
+
+def cost(path, desc=None):
+    if desc is None:
+        desc, _, _ = read_desc(path)
+    return manifest.port_cost(os.path.basename(os.path.dirname(path)), desc or "")
+
+
+def apply_diet(path, move):
+    """Relocate `move` sentences from the description into the body."""
+    desc, parts, txt = read_desc(path)
+    sentences = [s for s in re.split(r'(?<=[.!?])\s+', desc.strip()) if s.strip()]
+    keep = [s for s in sentences if s.strip() not in move]
+    new_desc = " ".join(keep)
+    # A description trimmed to nothing routes nothing — and an empty value is a
+    # missing required field on the far side. Refuse rather than ship that.
+    if len(new_desc) < MIN_DESC:
+        return
+    quoted = yaml.dump(new_desc, default_style='"', width=10**9,
+                       allow_unicode=True).rstrip("\n")
+    if quoted.endswith("\n..."):
+        quoted = quoted[:-4]
+    fm = re.sub(r'^description: .+$', "description: " + quoted.strip(),
+                parts[1], count=1, flags=re.M)
+    body = parts[2]
+
+    para = " ".join(move)
+    if HEADING in body:
+        body = re.sub(re.escape(HEADING) + r'\n\n.*?(?=\n\n)',
+                      f"{HEADING}\n\n{para}", body, count=1, flags=re.S)
+    else:
+        lines = body.split("\n")
+        h1 = next((i for i, l in enumerate(lines) if l.startswith("# ")), None)
+        ins = (h1 + 1) if h1 is not None else 0
+        while ins < len(lines) and lines[ins].strip() == "":
+            ins += 1
+        while ins < len(lines) and lines[ins].strip() != "":
+            ins += 1
+        lines[ins:ins] = ["", HEADING, "",
+                          "<!-- codex-port: moved out of the startup description, which is "
+                          "charged against Codex's manifest budget in every session. This text "
+                          "is documentation, not routing signal, so it belongs at the body "
+                          "level where it loads on trigger. No trigger phrase was moved. -->",
+                          "", para]
+        body = "\n".join(lines)
+    open(path, "w").write("---" + fm + "---" + body)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("root")
+    ap.add_argument("--budget", type=int, default=None)
+    ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+
+    skills = [f for f in sorted(glob.glob(f"{a.root}/*/SKILL.md"))
+              if manifest.is_implicit(os.path.dirname(f))]
+    total_budget = a.budget or manifest.configured_budget()
+    if not total_budget:
+        print("no budget: set [skills] max_context_tokens in ~/.codex/config.toml", file=sys.stderr)
+        return 1
+    budget = total_budget - sum(c for _, c in manifest.neighbours())
+    before = sum(cost(f) for f in skills)
+
+    # Largest documentation payload first, so the fewest skills are touched.
+    cands = []
+    for f in skills:
+        d, _, _ = read_desc(f)
+        if not d:
+            continue
+        keep, move = split_description(d)
+        # The remainder must still route. Decide that HERE — a candidate that
+        # would leave too little behind is not a candidate. Deciding it later,
+        # at write time, made the report claim trims that never happened and
+        # left the manifest over the cap.
+        #
+        # The opening sentence is NOT protected: "The planning half of the
+        # iterate stack." is exactly the documentation this pass exists to
+        # relocate. What must never happen is an EMPTY description, and
+        # MIN_DESC is what prevents that.
+        if not keep or not move:      # nothing safe to move, or nothing to keep
+            continue
+        remainder = len(d) - sum(len(m) + 1 for m in move)
+        if remainder < MIN_DESC:
+            continue
+        remaining = " ".join(s for s in split_description(d)[0])
+        cands.append((cost(f, d) - cost(f, remaining), f, move))
+    cands.sort(reverse=True)
+
+    total, touched = before, []
+    for payload, f, move in cands:
+        if total <= budget:
+            break
+        if a.apply:
+            apply_diet(f, move)
+        total -= payload
+        touched.append({"skill": os.path.basename(os.path.dirname(f)),
+                        "saved_tokens": payload, "sentences": len(move)})
+
+    res = {"before": before, "after": total, "budget": budget, "unit": "tokens",
+           "fits": total <= budget, "touched": touched,
+           "untouched": len(skills) - len(touched), "applied": a.apply}
+    if a.json:
+        print(json.dumps(res))
+    else:
+        print(f"ports {before} -> {total} / {budget} tokens  "
+              f"({'fits' if res['fits'] else 'STILL OVER by ' + str(total - budget)})")
+        print(f"trimmed {len(touched)} skills, left {res['untouched']} untouched"
+              f"{'' if a.apply else '   [dry run — pass --apply]'}")
+        for t in touched:
+            print(f"  -{t['saved_tokens']:5d}  {t['skill']:<28} ({t['sentences']} sentences to body)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
