@@ -167,12 +167,15 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  S1["S1: rustorm show ALIAS -> identityfile"]
-  S1 --> S2{"S2: identityfile ends in .pub?"}
-  S2 -->|"no: key is a file"| S2a{"S2a: test -r the file"}
+  S1{"S1: rustorm show ALIAS --filter privateKeyLocation --just-value"}
+  S1 -->|"error: does not exist"| L0(["not an ssh alias: leave this tree, discover what ALIAS is"])
+  S1 -->|keepassxc| S3
+  S1 -->|"empty (no privateKeyLocation)"| S2{"S2: identityfile ends in .pub? rustorm show ALIAS --filter identityfile --just-value"}
+  S2 -->|yes| S3
+  S2 -->|no| S2a{"S2a: test -r the identityfile"}
   S2a -->|fail| L1(["STOP: key file missing or unreadable. Tell the user the path."])
   S2a -->|pass| S5
-  S2 -->|"yes: key lives in the agent (KeePassXC)"| S3{"S3: KeePassXC locked? ssh-add -l"}
+  S3{"S3: KeePassXC locked? ssh-add -l"}
   S3 -->|"no identities, or agent unreachable"| L2(["STOP: ask the user to unlock KeePassXC, then re-run S3"])
   S3 -->|keys listed| S4{"S4: key in agent? ssh-keygen -lf PUBFILE matches ssh-add -l"}
   S4 -->|fail| L3(["STOP: key not in the KeePassXC agent. Tell the user which key."])
@@ -193,7 +196,7 @@ flowchart TD
   S9 -->|connects| L11(["done"])
 ```
 
-Interim: S1 reads the `identityfile` line only; the rustorm key-location check and a dedicated lock check will replace S2-S4 when built.
+S1 uses rustorm's `privateKeyLocation` (`keepassxc` means the key lives in the KeePassXC agent). When it is absent, S2 falls back to the `.pub` heuristic. A `warning: ... also defined in ...` line from rustorm means a stale duplicate block; ssh uses the first, so mention it to the user in one line and continue.
 
 ## Guardrails
 
