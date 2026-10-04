@@ -35,7 +35,9 @@ Tutorials always live at **`docs/tutorials/`** — never the repo root, never a 
   ```bash
   # TUTORIAL-TITLE: Walking the CLI
   # TUTORIAL-MINUTES: 7
+  # TUTORIAL-WALLCLOCK: 45   # optional: when the commands run far longer than the human spends at the keys
   ```
+  The menu shows `7 min · runs ~45 min` so nobody budgets keyboard time for a 45-minute run.
 - A **step** is one `tut_step` (what and why, briefly) followed by one `tut_run` (the command). Keep prose to a line or two: the command is the lesson.
 - Buckets run in filename order and may depend on earlier ones (bucket 2 can assume bucket 1's database exists) — say so in the title line and in `tut_done`'s next-step hint.
 
@@ -58,6 +60,8 @@ Source the library, then use only these:
 `TUT_AUTO=1` (or `run.sh --auto`) runs a bucket unattended with no prompts — used for demos, recordings, and the audit pass.
 
 **Ctrl-C ends the walkthrough.** The runtime waits for the interrupted command to exit (so its own Ctrl-C cleanup runs), restores the terminal, prints one line naming the step, and exits 130; `run.sh` returns to its menu, and `a` stops instead of starting the next bucket. A bucket never needs its own INT trap.
+
+Piped stdin (`printf '1\n\n' | run.sh`) is read for every answer, in confirm mode; a terminal is read only when stdin is one. Colour is off for a non-TTY stdout, `NO_COLOR`, and `TERM=dumb`. When any step failed, `tut_done` says to fix it and re-run before its next hint.
 
 `TUT_EDIT_MODE=confirm` forces the plain prompt (Enter runs the shown line, a typed line replaces it) for a terminal where line editing misbehaves; without bash 4+ the runtime picks it on its own. At the menu, Enter alone reprints the choices rather than quitting.
 

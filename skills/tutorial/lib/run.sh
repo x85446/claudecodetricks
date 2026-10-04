@@ -12,9 +12,9 @@
 set -uo pipefail
 TUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ -r /dev/tty ] && { : >/dev/tty; } 2>/dev/null; then TUT_TTY=/dev/tty; else TUT_TTY=/dev/stdin; fi
+if [ -t 0 ] && [ -r /dev/tty ] && { : >/dev/tty; } 2>/dev/null; then TUT_TTY=/dev/tty; else TUT_TTY=/dev/stdin; fi
 
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-}" != dumb ]; then
     B=$'\033[1;36m'; D=$'\033[2m'; Y=$'\033[1;33m'; O=$'\033[0m'
 else
     B=""; D=""; Y=""; O=""
@@ -23,6 +23,8 @@ fi
 # Each bucket declares its own title/duration in two comment lines:
 #   # TUTORIAL-TITLE: Walking the CLI
 #   # TUTORIAL-MINUTES: 7
+# and, when its commands run much longer than the human spends at the keys,
+#   # TUTORIAL-WALLCLOCK: 45
 bucket_meta() {
     local f="$1" key="$2"
     sed -n "s/^# TUTORIAL-${key}: //p" "$f" | head -1
@@ -34,13 +36,13 @@ list_buckets() {
 
 show_menu() {
     printf '\n%s╭─ Tutorials%s\n' "$B" "$O"
-    local i=0 f title mins
+    local i=0 f title mins wall
     while IFS= read -r f; do
         [ -z "$f" ] && continue
         i=$((i + 1))
-        title=$(bucket_meta "$f" TITLE); mins=$(bucket_meta "$f" MINUTES)
-        printf '%s│%s  %s%2d%s  %-46s %s%s min%s\n' \
-            "$B" "$O" "$Y" "$i" "$O" "${title:-$(basename "$f")}" "$D" "${mins:-?}" "$O"
+        title=$(bucket_meta "$f" TITLE); mins=$(bucket_meta "$f" MINUTES); wall=$(bucket_meta "$f" WALLCLOCK)
+        printf '%s│%s  %s%2d%s  %-46s %s%s min%s%s\n' \
+            "$B" "$O" "$Y" "$i" "$O" "${title:-$(basename "$f")}" "$D" "${mins:-?}" "${wall:+ · runs ~${wall} min}" "$O"
     done <<< "$(list_buckets)"
     if [ "$i" -eq 0 ]; then
         printf '%s│%s  (no tutorials yet — run /tutorial to create one)\n' "$B" "$O"

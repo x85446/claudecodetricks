@@ -41,14 +41,14 @@ fi
 
 TUT_AUTO="${TUT_AUTO:-0}"          # 1 = run everything unattended
 
-# Read from the terminal when there is one, else stdin — so a tutorial piped
-# input (CI, a demo recording, `echo q | run.sh`) still works instead of dying
-# on "/dev/tty: Device not configured".
-if [ -r /dev/tty ] && { : >/dev/tty; } 2>/dev/null; then
+# Answers come from stdin when it is piped (CI, a demo recording,
+# `printf '\n\n' | run.sh 1`), so piped keys are never ignored for the terminal;
+# otherwise from the terminal itself.
+if [ -t 0 ] && [ -r /dev/tty ] && { : >/dev/tty; } 2>/dev/null; then
     TUT_TTY=/dev/tty
 else
     TUT_TTY=/dev/stdin
-    [ "$TUT_EDIT_MODE" = "readline" ] && TUT_EDIT_MODE=confirm
+    TUT_EDIT_MODE=confirm
 fi
 TUT_STEP=0
 TUT_STEP_TITLE=""
@@ -56,8 +56,8 @@ TUT_RUNNING=0                      # 1 while a step's command is executing
 TUT_FAILED=0
 TUT_START_TS=$(date +%s)
 
-# ── Colors (disabled when not a TTY or NO_COLOR is set) ─────────────────────
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+# ── Colors (off when stdout is not a TTY, NO_COLOR is set, or TERM=dumb) ────
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-}" != dumb ]; then
     C_TITLE=$'\033[1;36m'; C_STEP=$'\033[1;33m'; C_CMD=$'\033[1;32m'
     C_DIM=$'\033[2m'; C_ERR=$'\033[1;31m'; C_OK=$'\033[0;32m'; C_OFF=$'\033[0m'
 else
@@ -230,8 +230,12 @@ tut_require() {
 tut_done() {
     local mins=$(( ($(date +%s) - TUT_START_TS) / 60 ))
     printf '\n%s╭─ done — %d steps in ~%d min%s\n' "$C_OK" "$TUT_STEP" "$mins" "$C_OFF"
-    [ "$TUT_FAILED" -gt 0 ] && printf '%s│  %d command(s) exited non-zero%s\n' "$C_ERR" "$TUT_FAILED" "$C_OFF"
-    [ $# -gt 0 ] && printf '%s│  next: %s%s\n' "$C_DIM" "$1" "$C_OFF"
+    if [ "$TUT_FAILED" -gt 0 ]; then
+        printf '%s│  %d command(s) exited non-zero: fix them and run this walkthrough again%s\n' "$C_ERR" "$TUT_FAILED" "$C_OFF"
+        [ $# -gt 0 ] && printf '%s│  then: %s%s\n' "$C_DIM" "$1" "$C_OFF"
+    else
+        [ $# -gt 0 ] && printf '%s│  next: %s%s\n' "$C_DIM" "$1" "$C_OFF"
+    fi
     printf '%s╰────────────────────────────────────────────%s\n\n' "$C_OK" "$C_OFF"
     [ "$TUT_FAILED" -gt 0 ] && return 1
     return 0
