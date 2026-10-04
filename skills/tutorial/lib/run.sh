@@ -51,10 +51,15 @@ show_menu() {
     printf '%s╰──────────────────────────────────────────────────────%s\n\n' "$B" "$O"
 }
 
+# A bucket stopped with Ctrl-C exits 130 and the launcher survives it: the
+# trap keeps run.sh alive while the bucket handles the interrupt itself.
 run_bucket() {
-    local f="$1"
+    local f="$1" rc
     [ -f "$f" ] || { echo "no such tutorial: $f" >&2; return 1; }
-    bash "$f"
+    trap ':' INT
+    bash "$f"; rc=$?
+    trap - INT
+    return $rc
 }
 
 run_nth() {
@@ -64,12 +69,15 @@ run_nth() {
     run_bucket "$f"
 }
 
-# Runs every bucket even if one fails, then reports whether any did.
+# Runs every bucket even if one fails, then reports whether any did. Ctrl-C
+# stops the whole run, not just the bucket it landed in.
 run_all() {
-    local f rc=0
+    local f rc=0 r
     while IFS= read -r f; do
         [ -z "$f" ] && continue
-        run_bucket "$f" || rc=1
+        run_bucket "$f"; r=$?
+        [ "$r" -eq 130 ] && return 130
+        [ "$r" -ne 0 ] && rc=1
     done <<< "$(list_buckets)"
     return $rc
 }
@@ -89,7 +97,8 @@ while true; do
     printf 'choose: '
     IFS= read -r choice <"$TUT_TTY" || exit 0
     case "$choice" in
-        q|Q|"") exit 0 ;;
+        q|Q)    exit 0 ;;
+        "")     printf '%stype a number, a for everything, or q to quit%s\n' "$D" "$O" ;;
         a|A)    run_all ;;
         *[!0-9]*) echo "not a choice: $choice" ;;
         *)      run_nth "$choice" || true ;;

@@ -3,7 +3,7 @@ name: tutorial
 description: Builds and maintains self-running bash tutorials that live in the codebase. A tutorial walks a human through a program by showing each real command pre-filled and editable, running it on Enter — no copy-paste, no setup, no thinking. Menu-driven and extensible; also updates, reorganizes, deletes, and audits existing tutorials as the code changes.
 argument-hint: "<what to build a tutorial for, or: list | update <name> | audit | reorganize | delete <name>>"
 disable-model-invocation: true
-version: 1.2.0
+version: 1.3.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -56,6 +56,10 @@ Source the library, then use only these:
 | `tut_done "what to do next"` | Summary: step count, elapsed minutes, failures. **Exits non-zero if any step failed** |
 
 `TUT_AUTO=1` (or `run.sh --auto`) runs a bucket unattended with no prompts — used for demos, recordings, and the audit pass.
+
+**Ctrl-C ends the walkthrough.** The runtime waits for the interrupted command to exit (so its own Ctrl-C cleanup runs), restores the terminal, prints one line naming the step, and exits 130; `run.sh` returns to its menu, and `a` stops instead of starting the next bucket. A bucket never needs its own INT trap.
+
+`TUT_EDIT_MODE=confirm` forces the plain prompt (Enter runs the shown line, a typed line replaces it) for a terminal where line editing misbehaves; without bash 4+ the runtime picks it on its own. At the menu, Enter alone reprints the choices rather than quitting.
 
 ### Pre-fill everything
 
