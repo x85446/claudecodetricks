@@ -75,12 +75,14 @@ run_nth() {
 # stops the whole run, not just the bucket it landed in.
 run_all() {
     local f rc=0 r
-    while IFS= read -r f; do
+    # The list comes in on fd 3 so each bucket keeps the launcher's stdin: a
+    # bucket whose stdin is not a terminal reads its answers from it.
+    while IFS= read -r f <&3; do
         [ -z "$f" ] && continue
         run_bucket "$f"; r=$?
         [ "$r" -eq 130 ] && return 130
         [ "$r" -ne 0 ] && rc=1
-    done <<< "$(list_buckets)"
+    done 3<<< "$(list_buckets)"
     return $rc
 }
 
