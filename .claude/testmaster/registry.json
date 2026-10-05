@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-05T04:13:18Z",
+  "updated": "2026-10-05T05:06:53Z",
   "tests": {
     "git.TestScreenPath": {
       "name": "TestScreenPath",
@@ -1455,6 +1455,20 @@
       "last_result": "pass",
       "parallel_safe": true,
       "updated": "2026-10-05T04:13:18Z"
+    },
+    "tutorial.box-test": {
+      "name": "box-test",
+      "file": "skills/tutorial/tests/box-test.sh",
+      "pkg": "tutorial",
+      "cmd": "bash skills/tutorial/tests/box-test.sh",
+      "runner": "bash",
+      "runs": 1,
+      "avg_ms": 4464,
+      "tier": "fast",
+      "last_ms": 4464,
+      "last_result": "pass",
+      "parallel_safe": true,
+      "updated": "2026-10-05T05:06:53Z"
     }
   }
 }

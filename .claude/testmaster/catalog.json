@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-05T04:16:44Z",
+  "updated": "2026-10-05T05:06:53Z",
   "project": "claudecodetricks",
   "requirements": [
     {
@@ -2210,6 +2210,139 @@
           "verified_at": "2026-10-05T04:16:44Z",
           "last_validated_commit": "wt",
           "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/v13b (2026-10-05T04:09-04:14Z): status: paused with no operator line logged as \"self-pause defect: heron\", status cleared, resumed via /iterate heron with loop-mechanism: external, completed and archived"
+        }
+      ]
+    },
+    {
+      "id": "req-gaur-tutorial-box",
+      "requirement": "Every box the tutorial runtime draws (the run.sh menu, tut_title, tut_done) is closed on all four sides and sized to its widest row. The menu shows a bucket's time as one line: ~45 min running (10 hands-on) when it declares TUTORIAL-WALLCLOCK, 10 min otherwise. Durations are dim, and the colour roles are the skill's standard.",
+      "source": "plan:gaur",
+      "cases": [
+        {
+          "id": "box-1",
+          "given": "the menu, a tut_title box and a tut_done box rendered on a pty at 60, 80 and 132 columns",
+          "when": "the frames are read with ANSI stripped",
+          "then": "every line of each box has the same width and ends in its right border",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "a901cfa7+wt",
+          "last_validated": "2026-10-05T05:06:53Z"
+        },
+        {
+          "id": "box-2",
+          "given": "a row wider than the terminal (a long tut_title subtitle, a long menu row)",
+          "when": "the box renders at 60, 80 and 132 columns",
+          "then": "the row wraps inside the frame and no line is wider than the terminal",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "a901cfa7+wt",
+          "last_validated": "2026-10-05T05:06:53Z"
+        },
+        {
+          "id": "box-3",
+          "given": "a bucket declaring TUTORIAL-MINUTES: 10 and TUTORIAL-WALLCLOCK: 45",
+          "when": "the menu renders",
+          "then": "its duration reads ~45 min running (10 hands-on)",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "a901cfa7+wt",
+          "last_validated": "2026-10-05T05:06:53Z"
+        },
+        {
+          "id": "box-4",
+          "given": "a bucket declaring only TUTORIAL-MINUTES: 4 beside the box-3 bucket",
+          "when": "the menu renders",
+          "then": "its duration reads 4 min and starts in the same column as box-3's",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "a901cfa7+wt",
+          "last_validated": "2026-10-05T05:06:53Z"
+        },
+        {
+          "id": "box-5",
+          "given": "NO_COLOR=1, TERM=dumb, or a piped stdout",
+          "when": "the menu or a bucket renders",
+          "then": "the output holds no escape sequence and every frame is closed",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "a901cfa7+wt",
+          "last_validated": "2026-10-05T05:06:53Z"
+        },
+        {
+          "id": "box-6",
+          "given": "LANG=C LC_ALL=C",
+          "when": "the menu renders",
+          "then": "the frame is drawn in + - | and is closed",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "a901cfa7+wt",
+          "last_validated": "2026-10-05T05:06:53Z"
+        },
+        {
+          "id": "box-7",
+          "given": "a tutorial directory with no buckets",
+          "when": "the menu renders",
+          "then": "a closed frame shows the (no tutorials yet …) placeholder row",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "a901cfa7+wt",
+          "last_validated": "2026-10-05T05:06:53Z"
         }
       ]
     }

@@ -240,3 +240,4 @@
 {"ts": "2026-10-05T04:13:18Z", "id": "iterrun.TestSetFrontmatterKey", "ms": 467, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-10-05T04:13:18Z", "id": "TestPlanRouteFollowsAPlanIntoTheArchive", "ms": 7930, "result": "pass", "tier": "fast", "runner": "go test"}
 {"ts": "2026-10-05T04:13:18Z", "id": "dotfiles.statusline-check", "ms": 6026, "result": "pass", "tier": "fast", "runner": "make"}
+{"ts": "2026-10-05T05:06:53Z", "id": "tutorial.box-test", "ms": 4464, "result": "pass", "tier": "fast", "runner": "bash"}

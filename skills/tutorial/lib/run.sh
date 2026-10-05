@@ -11,16 +11,17 @@
 
 set -uo pipefail
 TUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$TUT_DIR/box.sh" || { echo "run.sh: box.sh is missing beside it — copy it from the /tutorial skill's lib/" >&2; exit 1; }
 
 if [ -t 0 ] && [ -r /dev/tty ] && { : >/dev/tty; } 2>/dev/null; then TUT_TTY=/dev/tty; else TUT_TTY=/dev/stdin; fi
 
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-}" != dumb ]; then
+if tut_color_on; then
     B=$'\033[1;36m'; D=$'\033[2m'; Y=$'\033[1;33m'; O=$'\033[0m'
 else
     B=""; D=""; Y=""; O=""
 fi
 
-# Each bucket declares its own title/duration in two comment lines:
+# Each bucket declares its own title and hands-on minutes in two comment lines:
 #   # TUTORIAL-TITLE: Walking the CLI
 #   # TUTORIAL-MINUTES: 7
 # and, when its commands run much longer than the human spends at the keys,
@@ -34,23 +35,52 @@ list_buckets() {
     find "$TUT_DIR" -maxdepth 1 -name '[0-9][0-9]-*.sh' -type f | sort
 }
 
+# Duration column: "~45 min running (10 hands-on)" when the bucket declares a
+# wall clock, "10 min" otherwise. Dim, like every duration the runtime prints.
+bucket_duration() {
+    local mins="$1" wall="$2"
+    if [ -n "$wall" ]; then printf '~%s min running (%s hands-on)' "$wall" "${mins:-?}"
+    else printf '%s min' "${mins:-?}"; fi
+}
+
 show_menu() {
-    printf '\n%s╭─ Tutorials%s\n' "$B" "$O"
-    local i=0 f title mins wall
+    local f n=0 i nw tw=0 title pad rows=() titles=() durs=()
     while IFS= read -r f; do
         [ -z "$f" ] && continue
-        i=$((i + 1))
-        title=$(bucket_meta "$f" TITLE); mins=$(bucket_meta "$f" MINUTES); wall=$(bucket_meta "$f" WALLCLOCK)
-        printf '%s│%s  %s%2d%s  %-46s %s%s min%s%s\n' \
-            "$B" "$O" "$Y" "$i" "$O" "${title:-$(basename "$f")}" "$D" "${mins:-?}" "${wall:+ · runs ~${wall} min}" "$O"
+        title=$(bucket_meta "$f" TITLE)
+        titles+=("${title:-$(basename "$f")}")
+        durs+=("$(bucket_duration "$(bucket_meta "$f" MINUTES)" "$(bucket_meta "$f" WALLCLOCK)")")
+        _tut_box_width "${titles[$n]}"; [ "$_tb_w" -gt "$tw" ] && tw=$_tb_w
+        n=$((n + 1))
     done <<< "$(list_buckets)"
-    if [ "$i" -eq 0 ]; then
-        printf '%s│%s  (no tutorials yet — run /tutorial to create one)\n' "$B" "$O"
-    fi
-    printf '%s│%s\n' "$B" "$O"
-    printf '%s│%s  %sa%s   run everything in order\n' "$B" "$O" "$Y" "$O"
-    printf '%s│%s  %sq%s   quit\n' "$B" "$O" "$Y" "$O"
-    printf '%s╰──────────────────────────────────────────────────────%s\n\n' "$B" "$O"
+    nw=${#n}
+    # Durations sit in one column after the titles; when that row would not fit
+    # the frame, each one moves to its own line under the title instead, so a
+    # duration is never split across lines.
+    local dw=0 under=0
+    i=0
+    while [ "$i" -lt "$n" ]; do
+        _tut_box_width "${durs[$i]}"; [ "$_tb_w" -gt "$dw" ] && dw=$_tb_w
+        i=$((i + 1))
+    done
+    tut_box_cols
+    [ $((nw + 2 + tw + 2 + dw)) -gt $((_tb_cols - 5)) ] && under=1
+    _tut_box_rep ' ' $((nw + 2)); local hang="$_tb_rep"
+    i=0
+    while [ "$i" -lt "$n" ]; do
+        if [ "$under" -eq 1 ]; then
+            rows+=("$(printf '%s%*d%s  %s' "$Y" "$nw" $((i + 1)) "$O" "${titles[$i]}")" "$hang$D${durs[$i]}$O")
+        else
+            _tut_box_width "${titles[$i]}"; _tut_box_rep ' ' $((tw - _tb_w)); pad="$_tb_rep"
+            rows+=("$(printf '%s%*d%s  %s%s  %s%s%s' "$Y" "$nw" $((i + 1)) "$O" "${titles[$i]}" "$pad" "$D" "${durs[$i]}" "$O")")
+        fi
+        i=$((i + 1))
+    done
+    [ "$n" -eq 0 ] && rows+=("(no tutorials yet — run /tutorial to create one)")
+    rows+=("" "$(printf '%s%*s%s  run everything in order' "$Y" "$nw" a "$O")" "$(printf '%s%*s%s  quit' "$Y" "$nw" q "$O")")
+    printf '\n'
+    tut_box "$B" Tutorials "${rows[@]}"
+    printf '\n'
 }
 
 # A bucket stopped with Ctrl-C exits 130 and the launcher survives it: the

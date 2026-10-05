@@ -20,6 +20,8 @@ if [ -z "${TUT_REEXEC:-}" ] && [ "${BASH_VERSINFO[0]:-0}" -lt 4 ]; then
 fi
 
 set -uo pipefail
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/box.sh" || {
+    echo "tutorial.sh: box.sh is missing beside it — copy it from the /tutorial skill's lib/" >&2; exit 1; }
 
 # ── Capability detection ────────────────────────────────────────────────────
 # edit modes: readline (bash4+), vared (zsh), confirm (no prefill possible).
@@ -56,20 +58,24 @@ TUT_RUNNING=0                      # 1 while a step's command is executing
 TUT_FAILED=0
 TUT_START_TS=$(date +%s)
 
-# ── Colors (off when stdout is not a TTY, NO_COLOR is set, or TERM=dumb) ────
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-}" != dumb ]; then
+# ── Colors (the ladder in box.sh: NO_COLOR, FORCE_COLOR, TERM=dumb, a TTY) ──
+# Roles: frame and title bold cyan, step numbers bold yellow, the command bold
+# green, durations and hints dim, failures bold red, done green.
+if tut_color_on; then
     C_TITLE=$'\033[1;36m'; C_STEP=$'\033[1;33m'; C_CMD=$'\033[1;32m'
     C_DIM=$'\033[2m'; C_ERR=$'\033[1;31m'; C_OK=$'\033[0;32m'; C_OFF=$'\033[0m'
 else
     C_TITLE=""; C_STEP=""; C_CMD=""; C_DIM=""; C_ERR=""; C_OK=""; C_OFF=""
 fi
+if tut_utf8; then S_UP='↑'; S_STOP='↯'; else S_UP='^'; S_STOP='!'; fi
 
 # ── Narration ───────────────────────────────────────────────────────────────
 
 tut_title() {
-    printf '\n%s╭─ %s%s\n' "$C_TITLE" "$1" "$C_OFF"
-    [ $# -gt 1 ] && printf '%s│  %s%s\n' "$C_DIM" "$2" "$C_OFF"
-    printf '%s╰────────────────────────────────────────────%s\n\n' "$C_TITLE" "$C_OFF"
+    printf '\n'
+    if [ $# -gt 1 ]; then tut_box "$C_TITLE" "$1" "$C_DIM$2$C_OFF"
+    else tut_box "$C_TITLE" "$1"; fi
+    printf '\n'
 }
 
 tut_section() { printf '\n%s── %s ──%s\n\n' "$C_TITLE" "$1" "$C_OFF"; }
@@ -126,7 +132,7 @@ tut_run() {
     TUT_RUNNING=0
     if [ $rc -ne 0 ]; then
         TUT_FAILED=$((TUT_FAILED + 1))
-        printf '%s    ↑ exited %d — the tutorial keeps going%s\n' "$C_ERR" "$rc" "$C_OFF"
+        printf '%s    %s exited %d — the tutorial keeps going%s\n' "$C_ERR" "$S_UP" "$rc" "$C_OFF"
     fi
     return 0
 }
@@ -138,7 +144,7 @@ tut_run_fixed() {
     TUT_RUNNING=1
     eval "$1" || {
         TUT_FAILED=$((TUT_FAILED + 1))
-        printf '%s    ↑ failed — continuing%s\n' "$C_ERR" "$C_OFF"
+        printf '%s    %s failed — continuing%s\n' "$C_ERR" "$S_UP" "$C_OFF"
     }
     TUT_RUNNING=0
     return 0
@@ -157,11 +163,11 @@ tut_interrupted() {
     { : >/dev/tty; } 2>/dev/null && stty sane </dev/tty 2>/dev/null
     printf '\033[?2004l'   # bracketed paste off, in case readline was mid-prompt
     if [ "$TUT_RUNNING" = "1" ]; then
-        printf '\n%s↯ interrupted in step %d (%s): the command got Ctrl-C and has exited. Walkthrough stopped.%s\n' \
-            "$C_ERR" "$TUT_STEP" "$TUT_STEP_TITLE" "$C_OFF"
+        printf '\n%s%s interrupted in step %d (%s): the command got Ctrl-C and has exited. Walkthrough stopped.%s\n' \
+            "$C_ERR" "$S_STOP" "$TUT_STEP" "$TUT_STEP_TITLE" "$C_OFF"
     else
-        printf '\n%s↯ stopped at step %d (%s) before running it. Walkthrough stopped.%s\n' \
-            "$C_ERR" "$TUT_STEP" "$TUT_STEP_TITLE" "$C_OFF"
+        printf '\n%s%s stopped at step %d (%s) before running it. Walkthrough stopped.%s\n' \
+            "$C_ERR" "$S_STOP" "$TUT_STEP" "$TUT_STEP_TITLE" "$C_OFF"
     fi
     exit 130
 }
@@ -228,15 +234,17 @@ tut_require() {
 # Exits non-zero when any step failed, so `run.sh --auto` is usable as a build
 # check. The tutorial still ran to the end — this only reports the truth.
 tut_done() {
-    local mins=$(( ($(date +%s) - TUT_START_TS) / 60 ))
-    printf '\n%s╭─ done — %d steps in ~%d min%s\n' "$C_OK" "$TUT_STEP" "$mins" "$C_OFF"
+    local mins=$(( ($(date +%s) - TUT_START_TS) / 60 )) rows=() unit=steps
+    [ "$TUT_STEP" -eq 1 ] && unit=step
     if [ "$TUT_FAILED" -gt 0 ]; then
-        printf '%s│  %d command(s) exited non-zero: fix them and run this walkthrough again%s\n' "$C_ERR" "$TUT_FAILED" "$C_OFF"
-        [ $# -gt 0 ] && printf '%s│  then: %s%s\n' "$C_DIM" "$1" "$C_OFF"
+        rows+=("$C_ERR$TUT_FAILED command(s) exited non-zero: fix them and run this walkthrough again$C_OFF")
+        [ $# -gt 0 ] && rows+=("${C_DIM}then: $1$C_OFF")
     else
-        [ $# -gt 0 ] && printf '%s│  next: %s%s\n' "$C_DIM" "$1" "$C_OFF"
+        [ $# -gt 0 ] && rows+=("${C_DIM}next: $1$C_OFF")
     fi
-    printf '%s╰────────────────────────────────────────────%s\n\n' "$C_OK" "$C_OFF"
+    printf '\n'
+    tut_box "$C_OK" "done — $TUT_STEP $unit in $C_DIM~$mins min$C_OFF" ${rows[@]+"${rows[@]}"}
+    printf '\n'
     [ "$TUT_FAILED" -gt 0 ] && return 1
     return 0
 }
