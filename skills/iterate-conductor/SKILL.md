@@ -3,7 +3,7 @@ name: iterate-conductor
 description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via /iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
 argument-hint: start | stop | pause | resume | run | status | kill | schedule <rule>
 disable-model-invocation: true
-version: 5.10.0
+version: 5.11.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -326,9 +326,11 @@ that once ticked a dead plan for thirteen hours. Escalation means changing
 | dependency missing | install it (free + permissively licensed, always — a paid or copyleft substitute is the user's decision, not an escalation) → rebuild → retry once → blocked |
 | wall whose way through is a purchase, subscription, token or licence key the plan did **not** authorize (an approved `Cost:` line is not a wall — build it; a missing credential for it is an ordinary access blocker) | **never blocked-on-operator.** Take the strongest free path and record the gap (`/iterate` rule 29) → none exists → roll the step to `/iterate-planner` as a re-plan with the free alternatives tried. Nothing in the queue ever waits on someone buying something. |
 | test fails on pre-existing breakage | confirm it predates the plan → skip that check, note it, continue |
+| regression this plan's work caused — anywhere, old code included — or a defect in its own deliverable | fix it in this run → add a validation for it → re-run the earlier validations it touches → continue; never routed to notes or a later plan |
+| contract expansion — a contract or API change its consumers must follow (a parity rule across CLI, TUI and MCP) | extend the contract → update every consumer → run their validations → fix regressions → continue; **never blocked** (`/iterate` rule 33) |
 | merge conflict | rebase on the default branch → retry → blocked |
-| ambiguity in the plan | pick the most reasonable reading, log the decision, continue — never stop to ask |
-| needs a human decision, a secret, physical access, or an external party | **blocked immediately, no ladder** — no approach clears it |
+| ambiguity in the plan, or a design choice inside the repository (extend vs withdraw, which approach) | pick the reading that delivers the plan's feature, log it, continue — never stop to ask |
+| needs a secret, physical access, or an external party | **blocked immediately, no ladder** — no approach clears it |
 
 ### The plan box measures stalling, not working
 
@@ -447,8 +449,9 @@ what moves it back up.
 A **dry sweep** — step 5 found nothing to start and step 6's intake produced
 nothing — resolves to exactly one of these:
 
-1. **Every remaining blocker needs a human** (a secret, a decision, physical
-   access, an external party), or there are no plans left at all and no forge to
+1. **Every remaining blocker needs a human** (a secret, physical access, an
+   external party — never a choice inside the repository, which the executor
+   makes), or there are no plans left at all and no forge to
    import from → **stand down.** Nothing but the operator changes this, and the
    operator is asleep.
 

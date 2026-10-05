@@ -3,7 +3,7 @@ name: tutorial
 description: Builds and maintains self-running bash tutorials that live in the codebase. A tutorial walks a human through a program by showing each real command pre-filled and editable, running it on Enter — no copy-paste, no setup, no thinking. Menu-driven and extensible; also updates, reorganizes, deletes, and audits existing tutorials as the code changes.
 argument-hint: "<what to build a tutorial for, or: list | update <name> | audit | reorganize | delete <name>>"
 disable-model-invocation: true
-version: 1.2.0
+version: 1.4.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -21,12 +21,13 @@ Tutorials are **code**. They are checked in, they live beside what they teach, a
 docs/tutorials/
 ├── run.sh              # menu launcher (auto-discovers buckets; never hand-edited)
 ├── tutorial.sh         # shared runtime library
+├── box.sh              # the box builder both of them draw with
 ├── 01-cli-basics.sh    # a bucket: 5-10 minutes of steps
 ├── 02-data-setup.sh
 └── 03-web-dashboard.sh
 ```
 
-Tutorials always live at **`docs/tutorials/`** — never the repo root, never a per-project variant. They are documentation that executes, so they belong with the docs; a fixed location also means `make tutorial` and the audit pass are identical in every repo. Both `run.sh` and `tutorial.sh` are copied verbatim from this skill's [lib/](lib/) directory — **never rewrite them per project**; fix the skill's copies and re-deploy if they need changes.
+Tutorials always live at **`docs/tutorials/`** — never the repo root, never a per-project variant. They are documentation that executes, so they belong with the docs; a fixed location also means `make tutorial` and the audit pass are identical in every repo. `run.sh`, `tutorial.sh` and `box.sh` are copied verbatim, all three, from this skill's [lib/](lib/) directory — **never rewrite them per project**; fix the skill's copies and re-deploy if they need changes. The two scripts source `box.sh` from their own directory and stop with a one-line error naming it when it is missing.
 
 ## Buckets and steps
 
@@ -35,7 +36,9 @@ Tutorials always live at **`docs/tutorials/`** — never the repo root, never a 
   ```bash
   # TUTORIAL-TITLE: Walking the CLI
   # TUTORIAL-MINUTES: 7
+  # TUTORIAL-WALLCLOCK: 45   # optional: when the commands run far longer than the human spends at the keys
   ```
+  The menu shows the time as one dim line: `~45 min running (7 hands-on)` when the bucket declares a wall clock, `7 min` when it doesn't. The durations start in one column across every row, so nobody budgets keyboard time for a 45-minute run.
 - A **step** is one `tut_step` (what and why, briefly) followed by one `tut_run` (the command). Keep prose to a line or two: the command is the lesson.
 - Buckets run in filename order and may depend on earlier ones (bucket 2 can assume bucket 1's database exists) — say so in the title line and in `tut_done`'s next-step hint.
 
@@ -57,6 +60,29 @@ Source the library, then use only these:
 
 `TUT_AUTO=1` (or `run.sh --auto`) runs a bucket unattended with no prompts — used for demos, recordings, and the audit pass.
 
+**Ctrl-C ends the walkthrough.** The runtime waits for the interrupted command to exit (so its own Ctrl-C cleanup runs), restores the terminal, prints one line naming the step, and exits 130; `run.sh` returns to its menu, and `a` stops instead of starting the next bucket. A bucket never needs its own INT trap.
+
+Piped stdin (`printf '1\n\n' | run.sh`) is read for every answer, in confirm mode; a terminal is read only when stdin is one. When any step failed, `tut_done` says to fix it and re-run before its next hint.
+
+### Boxes
+
+The menu, `tut_title` and `tut_done` are drawn by one builder, `tut_box <colour> <title> [row…]` in `box.sh`. Every box is closed on all four sides and as wide as its widest row or title, measured with colour escapes stripped and one column per character. It is capped at the terminal width (`COLUMNS`, else the size of the terminal stdout writes to, else `tput cols`, else 80). A longer row wraps at word boundaries inside the frame, and its continuation lines keep the row's indent. Outside a UTF-8 locale, or on `TERM=dumb`, the frame is drawn in `+ - |` and the runtime's `↑` and `↯` become `^` and `!`. East Asian wide characters and emoji in titles are not measured as two columns.
+
+### Colour roles — the standard
+
+| Role | SGR | Where |
+|---|---|---|
+| frame and title | bold cyan `1;36` | every box border and box title, `tut_section` |
+| numbers and keys | bold yellow `1;33` | menu numbers and `a`/`q`, `[N]` step headers, `tut_bulk_offer`'s label |
+| the command | bold green `1;32` | the `$ cmd` line, `→ opening` |
+| durations and hints | dim `2` | menu durations, `tut_done`'s `~N min`, step explanations, `(Enter to continue)`, next/then hints |
+| failures | bold red `1;31` | `↑ exited N`, missing requirements, the failure row in `tut_done`, Ctrl-C notices |
+| done | green `0;32` | the `tut_done` frame and title |
+
+Colour follows one ladder, first match wins: `NO_COLOR` non-empty turns it off; `FORCE_COLOR`, or `CLICOLOR_FORCE` other than `0`, turns it on even when piped; `TERM=dumb` turns it off; a stdout that is not a terminal turns it off. Off means no escape sequence at all, and the boxes stay intact. Every meaning survives without colour: failures read `exited N`, done reads `done —`, and keys sit in their own column.
+
+`TUT_EDIT_MODE=confirm` forces the plain prompt (Enter runs the shown line, a typed line replaces it) for a terminal where line editing misbehaves; without bash 4+ the runtime picks it on its own. At the menu, Enter alone reprints the choices rather than quitting.
+
 ### Pre-fill everything
 
 This is the whole point, so it is a rule, not a preference: **`tut_run` receives the complete command with every argument already filled in.** Real paths, real flags, real values that work in this project right now. Never `--limit <N>`, never a placeholder the human must replace, never a command that errors unless edited. If a value genuinely can't be known ahead of time, compute it in the script and interpolate it.
@@ -68,7 +94,7 @@ This is the whole point, so it is a rule, not a preference: **`tut_run` receives
 1. **Read the conversation first**, then the code: the CLI's own `--help` output, subcommands, the Makefile targets, the routes or screens. Prefer running `--help` for real over reading the arg parser.
 2. **Verify every command before it goes in a tutorial.** Run it. A tutorial that fails on step 3 in front of an audience is worse than no tutorial — this is the same exercise-don't-guess mandate the rest of the stack uses.
 3. **Group into 5–10 minute buckets** by subject, ordered so each builds on the last. Setup and data population come first.
-4. **Scaffold if absent**: create `docs/tutorials/`, copy `run.sh` and `tutorial.sh` from this skill's `lib/`, `chmod +x` both. If a project already has tutorials elsewhere (`tutorials/`, `scripts/tutorials/`), `git mv` them into `docs/tutorials/` and re-run `audit` — the move is part of the operation, not a follow-up.
+4. **Scaffold if absent**: create `docs/tutorials/`, copy `run.sh`, `tutorial.sh` and `box.sh` from this skill's `lib/`, `chmod +x` the two scripts. A project that already has tutorials gets the same three copied over its old ones; one copied before `box.sh` existed stops at start with the missing-file error until `box.sh` is copied in beside the other two. If a project already has tutorials elsewhere (`tutorials/`, `scripts/tutorials/`), `git mv` them into `docs/tutorials/` and re-run `audit` — the move is part of the operation, not a follow-up.
 5. **Write each bucket** with the header comments, real pre-filled commands, and `tut_bulk_offer` around any multi-step setup.
 6. **Test it for real**: `./docs/tutorials/run.sh --auto <n>` for each new bucket. Every command must exit 0 (or be a deliberate failure the tutorial explains). Fix and re-run until clean — do not hand over an unrun tutorial.
 7. **Report**: bucket list with titles and minutes, plus the one line the user types to start (`./docs/tutorials/run.sh`).
@@ -100,7 +126,7 @@ Confirm the subject is actually gone from the code (grep for the commands it run
 1. **Every command is verified before it ships.** Run it during authoring and re-run the bucket with `--auto` before handing over. Unverified steps are the one failure this skill cannot tolerate.
 2. **Pre-fill completely.** No placeholders, no blanks, nothing the human must know to type. Editing is an option they may take, never a requirement.
 3. **The human's only required input is Enter.** Anything that needs a real decision gets a `tut_bulk_offer` shortcut or a pre-chosen sensible default — never an open question mid-walkthrough.
-4. **Location is fixed at `docs/tutorials/`, and `run.sh` / `tutorial.sh` are copied there, never rewritten per project.** Improvements go back into this skill's `lib/` so every project's tutorials benefit. The menu auto-discovers buckets, so adding a file is the only way to add a menu entry.
+4. **Location is fixed at `docs/tutorials/`, and `run.sh`, `tutorial.sh` and `box.sh` are copied there together, never rewritten per project.** Improvements go back into this skill's `lib/` so every project's tutorials benefit. The menu auto-discovers buckets, so adding a file is the only way to add a menu entry.
 5. **A tutorial keeps going after a failed command** — it reports the non-zero exit and continues, so one broken step doesn't end the demo. It still **exits non-zero at the end** if anything failed: the demo survives, the exit code tells the truth. That is what makes `--auto` wireable as a build check.
 6. **Destructive commands use `tut_run_fixed`**, and anything that would delete real data, push, or deploy does not belong in a tutorial at all.
 7. **Tutorials are maintained like code**: they are checked in, they drift, and `audit` is how that gets caught. A tutorial nobody has run since the CLI changed is a liability, not documentation.

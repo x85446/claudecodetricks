@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-05T04:16:44Z",
+  "updated": "2026-10-05T05:25:00Z",
   "project": "claudecodetricks",
   "requirements": [
     {
@@ -16,8 +16,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "git.TestStageFilesKeepsBinaryOutOfObjectStore",
@@ -28,8 +28,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -47,8 +47,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPendingSpawnLabelEmptyQueueUnknownSession",
@@ -59,8 +59,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHandleHookSubagentStartClaimsQueuedLabel",
@@ -74,8 +74,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHandleHookSubagentStartNoQueuedLabelIsNoop",
@@ -89,8 +89,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel",
@@ -103,8 +103,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHandleHookPostIgnoresNonSpawnToolForQueue",
@@ -117,8 +117,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHandleHookPostAgentToolStillResolvesLabelDirectly",
@@ -132,8 +132,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHandleHookSubagentStopIsNoop",
@@ -145,8 +145,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator",
@@ -158,8 +158,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParseAgentIDFoldsRedispatchesIntoOneTeam",
@@ -169,8 +169,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents",
@@ -181,8 +181,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -199,8 +199,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestNextPlanNameNeverRepeats",
@@ -210,8 +210,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestNextPlanNameSeedsFromDisk",
@@ -221,8 +221,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestNextPlanNameConcurrentCallsNeverCollide",
@@ -232,8 +232,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestNextPlanNamePerProjectSequenceGloballyUniqueWords",
@@ -243,8 +243,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -261,8 +261,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParsePlanFileNotBlocked",
@@ -272,8 +272,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParsePlanFileGoalTruncation",
@@ -283,8 +283,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParsePlanFileExecutingDistinctFromStarted",
@@ -294,8 +294,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParsePlanFileExecutingAbsent",
@@ -305,8 +305,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestListArchivedPlans",
@@ -316,8 +316,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestGetArchivedPlanSummarySetsArchived",
@@ -327,8 +327,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestFinishedAtParsesIndependentlyOfExecuting",
@@ -338,8 +338,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestEffectiveStartPrefersExecutingOverStarted",
@@ -349,8 +349,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
@@ -360,8 +360,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -379,8 +379,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestArchivedBadgeReflectsBlockedAndPhase",
@@ -391,8 +391,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestDashboardSeparatesActiveAndArchivedTabs",
@@ -404,8 +404,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
@@ -415,8 +415,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPlanRouteFollowsAPlanIntoTheArchive",
@@ -432,8 +432,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -450,8 +450,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBuildRowsFromHookEventsScopesCoordinatorByProject",
@@ -461,8 +461,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag",
@@ -472,8 +472,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParsePlanStarted",
@@ -483,8 +483,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParsePlanStartedRespectsUTCSuffix",
@@ -494,8 +494,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBuildRowsFromArchivePreservesGoalAndSteps",
@@ -508,8 +508,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator",
@@ -521,8 +521,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParseCoordinatorStepStatusRangesAndCase",
@@ -532,8 +532,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParseCoordinatorStepStatusCapturesNote",
@@ -543,8 +543,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
@@ -556,8 +556,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestOrderTeamRowsNestsByDependency",
@@ -567,8 +567,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
@@ -581,8 +581,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
@@ -594,8 +594,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestRunboxPrefersExecutingOverStarted",
@@ -607,8 +607,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
@@ -620,8 +620,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
@@ -633,8 +633,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
@@ -646,8 +646,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
@@ -659,8 +659,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBurndownChartShadesByValidationState",
@@ -672,8 +672,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBurndownChartDistinguishesGaveUpFromActive",
@@ -685,8 +685,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary",
@@ -698,8 +698,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBurndownChartOmittedWhenNoStepDetail",
@@ -711,8 +711,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists",
@@ -722,8 +722,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestAxisTicksLandOnWallClockBoundaries",
@@ -733,8 +733,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes",
@@ -744,8 +744,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestAxisTicksSurviveASpringForwardTransition",
@@ -755,8 +755,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack",
@@ -768,8 +768,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane",
@@ -779,8 +779,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestBusyAndGapsUseTheUnionOfOverlappingSpans",
@@ -790,8 +790,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestCoarseLogSpanIsAFallbackNotASupplement",
@@ -801,8 +801,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -828,8 +828,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestConductorStatusLineNotEnabledHidden",
@@ -839,8 +839,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestConductorStatusLineStoodDown",
@@ -850,8 +850,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestConductorStatusLineWorkingShowsNextTickMinutes",
@@ -861,8 +861,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHarnessBadgeCoversAllThreeValues",
@@ -872,8 +872,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHarnessRollupOnlyWhenMixed",
@@ -883,8 +883,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestLivePlanCardsCarryHarnessBadge",
@@ -895,8 +895,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParsePlanFileHarness",
@@ -906,8 +906,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParsePlanFileVersion",
@@ -917,8 +917,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand",
@@ -930,8 +930,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPlanDetailShowsVersionFromEitherMarker",
@@ -943,8 +943,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestReadConductorStateMissingFile",
@@ -954,8 +954,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestWriteLiveProjectSectionRendersConductorStatus",
@@ -966,8 +966,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -986,8 +986,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestSyntheticZeroUsageRecordsAreNotCountedAsRequests",
@@ -998,8 +998,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPromptTickClassifiesEveryRealWakeupShape",
@@ -1009,8 +1009,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam",
@@ -1022,8 +1022,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestRedispatchedTeamsShareOneLane",
@@ -1035,8 +1035,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPlanTokenUsageExcludesSpendOutsideTheRunWindow",
@@ -1047,8 +1047,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject",
@@ -1059,8 +1059,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestToolAttributionChargesGrowthToTheCallThatCausedIt",
@@ -1071,8 +1071,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestParallelCallsSplitTheirSharedContextGrowth",
@@ -1083,8 +1083,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestTickGroupsSeparateCoalescedFiringsFromIdleOnes",
@@ -1095,8 +1095,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect",
@@ -1107,8 +1107,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestATornFinalLineIsPickedUpOnceItIsComplete",
@@ -1119,8 +1119,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestALaneWithNoTranscriptIsReportedNotZeroed",
@@ -1135,8 +1135,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestTokenPanelRendersLanesToolsAndWakeups",
@@ -1151,8 +1151,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
@@ -1166,8 +1166,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestHumanTokensStaysExactWherePrecisionMatters",
@@ -1177,8 +1177,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPrintPlanTokensSaysSoWhenThereIsNoData",
@@ -1189,8 +1189,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn",
@@ -1200,8 +1200,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -1219,8 +1219,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet",
@@ -1230,8 +1230,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestABoxedUnteamedPlanStillGetsItsRequirements",
@@ -1243,8 +1243,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem",
@@ -1256,8 +1256,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestAnExplicitStatusLogMarkOverridesTheCheckbox",
@@ -1269,8 +1269,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestPlainFormatPlansAreUnaffected",
@@ -1282,8 +1282,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "iterrun.TestUnteamedPlanOmitsTheEmptyTeamSection",
@@ -1296,8 +1296,8 @@
           ],
           "covers_source": "coverage",
           "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -1320,8 +1320,8 @@
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-2",
@@ -1337,8 +1337,8 @@
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-3",
@@ -1353,8 +1353,8 @@
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-4",
@@ -1370,8 +1370,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-5",
@@ -1386,8 +1386,8 @@
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-6",
@@ -1402,8 +1402,8 @@
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-7",
@@ -1418,10 +1418,10 @@
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/v13 (2026-10-05T04:05Z): picked zebra (queued), yak (bare planned) never launched; flamingo Status/Log step 13",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/g13 (2026-10-05T05:21Z, iterate 5.11.0): picked zebra (queued), wrote loop-mechanism: external, ran it all-green; yak (bare planned) never launched; stood down with tick-source launchd kept",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "tick-8",
@@ -1436,8 +1436,8 @@
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-9",
@@ -1456,8 +1456,8 @@
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-10",
@@ -1473,8 +1473,8 @@
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "tick-11",
@@ -1494,8 +1494,8 @@
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -1517,8 +1517,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-2",
@@ -1533,8 +1533,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-3",
@@ -1549,8 +1549,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-4",
@@ -1565,8 +1565,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-5",
@@ -1581,8 +1581,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-6",
@@ -1597,8 +1597,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-7",
@@ -1613,8 +1613,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-8",
@@ -1629,8 +1629,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-9",
@@ -1645,8 +1645,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-10",
@@ -1661,8 +1661,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-11",
@@ -1677,8 +1677,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-12",
@@ -1693,8 +1693,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-13",
@@ -1709,8 +1709,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-14",
@@ -1725,8 +1725,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-15",
@@ -1741,8 +1741,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-16",
@@ -1757,8 +1757,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sl-17",
@@ -1773,8 +1773,8 @@
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -1796,8 +1796,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sch-2",
@@ -1812,8 +1812,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sch-3",
@@ -1828,8 +1828,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sch-4",
@@ -1844,8 +1844,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sch-5",
@@ -1860,8 +1860,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sch-6",
@@ -1876,8 +1876,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sch-7",
@@ -1892,8 +1892,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sch-8",
@@ -1908,8 +1908,8 @@
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "sch-9",
@@ -1928,8 +1928,8 @@
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -1950,10 +1950,10 @@
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/ip stage otter\" in fixture v11 (2026-10-05T03:42Z): status: queued written below phase; /ip list shows (queued)",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/ip stage otter\" in fixture g11 (5.11.0): status: queued written below phase; /ip list shows (current) (queued)",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "st-2",
@@ -1967,10 +1967,10 @@
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/ip unstage otter\" in fixture v11: status line removed",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/ip unstage otter\" in fixture g11 (5.11.0): status line removed",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "st-3",
@@ -1984,10 +1984,10 @@
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/ip stage panda\" (executing) in fixture v11: refused, file byte-identical",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/ip stage panda\" (executing) in fixture g11 (5.11.0): refused in one line, file byte-identical",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "st-4",
@@ -2001,10 +2001,10 @@
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/ip add to otter …\" in fixture v11: step added, status removed, reply \"unstaged — re-stage with /ip stage otter\"",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/ip add to otter …\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged — re-stage with /ip stage otter\"",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "st-5",
@@ -2018,10 +2018,10 @@
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/iterate robin\" in fixture v12 (2026-10-05T03:22Z): status: queued cleared on transition, loop-mechanism external honoured, archived all-green",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/iterate robin\" in fixture g12 (5.11.0): status: queued cleared on transition, loop-mechanism external kept, 1/1 green, archived",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "st-6",
@@ -2035,10 +2035,10 @@
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/iterate\" (no arg) in fixture v11 with one queued plan: printed the pointer, launched nothing",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/iterate\" (no arg) in fixture g11b with one queued plan (5.11.0): printed the pointer, launched nothing, still on main",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "st-7",
@@ -2058,8 +2058,8 @@
             "src/internal/iterrun/status.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         },
         {
           "id": "st-8",
@@ -2077,8 +2077,8 @@
             "src/internal/iterrun/names.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     },
@@ -2101,10 +2101,10 @@
             "skills/testmaster-run/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/iterate seal\" in fixture v14 (2026-10-05T03:51-03:59Z): drifted slow case soak-1 run in-plan via iterate-run (125.2s), registry runs 2, plan all-green",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/iterate seal\" in fixture g14 (2026-10-05T05:20-05:24Z, 5.11.0): soak-1 run in-plan via iterate-run run --plan seal (125.3s), registry runs 2, plan all-green",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "np-2",
@@ -2118,10 +2118,10 @@
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "fixture v14 transcript: 0 matches for go-ahead|pause the plan|let me know|before I run|say-so|^Ask:",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "fixture g14 transcript daefaff3: 0 assistant-text matches for go-ahead|pause the plan|let me know when|before I run|say-so|^Ask:",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "np-3",
@@ -2153,10 +2153,10 @@
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "fixture v14: cron f1e3d595 cancelled in the terminal all-green entry only (CronDelete after Finished:)",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "fixture g14 transcript: CronCreate once at launch, CronDelete 1cc25e0a once in the terminal all-green entry",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "np-5",
@@ -2170,10 +2170,10 @@
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
-          "evidence": "claude -p \"/iterate gannet\" in fixture v14b (2026-10-05T04:06Z): status: awaiting-human-gate set, cron cancelled and verified, gate question asked, branch unmerged",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, ⚠ branch-not-merged line",
+          "last_validated_commit": "b49945e6"
         },
         {
           "id": "np-6",
@@ -2191,7 +2191,7 @@
           "verified_by": "fixture",
           "verified_at": "2026-10-05T04:12:08Z",
           "evidence": "claude -p \"/testmaster run soak-1\" in fixture v15 (plan executing): ran 125s without confirmation; \"/testmaster run all\" downgraded to fast+standard with the note",
-          "last_validated_commit": "a8ffa3eb+wt"
+          "last_validated_commit": "9240afce"
         },
         {
           "id": "np-7",
@@ -2210,6 +2210,246 @@
           "verified_at": "2026-10-05T04:16:44Z",
           "last_validated_commit": "wt",
           "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/v13b (2026-10-05T04:09-04:14Z): status: paused with no operator line logged as \"self-pause defect: heron\", status cleared, resumed via /iterate heron with loop-mechanism: external, completed and archived"
+        }
+      ]
+    },
+    {
+      "id": "req-gaur-tutorial-box",
+      "requirement": "Every box the tutorial runtime draws (the run.sh menu, tut_title, tut_done) is closed on all four sides and sized to its widest row. The menu shows a bucket's time as one line: ~45 min running (10 hands-on) when it declares TUTORIAL-WALLCLOCK, 10 min otherwise. Durations are dim, and the colour roles are the skill's standard.",
+      "source": "plan:gaur",
+      "cases": [
+        {
+          "id": "box-1",
+          "given": "the menu, a tut_title box and a tut_done box rendered on a pty at 60, 80 and 132 columns",
+          "when": "the frames are read with ANSI stripped",
+          "then": "every line of each box has the same width and ends in its right border",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "box-2",
+          "given": "a row wider than the terminal (a long tut_title subtitle, a long menu row)",
+          "when": "the box renders at 60, 80 and 132 columns",
+          "then": "the row wraps inside the frame and no line is wider than the terminal",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "box-3",
+          "given": "a bucket declaring TUTORIAL-MINUTES: 10 and TUTORIAL-WALLCLOCK: 45",
+          "when": "the menu renders",
+          "then": "its duration reads ~45 min running (10 hands-on)",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "box-4",
+          "given": "a bucket declaring only TUTORIAL-MINUTES: 4 beside the box-3 bucket",
+          "when": "the menu renders",
+          "then": "its duration reads 4 min and starts in the same column as box-3's",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "box-5",
+          "given": "NO_COLOR=1, TERM=dumb, or a piped stdout",
+          "when": "the menu or a bucket renders",
+          "then": "the output holds no escape sequence and every frame is closed",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "box-6",
+          "given": "LANG=C LC_ALL=C",
+          "when": "the menu renders",
+          "then": "the frame is drawn in + - | and is closed",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "box-7",
+          "given": "a tutorial directory with no buckets",
+          "when": "the menu renders",
+          "then": "a closed frame shows the (no tutorials yet …) placeholder row",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "tutorial.box-test",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        }
+      ]
+    },
+    {
+      "id": "req-gaur-contract-expansion",
+      "requirement": "tern must never have parked on \"extend symapi or withdraw --no-browser\": when a feature needs an API broadly expanded, iterate expands it, chases the regressions (revalidating old code is fine), implements the feature and moves forward without human interaction.",
+      "source": "plan:gaur",
+      "cases": [
+        {
+          "id": "contract-1",
+          "given": "skills/iterate/SKILL.md",
+          "when": "its rule list is read",
+          "then": "rule 33 exists, names contract expansion, answers extend-or-withdraw with extend, and cites tern",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "contract-2",
+          "given": "/iterate's On-stuck and landing-test Fails paragraphs",
+          "when": "they are read",
+          "then": "the operator-only list is closed to a secret, physical access and an external party with no decision on it, and a clause-3/4 failure is work",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "contract-3",
+          "given": "the conductor's escalation ladder",
+          "when": "it is read",
+          "then": "a parity row ends in continue and no 'needs a human decision' row exists",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "contract-4",
+          "given": "the triage state table",
+          "when": "it is read",
+          "then": "exactly one Executor-defect row exists, cleared with fix problem N and status: unblocked",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
+        },
+        {
+          "id": "contract-5",
+          "given": "the 13 iterate family members",
+          "when": "skillctl family iterate runs and each installed copy is compared with its source",
+          "then": "every member carries the family version and every installed copy matches",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "7f2b68c2",
+          "last_validated": "2026-10-05T05:16:34Z"
         }
       ]
     }
