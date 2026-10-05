@@ -3,7 +3,7 @@ name: iterate-planner
 description: "The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it — planning stays on your current branch, so the status line reads main until execution starts; plans are flat by default (teamify on request), can be staged for the nightly tick, and end with three standing finishers (Makefile, TESTMASTER, user-docs). Plans are saved and codenamed under ./.claude/iterate/plans/. Never executes — the user runs /iterate for that."
 when_to_use: "Triggers on \"/iterate-planner\" or its alias \"/ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\", \"publish\" / \"show plan\", \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch unmerged), \"roll <name>\" (unfinished steps to a new plan, same branch), \"notes-to-plan\". Staging for the nightly tick: \"stage <name>\", \"approve <name>\", \"queue <name>\", \"unstage <name>\". Teaming: \"team this\", \"teamify\", \"team up the plan\"; reverse with \"flat\", \"flatify\", \"un-team\". Also the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip tests/docs/makefile\") suppressing the standing finishers for that plan."
 argument-hint: "<optional context, e.g. \"restate the plan from above\", \"plan: 1. do X, 2. validate Y\", \"stage <name>\" to approve a plan for the nightly tick, or \"teamify\" / \"flat\" to team or un-team the current plan>"
-version: 5.10.0
+version: 5.11.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -618,6 +618,8 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
     It is also the cheap shape: a subagent's context dies when it returns, so everything it read — the 400 KB log, the screenshot, the whole vendored file — never reaches the coordinator's context, where it would otherwise be re-sent on every later request for the rest of the run.
 
 32. **Staging is a human act, and refinement spends it.** Only `stage`/`approve`/`queue` (op 4.5) writes `status: queued`; every op that changes the plan removes it and says so. Never stage a plan on your own initiative, never leave a queued line on a plan you just changed, and never refuse to stage a planned plan — the line is the user's authorization for an unattended launch, and nothing else is.
+
+33. **A contract expansion is written as the step, with its consumers — never as a choice.** A step that touches a shared contract other code consumes (an API, an event, an RPC method, a schema, a flag under a parity rule across CLI, TUI and MCP) names every consumer in its Na, carries one validation clause per consumer in its Nb, and adds a Constraint: `Parity: <contract> — consumers <list>; expansion is executor work, never a gate`. A step shaped "decide whether to extend X or withdraw Y" is rewritten as "extend X" — the same rewrite rule 10 applies to halt-steps — because the executor answers extend-or-withdraw with extend anyway (`/iterate` rule 33), and a plan that phrases it as a choice invites a park.
 
 ## Examples
 
