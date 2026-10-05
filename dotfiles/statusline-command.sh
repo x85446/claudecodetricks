@@ -233,7 +233,7 @@ fi
 # switch is off. Emoji ignore ANSI, so a word carries what colour cannot.
 # 📥N after that counts open informs: bug reports another project's session
 # dropped in <root>/.claude/iterate/inbox with /iterate-inform, still reading
-# `status: open` above their first `## ` heading. `/ip inbox` plans them.
+# `status: open` above their first `## ` heading. `/ip plan the inbox` plans them.
 # Case carries teaming, which colour had no room left to say: UPPERCASE = the
 # plan is teamified (`teamed: true`, so /iterate dispatches one subagent per
 # team), lowercase = flat (one lane, the launching session's model — a flat

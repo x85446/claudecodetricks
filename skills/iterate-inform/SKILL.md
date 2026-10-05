@@ -1,8 +1,8 @@
 ---
 name: iterate-inform
-description: "Send ANOTHER project a one-time bug report about a problem this session ran into, so that project's AI can plan the fix later. Writes one file to <project>/.claude/iterate/inbox/ and acks in one line. Triggers on \"/iterate-inform\" or its alias \"/ii\", \"tell <project> that…\", \"let <project> know…\", \"inform <project>\", \"file this with <project>\", \"report this to <project>\". The receiving project plans it with /ip inbox. Never plans, fixes or executes anything itself."
+description: "Send ANOTHER project a one-time bug report about a problem this session ran into, so that project's AI can plan the fix later. Writes one file to <project>/.claude/iterate/inbox/ and acks in one line. Triggers on \"/iterate-inform\" or its alias \"/ii\", \"tell <project> that…\", \"let <project> know…\", \"inform <project>\", \"file this with <project>\", \"report this to <project>\". The receiving project reads it with /ip show inbox and plans it with /ip plan the inbox. Never plans, fixes or executes anything itself."
 argument-hint: <project> <what to tell them — an instruction to the AI, e.g. "tell them what you need deployed">
-version: 5.12.0
+version: 5.12.1
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -13,14 +13,15 @@ version: 5.12.0
 | `/iterate-notes` (`/in`) | **Capture** an idea for this project's next plan |
 | `/iterate-inform` (`/ii`) | **Inform** another project of a problem it owns |
 | `/iterate-brainstorm` (`/ibs`) | **Decide** between options |
-| `/iterate-planner` (`/ip`) | **Plan**: `/ip inbox` turns received informs into a plan |
+| `/iterate-planner` (`/ip`) | **Plan**: `/ip plan the inbox` turns received informs into a plan |
 | `/iterate` (`/i`) | **Execute** autonomously |
 
 Use it when this session hit a problem whose fix lives in **another
 project**: its code, its deployment, its config. This session can't fix it
 there and shouldn't. The other project's AI has none of this session's
 context, so this skill writes what it would need, as a bug report, and drops
-it in that project's inbox. That session plans it later with `/ip inbox`.
+it in that project's inbox. That session reads it with `/ip show inbox` and
+plans it with `/ip plan the inbox`.
 
 Real cases:
 - izuma-dm-platform's plan `gar` is blocked because teleport runs a stale
@@ -162,9 +163,9 @@ Nothing else: no reprint of the report and no next steps.
 
 The receiving project sees the open item in three places: `📥N` in its
 statusline's ⚙️ segment, an `Inbox:` block in `/ip status`, and a problem in
-`/it`. `/ip inbox` builds a plan from it and marks it
-`status: consumed (plan: <name>)`. When their user drops it, it becomes
-`status: dismissed (<why>)`. This skill never changes an item's status
+`/it`. `/ip show inbox` reads it without touching it. `/ip plan the inbox`
+builds a plan from it and marks it `status: consumed (plan: <name>)`. When
+their user drops it, it becomes `status: dismissed (<why>)`. This skill never changes an item's status
 after writing it.
 
 ## Rules (hard)
