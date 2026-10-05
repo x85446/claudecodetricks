@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-05T05:25:00Z",
+  "updated": "2026-10-05T18:03:58Z",
   "project": "claudecodetricks",
   "requirements": [
     {
@@ -2450,6 +2450,77 @@
           "covers_source": "manual",
           "last_validated_commit": "7f2b68c2",
           "last_validated": "2026-10-05T05:16:34Z"
+        }
+      ]
+    },
+    {
+      "id": "req-inform-statusline",
+      "requirement": "The ⚙️ segment ends with 📥N when the project root has N open informs (inbox/*.md whose key block reads status: open); consumed or dismissed informs, and status lines below the first ## heading, do not count; a project whose only iterate state is an inbox still renders the segment.",
+      "source": "skill:iterate-inform",
+      "cases": [
+        {
+          "id": "sl-18",
+          "given": "a project with two open informs and one consumed",
+          "when": "the statusline renders",
+          "then": "its segment ends with 📥2",
+          "tier": "?",
+          "source": "skill:iterate-inform",
+          "validity": "valid",
+          "test": "dotfiles.statusline-check",
+          "covers": [
+            "dotfiles/statusline-command.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "6a4fce5e",
+          "last_validated": "2026-10-05T18:03:58Z"
+        },
+        {
+          "id": "sl-19",
+          "given": "a project whose only inform is dismissed",
+          "when": "the statusline renders",
+          "then": "no 📥 renders",
+          "tier": "?",
+          "source": "skill:iterate-inform",
+          "validity": "valid",
+          "test": "dotfiles.statusline-check",
+          "covers": [
+            "dotfiles/statusline-command.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "6a4fce5e",
+          "last_validated": "2026-10-05T18:03:58Z"
+        },
+        {
+          "id": "sl-20",
+          "given": "a project with only .claude/iterate/inbox (no plans/ or archive/), rendered from a subdirectory",
+          "when": "the statusline renders",
+          "then": "the ⚙️ segment renders, ending with 📥1",
+          "tier": "?",
+          "source": "skill:iterate-inform",
+          "validity": "valid",
+          "test": "dotfiles.statusline-check",
+          "covers": [
+            "dotfiles/statusline-command.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "6a4fce5e",
+          "last_validated": "2026-10-05T18:03:58Z"
+        },
+        {
+          "id": "sl-21",
+          "given": "a consumed inform whose body quotes 'status: open' below its first ## heading",
+          "when": "the statusline renders",
+          "then": "it is not counted and no 📥 renders",
+          "tier": "?",
+          "source": "skill:iterate-inform",
+          "validity": "valid",
+          "test": "dotfiles.statusline-check",
+          "covers": [
+            "dotfiles/statusline-command.sh"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "6a4fce5e",
+          "last_validated": "2026-10-05T18:03:58Z"
         }
       ]
     }

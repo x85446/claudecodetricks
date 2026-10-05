@@ -1,9 +1,10 @@
 #!/bin/bash
 # Byte-level fixtures for the statusline's ⚙️ segment: colour per plan state (orange queued,
 # dark-green stalled, bold-green live, red/yellow unchanged), the dim next-plan letter, the ⏰
-# enrollment icon, and the .claude/iterate root walk. Runs the real script against throwaway
-# projects under a scratch HOME and prints PASS/FAIL per case; exit 1 on any failure.
-# Case ids match .claude/testmaster/catalog.json (req-flamingo-statusline, sl-1..sl-17).
+# enrollment icon, the 📥 open-inform count, and the .claude/iterate root walk. Runs the real
+# script against throwaway projects under a scratch HOME and prints PASS/FAIL per case; exit 1
+# on any failure. Case ids match .claude/testmaster/catalog.json (req-flamingo-statusline,
+# sl-1..sl-17; req-inform-statusline, sl-18..sl-21).
 set -u; export LC_ALL=C
 SCRIPT="$(cd "$(dirname "$0")" && pwd)/statusline-command.sh"
 FX=$(mktemp -d "${TMPDIR:-/tmp}/slfx.XXXXXX"); export HOME="$FX/home"; mkdir -p "$HOME/.claude/iterate-run/heartbeats"
@@ -71,5 +72,18 @@ touch "$HB"; out=$(render "$X" $T256 ITERATE_LIVE_SECS=900); s=$(seg "$out")
 check "sl-17 refreshed heartbeat restores bold green + bolt" '[[ "$s" == BOLT* && "$out" == *"^[[1m^[[32me"* ]]' "$out"
 XB="$FX/execblocked"; mkplan "$XB" wolf executing "status: blocked-on-quota"
 out=$(render "$XB" $T256); check "10 executing + blocked-on-quota is red" '[[ "$out" == *"^[[31mw^[[0m"* ]]' "$out"
+
+# --- inbox: open informs from other projects ---
+INBOX=$(printf '📥' | cat -v)
+mkinform() { mkdir -p "$1/.claude/iterate/inbox"; printf '# Inform — t\n\nFrom: other\nstatus: %s\n\n## Problem\np\n%s\n' "$3" "$4" > "$1/.claude/iterate/inbox/$2.md"; }
+I="$FX/inbox"; mkplan "$I" ibis planned ""
+mkinform "$I" a open ""; mkinform "$I" b open ""; mkinform "$I" c "consumed (plan: ibis)" ""
+out=$(render "$I" $T256); check "sl-18 two open + one consumed renders inbox 2 last" '[[ "$out" == *"${INBOX}2" ]]' "$out"
+I0="$FX/inbox0"; mkplan "$I0" ibex planned ""; mkinform "$I0" a "dismissed (dup)" ""
+out=$(render "$I0" $T256); check "sl-19 no open informs renders no inbox" '[[ "$out" != *"$INBOX"* ]]' "$out"
+IO="$FX/inboxonly"; mkdir -p "$IO/src"; mkinform "$IO" a open ""
+out=$(render "$IO/src" $T256); s=$(seg "$out"); check "sl-20 inbox-only project renders gear + inbox 1 from subdir" '[[ "$s" == GEAR* && "$out" == *"${INBOX}1" ]]' "$out"
+IQ="$FX/inboxquote"; mkplan "$IQ" ibis planned ""; mkinform "$IQ" a "consumed (plan: ibis)" "status: open"
+out=$(render "$IQ" $T256); check "sl-21 status: open below the first ## is not counted" '[[ "$out" != *"$INBOX"* ]]' "$out"
 echo "== $pass passed, $fail failed (fixtures under $FX)"
 [ $fail -eq 0 ]

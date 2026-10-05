@@ -96,6 +96,7 @@ house-fill	-	~/workspace/x85446/financeSheets/finance-project/.claude/skills/hou
 i	userglobal	self	iterate
 ibs	userglobal	self	iterate
 ic	userglobal	self	iterate
+ii	userglobal	self	iterate
 importer	personaldb	self	-
 importer-audit	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/importer-audit	-
 importer-dedup	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/importer-dedup	-
@@ -110,6 +111,7 @@ it	userglobal	self	iterate
 iterate	userglobal	self	iterate
 iterate-brainstorm	userglobal	self	iterate
 iterate-conductor	userglobal	self	iterate
+iterate-inform	userglobal	self	iterate
 iterate-notes	userglobal	self	iterate
 iterate-plan	-	self	-
 iterate-planner	userglobal	self	iterate
