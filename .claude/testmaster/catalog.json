@@ -1,70 +1,79 @@
 {
-  "schema": 1,
-  "updated": "2026-10-05T18:03:58Z",
+  "notes": "Covers measured by per-test coverage profile against the tree at commit 81f75486, with an init baseline subtracted at statement-block granularity. covers_source 'coverage' means measured; nothing here is a naming-convention guess.",
   "project": "claudecodetricks",
   "requirements": [
     {
-      "id": "req-screen",
-      "statement": "Behavior of src/internal/git/screen.go, as exercised by screen_test.go.",
-      "source": "adopted",
       "cases": [
         {
-          "id": "git.TestScreenPath",
-          "test": "TestScreenPath",
           "covers": [
             "src/internal/git/screen.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "git.TestScreenPath",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestScreenPath",
+          "validity": "valid"
         },
         {
-          "id": "git.TestStageFilesKeepsBinaryOutOfObjectStore",
-          "test": "TestStageFilesKeepsBinaryOutOfObjectStore",
           "covers": [
             "src/internal/git/commit.go",
             "src/internal/git/screen.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "git.TestStageFilesKeepsBinaryOutOfObjectStore",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestStageFilesKeepsBinaryOutOfObjectStore",
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-screen",
+      "source": "adopted",
+      "statement": "Behavior of src/internal/git/screen.go, as exercised by screen_test.go."
     },
     {
-      "id": "req-hookcmd",
-      "statement": "Behavior of src/internal/iterrun/hookcmd.go, as exercised by hookcmd_test.go.",
-      "source": "adopted",
       "cases": [
         {
+          "covers": [
+            "src/internal/iterrun/events.go",
+            "src/internal/iterrun/pendinglabels.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestPendingSpawnLabelFIFOOrdering",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestPendingSpawnLabelFIFOOrdering",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/events.go",
             "src/internal/iterrun/pendinglabels.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestPendingSpawnLabelEmptyQueueUnknownSession",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestPendingSpawnLabelEmptyQueueUnknownSession",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/pendinglabels.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/events.go",
+            "src/internal/iterrun/hookcmd.go",
+            "src/internal/iterrun/labels.go",
+            "src/internal/iterrun/pendinglabels.go",
+            "src/internal/iterrun/projects.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestHandleHookSubagentStartClaimsQueuedLabel",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestHandleHookSubagentStartClaimsQueuedLabel",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/events.go",
             "src/internal/iterrun/hookcmd.go",
@@ -73,28 +82,27 @@
             "src/internal/iterrun/projects.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestHandleHookSubagentStartNoQueuedLabelIsNoop",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestHandleHookSubagentStartNoQueuedLabelIsNoop",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/events.go",
             "src/internal/iterrun/hookcmd.go",
-            "src/internal/iterrun/labels.go",
             "src/internal/iterrun/pendinglabels.go",
             "src/internal/iterrun/projects.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/events.go",
             "src/internal/iterrun/hookcmd.go",
@@ -102,27 +110,13 @@
             "src/internal/iterrun/projects.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestHandleHookPostIgnoresNonSpawnToolForQueue",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestHandleHookPostIgnoresNonSpawnToolForQueue",
-          "covers": [
-            "src/internal/iterrun/events.go",
-            "src/internal/iterrun/hookcmd.go",
-            "src/internal/iterrun/pendinglabels.go",
-            "src/internal/iterrun/projects.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestHandleHookPostAgentToolStillResolvesLabelDirectly",
-          "test": "TestHandleHookPostAgentToolStillResolvesLabelDirectly",
           "covers": [
             "src/internal/iterrun/events.go",
             "src/internal/iterrun/hookcmd.go",
@@ -131,296 +125,296 @@
             "src/internal/iterrun/projects.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestHandleHookPostAgentToolStillResolvesLabelDirectly",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestHandleHookPostAgentToolStillResolvesLabelDirectly",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestHandleHookSubagentStopIsNoop",
-          "test": "TestHandleHookSubagentStopIsNoop",
           "covers": [
             "src/internal/iterrun/events.go",
             "src/internal/iterrun/hookcmd.go",
             "src/internal/iterrun/projects.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestHandleHookSubagentStopIsNoop",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestHandleHookSubagentStopIsNoop",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator",
-          "test": "TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator",
           "covers": [
             "src/internal/iterrun/events.go",
             "src/internal/iterrun/hookcmd.go",
             "src/internal/iterrun/labels.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestParseAgentIDFoldsRedispatchesIntoOneTeam",
-          "test": "TestParseAgentIDFoldsRedispatchesIntoOneTeam",
           "covers": [
             "src/internal/iterrun/hookcmd.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestParseAgentIDFoldsRedispatchesIntoOneTeam",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestParseAgentIDFoldsRedispatchesIntoOneTeam",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents",
-          "test": "TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents",
           "covers": [
             "src/internal/iterrun/hookcmd.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents",
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-hookcmd",
+      "source": "adopted",
+      "statement": "Behavior of src/internal/iterrun/hookcmd.go, as exercised by hookcmd_test.go."
     },
     {
-      "id": "req-names",
-      "statement": "Behavior of src/internal/iterrun/names.go, as exercised by names_test.go.",
-      "source": "adopted",
       "cases": [
         {
+          "covers": [
+            "src/internal/iterrun/names.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestNextPlanNameWalksAlphabetInOrderPerProject",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestNextPlanNameWalksAlphabetInOrderPerProject",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/names.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestNextPlanNameNeverRepeats",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestNextPlanNameNeverRepeats",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/names.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestNextPlanNameSeedsFromDisk",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestNextPlanNameSeedsFromDisk",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/names.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestNextPlanNameConcurrentCallsNeverCollide",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestNextPlanNameConcurrentCallsNeverCollide",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/names.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestNextPlanNamePerProjectSequenceGloballyUniqueWords",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestNextPlanNamePerProjectSequenceGloballyUniqueWords",
-          "covers": [
-            "src/internal/iterrun/names.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-names",
+      "source": "adopted",
+      "statement": "Behavior of src/internal/iterrun/names.go, as exercised by names_test.go."
     },
     {
-      "id": "req-plans",
-      "statement": "Behavior of src/internal/iterrun/plans.go, as exercised by plans_test.go.",
-      "source": "adopted",
       "cases": [
         {
+          "covers": [
+            "src/internal/iterrun/plans.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestParsePlanFileBlockedOnOperator",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanFileBlockedOnOperator",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParsePlanFileNotBlocked",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanFileNotBlocked",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParsePlanFileGoalTruncation",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanFileGoalTruncation",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParsePlanFileExecutingDistinctFromStarted",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanFileExecutingDistinctFromStarted",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParsePlanFileExecutingAbsent",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanFileExecutingAbsent",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestListArchivedPlans",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestListArchivedPlans",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestGetArchivedPlanSummarySetsArchived",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestGetArchivedPlanSummarySetsArchived",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestFinishedAtParsesIndependentlyOfExecuting",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestFinishedAtParsesIndependentlyOfExecuting",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestEffectiveStartPrefersExecutingOverStarted",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestEffectiveStartPrefersExecutingOverStarted",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
-          "test": "TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestEffectiveStartFallsBackToStartedWhenExecutingAbsent",
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-plans",
+      "source": "adopted",
+      "statement": "Behavior of src/internal/iterrun/plans.go, as exercised by plans_test.go."
     },
     {
-      "id": "req-serve",
-      "statement": "Behavior of src/internal/iterrun/serve.go, as exercised by serve_test.go.",
-      "source": "adopted",
       "cases": [
         {
+          "covers": [
+            "src/internal/iterrun/plans.go",
+            "src/internal/iterrun/serve.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestLiveBadgePrioritizesBlockedOverEverything",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestLiveBadgePrioritizesBlockedOverEverything",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestArchivedBadgeReflectsBlockedAndPhase",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestArchivedBadgeReflectsBlockedAndPhase",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestDashboardSeparatesActiveAndArchivedTabs",
-          "test": "TestDashboardSeparatesActiveAndArchivedTabs",
           "covers": [
             "src/internal/iterrun/conductor.go",
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestDashboardSeparatesActiveAndArchivedTabs",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestDashboardSeparatesActiveAndArchivedTabs",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
-          "test": "TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
           "covers": [
             "src/internal/iterrun/serve.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestArchivedProjectAccordionOmittedWhenNoArchivedPlans",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestPlanRouteFollowsAPlanIntoTheArchive",
-          "test": "TestPlanRouteFollowsAPlanIntoTheArchive",
           "covers": [
             "src/internal/iterrun/events.go",
             "src/internal/iterrun/hookcmd.go",
@@ -431,148 +425,148 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestPlanRouteFollowsAPlanIntoTheArchive",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestPlanRouteFollowsAPlanIntoTheArchive",
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-serve",
+      "source": "adopted",
+      "statement": "Behavior of src/internal/iterrun/serve.go, as exercised by serve_test.go."
     },
     {
-      "id": "req-timeline",
-      "statement": "Behavior of src/internal/iterrun/timeline.go, as exercised by timeline_test.go.",
-      "source": "adopted",
       "cases": [
         {
+          "covers": [
+            "src/internal/iterrun/timeline.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestBuildRowsGapDetection",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBuildRowsGapDetection",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestBuildRowsFromHookEventsScopesCoordinatorByProject",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBuildRowsFromHookEventsScopesCoordinatorByProject",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/plans.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestParsePlanStarted",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanStarted",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParsePlanStartedRespectsUTCSuffix",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanStartedRespectsUTCSuffix",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/birthtime_darwin.go",
+            "src/internal/iterrun/plans.go",
+            "src/internal/iterrun/registry.go",
+            "src/internal/iterrun/timeline.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestBuildRowsFromArchivePreservesGoalAndSteps",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBuildRowsFromArchivePreservesGoalAndSteps",
+          "validity": "valid"
+        },
+        {
           "covers": [
-            "src/internal/iterrun/birthtime_darwin.go",
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/registry.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator",
+          "validity": "valid"
+        },
+        {
           "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/registry.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParseCoordinatorStepStatusRangesAndCase",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParseCoordinatorStepStatusRangesAndCase",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParseCoordinatorStepStatusCapturesNote",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParseCoordinatorStepStatusCapturesNote",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
-          "test": "TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/registry.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestBuildRowsFromFilesystemExcludesStaleRegistryEntries",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestOrderTeamRowsNestsByDependency",
-          "test": "TestOrderTeamRowsNestsByDependency",
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestOrderTeamRowsNestsByDependency",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestOrderTeamRowsNestsByDependency",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
-          "test": "TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
           "covers": [
             "src/internal/iterrun/birthtime_darwin.go",
             "src/internal/iterrun/plans.go",
@@ -580,551 +574,558 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent",
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/plans.go",
+            "src/internal/iterrun/serve.go",
+            "src/internal/iterrun/timeline.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestRunboxPrefersExecutingOverStarted",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestRunboxPrefersExecutingOverStarted",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestRunboxHandlesZeroConfirmedActivity",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestRunboxPrefersFinishedOverActivityForArchivedPlans",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestBurndownChartShadesByValidationState",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBurndownChartShadesByValidationState",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestBurndownChartDistinguishesGaveUpFromActive",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBurndownChartDistinguishesGaveUpFromActive",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBurndownChartShowsFullDependsOnListNotJustPrimary",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestBurndownChartOmittedWhenNoStepDetail",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBurndownChartOmittedWhenNoStepDetail",
+          "validity": "valid"
+        },
+        {
           "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestValidationGlyphOpensModalOnlyWhenNoteExists",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestAxisTicksLandOnWallClockBoundaries",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestAxisTicksLandOnWallClockBoundaries",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestAxisTicksSurviveASpringForwardTransition",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestAxisTicksSurviveASpringForwardTransition",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack",
-          "test": "TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack",
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack",
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/timeline.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestBusyAndGapsUseTheUnionOfOverlappingSpans",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestBusyAndGapsUseTheUnionOfOverlappingSpans",
-          "covers": [
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestCoarseLogSpanIsAFallbackNotASupplement",
-          "test": "TestCoarseLogSpanIsAFallbackNotASupplement",
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestCoarseLogSpanIsAFallbackNotASupplement",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestCoarseLogSpanIsAFallbackNotASupplement",
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-timeline",
+      "source": "adopted",
+      "statement": "Behavior of src/internal/iterrun/timeline.go, as exercised by timeline_test.go."
     },
     {
-      "id": "req-axolotl-added",
-      "statement": "Behavior added by plan axolotl: harness identification, conductor status rendering, dual-shape version resolution, and the codename pool's integrity.",
-      "source": "adopted",
       "cases": [
         {
-          "id": "iterrun.TestAnimalPool",
-          "test": "TestAnimalPool",
-          "covers": [],
+          "covers": [
+            "src/internal/iterrun/conductor.go"
+          ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "a8ffa3eb+wt",
-          "last_validated": "2026-10-05T04:14:43Z"
-        },
-        {
           "id": "iterrun.TestConductorStatusLineNoTrigger",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestConductorStatusLineNoTrigger",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestConductorStatusLineNotEnabledHidden",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestConductorStatusLineNotEnabledHidden",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestConductorStatusLineStoodDown",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestConductorStatusLineStoodDown",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestConductorStatusLineWorkingShowsNextTickMinutes",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestConductorStatusLineWorkingShowsNextTickMinutes",
-          "covers": [
-            "src/internal/iterrun/conductor.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/serve.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestHarnessBadgeCoversAllThreeValues",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestHarnessBadgeCoversAllThreeValues",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/serve.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestHarnessRollupOnlyWhenMixed",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestHarnessRollupOnlyWhenMixed",
+          "validity": "valid"
+        },
+        {
           "covers": [
+            "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestLivePlanCardsCarryHarnessBadge",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestLivePlanCardsCarryHarnessBadge",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/plans.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestParsePlanFileHarness",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanFileHarness",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParsePlanFileVersion",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanFileVersion",
-          "covers": [
-            "src/internal/iterrun/plans.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/plans.go",
+            "src/internal/iterrun/serve.go",
+            "src/internal/iterrun/timeline.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestPlanDetailShowsVersionFromEitherMarker",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestPlanDetailShowsVersionFromEitherMarker",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestReadConductorStateMissingFile",
-          "test": "TestReadConductorStateMissingFile",
           "covers": [
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestReadConductorStateMissingFile",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestReadConductorStateMissingFile",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestWriteLiveProjectSectionRendersConductorStatus",
-          "test": "TestWriteLiveProjectSectionRendersConductorStatus",
           "covers": [
             "src/internal/iterrun/conductor.go",
             "src/internal/iterrun/serve.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestWriteLiveProjectSectionRendersConductorStatus",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestWriteLiveProjectSectionRendersConductorStatus",
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-axolotl-added",
+      "source": "adopted",
+      "statement": "Behavior added by plan axolotl: harness identification, conductor status rendering, dual-shape version resolution, and the codename pool's integrity."
     },
     {
-      "id": "req-token-spend",
-      "statement": "\"can we add token consumption to the website? I am thinking that we would be interested in how much the orchestrator is taking and how much each agent is taking. Not only that, I'd want to know token consumption per task bucket. Like how much time was taking reading and launching tools? Not time, but how many tokens? How much token use is in each loop? Like to wake up Cron?\"",
-      "source": "user",
       "asked": "2026-09-16",
       "cases": [
         {
+          "covers": [
+            "src/internal/iterrun/plans.go",
+            "src/internal/iterrun/tokens.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestTranscriptDedupeKeepsTheFinalStreamingWrite",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestTranscriptDedupeKeepsTheFinalStreamingWrite",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestSyntheticZeroUsageRecordsAreNotCountedAsRequests",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestSyntheticZeroUsageRecordsAreNotCountedAsRequests",
+          "validity": "valid"
+        },
+        {
           "covers": [
-            "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestPromptTickClassifiesEveryRealWakeupShape",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestPromptTickClassifiesEveryRealWakeupShape",
+          "validity": "valid"
+        },
+        {
           "covers": [
+            "src/internal/iterrun/hookcmd.go",
+            "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/hookcmd.go",
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestRedispatchedTeamsShareOneLane",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestRedispatchedTeamsShareOneLane",
+          "validity": "valid"
+        },
+        {
           "covers": [
-            "src/internal/iterrun/hookcmd.go",
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestPlanTokenUsageExcludesSpendOutsideTheRunWindow",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestPlanTokenUsageExcludesSpendOutsideTheRunWindow",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestToolAttributionChargesGrowthToTheCallThatCausedIt",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestToolAttributionChargesGrowthToTheCallThatCausedIt",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestParallelCallsSplitTheirSharedContextGrowth",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParallelCallsSplitTheirSharedContextGrowth",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestTickGroupsSeparateCoalescedFiringsFromIdleOnes",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestTickGroupsSeparateCoalescedFiringsFromIdleOnes",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/tokens.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestATornFinalLineIsPickedUpOnceItIsComplete",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestATornFinalLineIsPickedUpOnceItIsComplete",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/tokens.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
+          "covers": [
+            "src/internal/iterrun/hookcmd.go",
+            "src/internal/iterrun/plans.go",
+            "src/internal/iterrun/serve.go",
+            "src/internal/iterrun/timeline.go",
+            "src/internal/iterrun/tokens.go",
+            "src/internal/iterrun/tokens_html.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestALaneWithNoTranscriptIsReportedNotZeroed",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestALaneWithNoTranscriptIsReportedNotZeroed",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/hookcmd.go",
             "src/internal/iterrun/plans.go",
@@ -1134,15 +1135,14 @@
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestTokenPanelRendersLanesToolsAndWakeups",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestTokenPanelRendersLanesToolsAndWakeups",
+          "validity": "valid"
+        },
+        {
           "covers": [
-            "src/internal/iterrun/hookcmd.go",
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/timeline.go",
@@ -1150,144 +1150,129 @@
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
+          "validity": "valid"
+        },
+        {
           "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go",
-            "src/internal/iterrun/tokens.go",
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestHumanTokensStaysExactWherePrecisionMatters",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestHumanTokensStaysExactWherePrecisionMatters",
-          "covers": [
-            "src/internal/iterrun/tokens_html.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestPrintPlanTokensSaysSoWhenThereIsNoData",
-          "test": "TestPrintPlanTokensSaysSoWhenThereIsNoData",
           "covers": [
             "src/internal/iterrun/tokens.go",
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestPrintPlanTokensSaysSoWhenThereIsNoData",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestPrintPlanTokensSaysSoWhenThereIsNoData",
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn",
-          "test": "TestLongLaneLabelsAreTrimmedToFitAColumn",
           "covers": [
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestLongLaneLabelsAreTrimmedToFitAColumn",
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-token-spend",
+      "source": "user",
+      "statement": "\"can we add token consumption to the website? I am thinking that we would be interested in how much the orchestrator is taking and how much each agent is taking. Not only that, I'd want to know token consumption per task bucket. Like how much time was taking reading and launching tools? Not time, but how many tokens? How much token use is in each loop? Like to wake up Cron?\""
     },
     {
-      "id": "req-plan-item-formats",
-      "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" — the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams.",
-      "source": "user",
       "asked": "2026-09-16",
       "cases": [
         {
+          "covers": [
+            "src/internal/iterrun/timeline.go"
+          ],
+          "covers_source": "coverage",
           "id": "iterrun.TestParsePlanItemReadsEveryFormatTheFamilyWrites",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestParsePlanItemReadsEveryFormatTheFamilyWrites",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet",
+          "validity": "valid"
+        },
+        {
           "covers": [
+            "src/internal/iterrun/plans.go",
+            "src/internal/iterrun/registry.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestABoxedUnteamedPlanStillGetsItsRequirements",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestABoxedUnteamedPlanStillGetsItsRequirements",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/registry.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/registry.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestAnExplicitStatusLogMarkOverridesTheCheckbox",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestAnExplicitStatusLogMarkOverridesTheCheckbox",
+          "validity": "valid"
+        },
+        {
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/registry.go",
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
           "id": "iterrun.TestPlainFormatPlansAreUnaffected",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
           "test": "TestPlainFormatPlansAreUnaffected",
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/registry.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "validity": "valid"
         },
         {
-          "id": "iterrun.TestUnteamedPlanOmitsTheEmptyTeamSection",
-          "test": "TestUnteamedPlanOmitsTheEmptyTeamSection",
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
@@ -1295,1071 +1280,1085 @@
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "validity": "valid",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "id": "iterrun.TestUnteamedPlanOmitsTheEmptyTeamSection",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestUnteamedPlanOmitsTheEmptyTeamSection",
+          "validity": "valid"
         }
-      ]
+      ],
+      "id": "req-plan-item-formats",
+      "source": "user",
+      "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" — the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams."
     },
     {
-      "id": "req-flamingo-tick",
-      "requirement": "A launchd tick kicks off iterate sessions for staged (queued) plans in enrolled projects, only when enabled and only inside the project's launch window.",
-      "source": "plan:flamingo",
       "cases": [
         {
-          "id": "tick-1",
+          "covers": [
+            "src/internal/iterrun/nightly.go",
+            "src/internal/iterrun/conductor.go"
+          ],
+          "covers_source": "manual",
           "given": "an enrolled project with a status: queued plan, nightly on, inside the launch window",
-          "when": "iterate-run nightly tick runs",
+          "id": "tick-1",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestDecideProjectSkipOrder",
           "then": "claude -p \"/iterate-conductor run\" is spawned in that project and the result JSON lands in ~/.claude/log/iterate-nightly/",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestDecideProjectSkipOrder",
+          "when": "iterate-run nightly tick runs"
+        },
+        {
           "covers": [
             "src/internal/iterrun/nightly.go",
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "tick-2",
           "given": "a registered project that is not enrolled (no tick-source: launchd)",
-          "when": "tick runs",
+          "id": "tick-2",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestDecideProjectSkipOrder",
           "then": "nothing is spawned for it; status.txt says skip: not enrolled",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestDecideProjectSkipOrder",
-          "covers": [
-            "src/internal/iterrun/nightly.go",
-            "src/internal/iterrun/conductor.go"
-          ],
-          "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "when": "tick runs"
         },
         {
-          "id": "tick-3",
-          "given": "nightly.json enabled: false",
-          "when": "tick runs",
-          "then": "exit 0, nothing spawned for any project, one log line: disabled",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
-          "test": "iterrun.TestTickDisabledAndDryRun",
           "covers": [
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "given": "nightly.json enabled: false",
+          "id": "tick-3",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestTickDisabledAndDryRun",
+          "then": "exit 0, nothing spawned for any project, one log line: disabled",
+          "tier": "?",
+          "validity": "valid",
+          "when": "tick runs"
         },
         {
-          "id": "tick-4",
-          "given": "an enrolled project whose launch-schedule or conductor-schedule refuses now",
-          "when": "tick runs",
-          "then": "skip: outside <which> schedule (<rule>), next window <time>; nothing spawned",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
-          "test": "iterrun.TestDecideProjectSchedules",
           "covers": [
             "src/internal/iterrun/nightly.go",
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "given": "an enrolled project whose launch-schedule or conductor-schedule refuses now",
+          "id": "tick-4",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestDecideProjectSchedules",
+          "then": "skip: outside <which> schedule (<rule>), next window <time>; nothing spawned",
+          "tier": "?",
+          "validity": "valid",
+          "when": "tick runs"
         },
         {
-          "id": "tick-5",
+          "covers": [
+            "src/internal/iterrun/nightly.go"
+          ],
+          "covers_source": "manual",
           "given": "an enrolled project whose heartbeat file is younger than ITERATE_LIVE_SECS (a human session is driving)",
-          "when": "tick runs",
+          "id": "tick-5",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestDecideProjectSkipOrder",
           "then": "skip: live; nothing spawned",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestDecideProjectSkipOrder",
+          "when": "tick runs"
+        },
+        {
           "covers": [
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "tick-6",
           "given": "the previous tick's claude child for that project is still running (flock held)",
-          "when": "tick runs",
+          "id": "tick-6",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestDecideProjectSkipOrder",
           "then": "skip: running; no second child",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestDecideProjectSkipOrder",
-          "covers": [
-            "src/internal/iterrun/nightly.go"
-          ],
-          "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "when": "tick runs"
         },
         {
-          "id": "tick-7",
-          "given": "an enrolled project whose only plan is phase: planned without status: queued (yellow)",
-          "when": "tick runs and the conductor sweeps",
-          "then": "nothing is launched; the conductor never picks an unstaged plan",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
           "covers": [
             "skills/iterate-conductor/SKILL.md",
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
-          "verified_at": "2026-10-05T05:25:00Z",
           "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/g13 (2026-10-05T05:21Z, iterate 5.11.0): picked zebra (queued), wrote loop-mechanism: external, ran it all-green; yak (bare planned) never launched; stood down with tick-source launchd kept",
-          "last_validated_commit": "b49945e6"
+          "given": "an enrolled project whose only plan is phase: planned without status: queued (yellow)",
+          "id": "tick-7",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
+          "then": "nothing is launched; the conductor never picks an unstaged plan",
+          "tier": "?",
+          "validity": "valid",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "tick runs and the conductor sweeps"
         },
         {
-          "id": "tick-8",
-          "given": "a tick's claude child is killed mid-run (interrupted)",
-          "when": "the next tick runs",
-          "then": "the flock is released, the plan is still phase: executing with loop-mechanism: external, and the new child resumes it from the first unchecked step",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
-          "test": "iterrun.TestDecideProjectSkipOrder",
           "covers": [
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "given": "a tick's claude child is killed mid-run (interrupted)",
+          "id": "tick-8",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestDecideProjectSkipOrder",
+          "then": "the flock is released, the plan is still phase: executing with loop-mechanism: external, and the new child resumes it from the first unchecked step",
+          "tier": "?",
+          "validity": "valid",
+          "when": "the next tick runs"
         },
         {
-          "id": "tick-9",
+          "covers": [
+            "src/internal/iterrun/nightly.go",
+            "src/internal/iterrun/conductor.go"
+          ],
+          "covers_source": "manual",
           "given": "a project is withdrawn while its child is still running (restore-state)",
-          "when": "the child finishes and the next tick runs",
-          "then": "the in-flight run completes normally; no new launch for that project",
-          "tier": "?",
+          "id": "tick-9",
+          "last_validated": "2026-10-05T05:16:34Z",
+          "last_validated_commit": "7f2b68c2",
           "source": "plan:flamingo",
-          "validity": "valid",
           "test": [
             "iterrun.TestDecideProjectSkipOrder",
             "iterrun.TestEnrollWithdrawRoundTrip"
           ],
+          "then": "the in-flight run completes normally; no new launch for that project",
+          "tier": "?",
+          "validity": "valid",
+          "when": "the child finishes and the next tick runs"
+        },
+        {
           "covers": [
             "src/internal/iterrun/nightly.go",
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "tick-10",
           "given": "conductor.md has enabled: false or paused: true despite tick-source: launchd",
-          "when": "tick runs",
+          "id": "tick-10",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestDecideProjectSkipOrder",
           "then": "skip: conductor disabled/paused; nothing spawned",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestDecideProjectSkipOrder",
+          "when": "tick runs"
+        },
+        {
           "covers": [
             "src/internal/iterrun/nightly.go",
             "src/internal/iterrun/conductor.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "tick-11",
           "given": "a project directory with or without a conductor.md",
-          "when": "iterate-run nightly enroll / withdraw run, and the plist is rendered",
-          "then": "tick-source: launchd is written exactly once (file created with enabled: true when absent) and removed on withdraw with other keys intact; the plist is ProcessType Standard with StartInterval 600 and no LowPriorityIO",
-          "tier": "fast",
+          "id": "tick-11",
+          "last_validated": "2026-10-05T05:16:34Z",
+          "last_validated_commit": "7f2b68c2",
           "source": "plan:flamingo",
-          "validity": "valid",
           "test": [
             "iterrun.TestEnrollWithdrawRoundTrip",
             "iterrun.TestSetFrontmatterKey",
             "iterrun.TestPlistXMLShape"
           ],
-          "covers": [
-            "src/internal/iterrun/nightly.go",
-            "src/internal/iterrun/conductor.go"
-          ],
-          "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "then": "tick-source: launchd is written exactly once (file created with enabled: true when absent) and removed on withdraw with other keys intact; the plist is ProcessType Standard with StartInterval 600 and no LowPriorityIO",
+          "tier": "fast",
+          "validity": "valid",
+          "when": "iterate-run nightly enroll / withdraw run, and the plist is rendered"
         }
-      ]
+      ],
+      "id": "req-flamingo-tick",
+      "requirement": "A launchd tick kicks off iterate sessions for staged (queued) plans in enrolled projects, only when enabled and only inside the project's launch window.",
+      "source": "plan:flamingo"
     },
     {
-      "id": "req-flamingo-statusline",
-      "requirement": "Status bar: orange = queued (locked and loaded), the project's next-plan letter is always shown dimmed at the end, and an alarm-clock icon marks a project enrolled in the nightly timer. An executing plan whose heartbeat is older than ITERATE_LIVE_SECS (or missing) renders dark green with ⚙️; a live one renders bold green with ⚡.",
-      "source": "plan:flamingo",
       "cases": [
         {
-          "id": "sl-1",
+          "covers": [
+            "dotfiles/statusline-command.sh"
+          ],
+          "covers_source": "manual",
           "given": "a plan with phase: planned and status: queued in its key block",
-          "when": "the statusline renders",
+          "id": "sl-1",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "its letter is orange (38;5;208 on a 256-colour terminal)",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-2",
           "given": "a plan with phase: planned and no status",
-          "when": "the statusline renders",
+          "id": "sl-2",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "its letter is yellow, unchanged",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-3",
           "given": "a plan whose key block carries both status: blocked-on-operator and status: queued",
-          "when": "the statusline renders",
+          "id": "sl-3",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "red wins",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-4",
           "given": "a project with .claude/iterate/ but zero plans (only archive/)",
-          "when": "the statusline renders",
+          "id": "sl-4",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "the ⚙️ segment is present with only the dim next-plan letter",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-5",
           "given": "a project whose project_next_idx in plan-names.json is 6",
-          "when": "the statusline renders",
+          "id": "sl-5",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "the trailing placeholder is a dim lowercase g, after every real plan letter",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-6",
           "given": "a project not present in plan-names.json",
-          "when": "the statusline renders",
+          "id": "sl-6",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "the placeholder is a dim a",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-7",
           "given": "conductor.md has tick-source: launchd and nightly.json is not disabled",
-          "when": "the statusline renders",
+          "id": "sl-7",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "the segment ends with ⏰",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-8",
           "given": "conductor.md has tick-source: launchd and nightly.json has enabled: false",
-          "when": "the statusline renders",
+          "id": "sl-8",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "the segment ends with ⏰ followed by dim off",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-9",
           "given": "a project without tick-source: launchd",
-          "when": "the statusline renders",
+          "id": "sl-9",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "no ⏰",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-10",
           "given": "TERM=xterm with no COLORTERM",
-          "when": "a queued plan renders",
+          "id": "sl-10",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "the letter uses the 16-colour fallback (bright yellow 93), never a raw 256 escape",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "a queued plan renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-11",
           "given": "current_dir is a subdirectory of a project whose plans are all archived",
-          "when": "the statusline renders",
+          "id": "sl-11",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "the segment still renders (root walk accepts .claude/iterate, stops at .git)",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-12",
           "given": "a plan with phase: executing and this project's heartbeat file younger than ITERATE_LIVE_SECS",
-          "when": "the statusline renders on a 256-colour terminal",
+          "id": "sl-12",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "its letter is bold green (1;32) and the icon is ⚡",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders on a 256-colour terminal"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-13",
           "given": "a plan with phase: executing and the heartbeat file older than ITERATE_LIVE_SECS",
-          "when": "the statusline renders on a 256-colour terminal",
+          "id": "sl-13",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "its letter is dark green (38;5;28) and the icon is ⚙️",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders on a 256-colour terminal"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-14",
           "given": "a plan with phase: executing and no heartbeat file for this project",
-          "when": "the statusline renders on a 256-colour terminal",
+          "id": "sl-14",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "its letter is dark green (38;5;28) and the icon is ⚙️ — missing reads as stale",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders on a 256-colour terminal"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-15",
           "given": "a plan with phase: executing and a stale heartbeat",
-          "when": "the statusline renders with TERM=xterm and COLORTERM unset (ANSI-16 tier)",
+          "id": "sl-15",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "its letter is plain green (32), the 16-colour fallback, and the icon is ⚙️",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders with TERM=xterm and COLORTERM unset (ANSI-16 tier)"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-16",
           "given": "a plan with phase: executing and the heartbeat aged exactly ITERATE_LIVE_SECS",
-          "when": "the statusline renders",
+          "id": "sl-16",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "the plan still counts as live: bold green and ⚡ (boundary is inclusive)",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sl-17",
           "given": "a stalled executing plan whose heartbeat is then refreshed by a hook",
-          "when": "the statusline renders again",
+          "id": "sl-17",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "dotfiles.statusline-check",
           "then": "its letter returns to bold green and the icon to ⚡ — stalled is a reading, not a latched state",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
-          "covers": [
-            "dotfiles/statusline-command.sh"
-          ],
-          "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "when": "the statusline renders again"
         }
-      ]
+      ],
+      "id": "req-flamingo-statusline",
+      "requirement": "Status bar: orange = queued (locked and loaded), the project's next-plan letter is always shown dimmed at the end, and an alarm-clock icon marks a project enrolled in the nightly timer. An executing plan whose heartbeat is older than ITERATE_LIVE_SECS (or missing) renders dark green with ⚙️; a live one renders bold green with ⚡.",
+      "source": "plan:flamingo"
     },
     {
-      "id": "req-flamingo-schedule",
-      "requirement": "The Go schedule evaluator matches /iterate-rules: deny beats allow, any allow makes default-deny, a window wraps midnight when start > end, a day label matches the day the window opened, and conductor-schedule can only narrow launch-schedule.",
-      "source": "plan:flamingo",
       "cases": [
         {
-          "id": "sch-1",
+          "covers": [
+            "src/internal/iterrun/schedule.go"
+          ],
+          "covers_source": "manual",
           "given": "allow mon-fri 22:00-06:00",
-          "when": "now is Friday 23:30",
+          "id": "sch-1",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestScheduleWeeknightWindowWrapsMidnightAndKeepsOpeningDay",
           "then": "allowed",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestScheduleWeeknightWindowWrapsMidnightAndKeepsOpeningDay",
+          "when": "now is Friday 23:30"
+        },
+        {
           "covers": [
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sch-2",
           "given": "allow mon-fri 22:00-06:00",
-          "when": "now is Saturday 02:00",
+          "id": "sch-2",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestScheduleWeeknightWindowWrapsMidnightAndKeepsOpeningDay",
           "then": "allowed (window opened Friday 22:00)",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestScheduleWeeknightWindowWrapsMidnightAndKeepsOpeningDay",
+          "when": "now is Saturday 02:00"
+        },
+        {
           "covers": [
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sch-3",
           "given": "allow mon-fri 22:00-06:00",
-          "when": "now is Saturday 23:00",
+          "id": "sch-3",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestScheduleWeeknightWindowWrapsMidnightAndKeepsOpeningDay",
           "then": "refused; next window Monday 22:00",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestScheduleWeeknightWindowWrapsMidnightAndKeepsOpeningDay",
+          "when": "now is Saturday 23:00"
+        },
+        {
           "covers": [
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sch-4",
           "given": "allow daily 22:00-06:00 and deny sat,sun",
-          "when": "now is Saturday 23:00",
+          "id": "sch-4",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestScheduleDenyBeatsAllow",
           "then": "refused: deny beats allow",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestScheduleDenyBeatsAllow",
+          "when": "now is Saturday 23:00"
+        },
+        {
           "covers": [
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sch-5",
           "given": "one allow rule exists",
-          "when": "now matches no rule",
+          "id": "sch-5",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestScheduleOneAllowMakesDefaultDeny",
           "then": "refused: allow makes default-deny",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestScheduleOneAllowMakesDefaultDeny",
+          "when": "now matches no rule"
+        },
+        {
           "covers": [
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sch-6",
           "given": "no launch-schedule and no conductor-schedule",
-          "when": "any time",
+          "id": "sch-6",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestScheduleNoRulesAlwaysAllows",
           "then": "allowed, rule: none",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestScheduleNoRulesAlwaysAllows",
+          "when": "any time"
+        },
+        {
           "covers": [
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sch-7",
           "given": "launch-schedule allows 22:00-06:00, conductor-schedule allows 00:00-23:59",
-          "when": "now is 14:00",
+          "id": "sch-7",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestConductorScheduleOnlyNarrows",
           "then": "refused by launch-schedule: the conductor schedule cannot widen",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestConductorScheduleOnlyNarrows",
+          "when": "now is 14:00"
+        },
+        {
           "covers": [
             "src/internal/iterrun/schedule.go"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "sch-8",
           "given": "launch-schedule allows 22:00-06:00, conductor-schedule allows 23:00-02:00",
-          "when": "now is 22:30",
+          "id": "sch-8",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:flamingo",
+          "test": "iterrun.TestConductorScheduleOnlyNarrows",
           "then": "refused by conductor-schedule: it narrowed",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "test": "iterrun.TestConductorScheduleOnlyNarrows",
-          "covers": [
-            "src/internal/iterrun/schedule.go"
-          ],
-          "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "when": "now is 22:30"
         },
         {
-          "id": "sch-9",
-          "given": "a malformed rule line",
-          "when": "evaluation runs",
-          "then": "the line is reported by name and treated as deny (fail closed), the rest still parse",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
-          "test": [
-            "iterrun.TestScheduleMalformedLineFailsClosedAndIsNamed",
-            "iterrun.TestDecideProjectSchedules"
-          ],
           "covers": [
             "src/internal/iterrun/schedule.go",
             "src/internal/iterrun/nightly.go"
           ],
           "covers_source": "manual",
+          "given": "a malformed rule line",
+          "id": "sch-9",
+          "last_validated": "2026-10-05T05:16:34Z",
           "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "source": "plan:flamingo",
+          "test": [
+            "iterrun.TestScheduleMalformedLineFailsClosedAndIsNamed",
+            "iterrun.TestDecideProjectSchedules"
+          ],
+          "then": "the line is reported by name and treated as deny (fail closed), the rest still parse",
+          "tier": "?",
+          "validity": "valid",
+          "when": "evaluation runs"
         }
-      ]
+      ],
+      "id": "req-flamingo-schedule",
+      "requirement": "The Go schedule evaluator matches /iterate-rules: deny beats allow, any allow makes default-deny, a window wraps midnight when start > end, a day label matches the day the window opened, and conductor-schedule can only narrow launch-schedule.",
+      "source": "plan:flamingo"
     },
     {
-      "id": "req-flamingo-stage",
-      "requirement": "/iterate-planner can stage a plan (status: queued) so the nightly tick or /iterate <name> can launch it; editing a staged plan unstages it; staging an executing plan is refused.",
-      "source": "plan:flamingo",
       "cases": [
         {
-          "id": "st-1",
+          "covers": [
+            "skills/iterate-planner/SKILL.md"
+          ],
+          "covers_source": "manual",
+          "evidence": "claude -p \"/ip stage otter\" in fixture g11 (5.11.0): status: queued written below phase; /ip list shows (current) (queued)",
           "given": "a phase: planned plan",
-          "when": "/ip stage <name>",
+          "id": "st-1",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
           "then": "status: queued is written in the key block and /ip list shows (queued)",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "/ip stage <name>"
+        },
+        {
           "covers": [
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
-          "verified_at": "2026-10-05T05:25:00Z",
-          "evidence": "claude -p \"/ip stage otter\" in fixture g11 (5.11.0): status: queued written below phase; /ip list shows (current) (queued)",
-          "last_validated_commit": "b49945e6"
-        },
-        {
-          "id": "st-2",
+          "evidence": "claude -p \"/ip unstage otter\" in fixture g11 (5.11.0): status line removed",
           "given": "a queued plan",
-          "when": "/ip unstage <name>",
+          "id": "st-2",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
           "then": "status: queued is removed; the plan is yellow again",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "/ip unstage <name>"
+        },
+        {
           "covers": [
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
-          "verified_at": "2026-10-05T05:25:00Z",
-          "evidence": "claude -p \"/ip unstage otter\" in fixture g11 (5.11.0): status line removed",
-          "last_validated_commit": "b49945e6"
-        },
-        {
-          "id": "st-3",
+          "evidence": "claude -p \"/ip stage panda\" (executing) in fixture g11 (5.11.0): refused in one line, file byte-identical",
           "given": "a phase: executing plan",
-          "when": "/ip stage <name>",
+          "id": "st-3",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
           "then": "refused with a one-line reason; file untouched",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "/ip stage <name>"
+        },
+        {
           "covers": [
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
-          "verified_at": "2026-10-05T05:25:00Z",
-          "evidence": "claude -p \"/ip stage panda\" (executing) in fixture g11 (5.11.0): refused in one line, file byte-identical",
-          "last_validated_commit": "b49945e6"
-        },
-        {
-          "id": "st-4",
+          "evidence": "claude -p \"/ip add to otter …\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged — re-stage with /ip stage otter\"",
           "given": "a queued plan",
-          "when": "/ip add to <name> <step>",
+          "id": "st-4",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
           "then": "the step is added, status: queued is removed, and the reply says it was unstaged",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "covers": [
-            "skills/iterate-planner/SKILL.md"
-          ],
-          "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
           "verified_at": "2026-10-05T05:25:00Z",
-          "evidence": "claude -p \"/ip add to otter …\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged — re-stage with /ip stage otter\"",
-          "last_validated_commit": "b49945e6"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "/ip add to <name> <step>"
         },
         {
-          "id": "st-5",
+          "covers": [
+            "skills/iterate/SKILL.md"
+          ],
+          "covers_source": "manual",
+          "evidence": "claude -p \"/iterate robin\" in fixture g12 (5.11.0): status: queued cleared on transition, loop-mechanism external kept, 1/1 green, archived",
           "given": "a queued plan",
-          "when": "/iterate <name> typed by a human",
+          "id": "st-5",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
           "then": "the plan launches now and status: queued is cleared on transition to executing",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "/iterate <name> typed by a human"
+        },
+        {
           "covers": [
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
-          "verified_at": "2026-10-05T05:25:00Z",
-          "evidence": "claude -p \"/iterate robin\" in fixture g12 (5.11.0): status: queued cleared on transition, loop-mechanism external kept, 1/1 green, archived",
-          "last_validated_commit": "b49945e6"
-        },
-        {
-          "id": "st-6",
+          "evidence": "claude -p \"/iterate\" (no arg) in fixture g11b with one queued plan (5.11.0): printed the pointer, launched nothing, still on main",
           "given": "a queued plan and a no-arg /iterate tick with nothing executing",
-          "when": "/iterate",
+          "id": "st-6",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
           "then": "the tick does not launch it (unattended launch belongs to the conductor), per the existing no-arg rules",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "covers": [
-            "skills/iterate/SKILL.md"
-          ],
-          "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
           "verified_at": "2026-10-05T05:25:00Z",
-          "evidence": "claude -p \"/iterate\" (no arg) in fixture g11b with one queued plan (5.11.0): printed the pointer, launched nothing, still on main",
-          "last_validated_commit": "b49945e6"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "/iterate"
         },
         {
-          "id": "st-7",
-          "given": "a plan with status: queued in its key block",
-          "when": "iterate-run status and the dashboard render it",
-          "then": "status prints `plan <name> queued` and the card badge reads queued; executing and any status: blocked*/paused/unblocked still win",
-          "tier": "fast",
-          "source": "plan:flamingo",
-          "validity": "valid",
-          "test": [
-            "iterrun.TestIsQueuedAndStateLabel",
-            "iterrun.TestLiveBadgeQueued"
-          ],
           "covers": [
             "src/internal/iterrun/plans.go",
             "src/internal/iterrun/serve.go",
             "src/internal/iterrun/status.go"
           ],
           "covers_source": "manual",
+          "given": "a plan with status: queued in its key block",
+          "id": "st-7",
+          "last_validated": "2026-10-05T05:16:34Z",
           "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "source": "plan:flamingo",
+          "test": [
+            "iterrun.TestIsQueuedAndStateLabel",
+            "iterrun.TestLiveBadgeQueued"
+          ],
+          "then": "status prints `plan <name> queued` and the card badge reads queued; executing and any status: blocked*/paused/unblocked still win",
+          "tier": "fast",
+          "validity": "valid",
+          "when": "iterate-run status and the dashboard render it"
         },
         {
-          "id": "st-8",
-          "given": "a project with a position in the name registry",
-          "when": "iterate-run name peek runs twice",
-          "then": "both print the same letter and word, the registry is byte-identical, and a following name next hands out exactly that word",
-          "tier": "fast",
-          "source": "plan:flamingo",
-          "validity": "valid",
-          "test": [
-            "iterrun.TestPeekPlanNameClaimsNothing",
-            "iterrun.TestPeekPlanNameHonoursSeedWithoutSaving"
-          ],
           "covers": [
             "src/internal/iterrun/names.go"
           ],
           "covers_source": "manual",
+          "given": "a project with a position in the name registry",
+          "id": "st-8",
+          "last_validated": "2026-10-05T05:16:34Z",
           "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "source": "plan:flamingo",
+          "test": [
+            "iterrun.TestPeekPlanNameClaimsNothing",
+            "iterrun.TestPeekPlanNameHonoursSeedWithoutSaving"
+          ],
+          "then": "both print the same letter and word, the registry is byte-identical, and a following name next hands out exactly that word",
+          "tier": "fast",
+          "validity": "valid",
+          "when": "iterate-run name peek runs twice"
         }
-      ]
+      ],
+      "id": "req-flamingo-stage",
+      "requirement": "/iterate-planner can stage a plan (status: queued) so the nightly tick or /iterate <name> can launch it; editing a staged plan unstages it; staging an executing plan is refused.",
+      "source": "plan:flamingo"
     },
     {
-      "id": "req-flamingo-no-self-pause",
-      "requirement": "When the user says iterate, the executor works to completion: pause is a human verb, machine time (VM hours, slow tests, long builds) is never a reason to stop or ask for a go-ahead, the loop is cancelled only at a terminal ending, and a slow-tier case drifted by the plan's own work runs inside the plan while nobody is watching.",
-      "source": "plan:flamingo",
       "cases": [
         {
-          "id": "np-1",
-          "given": "an executing plan whose FFIV drift set contains a slow-tier case and nobody is at the keyboard",
-          "when": "the executor reaches that step",
-          "then": "it runs the case to completion (registry runs += 1), checks the step off, and neither pauses nor cancels its loop",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
           "covers": [
             "skills/iterate/SKILL.md",
             "skills/testmaster/SKILL.md",
             "skills/testmaster-run/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
-          "verified_at": "2026-10-05T05:25:00Z",
           "evidence": "claude -p \"/iterate seal\" in fixture g14 (2026-10-05T05:20-05:24Z, 5.11.0): soak-1 run in-plan via iterate-run run --plan seal (125.3s), registry runs 2, plan all-green",
-          "last_validated_commit": "b49945e6"
+          "given": "an executing plan whose FFIV drift set contains a slow-tier case and nobody is at the keyboard",
+          "id": "np-1",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
+          "then": "it runs the case to completion (registry runs += 1), checks the step off, and neither pauses nor cancels its loop",
+          "tier": "?",
+          "validity": "valid",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "the executor reaches that step"
         },
         {
-          "id": "np-2",
-          "given": "a step whose only cost is machine time (VM hours, a >2-minute test, a long build)",
-          "when": "the executor weighs whether to proceed",
-          "then": "it proceeds — the plan's Cost: line is the authority — and the transcript contains no 'go-ahead', 'pause the plan' or 'let me know when' text",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
           "covers": [
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
-          "verified_at": "2026-10-05T05:25:00Z",
           "evidence": "fixture g14 transcript daefaff3: 0 assistant-text matches for go-ahead|pause the plan|let me know when|before I run|say-so|^Ask:",
-          "last_validated_commit": "b49945e6"
+          "given": "a step whose only cost is machine time (VM hours, a >2-minute test, a long build)",
+          "id": "np-2",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
+          "then": "it proceeds — the plan's Cost: line is the authority — and the transcript contains no 'go-ahead', 'pause the plan' or 'let me know when' text",
+          "tier": "?",
+          "validity": "valid",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "the executor weighs whether to proceed"
         },
         {
-          "id": "np-3",
-          "given": "a plan file carrying status: paused",
-          "when": "its Status / Log is read",
-          "then": "a 'paused by operator' line from /iterate pause or /ic pause accompanies it — a pause with no human command behind it is a defect",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
           "covers": [
             "skills/iterate-conductor/SKILL.md",
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:16:44Z",
+          "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/v13b (2026-10-05T04:09-04:14Z): status: paused with no operator line logged as \"self-pause defect: heron\", status cleared, resumed via /iterate heron with loop-mechanism: external, completed and archived",
+          "given": "a plan file carrying status: paused",
+          "id": "np-3",
           "last_validated_commit": "wt",
-          "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/v13b (2026-10-05T04:09-04:14Z): status: paused with no operator line logged as \"self-pause defect: heron\", status cleared, resumed via /iterate heron with loop-mechanism: external, completed and archived"
+          "source": "plan:flamingo",
+          "then": "a 'paused by operator' line from /iterate pause or /ic pause accompanies it — a pause with no human command behind it is a defect",
+          "tier": "?",
+          "validity": "valid",
+          "verified_at": "2026-10-05T04:16:44Z",
+          "verified_by": "fixture",
+          "when": "its Status / Log is read"
         },
         {
-          "id": "np-4",
+          "covers": [
+            "skills/iterate/SKILL.md"
+          ],
+          "covers_source": "manual",
+          "evidence": "fixture g14 transcript: CronCreate once at launch, CronDelete 1cc25e0a once in the terminal all-green entry",
           "given": "an armed resumption loop or cron",
-          "when": "the executor cancels it",
+          "id": "np-4",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
           "then": "the same turn writes one of the four terminal endings (all-green, human-gate, blocked-on-operator after the ladder, giveup) or records a human pause/kill — never 'awaiting go-ahead'",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
+          "verified_at": "2026-10-05T05:25:00Z",
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "the executor cancels it"
+        },
+        {
           "covers": [
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
-          "verified_at": "2026-10-05T05:25:00Z",
-          "evidence": "fixture g14 transcript: CronCreate once at launch, CronDelete 1cc25e0a once in the terminal all-green entry",
-          "last_validated_commit": "b49945e6"
-        },
-        {
-          "id": "np-5",
+          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, ⚠ branch-not-merged line",
           "given": "a plan with human-gate: N and every other validation green",
-          "when": "the executor reaches step N",
+          "id": "np-5",
+          "last_validated_commit": "b49945e6",
+          "source": "plan:flamingo",
           "then": "success-with-handoff fires exactly as before — the one designed stop is unchanged",
           "tier": "?",
-          "source": "plan:flamingo",
           "validity": "valid",
-          "covers": [
-            "skills/iterate/SKILL.md"
-          ],
-          "covers_source": "manual",
-          "verified_by": "live claude -p fixture (plan gaur re-proof)",
           "verified_at": "2026-10-05T05:25:00Z",
-          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, ⚠ branch-not-merged line",
-          "last_validated_commit": "b49945e6"
+          "verified_by": "live claude -p fixture (plan gaur re-proof)",
+          "when": "the executor reaches step N"
         },
         {
-          "id": "np-6",
-          "given": "/testmaster run invoked from inside an executing plan",
-          "when": "the selection names a drifted slow case by id",
-          "then": "it runs without a confirmation prompt; bare 'all' during the same plan still downgrades to fast+standard with the one-line note",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
           "covers": [
             "skills/testmaster-run/SKILL.md",
             "skills/testmaster/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:12:08Z",
           "evidence": "claude -p \"/testmaster run soak-1\" in fixture v15 (plan executing): ran 125s without confirmation; \"/testmaster run all\" downgraded to fast+standard with the note",
-          "last_validated_commit": "9240afce"
+          "given": "/testmaster run invoked from inside an executing plan",
+          "id": "np-6",
+          "last_validated_commit": "9240afce",
+          "source": "plan:flamingo",
+          "then": "it runs without a confirmation prompt; bare 'all' during the same plan still downgrades to fast+standard with the one-line note",
+          "tier": "?",
+          "validity": "valid",
+          "verified_at": "2026-10-05T04:12:08Z",
+          "verified_by": "fixture",
+          "when": "the selection names a drifted slow case by id"
         },
         {
-          "id": "np-7",
-          "given": "the conductor sweeps and finds a plan with status: paused and no operator pause line",
-          "when": "the sweep classifies it",
-          "then": "it logs 'self-pause defect', clears the status, and resumes the plan",
-          "tier": "?",
-          "source": "plan:flamingo",
-          "validity": "valid",
           "covers": [
             "skills/iterate-conductor/SKILL.md",
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "verified_by": "fixture",
-          "verified_at": "2026-10-05T04:16:44Z",
+          "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/v13b (2026-10-05T04:09-04:14Z): status: paused with no operator line logged as \"self-pause defect: heron\", status cleared, resumed via /iterate heron with loop-mechanism: external, completed and archived",
+          "given": "the conductor sweeps and finds a plan with status: paused and no operator pause line",
+          "id": "np-7",
           "last_validated_commit": "wt",
-          "evidence": "claude -p \"/iterate-conductor run\" in fixture /tmp/claude-503/fx/v13b (2026-10-05T04:09-04:14Z): status: paused with no operator line logged as \"self-pause defect: heron\", status cleared, resumed via /iterate heron with loop-mechanism: external, completed and archived"
+          "source": "plan:flamingo",
+          "then": "it logs 'self-pause defect', clears the status, and resumes the plan",
+          "tier": "?",
+          "validity": "valid",
+          "verified_at": "2026-10-05T04:16:44Z",
+          "verified_by": "fixture",
+          "when": "the sweep classifies it"
         }
-      ]
+      ],
+      "id": "req-flamingo-no-self-pause",
+      "requirement": "When the user says iterate, the executor works to completion: pause is a human verb, machine time (VM hours, slow tests, long builds) is never a reason to stop or ask for a go-ahead, the loop is cancelled only at a terminal ending, and a slow-tier case drifted by the plan's own work runs inside the plan while nobody is watching.",
+      "source": "plan:flamingo"
     },
     {
-      "id": "req-gaur-tutorial-box",
-      "requirement": "Every box the tutorial runtime draws (the run.sh menu, tut_title, tut_done) is closed on all four sides and sized to its widest row. The menu shows a bucket's time as one line: ~45 min running (10 hands-on) when it declares TUTORIAL-WALLCLOCK, 10 min otherwise. Durations are dim, and the colour roles are the skill's standard.",
-      "source": "plan:gaur",
       "cases": [
         {
-          "id": "box-1",
+          "covers": [
+            "skills/tutorial/lib/box.sh",
+            "skills/tutorial/lib/run.sh",
+            "skills/tutorial/lib/tutorial.sh"
+          ],
+          "covers_source": "manual",
           "given": "the menu, a tut_title box and a tut_done box rendered on a pty at 60, 80 and 132 columns",
-          "when": "the frames are read with ANSI stripped",
+          "id": "box-1",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "tutorial.box-test",
           "then": "every line of each box has the same width and ends in its right border",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "tutorial.box-test",
+          "when": "the frames are read with ANSI stripped"
+        },
+        {
           "covers": [
             "skills/tutorial/lib/box.sh",
             "skills/tutorial/lib/run.sh",
             "skills/tutorial/lib/tutorial.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "box-2",
           "given": "a row wider than the terminal (a long tut_title subtitle, a long menu row)",
-          "when": "the box renders at 60, 80 and 132 columns",
+          "id": "box-2",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "tutorial.box-test",
           "then": "the row wraps inside the frame and no line is wider than the terminal",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "tutorial.box-test",
+          "when": "the box renders at 60, 80 and 132 columns"
+        },
+        {
           "covers": [
             "skills/tutorial/lib/box.sh",
             "skills/tutorial/lib/run.sh",
             "skills/tutorial/lib/tutorial.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "box-3",
           "given": "a bucket declaring TUTORIAL-MINUTES: 10 and TUTORIAL-WALLCLOCK: 45",
-          "when": "the menu renders",
+          "id": "box-3",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "tutorial.box-test",
           "then": "its duration reads ~45 min running (10 hands-on)",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "tutorial.box-test",
+          "when": "the menu renders"
+        },
+        {
           "covers": [
             "skills/tutorial/lib/box.sh",
             "skills/tutorial/lib/run.sh",
             "skills/tutorial/lib/tutorial.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "box-4",
           "given": "a bucket declaring only TUTORIAL-MINUTES: 4 beside the box-3 bucket",
-          "when": "the menu renders",
+          "id": "box-4",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "tutorial.box-test",
           "then": "its duration reads 4 min and starts in the same column as box-3's",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "tutorial.box-test",
+          "when": "the menu renders"
+        },
+        {
           "covers": [
             "skills/tutorial/lib/box.sh",
             "skills/tutorial/lib/run.sh",
             "skills/tutorial/lib/tutorial.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "box-5",
           "given": "NO_COLOR=1, TERM=dumb, or a piped stdout",
-          "when": "the menu or a bucket renders",
+          "id": "box-5",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "tutorial.box-test",
           "then": "the output holds no escape sequence and every frame is closed",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "tutorial.box-test",
+          "when": "the menu or a bucket renders"
+        },
+        {
           "covers": [
             "skills/tutorial/lib/box.sh",
             "skills/tutorial/lib/run.sh",
             "skills/tutorial/lib/tutorial.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "box-6",
           "given": "LANG=C LC_ALL=C",
-          "when": "the menu renders",
+          "id": "box-6",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "tutorial.box-test",
           "then": "the frame is drawn in + - | and is closed",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "tutorial.box-test",
+          "when": "the menu renders"
+        },
+        {
           "covers": [
             "skills/tutorial/lib/box.sh",
             "skills/tutorial/lib/run.sh",
             "skills/tutorial/lib/tutorial.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "box-7",
           "given": "a tutorial directory with no buckets",
-          "when": "the menu renders",
+          "id": "box-7",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "tutorial.box-test",
           "then": "a closed frame shows the (no tutorials yet …) placeholder row",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "tutorial.box-test",
-          "covers": [
-            "skills/tutorial/lib/box.sh",
-            "skills/tutorial/lib/run.sh",
-            "skills/tutorial/lib/tutorial.sh"
-          ],
-          "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "when": "the menu renders"
         }
-      ]
+      ],
+      "id": "req-gaur-tutorial-box",
+      "requirement": "Every box the tutorial runtime draws (the run.sh menu, tut_title, tut_done) is closed on all four sides and sized to its widest row. The menu shows a bucket's time as one line: ~45 min running (10 hands-on) when it declares TUTORIAL-WALLCLOCK, 10 min otherwise. Durations are dim, and the colour roles are the skill's standard.",
+      "source": "plan:gaur"
     },
     {
-      "id": "req-gaur-contract-expansion",
-      "requirement": "tern must never have parked on \"extend symapi or withdraw --no-browser\": when a feature needs an API broadly expanded, iterate expands it, chases the regressions (revalidating old code is fine), implements the feature and moves forward without human interaction.",
-      "source": "plan:gaur",
       "cases": [
         {
-          "id": "contract-1",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
           "given": "skills/iterate/SKILL.md",
-          "when": "its rule list is read",
+          "id": "contract-1",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "iterate.contract-test",
           "then": "rule 33 exists, names contract expansion, answers extend-or-withdraw with extend, and cites tern",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "iterate.contract-test",
+          "when": "its rule list is read"
+        },
+        {
           "covers": [
             "skills/iterate/SKILL.md",
             "skills/iterate-conductor/SKILL.md",
@@ -2368,18 +2367,18 @@
             "skills/skillmap.tsv"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "contract-2",
           "given": "/iterate's On-stuck and landing-test Fails paragraphs",
-          "when": "they are read",
+          "id": "contract-2",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "iterate.contract-test",
           "then": "the operator-only list is closed to a secret, physical access and an external party with no decision on it, and a clause-3/4 failure is work",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "iterate.contract-test",
+          "when": "they are read"
+        },
+        {
           "covers": [
             "skills/iterate/SKILL.md",
             "skills/iterate-conductor/SKILL.md",
@@ -2388,18 +2387,18 @@
             "skills/skillmap.tsv"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "contract-3",
           "given": "the conductor's escalation ladder",
-          "when": "it is read",
+          "id": "contract-3",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "iterate.contract-test",
           "then": "a parity row ends in continue and no 'needs a human decision' row exists",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "iterate.contract-test",
+          "when": "it is read"
+        },
+        {
           "covers": [
             "skills/iterate/SKILL.md",
             "skills/iterate-conductor/SKILL.md",
@@ -2408,18 +2407,18 @@
             "skills/skillmap.tsv"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "contract-4",
           "given": "the triage state table",
-          "when": "it is read",
+          "id": "contract-4",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "iterate.contract-test",
           "then": "exactly one Executor-defect row exists, cleared with fix problem N and status: unblocked",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "iterate.contract-test",
+          "when": "it is read"
+        },
+        {
           "covers": [
             "skills/iterate/SKILL.md",
             "skills/iterate-conductor/SKILL.md",
@@ -2428,102 +2427,416 @@
             "skills/skillmap.tsv"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
-        },
-        {
-          "id": "contract-5",
           "given": "the 13 iterate family members",
-          "when": "skillctl family iterate runs and each installed copy is compared with its source",
+          "id": "contract-5",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "plan:gaur",
+          "test": "iterate.contract-test",
           "then": "every member carries the family version and every installed copy matches",
           "tier": "fast",
-          "source": "plan:gaur",
           "validity": "valid",
-          "test": "iterate.contract-test",
-          "covers": [
-            "skills/iterate/SKILL.md",
-            "skills/iterate-conductor/SKILL.md",
-            "skills/iterate-triage/SKILL.md",
-            "skills/iterate-planner/SKILL.md",
-            "skills/skillmap.tsv"
-          ],
-          "covers_source": "manual",
-          "last_validated_commit": "7f2b68c2",
-          "last_validated": "2026-10-05T05:16:34Z"
+          "when": "skillctl family iterate runs and each installed copy is compared with its source"
         }
-      ]
+      ],
+      "id": "req-gaur-contract-expansion",
+      "requirement": "tern must never have parked on \"extend symapi or withdraw --no-browser\": when a feature needs an API broadly expanded, iterate expands it, chases the regressions (revalidating old code is fine), implements the feature and moves forward without human interaction.",
+      "source": "plan:gaur"
     },
     {
-      "id": "req-inform-statusline",
-      "requirement": "The ⚙️ segment ends with 📥N when the project root has N open informs (inbox/*.md whose key block reads status: open); consumed or dismissed informs, and status lines below the first ## heading, do not count; a project whose only iterate state is an inbox still renders the segment.",
-      "source": "skill:iterate-inform",
       "cases": [
         {
-          "id": "sl-18",
+          "covers": [
+            "dotfiles/statusline-command.sh"
+          ],
+          "covers_source": "manual",
           "given": "a project with two open informs and one consumed",
-          "when": "the statusline renders",
+          "id": "sl-18",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "skill:iterate-inform",
+          "test": "dotfiles.statusline-check",
           "then": "its segment ends with 📥2",
           "tier": "?",
-          "source": "skill:iterate-inform",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "6a4fce5e",
-          "last_validated": "2026-10-05T18:03:58Z"
-        },
-        {
-          "id": "sl-19",
           "given": "a project whose only inform is dismissed",
-          "when": "the statusline renders",
+          "id": "sl-19",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "skill:iterate-inform",
+          "test": "dotfiles.statusline-check",
           "then": "no 📥 renders",
           "tier": "?",
-          "source": "skill:iterate-inform",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
+          "when": "the statusline renders"
+        },
+        {
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "6a4fce5e",
-          "last_validated": "2026-10-05T18:03:58Z"
-        },
-        {
-          "id": "sl-20",
           "given": "a project with only .claude/iterate/inbox (no plans/ or archive/), rendered from a subdirectory",
-          "when": "the statusline renders",
+          "id": "sl-20",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "skill:iterate-inform",
+          "test": "dotfiles.statusline-check",
           "then": "the ⚙️ segment renders, ending with 📥1",
           "tier": "?",
-          "source": "skill:iterate-inform",
           "validity": "valid",
-          "test": "dotfiles.statusline-check",
-          "covers": [
-            "dotfiles/statusline-command.sh"
-          ],
-          "covers_source": "manual",
-          "last_validated_commit": "6a4fce5e",
-          "last_validated": "2026-10-05T18:03:58Z"
+          "when": "the statusline renders"
         },
         {
-          "id": "sl-21",
-          "given": "a consumed inform whose body quotes 'status: open' below its first ## heading",
-          "when": "the statusline renders",
-          "then": "it is not counted and no 📥 renders",
-          "tier": "?",
-          "source": "skill:iterate-inform",
-          "validity": "valid",
-          "test": "dotfiles.statusline-check",
           "covers": [
             "dotfiles/statusline-command.sh"
           ],
           "covers_source": "manual",
-          "last_validated_commit": "6a4fce5e",
-          "last_validated": "2026-10-05T18:03:58Z"
+          "given": "a consumed inform whose body quotes 'status: open' below its first ## heading",
+          "id": "sl-21",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "source": "skill:iterate-inform",
+          "test": "dotfiles.statusline-check",
+          "then": "it is not counted and no 📥 renders",
+          "tier": "?",
+          "validity": "valid",
+          "when": "the statusline renders"
         }
-      ]
+      ],
+      "id": "req-inform-statusline",
+      "requirement": "The ⚙️ segment ends with 📥N when the project root has N open informs (inbox/*.md whose key block reads status: open); consumed or dismissed informs, and status lines below the first ## heading, do not count; a project whose only iterate state is an inbox still renders the segment.",
+      "source": "skill:iterate-inform"
+    },
+    {
+      "cases": [
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestBlockingFailureStopsTheRunButIndependentFailuresDoNot",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestBlockingFailureStopsTheRunButIndependentFailuresDoNot",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestCLIEndToEnd",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestCLIEndToEnd",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestCargoAdapter",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestCargoAdapter",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestDetectSources",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestDetectSources",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestFlagsParseInEveryPosition",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestFlagsParseInEveryPosition",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestGoAdapterBatchesAPackageAndSurvivesACrash",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestGoAdapterBatchesAPackageAndSurvivesACrash",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestGoBuildFailureCollapsesToOneLine",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestGoBuildFailureCollapsesToOneLine",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestGoTimeoutNamesTheHungTestAndRunsTheRest",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestGoTimeoutNamesTheHungTestAndRunsTheRest",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestPytestAdapter",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestPytestAdapter",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestRegistryRoundTripKeepsUnknownFieldsAndNormalizesLegacyEntries",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestRegistryRoundTripKeepsUnknownFieldsAndNormalizesLegacyEntries",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestSerialTestsRunAlone",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestSerialTestsRunAlone",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestShellPassIsSilentAndFailureLeavesALog",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestShellPassIsSilentAndFailureLeavesALog",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestShellTimeoutKillsTheWholeProcessGroup",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestShellTimeoutKillsTheWholeProcessGroup",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestTierChangeIsReportedAndDefaultSelection",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestTierChangeIsReportedAndDefaultSelection",
+          "validity": "unverified"
+        },
+        {
+          "covers": [
+            "src/cmd/testmaster/main.go",
+            "src/internal/testmaster/adapter.go",
+            "src/internal/testmaster/cargo.go",
+            "src/internal/testmaster/discover.go",
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/golang.go",
+            "src/internal/testmaster/manage.go",
+            "src/internal/testmaster/pytest.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/run.go",
+            "src/internal/testmaster/shell.go"
+          ],
+          "covers_source": "manual",
+          "id": "testmaster.TestGreenRunStampsCatalogCases",
+          "last_validated": "2026-10-05T21:43:28Z",
+          "last_validated_commit": "fad40839",
+          "test": "TestGreenRunStampsCatalogCases",
+          "validity": "unverified"
+        }
+      ],
+      "id": "req-testmaster-runner",
+      "source": "user",
+      "statement": "I want a companion app that helps testrunner run tests external to token calls. It can be written in go. It needs to be language agnostic e.g. can run rust tests, python tests, etc. It maintains a text based database or sqlite database per project so that it knows exactly what test cases to run and run through and how to get them. A pass is just a pass. We don't even need to tell the AI TestMaster that it passed. A failure is a failure and we should capture the failure output and give that to a file that TestMaster then can go read about the full test. So it should run through the full test cases until there's a blocking test. But if we had 300 tests that are meant to be ran independent, then it runs through all 300 and then it tells TestMaster only of the failures. It can tell it statistics on passing, but I don't need the TestMaster actually seeing and looking at the test."
     }
   ],
-  "notes": "Covers measured by per-test coverage profile against the tree at commit 81f75486, with an init baseline subtracted at statement-block granularity. covers_source 'coverage' means measured; nothing here is a naming-convention guess."
+  "schema": 1,
+  "updated": "2026-10-05T18:03:58Z"
 }
