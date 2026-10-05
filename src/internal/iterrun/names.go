@@ -72,6 +72,15 @@ func NextPlanName(projectDir string) (string, error) {
 	return nextPlanName(NamesPath(), namesLockPath(), projectDir, seedFromKnownProjects)
 }
 
+// PeekPlanName reports the letter and the word `name next` would hand
+// projectDir right now, claiming neither: the registry is read under the
+// same lock but never written, so two peeks answer identically and the
+// project's sequence does not move. The status line's trailing dim
+// "next plan" letter and /iterate-planner read this.
+func PeekPlanName(projectDir string) (letter, word string, err error) {
+	return peekPlanName(NamesPath(), namesLockPath(), projectDir, seedFromKnownProjects)
+}
+
 // seedFromKnownProjects collects every plan name already on disk across
 // every project iterate-run knows about — best-effort, same tolerance for
 // a missing/unreadable project as the rest of this package.
@@ -140,6 +149,43 @@ func nextPlanName(path, lockPath, projectDir string, seed func() map[string]bool
 			return "", err
 		}
 		return name, nil
+	}
+}
+
+func peekPlanName(path, lockPath, projectDir string, seed func() map[string]bool) (string, string, error) {
+	unlock, err := lockFile(lockPath)
+	if err != nil {
+		return "", "", err
+	}
+	defer unlock()
+
+	st, err := loadNameState(path)
+	if err != nil {
+		return "", "", err
+	}
+	// An unseeded registry is seeded -- and saved -- by the first `name
+	// next`. A peek folds the same seed into a private copy so its answer
+	// matches what `next` will say, and writes nothing.
+	used := st.Used
+	if !st.Seeded {
+		used = make(map[string]bool, len(st.Used))
+		for name := range st.Used {
+			used[name] = true
+		}
+		for name := range seed() {
+			used[name] = true
+		}
+	}
+	letter := alphabet[st.ProjectNextIdx[projectKey(projectDir)]]
+	for n := 0; ; n++ {
+		name := PoolWord(letter, n)
+		if name == "" {
+			return "", "", fmt.Errorf("iterate-run: no word pool for letter %q", letter)
+		}
+		if used[name] {
+			continue
+		}
+		return string(letter), name, nil
 	}
 }
 

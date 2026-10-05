@@ -2,6 +2,22 @@
 
 What changed, for people who use this.
 
+## 2026-10-05 — Plans that run themselves overnight
+
+**New**
+- Approve a plan and walk away. Stage it (`/ip stage <name>`), enroll the project once (`iterate-run nightly enroll`), and the nightly tick starts it inside the project's allowed hours while you are off the keyboard — then resumes it on later ticks until it finishes. Nothing you have not approved is ever started unattended.
+- The status line tells you more at a glance: orange for a plan approved to run overnight, dark green for a run that has stalled, bold green for one that is really working, `⏰` for a project enrolled in the nightly tick — and the next plan's letter is always there, dimmed, so an empty segment can only mean the status line itself is broken.
+- `iterate-run status` lists every plan with its state, and `iterate-run name peek` previews the next plan's name without using it up.
+- The dashboard shows approved plans as `queued`, and a project driven by the nightly tick reads `tick launchd`.
+
+**Improved**
+- Unattended runs no longer stop to ask permission over machine time. A slow test that the plan's own change invalidated now runs during the night instead of waiting for you to come back and start it.
+- New plans are written as one straightforward list by default; say "team this" when you want parallel teams.
+
+**Fixed**
+- A project whose last plan had been archived showed no plan segment at all in the status line.
+- The unattended runner could pick the right plan and then fail to start it; it now starts it.
+
 ## 2026-09-10 — Always-on dashboard, and plan names that don't run out
 
 **New**

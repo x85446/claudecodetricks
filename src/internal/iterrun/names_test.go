@@ -233,3 +233,78 @@ func TestMigrateKeysKeepsHighestIndex(t *testing.T) {
 		}
 	}
 }
+
+// TESTMASTER: id=iterrun.TestPeekPlanNameClaimsNothing tier=? parallel=yes
+func TestPeekPlanNameClaimsNothing(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "plan-names.json")
+	lock := filepath.Join(dir, "plan-names.json.lock")
+	noSeed := func() map[string]bool { return nil }
+	proj := filepath.Join(dir, "proj1")
+
+	l1, w1, err := peekPlanName(path, lock, proj, noSeed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l2, w2, err := peekPlanName(path, lock, proj, noSeed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l1 != "a" || l1 != l2 || w1 != w2 {
+		t.Errorf("peek twice = (%q,%q) then (%q,%q); want identical answers starting at a", l1, w1, l2, w2)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("peek created %s; it must never write the registry", path)
+	}
+
+	got, err := nextPlanName(path, lock, proj, noSeed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != w1 {
+		t.Errorf("next = %q, want the word peek promised, %q", got, w1)
+	}
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l3, w3, err := peekPlanName(path, lock, proj, noSeed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l3 != "b" || w3 == w1 {
+		t.Errorf("after next, peek = (%q,%q); want letter b and a fresh word", l3, w3)
+	}
+	after, _ := os.ReadFile(path)
+	if string(before) != string(after) {
+		t.Errorf("peek changed the registry bytes")
+	}
+}
+
+// TESTMASTER: id=iterrun.TestPeekPlanNameHonoursSeedWithoutSaving tier=? parallel=yes
+func TestPeekPlanNameHonoursSeedWithoutSaving(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "plan-names.json")
+	lock := filepath.Join(dir, "plan-names.json.lock")
+	proj := filepath.Join(dir, "proj1")
+	taken := PoolWord('a', 0)
+	preUsed := func() map[string]bool { return map[string]bool{taken: true} }
+
+	_, w, err := peekPlanName(path, lock, proj, preUsed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w == taken {
+		t.Errorf("peek = %q, which the seed says is already used", w)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("peek saved the seed to %s; seeding is next's job", path)
+	}
+	got, err := nextPlanName(path, lock, proj, preUsed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != w {
+		t.Errorf("next = %q, want %q (peek and next must agree)", got, w)
+	}
+}

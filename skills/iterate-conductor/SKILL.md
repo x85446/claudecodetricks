@@ -3,7 +3,7 @@ name: iterate-conductor
 description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via /iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
 argument-hint: start | stop | pause | resume | run | status | kill | schedule <rule>
 disable-model-invocation: true
-version: 5.9.0
+version: 5.10.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -38,6 +38,7 @@ from here: two things owning execution is how a plan gets worked twice.
 enabled: true
 paused: false
 cron: <job-id>              # the tick this conductor armed; cleared on stop
+tick-source: launchd        # set by `iterate-run nightly enroll`: the OS timer is the tick; arm no cron
 conductor-schedule:         # optional, same grammar as launch-schedule;
   - allow daily 22:00-06:00 #   intersected with it, so it can only narrow
 current: <plan-name>        # plan handed to /iterate, empty between plans
@@ -61,12 +62,18 @@ sweeps: 14
 Project-scoped, always. The conductor never reaches outside the project it was
 started in.
 
+**Rewrite the frontmatter by changing keys, never by regenerating it.** Every
+key you did not touch — `tick-source:`, `conductor-schedule:`,
+`imported-issues:`, `watch-bound:` — survives a stand-down, a resume, a start
+and an ending exactly as it was. A dropped `tick-source:` would silently turn a
+launchd-ticked conductor back into a self-ticking one.
+
 ## Operations
 
 Route on `$1`:
 
 ### `start` / `on`
-Write `enabled: true`, `paused: false`. Arm a recurring cron firing
+Write `enabled: true`, `paused: false`. **If `tick-source: launchd` is set, arm nothing** — the nightly LaunchAgent (`iterate-run nightly`, every 10 minutes, inside both schedules) runs `/iterate-conductor run` for this project on its own, and a cron here would double-tick; say `tick: launchd — the OS timer is the tick`, leave `cron:` empty, and skip to the ladder reset. Otherwise arm a recurring cron firing
 `/iterate-conductor` — **every 5 minutes**, not every minute: a tick that finds
 a run already in flight does nothing, and `/iterate` owns its own 1-minute
 resumption loop. Record the job id in `cron:`. Reset the wind-down ladder: `tick: working`,
@@ -76,7 +83,7 @@ Then run one sweep immediately rather than waiting for the first tick.
 ### `stop` / `off`
 **The current plan finishes first.** Write `enabled: false`; the plan in flight
 runs to its own terminal state, and no new plan is started after it. Cancel the
-cron only once `current:` is empty — cancelling while a plan is mid-flight would
+cron — if you armed one; under `tick-source: launchd` there is nothing to cancel, and `enabled: false` is what stops the tick launching you — only once `current:` is empty — cancelling while a plan is mid-flight would
 strand it without a supervisor to handle its ending. Report which plan is
 draining and that no further plans will start.
 
@@ -88,11 +95,21 @@ and its ticks become no-ops while paused.
 ### `resume`
 Clear `paused`, reset the ladder (`tick: working`, `watch-ticks: 0`, clear
 `stood-down:` and `notified:`), and re-arm the 5-minute cron if standing down
-had cancelled it. Run a sweep immediately.
+had cancelled it (not under `tick-source: launchd` — the OS timer never stopped). Run a sweep immediately.
 
 ### `run`
 One sweep, right now, regardless of `enabled:`. Does not arm anything and does
 not change enablement — the way to try the conductor without committing to it.
+
+**Under `tick-source: launchd`, `run` IS the tick.** `iterate-run nightly` invokes
+it, already inside both schedules and already past the live-heartbeat and lock
+checks. Before handing a plan to `/iterate <name>` (by reading its SKILL.md — see the
+sweep, step 5) — or resuming an executing one whose field is empty — write
+`loop-mechanism: external` into its key block, so
+`/iterate` arms no loop of its own: nothing armed inside a `claude -p` turn
+survives that turn, and the next OS tick is the resumption. `run` sweeps
+regardless of `enabled:`, but launches nothing from a disabled or paused
+conductor.
 
 ### `schedule` / `rules`
 Delegate to `/iterate-rules`, passing the rest of the argument verbatim
@@ -118,6 +135,16 @@ is what it was waiting for — re-arm it** (`start`'s ladder reset plus a fresh
 5-minute cron) and sweep immediately, rather than leaving a cyan plan sitting
 in front of a conductor with no tick.
 
+### `enroll` / `withdraw`
+Delegate to `iterate-run nightly enroll` / `iterate-run nightly withdraw` for
+this project. Enroll writes `tick-source: launchd` (creating `conductor.md` with
+`enabled: true` when absent); if a cron is armed, cancel it, verify, and clear
+`cron:` — the OS timer replaces it. Withdraw removes the key; if the conductor
+is enabled and not stood down, re-arm the 5-minute cron so it keeps ticking.
+Report one line: `enrolled — iterate-run nightly ticks this project every 10m
+inside its schedules` or `withdrawn — conductor ticks itself again (cron <id>)`.
+The status line shows an enrolled project with ⏰.
+
 ### Degraded mode — enabled with no trigger
 
 A harness that cannot schedule itself (Codex today) leaves the conductor in a
@@ -139,11 +166,14 @@ is still correct to start — the plan file loses nothing and a human can resume
 it — but **say so at dispatch**, once, rather than letting a stalled run look
 like a running one. Never claim a tick was armed when none was.
 
+**`tick-source: launchd` with an empty `cron:` is not degraded.** The trigger is
+the OS timer; `status` says `tick launchd · next window <t>`, never `NO TRIGGER`.
+
 ### `status`
 Read-only. Print, in this shape:
 
 ```
-conductor  enabled · sweep 14 · next tick 3m   (or "NO TRIGGER" — see above)
+conductor  enabled · sweep 14 · next tick 3m   (or "NO TRIGGER" — see above; "tick launchd · next window 22:00" when enrolled)
 current    owl — step 4/6, running 22m
 queued     elk (unblocked, next), fox
 blocked    hare — needs: router creds
@@ -163,7 +193,8 @@ imported   0 issues
 
 ### `kill`
 **The one verb that does not wait.** Halt now, mid-plan: cancel the conductor
-cron AND the current plan's own loop, set `enabled: false`, **stop every
+cron (if any — never cancel what you did not arm) AND the current plan's own
+loop (nothing, when it is `external`), set `enabled: false`, **stop every
 `scratch` entry in the plan's `## Running resources`** (its VMs and containers
 are the reason someone reaches for kill; halting the plan and leaving them
 burning would change nothing), and leave the plan itself exactly where it
@@ -185,6 +216,12 @@ One tick. Do these in order and stop at the first that applies.
    cancels the tick; a tick arriving afterwards means the cancel didn't take,
    which is the one thing that can quietly restore the behaviour it was there
    to end.
+
+   **Under `tick-source: launchd` a tick after stand-down is normal** — the OS
+   timer never stops. Check whether something startable appeared (a `status:
+   queued` or `status: unblocked` plan): if so, reset the ladder (`tick:
+   working`, `watch-ticks: 0`, clear `stood-down:`) and continue — staging or
+   unblocking is the human act stand-down was waiting for; else exit silently.
 
 2. **Outside the permitted hours** → exit silently, logging one line the first
    time only. Two schedules apply and a sweep needs **both**:
@@ -218,18 +255,38 @@ One tick. Do these in order and stop at the first that applies.
    ending (next section), clear `current:`, continue to 5.
 
 5. **A plan is queued** → pick the next one and hand it to `/iterate <name>`.
+
+   **Handing off means reading `~/.claude/skills/iterate/SKILL.md` and following
+   it directly, with `<name>` as its `$1`.** The Skill tool cannot invoke
+   `/iterate` — its `disable-model-invocation` flag blocks the tool
+   unconditionally, and the tool's refusal text ("do not replicate by other
+   means") is about natural language tripping into an autonomous run, not about
+   this. A human starting or enrolling the conductor IS the explicit invocation
+   that flag reserves, exactly as typing `/i` or `/ic` is (see those aliases).
+   Never report the refusal as a blocker and never stand down over it.
+   Confirmed live (fixture v13, 2026-10-05): the sweep picked the right plan,
+   `Skill(iterate)` refused, and the conductor stood down with a staged plan
+   in front of it.
+
    Order, highest first:
 
    1. `status: unblocked` (cyan) — someone just cleared its path; honour that
       before starting anything new.
    2. `phase: executing` with no terminal status — finish what is already begun.
-   3. `phase: planned` — oldest `Started:` first.
+   3. `status: queued` — a planned plan a human staged with `/ip stage`,
+      oldest `Started:` first. **Never a bare `phase: planned`**: unstaged is
+      unapproved, and launching it unattended is the conductor spending what
+      nobody authorized. The orange letter is the approval.
 
    Skip `status: blocked-on-operator` / `awaiting-human-gate` (red) entirely,
    except for the one cheap re-test per completed cycle described below. Skip
    `status: paused` entirely and always — a human parked it with
    `/iterate pause`, and only `/iterate resume` unparks it. It is never stalled,
-   never re-tested, never picked. Set
+   never re-tested, never picked. A `status: paused` with no `paused by
+   operator` line in the plan's Status / Log is not a human pause — it is a
+   **self-pause defect** (the executor stopped itself; `/iterate` rule 32
+   forbids it): log `self-pause defect: <plan>`, remove the status, and treat
+   the plan as executing. Set
    `current:`, clear any `status: unblocked` you just picked up, log the start,
    exit.
 
@@ -420,7 +477,9 @@ nothing — resolves to exactly one of these:
   The run is over, and a finished night that never reached the one person who
   can restart it wasn't unattended, it was unreported. Stamp `notified:` and
   never send twice for the same blocker.
-- **Cancel the tick you armed, and verify.** `CronDelete <cron:>`, read the
+- **Cancel the tick you armed, and verify** (under `tick-source: launchd` there
+  is no cron: write `tick: stood-down` and let sweep step 1 keep the OS ticks
+  silent — `iterate-run nightly` itself also skips a project with nothing queued). `CronDelete <cron:>`, read the
   result, confirm it is gone, clear `cron:`. `/iterate` learned this one the
   expensive way — a cron cancelled through the wrong path went on firing at a
   dead plan for thirteen hours — and the conductor arms the same kind of job.
@@ -460,7 +519,8 @@ When the plan queue is empty, import open issues from this repo's forge.
 
 1. **Never execute steps directly.** `/iterate` executes; the conductor decides
    what runs next and handles endings. Two owners of execution means work done
-   twice.
+   twice. Running `/iterate` means following its SKILL.md yourself (the Skill
+   tool refuses it — sweep step 5); that is dispatch, not direct execution.
 2. **One plan at a time.** Respect `/iterate`'s concurrency lock. The conductor
    gets throughput from never idling, not from parallelism.
 3. **Never ask a question — but do say when you're done.** Unattended by
@@ -500,6 +560,11 @@ When the plan queue is empty, import open issues from this repo's forge.
    stand down. A supervisor that outlives its queue is the same defect as a
    loop that outlives its plan, one level up.
 
+10. **Pause is a human verb, and the OS timer is not yours to cancel.** Only
+   `pause`/`kill` here or `/iterate pause` write `status: paused`; a plan that
+   paused itself is a defect to log and resume (sweep step 5). Under
+   `tick-source: launchd` the conductor arms no cron and cancels none —
+   enablement, `tick:` and the schedules are its whole say over when it runs.
 ## `version`
 
 `version` (or "what version") on **any** iterate skill reports the same thing —
