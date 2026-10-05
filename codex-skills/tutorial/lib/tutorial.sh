@@ -20,10 +20,20 @@ if [ -z "${TUT_REEXEC:-}" ] && [ "${BASH_VERSINFO[0]:-0}" -lt 4 ]; then
 fi
 
 set -uo pipefail
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/box.sh" || {
+    echo "tutorial.sh: box.sh is missing beside it — copy it from the /tutorial skill's lib/" >&2; exit 1; }
 
 # ── Capability detection ────────────────────────────────────────────────────
-# edit modes: readline (bash4+), vared (zsh), confirm (no prefill possible)
-if [ "${BASH_VERSINFO[0]:-0}" -ge 4 ]; then
+# edit modes: readline (bash4+), vared (zsh), confirm (no prefill possible).
+# TUT_EDIT_MODE=confirm (or vared) in the environment forces a mode, for a
+# terminal where line editing misbehaves.
+if [ -n "${TUT_EDIT_MODE:-}" ]; then
+    case "$TUT_EDIT_MODE" in
+        readline) [ "${BASH_VERSINFO[0]:-0}" -ge 4 ] || TUT_EDIT_MODE=confirm ;;
+        vared|confirm) ;;
+        *) TUT_EDIT_MODE=confirm ;;
+    esac
+elif [ "${BASH_VERSINFO[0]:-0}" -ge 4 ]; then
     TUT_EDIT_MODE=readline
 elif command -v zsh >/dev/null 2>&1; then
     TUT_EDIT_MODE=vared
@@ -33,33 +43,39 @@ fi
 
 TUT_AUTO="${TUT_AUTO:-0}"          # 1 = run everything unattended
 
-# Read from the terminal when there is one, else stdin — so a tutorial piped
-# input (CI, a demo recording, `echo q | run.sh`) still works instead of dying
-# on "/dev/tty: Device not configured".
-if [ -r /dev/tty ] && { : >/dev/tty; } 2>/dev/null; then
+# Answers come from stdin when it is piped (CI, a demo recording,
+# `printf '\n\n' | run.sh 1`), so piped keys are never ignored for the terminal;
+# otherwise from the terminal itself.
+if [ -t 0 ] && [ -r /dev/tty ] && { : >/dev/tty; } 2>/dev/null; then
     TUT_TTY=/dev/tty
 else
     TUT_TTY=/dev/stdin
-    [ "$TUT_EDIT_MODE" = "readline" ] && TUT_EDIT_MODE=confirm
+    TUT_EDIT_MODE=confirm
 fi
 TUT_STEP=0
+TUT_STEP_TITLE=""
+TUT_RUNNING=0                      # 1 while a step's command is executing
 TUT_FAILED=0
 TUT_START_TS=$(date +%s)
 
-# ── Colors (disabled when not a TTY or NO_COLOR is set) ─────────────────────
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+# ── Colors (the ladder in box.sh: NO_COLOR, FORCE_COLOR, TERM=dumb, a TTY) ──
+# Roles: frame and title bold cyan, step numbers bold yellow, the command bold
+# green, durations and hints dim, failures bold red, done green.
+if tut_color_on; then
     C_TITLE=$'\033[1;36m'; C_STEP=$'\033[1;33m'; C_CMD=$'\033[1;32m'
     C_DIM=$'\033[2m'; C_ERR=$'\033[1;31m'; C_OK=$'\033[0;32m'; C_OFF=$'\033[0m'
 else
     C_TITLE=""; C_STEP=""; C_CMD=""; C_DIM=""; C_ERR=""; C_OK=""; C_OFF=""
 fi
+if tut_utf8; then S_UP='↑'; S_STOP='↯'; else S_UP='^'; S_STOP='!'; fi
 
 # ── Narration ───────────────────────────────────────────────────────────────
 
 tut_title() {
-    printf '\n%s╭─ %s%s\n' "$C_TITLE" "$1" "$C_OFF"
-    [ $# -gt 1 ] && printf '%s│  %s%s\n' "$C_DIM" "$2" "$C_OFF"
-    printf '%s╰────────────────────────────────────────────%s\n\n' "$C_TITLE" "$C_OFF"
+    printf '\n'
+    if [ $# -gt 1 ]; then tut_box "$C_TITLE" "$1" "$C_DIM$2$C_OFF"
+    else tut_box "$C_TITLE" "$1"; fi
+    printf '\n'
 }
 
 tut_section() { printf '\n%s── %s ──%s\n\n' "$C_TITLE" "$1" "$C_OFF"; }
@@ -67,9 +83,10 @@ tut_section() { printf '\n%s── %s ──%s\n\n' "$C_TITLE" "$1" "$C_OFF"; }
 # Explanatory prose. Keep it to one or two lines: the command is the lesson.
 tut_say() { printf '%s\n' "$1"; }
 
-# Announce a step. Waits for Enter unless in AUTO mode.
+# Announce a step. The pre-filled command that follows is the pause.
 tut_step() {
     TUT_STEP=$((TUT_STEP + 1))
+    TUT_STEP_TITLE="$1"
     printf '\n%s[%d] %s%s\n' "$C_STEP" "$TUT_STEP" "$1" "$C_OFF"
     [ $# -gt 1 ] && printf '%s    %s%s\n' "$C_DIM" "$2" "$C_OFF"
 }
@@ -109,11 +126,13 @@ tut_run() {
         [ -z "${line:-}" ] && line="$cmd"
     fi
 
+    TUT_RUNNING=1
     eval "$line"
     local rc=$?
+    TUT_RUNNING=0
     if [ $rc -ne 0 ]; then
         TUT_FAILED=$((TUT_FAILED + 1))
-        printf '%s    ↑ exited %d — the tutorial keeps going%s\n' "$C_ERR" "$rc" "$C_OFF"
+        printf '%s    %s exited %d — the tutorial keeps going%s\n' "$C_ERR" "$S_UP" "$rc" "$C_OFF"
     fi
     return 0
 }
@@ -122,12 +141,37 @@ tut_run() {
 tut_run_fixed() {
     printf '  %s$ %s%s\n' "$C_CMD" "$1" "$C_OFF"
     tut_pause
+    TUT_RUNNING=1
     eval "$1" || {
         TUT_FAILED=$((TUT_FAILED + 1))
-        printf '%s    ↑ failed — continuing%s\n' "$C_ERR" "$C_OFF"
+        printf '%s    %s failed — continuing%s\n' "$C_ERR" "$S_UP" "$C_OFF"
     }
+    TUT_RUNNING=0
     return 0
 }
+
+# ── Ctrl-C: stop this walkthrough, never start the next step ────────────────
+#
+# Bash runs a trap only after the foreground command has exited, so by the time
+# this fires the interrupted command has finished whatever it does on Ctrl-C.
+# Carrying on would start the next step — often the long one the human just
+# tried to stop — so the walkthrough ends here; run.sh returns to its menu.
+
+tut_interrupted() {
+    trap - INT
+    [ -t 0 ] && stty sane 2>/dev/null
+    { : >/dev/tty; } 2>/dev/null && stty sane </dev/tty 2>/dev/null
+    printf '\033[?2004l'   # bracketed paste off, in case readline was mid-prompt
+    if [ "$TUT_RUNNING" = "1" ]; then
+        printf '\n%s%s interrupted in step %d (%s): the command got Ctrl-C and has exited. Walkthrough stopped.%s\n' \
+            "$C_ERR" "$S_STOP" "$TUT_STEP" "$TUT_STEP_TITLE" "$C_OFF"
+    else
+        printf '\n%s%s stopped at step %d (%s) before running it. Walkthrough stopped.%s\n' \
+            "$C_ERR" "$S_STOP" "$TUT_STEP" "$TUT_STEP_TITLE" "$C_OFF"
+    fi
+    exit 130
+}
+trap tut_interrupted INT
 
 # ── Browser ─────────────────────────────────────────────────────────────────
 
@@ -190,11 +234,17 @@ tut_require() {
 # Exits non-zero when any step failed, so `run.sh --auto` is usable as a build
 # check. The tutorial still ran to the end — this only reports the truth.
 tut_done() {
-    local mins=$(( ($(date +%s) - TUT_START_TS) / 60 ))
-    printf '\n%s╭─ done — %d steps in ~%d min%s\n' "$C_OK" "$TUT_STEP" "$mins" "$C_OFF"
-    [ "$TUT_FAILED" -gt 0 ] && printf '%s│  %d command(s) exited non-zero%s\n' "$C_ERR" "$TUT_FAILED" "$C_OFF"
-    [ $# -gt 0 ] && printf '%s│  next: %s%s\n' "$C_DIM" "$1" "$C_OFF"
-    printf '%s╰────────────────────────────────────────────%s\n\n' "$C_OK" "$C_OFF"
+    local mins=$(( ($(date +%s) - TUT_START_TS) / 60 )) rows=() unit=steps
+    [ "$TUT_STEP" -eq 1 ] && unit=step
+    if [ "$TUT_FAILED" -gt 0 ]; then
+        rows+=("$C_ERR$TUT_FAILED command(s) exited non-zero: fix them and run this walkthrough again$C_OFF")
+        [ $# -gt 0 ] && rows+=("${C_DIM}then: $1$C_OFF")
+    else
+        [ $# -gt 0 ] && rows+=("${C_DIM}next: $1$C_OFF")
+    fi
+    printf '\n'
+    tut_box "$C_OK" "done — $TUT_STEP $unit in $C_DIM~$mins min$C_OFF" ${rows[@]+"${rows[@]}"}
+    printf '\n'
     [ "$TUT_FAILED" -gt 0 ] && return 1
     return 0
 }

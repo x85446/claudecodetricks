@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [gaur] - 2026-10-05
+
+### Added
+- `skills/tutorial/lib/box.sh`: the one box builder for the tutorial runtime. `tut_box <colour> <title> [row…]` sizes every frame to its widest row (ANSI stripped, one column per character), caps it at the terminal width (COLUMNS, then stdout's own terminal via `stty size`, then `tput cols`, then 80), wraps longer rows at word boundaries with a hanging indent, and draws `+ - |` outside UTF-8 or on `TERM=dumb`. Runs under macOS `/bin/bash` 3.2. It also holds the colour ladder (`tut_color_on`: NO_COLOR, FORCE_COLOR/CLICOLOR_FORCE, TERM=dumb, a TTY) and the symbol check (`tut_utf8`).
+- `skills/tutorial/tests/box-test.sh` (`make tutorial-box-test`): drives `run.sh` and buckets on a real pty at 60/80/132 columns, cases box-1..box-7. It fails all seven against b421bc1c.
+- `/iterate` rule 33: a contract expansion is a step, never an operator decision. The executor extends the contract, updates every consumer, re-runs their validations and continues; extend-or-withdraw is answered extend. Defects in the plan's deliverable and regressions its work caused are fixed in the same run. Planner rule 33 writes the expansion as the step, with a `Parity:` constraint.
+- `skills/iterate/tests/contract-test.sh` (`make iterate-contract-test`): contract-1..contract-5 check the rule text in source and that the installed family matches. It fails all five against 9240afce.
+
+### Changed
+- Tutorial menu, `tut_title` and `tut_done` draw with `tut_box`. Every box is closed on all four sides.
+- The menu duration is one dim line, `~45 min running (10 hands-on)` with `TUTORIAL-WALLCLOCK` and `10 min` without, aligned in one column. On a narrow terminal each duration moves under its title.
+- Tutorial colour roles are the skill's standard (SKILL.md table). `↑ ↯` fall back to `^ !`, and `tut_done` says "1 step". Tutorial skill 1.4.0 copies three files.
+- `/iterate`: the operator-only list is closed (a secret, physical access, an external party's act). A landing-test failure on clause 3 or 4 caused by the plan's own code is work, not a park.
+- Conductor escalation ladder: contract-expansion and regression rows clear without a park, design choices fold into the ambiguity row, and the last row is "a secret, physical access, or an external party". Triage reads a park on a design decision as an executor defect, cleared with `fix problem N`.
+- Iterate family 5.11.0, with the 13 Codex ports' version line stamped to match.
+- CLAUDE.md states the contract-expansion rule and the clause-3/4 landing rule.
+
 ## [flamingo] - 2026-10-05
 
 ### Added

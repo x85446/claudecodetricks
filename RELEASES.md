@@ -2,6 +2,14 @@
 
 What changed, for people who use this.
 
+## 2026-10-05 — Tidy tutorial menus, and runs that settle their own design questions
+
+**Improved**
+- Tutorial menus and title boxes are fully closed and fit their contents at any terminal width. Long lines wrap inside the box instead of spilling past it.
+- Each tutorial shows its time on one line, `~45 min running (10 hands-on)`, so you can tell keyboard time from waiting time. Durations line up in one column, and on a narrow screen they move under the title instead of breaking.
+- Tutorial colours follow a written standard, switch off for pipes, `NO_COLOR` and dumb terminals, and can be forced on with `FORCE_COLOR`.
+- An unattended run no longer stops to ask whether to extend an API its feature needs, or to report a bug it found in its own work. It extends the interface, updates everything that uses it, fixes what it broke, and keeps going. It stops for you only when it needs a secret, physical access, or someone outside the project.
+
 ## 2026-10-05 — Plans that run themselves overnight
 
 **New**
