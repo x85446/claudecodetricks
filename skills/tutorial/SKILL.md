@@ -76,7 +76,7 @@ The menu, `tut_title` and `tut_done` are drawn by one builder, `tut_box <colour>
 | numbers and keys | bold yellow `1;33` | menu numbers and `a`/`q`, `[N]` step headers, `tut_bulk_offer`'s label |
 | the command | bold green `1;32` | the `$ cmd` line, `→ opening` |
 | durations and hints | dim `2` | menu durations, `tut_done`'s `~N min`, step explanations, `(Enter to continue)`, next/then hints |
-| failures | bold red `1;31` | `^ exited N`, missing requirements, the failure row in `tut_done`, Ctrl-C notices |
+| failures | bold red `1;31` | `↑ exited N`, missing requirements, the failure row in `tut_done`, Ctrl-C notices |
 | done | green `0;32` | the `tut_done` frame and title |
 
 Colour follows one ladder, first match wins: `NO_COLOR` non-empty turns it off; `FORCE_COLOR`, or `CLICOLOR_FORCE` other than `0`, turns it on even when piped; `TERM=dumb` turns it off; a stdout that is not a terminal turns it off. Off means no escape sequence at all, and the boxes stay intact. Every meaning survives without colour: failures read `exited N`, done reads `done —`, and keys sit in their own column.
@@ -94,7 +94,7 @@ This is the whole point, so it is a rule, not a preference: **`tut_run` receives
 1. **Read the conversation first**, then the code: the CLI's own `--help` output, subcommands, the Makefile targets, the routes or screens. Prefer running `--help` for real over reading the arg parser.
 2. **Verify every command before it goes in a tutorial.** Run it. A tutorial that fails on step 3 in front of an audience is worse than no tutorial — this is the same exercise-don't-guess mandate the rest of the stack uses.
 3. **Group into 5–10 minute buckets** by subject, ordered so each builds on the last. Setup and data population come first.
-4. **Scaffold if absent**: create `docs/tutorials/`, copy `run.sh`, `tutorial.sh` and `box.sh` from this skill's `lib/`, `chmod +x` the two scripts. A project that already has tutorials gets the same three copied over its old ones; one carrying only `run.sh` and `tutorial.sh` from before `box.sh` existed stops at start with the missing-file error until `box.sh` is copied in. If a project already has tutorials elsewhere (`tutorials/`, `scripts/tutorials/`), `git mv` them into `docs/tutorials/` and re-run `audit` — the move is part of the operation, not a follow-up.
+4. **Scaffold if absent**: create `docs/tutorials/`, copy `run.sh`, `tutorial.sh` and `box.sh` from this skill's `lib/`, `chmod +x` the two scripts. A project that already has tutorials gets the same three copied over its old ones; one copied before `box.sh` existed stops at start with the missing-file error until `box.sh` is copied in beside the other two. If a project already has tutorials elsewhere (`tutorials/`, `scripts/tutorials/`), `git mv` them into `docs/tutorials/` and re-run `audit` — the move is part of the operation, not a follow-up.
 5. **Write each bucket** with the header comments, real pre-filled commands, and `tut_bulk_offer` around any multi-step setup.
 6. **Test it for real**: `./docs/tutorials/run.sh --auto <n>` for each new bucket. Every command must exit 0 (or be a deliberate failure the tutorial explains). Fix and re-run until clean — do not hand over an unrun tutorial.
 7. **Report**: bucket list with titles and minutes, plus the one line the user types to start (`./docs/tutorials/run.sh`).
