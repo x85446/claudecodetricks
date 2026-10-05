@@ -109,7 +109,7 @@ endif
 .PHONY: deps deps-check deps-update
 .PHONY: fmt fmt-check vet lint check
 .PHONY: install uninstall
-.PHONY: coverage coverage-html statusline-check
+.PHONY: coverage coverage-html statusline-check tutorial-box-test iterate-contract-test
 .PHONY: nightly-install nightly-uninstall nightly-status nightly-tick
 .PHONY: run watch
 .PHONY: version info
@@ -239,6 +239,12 @@ test-hook: build  ## Test hooks with sample JSON input
 
 statusline-check:  ## Byte-level fixtures for the statusline's ⚙️ segment (colours, next letter, ⏰, live/stalled)
 	$(Q)./dotfiles/statusline-check.sh
+
+tutorial-box-test:  ## Render test for the tutorial runtime's boxes and menu on a pty at 60/80/132 columns (box-1..box-7)
+	$(Q)bash skills/tutorial/tests/box-test.sh
+
+iterate-contract-test:  ## Iterate family contract-expansion rules, in source and as installed (contract-1..contract-5)
+	$(Q)bash skills/iterate/tests/contract-test.sh
 
 coverage: check-tools  ## Generate test coverage report
 	$(Q)echo -e "$(COLOR_BLUE)→ Generating coverage report...$(COLOR_RESET)"

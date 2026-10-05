@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-05T05:06:53Z",
+  "updated": "2026-10-05T05:15:25Z",
   "project": "claudecodetricks",
   "requirements": [
     {
@@ -2343,6 +2343,113 @@
           "covers_source": "manual",
           "last_validated_commit": "a901cfa7+wt",
           "last_validated": "2026-10-05T05:06:53Z"
+        }
+      ]
+    },
+    {
+      "id": "req-gaur-contract-expansion",
+      "requirement": "tern must never have parked on \"extend symapi or withdraw --no-browser\": when a feature needs an API broadly expanded, iterate expands it, chases the regressions (revalidating old code is fine), implements the feature and moves forward without human interaction.",
+      "source": "plan:gaur",
+      "cases": [
+        {
+          "id": "contract-1",
+          "given": "skills/iterate/SKILL.md",
+          "when": "its rule list is read",
+          "then": "rule 33 exists, names contract expansion, answers extend-or-withdraw with extend, and cites tern",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "5bee6e1f+wt",
+          "last_validated": "2026-10-05T05:15:25Z"
+        },
+        {
+          "id": "contract-2",
+          "given": "/iterate's On-stuck and landing-test Fails paragraphs",
+          "when": "they are read",
+          "then": "the operator-only list is closed to a secret, physical access and an external party with no decision on it, and a clause-3/4 failure is work",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "5bee6e1f+wt",
+          "last_validated": "2026-10-05T05:15:25Z"
+        },
+        {
+          "id": "contract-3",
+          "given": "the conductor's escalation ladder",
+          "when": "it is read",
+          "then": "a parity row ends in continue and no 'needs a human decision' row exists",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "5bee6e1f+wt",
+          "last_validated": "2026-10-05T05:15:25Z"
+        },
+        {
+          "id": "contract-4",
+          "given": "the triage state table",
+          "when": "it is read",
+          "then": "exactly one Executor-defect row exists, cleared with fix problem N and status: unblocked",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "5bee6e1f+wt",
+          "last_validated": "2026-10-05T05:15:25Z"
+        },
+        {
+          "id": "contract-5",
+          "given": "the 13 iterate family members",
+          "when": "skillctl family iterate runs and each installed copy is compared with its source",
+          "then": "every member carries the family version and every installed copy matches",
+          "tier": "fast",
+          "source": "plan:gaur",
+          "validity": "valid",
+          "test": "iterate.contract-test",
+          "covers": [
+            "skills/iterate/SKILL.md",
+            "skills/iterate-conductor/SKILL.md",
+            "skills/iterate-triage/SKILL.md",
+            "skills/iterate-planner/SKILL.md",
+            "skills/skillmap.tsv"
+          ],
+          "covers_source": "manual",
+          "last_validated_commit": "5bee6e1f+wt",
+          "last_validated": "2026-10-05T05:15:25Z"
         }
       ]
     }
