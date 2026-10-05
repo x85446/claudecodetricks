@@ -114,6 +114,40 @@ func (p PlanSummary) Blocked() bool {
 	return strings.HasPrefix(p.Status, "blocked-on-operator")
 }
 
+// IsQueued reports whether this plan is staged for unattended launch —
+// `status: queued`, written by `/ip stage <name>` once a human has
+// approved the plan's content as it stands. It is a marker on a planned
+// plan, not a run state: /iterate clears it the moment the plan
+// transitions to executing, and any refinement unstages it. The nightly
+// tick and the conductor launch queued plans; a bare `phase: planned` is
+// never launched unattended.
+func (p PlanSummary) IsQueued() bool {
+	return strings.HasPrefix(p.Status, "queued")
+}
+
+// StateLabel is the one-word state the CLI prints for a live plan, in
+// the precedence the status line colours it: a status: arm (blocked,
+// paused, unblocked) beats the phase, executing beats queued, and queued
+// is a planned plan carrying an approval. Any `status: blocked*` reads as
+// blocked — a quota wall is as stuck as an operator wall for the reader.
+func (p PlanSummary) StateLabel() string {
+	switch {
+	case strings.HasPrefix(p.Status, "blocked"), strings.HasPrefix(p.Status, "awaiting-human-gate"):
+		return "blocked"
+	case strings.HasPrefix(p.Status, "paused"):
+		return "paused"
+	case strings.HasPrefix(p.Status, "unblocked"):
+		return "unblocked"
+	case p.Phase == "executing":
+		return "executing"
+	case p.IsQueued():
+		return "queued"
+	case p.Phase == "" || p.Phase == "planned":
+		return "planned"
+	}
+	return p.Phase
+}
+
 // StartedAt is this plan's own declared Started: value, parsed into the
 // instant it names (see parsePlanStarted). Returns the zero time and
 // ok=false if it can't be determined — callers treat that as "unknown,

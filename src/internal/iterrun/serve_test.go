@@ -277,3 +277,27 @@ func TestPlanRouteFollowsAPlanIntoTheArchive(t *testing.T) {
 		t.Error("an unknown plan name redirected; want it rendered or errored, never bounced")
 	}
 }
+
+// A queued plan (status: queued on a planned plan) gets its own badge,
+// between planned and executing; executing and blocked both still win.
+// TESTMASTER: id=iterrun.TestLiveBadgeQueued tier=? parallel=yes
+func TestLiveBadgeQueued(t *testing.T) {
+	cases := []struct {
+		name      string
+		p         PlanSummary
+		wantLabel string
+		wantClass string
+	}{
+		{"queued planned", PlanSummary{Phase: "planned", Status: "queued"}, "queued", "b-queued"},
+		{"queued, no phase", PlanSummary{Status: "queued: by /ip stage"}, "queued", "b-queued"},
+		{"executing beats queued", PlanSummary{Phase: "executing", Status: "queued"}, "executing", "b-executing"},
+		{"blocked beats queued", PlanSummary{Phase: "planned", Status: "blocked-on-operator: x"}, "needs you", "b-blocked"},
+		{"plain planned unchanged", PlanSummary{Phase: "planned"}, "planned", "b-planned"},
+	}
+	for _, c := range cases {
+		label, class := liveBadge(c.p)
+		if label != c.wantLabel || class != c.wantClass {
+			t.Errorf("%s: liveBadge = (%q, %q), want (%q, %q)", c.name, label, class, c.wantLabel, c.wantClass)
+		}
+	}
+}

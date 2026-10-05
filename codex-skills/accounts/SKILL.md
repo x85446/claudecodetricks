@@ -1,6 +1,6 @@
 ---
 name: "accounts"
-description: "**Always invoke for any connectivity or account-access question.** Use whenever the user asks about reaching a machine, logging into a service, getting credentials, or any flavor of \"do I have access to X\" — SSH hosts, machines, GitHub/GitLab orgs and repos, API tokens, cloud accounts (AWS/GCP/Cloudflare), URLs/dashboards. Trigger phrases include \"can I reach X\", \"how do I connect to Y\", \"log into github/gitlab\", \"do we have AWS creds\", \"what's the staging URL\", \"what hosts can I reach in this project\", \"what does this project use\", \"set up access to <thing>\". Also use when the user *shares* new access info (\"you can ssh to xyz\", \"the AWS account is 12345\", \"the stripe key is at ~/.ssh/foo.key\", \"the staging URL is …\"). Also use for auth status for gh/glab/cloudflare, or `$accounts`. **Use IMMEDIATELY on any SSH auth failure** — \"permission denied (publickey)\", \"too many authentication failures\", \"load key ... invalid format\", \"could not open a connection to your authentication agent\", agent has no identities, ssh hangs on password prompt, can't ssh into a host that worked yesterday."
+description: "**Always invoke for any connectivity or account-access question.** Use whenever the user asks about reaching a machine, logging into a service, getting credentials, or any flavor of \"do I have access to X\" — SSH hosts, machines, GitHub/GitLab orgs and repos, API tokens, cloud accounts (AWS/GCP/Cloudflare), URLs/dashboards. Trigger phrases include \"can I reach X\", \"how do I connect to Y\", \"log into github/gitlab\", \"do we have AWS creds\", \"what's the staging URL\", \"what hosts can I reach in this project\", \"what does this project use\", \"set up access to <thing>\". Also use when the user *shares* new access info (\"you can ssh to xyz\", \"the AWS account is 12345\", \"the stripe key is at ~/.ssh/foo.key\", \"the staging URL is …\"). Also use for auth status for gh/glab/cloudflare, or `$accounts`. **Use IMMEDIATELY on any SSH auth failure** — \"permission denied (publickey)\", \"too many authentication failures\", \"load key ... invalid format\", \"could not open a connection to your authentication agent\", agent has no identities, ssh hangs on password prompt, can't ssh into a host that worked yesterday. The dominant cause on this setup is KeePassXC being locked (which empties ssh-agent) — this skill checks for that BEFORE any config diagnosis."
 ---
 
 
@@ -11,23 +11,11 @@ description: "**Always invoke for any connectivity or account-access question.**
 
 Knowledge base of what access Claude has. Read it to figure out what's possible. Write to it when the user shares new access info. Two stores:
 
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-The dominant cause on this setup is KeePassXC being locked (which empties ssh-agent) — this skill checks for that BEFORE any config diagnosis.
-
 ## Usage
 
 Argument: <show|where|remember|check> [args]. `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
-
-## Dependencies
-
-Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
-
-- `$ssh-config` — ported.
 
 | Store | Path | Scope |
 |---|---|---|
@@ -45,6 +33,8 @@ Auto-invoke whenever:
 - A command in another skill fails with auth and the calling skill needs to know what creds exist
 - **An SSH command fails for any auth-related reason** — `Permission denied (publickey)`, `Too many authentication failures`, `Load key ... invalid format`, `Connection closed by remote host` mid-handshake, `Could not open a connection to your authentication agent`, agent has no identities, ssh hangs on a password prompt, or a previously-working host suddenly stops working. See the "SSH auth failures" section below — KeePassXC is the canonical first suspect, not the config.
 - The user types `$accounts`
+
+**Do not invoke** for a plain instruction like "ssh xyz" or "use incus on M". Run the command; invoke only if it fails (see Troubleshooting trees).
 
 ## Subcommands
 
@@ -167,66 +157,55 @@ When auth is broken: report the state, point to the relevant dashboard, and stop
 - GitLab: https://gitlab.com/-/user_settings/personal_access_tokens
 - Cloudflare: https://dash.cloudflare.com/profile/api-tokens
 
-## SSH auth failures — KeePassXC first, everything else later
+## Troubleshooting trees — try first, walk on failure
 
-When SSH authentication fails (`Permission denied (publickey)`, `Too many authentication failures`, `Load key ... invalid format`, `Connection closed by remote host`, `Could not open a connection to your authentication agent`, agent has no identities, ssh hangs, or a previously-working host suddenly stops working), follow this diagnostic order **strictly**. Do NOT propose IdentityFile changes, key file restoration, ssh-config edits, control-master tricks, or any per-host fix until Step 1 has run and Step 2 has been honored.
+**Run the obvious command first.** `ssh xyz`, `incus list xyz:`, the API call. SSH resolves its own aliases; do not read `known.md` or `~/.ssh/config.d/*` before trying. Walk a tree only when the command fails, or when the access type is unknown.
 
-### Step 1 — Check the agent (always first)
+Walk the tree for the connection type, one node at a time, in order. Each node is one command. Report the node id as you go. A leaf is an action: do it, or if it says STOP, tell the user in one line and wait. At a STOP leaf make no other suggestion, edit no file, retry nothing.
 
-Run:
-
-```bash
-ssh-add -l
+```mermaid
+flowchart TD
+  E{"connection type?"}
+  E -->|ssh| S1
+  E -->|incus| I0["incus tree: not yet written"]
+  E -->|account login| A0["account tree: not yet written"]
+  E -->|apikey| K0["apikey tree: not yet written"]
 ```
 
-Three outcomes:
+### ssh
 
-| `ssh-add -l` output | Meaning | Next |
-|---|---|---|
-| Lists one or more keys | Agent is populated | Go to Step 3 |
-| `The agent has no identities.` | Agent is up but empty | **Almost certainly KeePassXC is locked** — go to Step 2 |
-| `Could not open a connection to your authentication agent.` | No agent reachable | KeePassXC isn't running or `SSH_AUTH_SOCK` isn't set in this shell — go to Step 2 |
+```mermaid
+flowchart TD
+  S1{"S1: rustorm show ALIAS --filter privateKeyLocation --just-value"}
+  S1 -->|"error: does not exist"| L0(["not an ssh alias: leave this tree, discover what ALIAS is"])
+  S1 -->|keepassxc| S3
+  S1 -->|"empty (no privateKeyLocation)"| S2{"S2: identityfile ends in .pub? rustorm show ALIAS --filter identityfile --just-value"}
+  S2 -->|yes| S3
+  S2 -->|no| S2a{"S2a: test -r the identityfile"}
+  S2a -->|fail| L1(["STOP: key file missing or unreadable. Tell the user the path."])
+  S2a -->|pass| S5
+  S3{"S3: KeePassXC locked? ssh-add -l"}
+  S3 -->|"no identities, or agent unreachable"| L2(["STOP: ask the user to unlock KeePassXC, then re-run S3"])
+  S3 -->|keys listed| S4{"S4: key in agent? ssh-keygen -lf PUBFILE matches ssh-add -l"}
+  S4 -->|fail| L3(["STOP: key not in the KeePassXC agent. Tell the user which key."])
+  S4 -->|pass| S5{"S5: host answers? nc -z -w5 HOST PORT"}
+  S5 -->|pass| S9
+  S5 -->|fail| S6{"S6: host in df-austin? 10.7.112/114/158/160.0/23 or 172.26.28.0/23"}
+  S6 -->|yes| S7{"S7: warp-cli status = Connected?"}
+  S7 -->|no| L4(["run warp-cli connect, re-run S5"])
+  S7 -->|yes| L5(["STOP: cloudflared-austin tunnel may be down. Ask the user to check Zero Trust > Tunnels."])
+  S6 -->|no| S8{"S8: ssh -G ALIAS hostname still current? compare known.md and the old 10.7 -> 10.11 move"}
+  S8 -->|stale| L6(["STOP: tell the user the stale address, ask for the new one"])
+  S8 -->|current| S8b{"S8b: ssh -G ALIAS proxyjump set?"}
+  S8b -->|yes| L7(["walk this tree on the jump host first"])
+  S8b -->|no| L8(["STOP: host unreachable, cause unknown. Report what S1-S8 showed."])
+  S9{"S9: ssh -v ALIAS true. Failure text?"}
+  S9 -->|"Permission denied"| L9(["check user in known.md, IdentitiesOnly=yes (try -o IdentitiesOnly=no once), fail2ban cooldown. Do not retry in a loop."])
+  S9 -->|"host key changed"| L10(["STOP: tell the user, do not edit known_hosts"])
+  S9 -->|connects| L11(["done"])
+```
 
-### Step 2 — Suspect KeePassXC, prompt to unlock, STOP
-
-On this user's setup, **KeePassXC provides ssh-agent**. When KeePassXC locks (timeout, sleep/wake, restart, or user closed it), the agent loses its keys. **~99% of SSH auth failures on this setup are KeePassXC being locked — not key files, not config, not the host.**
-
-Tell the user, in one line, and wait:
-
-> "ssh-agent has no keys loaded. Almost always means KeePassXC is locked — please unlock it and tell me when done. I'll re-run `ssh-add -l` before trying anything else."
-
-Then **stop**. Do not propose any other fix. Do not edit any file. Do not retry SSH. Do not offer alternatives. Just wait for the user.
-
-When the user confirms unlock:
-
-1. Re-run `ssh-add -l` to verify keys are loaded.
-2. Retry the original SSH command exactly as it was.
-3. If it works, the diagnosis is complete. If it still fails, *now* go to Step 3.
-
-### Step 3 — Only after Step 1 shows keys (or Step 2 has been honored and re-checked)
-
-If the agent is populated and SSH still fails, then look at:
-
-- IdentityFile mismatch in `~/.ssh/config` or `~/.ssh/config.d/*` (delegate to `$ssh-config`)
-- Wrong username for the target host (consult the access store for the host)
-- Host-specific key the agent doesn't have (check `known.md` / project `accounts.md` for the host)
-- fail2ban lockout (test from a different IP, or wait the cooldown — do NOT keep retrying)
-- `IdentitiesOnly=yes` blocking agent keys (try `-o IdentitiesOnly=no` once as a test)
-
-### Step 4 — Hard "do NOT suggest" list (before Step 1 has run)
-
-Before Step 1 runs and Step 2 is honored, these suggestions are **forbidden** because they're either irreversible, time-wasting, or both:
-
-- "Drop the real private key at `~/.ssh/<name>`"
-- "Fix the `IdentityFile` line to point at a private key"
-- "Use `IdentitiesOnly=no`" *as a fix* (it's a diagnostic step at Step 3, not a fix)
-- "Re-open a control-master from a working terminal"
-- "Restore the missing private key from backup"
-- "Just run the checks yourself with `!` and paste output" (the user has a skill for this — use it)
-- Any narrative about fail2ban risk that isn't immediately actionable
-- Any multi-option "pick whichever is easiest" menu
-
-The above are all fine *after* Step 1 confirms the agent has keys. Before that, they waste the user's time and bury the real fix.
+S1 uses rustorm's `privateKeyLocation` (`keepassxc` means the key lives in the KeePassXC agent). When it is absent, S2 falls back to the `.pub` heuristic. A `warning: ... also defined in ...` line from rustorm means a stale duplicate block; ssh uses the first, so mention it to the user in one line and continue.
 
 ## Guardrails
 

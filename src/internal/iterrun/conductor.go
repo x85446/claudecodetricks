@@ -33,6 +33,15 @@ type ConductorState struct {
 	// terminal until a human clears something and restarts it). Empty
 	// on a plain/older file that predates this field.
 	Tick string
+	// Paused is `paused: true` — /iterate pause (or /ic pause) set it; the
+	// nightly tick leaves a paused conductor alone exactly as it leaves a
+	// disabled one alone.
+	Paused bool
+	// TickSource is `tick-source:` — "launchd" when `iterate-run nightly
+	// enroll` has made the OS timer this conductor's tick, in which case
+	// the conductor arms no cron of its own. Empty for a conductor that
+	// ticks itself (the default) or was never enrolled.
+	TickSource string
 	// LastSweep/HasLastSweep is the timestamp of the most recent "## Sweep
 	// log" entry, when one could be parsed — conductor.md never stores a
 	// machine-clean "fires at" instant of its own, so this is the anchor
@@ -42,9 +51,11 @@ type ConductorState struct {
 }
 
 var (
-	reConductorEnabled = regexp.MustCompile(`^enabled:\s*(.+)$`)
-	reConductorCron    = regexp.MustCompile(`^cron:\s*(.*)$`)
-	reConductorTick    = regexp.MustCompile(`^tick:\s*(.*)$`)
+	reConductorEnabled    = regexp.MustCompile(`^enabled:\s*(.+)$`)
+	reConductorCron       = regexp.MustCompile(`^cron:\s*(.*)$`)
+	reConductorTick       = regexp.MustCompile(`^tick:\s*(.*)$`)
+	reConductorPaused     = regexp.MustCompile(`^paused:\s*(.*)$`)
+	reConductorTickSource = regexp.MustCompile(`^tick-source:\s*(.*)$`)
 	// reSweepLogStamp matches one "## Sweep log" bullet's leading
 	// bracketed UTC timestamp. Real entries are inconsistent about
 	// seconds ("[2026-09-09T07:10:43Z]" vs "[2026-09-10T23:45Z]") — the
@@ -87,6 +98,12 @@ func ReadConductorState(projectDir string) (cs ConductorState, ok bool) {
 			}
 			if m := reConductorTick.FindStringSubmatch(line); m != nil {
 				cs.Tick = strings.TrimSpace(m[1])
+			}
+			if m := reConductorPaused.FindStringSubmatch(line); m != nil {
+				cs.Paused = strings.TrimSpace(stripComment(m[1])) == "true"
+			}
+			if m := reConductorTickSource.FindStringSubmatch(line); m != nil {
+				cs.TickSource = strings.TrimSpace(stripComment(m[1]))
 			}
 			continue
 		}

@@ -51,3 +51,7 @@ codex-skills/*/.portstamp
 
 # Python bytecode from the Codex sync scripts
 __pycache__/
+
+# Live iterate plans are per-machine state (one session's run in flight);
+# archived plans under .claude/iterate/archive/ are the record and stay tracked.
+.claude/iterate/plans/
