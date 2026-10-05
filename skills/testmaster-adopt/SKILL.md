@@ -2,7 +2,7 @@
 name: testmaster-adopt
 description: "TESTMASTER child (invoked via /testmaster): brings an existing repo's test suite into the framework — discovers every test, seeds the catalog, and computes which source files each test covers."
 argument-hint: <empty = full adopt | --seed-only | --covers-only | <test-id...>>
-version: 1.1.0
+version: 1.2.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -18,14 +18,14 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. This is the **one-time on
 
 ### 1. Detect the runner and enumerate every test
 
-Identify the toolchain, then list the **actual** tests — never infer them from file names:
+`testmaster suite discover` does this for Go, Rust and pytest. It finds `go.mod`, `Cargo.toml` and pytest config at the root and one level down, asks each toolchain for its **actual** tests (never file names), registers the new ones unmeasured, and records where it looked in `sources`. One line per source comes back: `discover go .: 0 known, 357 new, 0 missing`.
 
-| Toolchain | Enumerate with |
-|---|---|
-| Go | `go test -list '.*' ./...` |
-| Python | `pytest --collect-only -q` |
-| Node | `jest --listTests` / `vitest list` |
-| Rust | `cargo test -- --list` |
+Every other toolchain is enumerated by hand and registered as a `shell` test, one command per test:
+
+| Toolchain | Enumerate with | Register each with |
+|---|---|---|
+| Node | `jest --listTests` / `vitest list` | `testmaster test add <id> --kind shell --cmd 'npx jest -t "<name>" <file>'` |
+| anything | the project's own listing | `testmaster test add <id> --kind shell --cmd '<runs just this test>'` |
 
 **Use the project's own runner, not the bare command.** These bare invocations fail on any project whose tests need environment — cgo headers, library paths, a fixture server, a build tag. When one fails, do not fight it: find how the project actually runs tests (its `make test` target, `npm test` script, `tox.ini`) and drive that, passing your flags through its own pass-through variable:
 
@@ -35,15 +35,18 @@ make test TESTFLAGS="-run '^TestName$$' -coverpkg=./... -coverprofile=<tmp>"
 
 Two traps worth knowing before you hit them: **`make` eats a single `$`**, so a `-run '^Name$'` anchor must be written `$$` or the regex silently loses its terminator and matches far more than you meant; and the registry's `cmd` field usually already records the correct invocation — read it before deriving your own.
 
+When discovery or a run fails because the bare toolchain needs environment, record the project's real invocation once with `testmaster runner set <kind> -- <argv…>` (`-- env CGO_ENABLED=1 GOFLAGS=-tags=integration go`, `-- uv run pytest`) and discover again. Every later run uses it.
+
 ### 2. Reconcile against `registry.json`
 
-- In the tree but not the registry → **register it** (`runs: 0`, no timing, tier unset).
-- In the registry but not the tree → **report as an orphan candidate**. Never delete: that is `/testmaster-prune`'s call under its evidence standard.
+`suite discover` already did it: new tests are registered (`runs: 0`, no timing, `tier: "?"`), and each registered test the toolchain no longer sees comes back as a `MISSING <id>` line.
+
+- `MISSING` → **report it as an orphan candidate**. Never delete: that is `/testmaster-prune`'s call under its evidence standard.
 - Report both counts. A large orphan set means the registry was hand-maintained and has drifted from reality.
 
 ### 3. Measure — delegate, never estimate
 
-Skill tool: `testmaster-run` over the newly registered tests. Tiers come from measured `avg_ms` and nothing else. A test that has not run is `unmeasured`, never guessed into a tier.
+Skill tool: `testmaster-run` over the newly registered tests (`testmaster test list --unmeasured` names them; every unmeasured test is in the default selection anyway). Tiers come from measured `avg_ms` and nothing else. A test that has not run is `unmeasured`, never guessed into a tier.
 
 State the cost before starting. The registry's existing timing gives a real estimate; if the suite is large, say so and let the user choose `--seed-only`.
 

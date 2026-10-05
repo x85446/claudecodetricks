@@ -6,7 +6,7 @@ description: "TESTMASTER child (invoked via $testmaster): the organizing index �
 
 # $testmaster-catalog — keep the suite organized and know what's still true
 
-**Version:** 1.3.0
+**Version:** 1.4.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -68,10 +68,10 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 |---|---|---|
 | `valid` | Passed, and nothing it covers has changed since | last run green AND `git diff --name-only <last_validated_commit>..HEAD` shares no file with `covers` |
 | `drifted` | The code it covers changed after its last green run — the test may now be asserting the old behavior | that diff intersects `covers` |
-| `orphaned` | The code it covers no longer exists | every path in `covers` is gone from the tree |
+| `orphaned` | The code it covers no longer exists, or its test does | every path in `covers` is gone from the tree, or the registry's `last_result` is `missing` |
 | `unverified` | Never executed (a freshly derived case) | `runs: 0` in registry.json |
 
-**Drift is not failure.** A drifted test may still pass — it just hasn't been *proven* against the current code. It stops being drifted the moment `$testmaster-run` executes it green (which updates `last_validated_commit`). This distinction is the whole point: a suite that's all-green but 40% drifted is not a suite you can trust, and nothing else in TESTMASTER would tell you that.
+**Drift is not failure.** A drifted test may still pass — it just hasn't been *proven* against the current code. It stops being drifted the moment `$testmaster-run` executes it green: the `testmaster` binary stamps `last_validated_commit` and `last_validated` on every case a green test backs, matched by case `id` or by a scenario case's `test`. This distinction is the whole point: a suite that's all-green but 40% drifted is not a suite you can trust, and nothing else in TESTMASTER would tell you that.
 
 ## Router — parse `$1`
 
@@ -113,7 +113,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 ## Rules
 
 1. **Never delete anything.** Orphaned entries are *reported* for `$testmaster-prune` to act on with its evidence standard. This child is the index, not the gardener.
-2. **Never write timing or results** — `avg_ms`, `runs`, and `last_result` belong to `$testmaster-run` alone.
+2. **Never write timing or results** — `avg_ms`, `runs`, `last_result` and the `last_validated_commit` stamp belong to the `testmaster` binary alone.
 3. **Validity is recomputed, never trusted from the file.** A cached `valid` from three commits ago is exactly the lie this catalog exists to prevent.
 4. **A test with an empty `covers` cannot drift** — report it as such in `coverage` rather than silently calling it valid. Unknown coverage is a gap, not a pass. Likewise **never treat a `convention` cover as a measured one**: `covers_source` travels with every count this skill reports, and a whole-catalog answer built from convention guesses says so.
 5. **Requirement statements stay in the user's words**, verbatim from `$testmaster-derive`. Don't paraphrase them into implementation language.
