@@ -186,7 +186,7 @@ function showTop(id){
 // badges first in their natural priority order, then any custom "phase:"
 // string a coordinator wrote alphabetically after.
 func writeTagFilter(b *strings.Builder, tagSet map[string]bool) {
-	priority := []string{"executing", "needs you", "planned", "completed", "archived"}
+	priority := []string{"executing", "needs you", "queued", "planned", "completed", "archived"}
 	seen := map[string]bool{}
 	var tags []string
 	for _, t := range priority {
@@ -390,6 +390,13 @@ func liveBadge(p PlanSummary) (label, class string) {
 	case p.Phase != "" && p.Phase != "planned":
 		label, class = p.Phase, "b-archived"
 	}
+	// Queued sits between planned and executing: a planned plan a human
+	// has approved for the nightly tick. Executing already beats it above
+	// (the executor clears the marker on launch, but a stale one must not
+	// relabel a live run), and blocked still wins below.
+	if p.IsQueued() && label == "planned" {
+		label, class = "queued", "b-queued"
+	}
 	if p.Blocked() {
 		label, class = "needs you", "b-blocked"
 	}
@@ -507,7 +514,7 @@ func dashboardHead(title string) string {
   --text:#1c1a17; --text-dim:#6b6459; --text-faint:#a29b8d;
   --good:#059669; --good-bg:#e3f6ee;
   --warn:#b45309; --warn-bg:#fbecd5;
-  --queued:#a29b8d; --queued-bg:#f0ece2;
+  --queued:#a29b8d; --queued-bg:#f0ece2;--staged:#c2410c;--staged-bg:#fde7d3;
   --accent:#0e7490; --accent-bg:#dff3f6;
   --danger:#dc2626; --danger-bg:#fbe1e1;
   --archived:#6d5aa8; --archived-bg:#ece8f7;
@@ -517,7 +524,7 @@ func dashboardHead(title string) string {
   --text:#e8e6e1; --text-dim:#8b9198; --text-faint:#565d64;
   --good:#34d399; --good-bg:#0d2b21;
   --warn:#f59e0b; --warn-bg:#3a2705;
-  --queued:#565d64; --queued-bg:#1d2227;
+  --queued:#565d64; --queued-bg:#1d2227;--staged:#fb923c;--staged-bg:#3b1d07;
   --accent:#22d3ee; --accent-bg:#123b42;
   --danger:#ef4444; --danger-bg:#2c0a0a;
   --archived:#a78bda; --archived-bg:#241f38;
@@ -566,6 +573,7 @@ h2{font-size:13px;color:var(--text-dim);margin:0;font-weight:600;text-transform:
 .plan-card:hover{border-color:var(--accent)}
 .badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px;border-radius:4px;text-align:center;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .b-planned{background:var(--queued-bg);color:var(--queued)}
+.b-queued{background:var(--staged-bg);color:var(--staged)}
 .b-executing{background:var(--warn-bg);color:var(--warn)}
 .b-done{background:var(--good-bg);color:var(--good)}
 .b-blocked{background:var(--danger-bg);color:var(--danger)}

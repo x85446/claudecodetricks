@@ -87,6 +87,21 @@ DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 HOST=$(hostname -s)
 
 BOLD='\033[1m'; DIM='\033[2m'; CYAN='\033[36m'; GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'; MAGENTA='\033[35m'; RESET='\033[0m'
+# Colour tier, per skills/uxmaster-cli/color.md: COLORTERM is the real
+# truecolor signal (most truecolor terminals still say TERM=xterm-256color);
+# TERM *-256color / *-direct opt in to 256. Everything above ANSI-16 needs a
+# 16-colour fallback that still carries the meaning.
+case "${COLORTERM:-}" in
+  truecolor|24bit) ITER_TIER=256 ;;
+  *) case "${TERM:-}" in *-256color|*-direct) ITER_TIER=256 ;; *) ITER_TIER=16 ;; esac ;;
+esac
+if [ "$ITER_TIER" = 256 ]; then
+  ORANGE='\033[38;5;208m'   # queued: approved for the nightly tick
+  DKGREEN='\033[38;5;28m'   # executing but stalled: no heartbeat in the live window
+else
+  ORANGE='\033[93m'         # bright yellow — still "more than planned" next to yellow
+  DKGREEN='\033[32m'        # plain green — still "less than live" next to bold green
+fi
 
 # Pick bar color based on context usage
 if [ "$PCT" -ge 50 ]; then BAR_COLOR="$RED"
@@ -197,17 +212,25 @@ fi
 # the alphabet per project (1st plan an a-word, 2nd a b-word, ...), so the first
 # letter is unique WITHIN a project by construction — L M N reads unambiguously
 # as three plans.
-#   yellow = planned   green = executing   red = blocked   cyan = unblocked,
-#   ready to re-queue   magenta = paused by /iterate pause   dim = closed but
-#   not archived
-# Intensity carries liveness, the one thing colour could not: BOLD green
-# means a hook fired in this project inside the live window, so something
-# is really driving the run right now; plain green means the plan file
-# still says executing but nothing has touched a tool in a while. That
-# gap is not hypothetical -- a killed or crashed run never gets to write
-# its ending, so "executing" persists forever and green used to mean
-# only "a file says so". iterate-run stamps the heartbeat on every hook;
+#   yellow = planned   orange = queued (approved for the nightly tick)
+#   bold green = executing, live   dark green = executing, stalled
+#   red = blocked   cyan = unblocked, ready to re-queue   magenta = paused by
+#   /iterate pause   dim = closed but not archived
+# The trailing dim lowercase letter is always the NEXT plan's letter (from
+# iterate-run's registry), so the segment renders even with zero plans -- an
+# empty segment used to be indistinguishable from a broken one.
+# Liveness is a colour, not just a weight: bold green means a hook fired in
+# this project inside the live window, so something is really driving the run
+# right now; dark green means the plan file still says executing but nothing
+# has touched a tool in a while. That gap is not hypothetical -- a killed or
+# crashed run never gets to write its ending, so "executing" persists forever
+# and green used to mean only "a file says so". Bold-vs-plain was the only
+# signal before, and color.md forbids a distinction that survives only if
+# bold means bright. iterate-run stamps the heartbeat on every hook;
 # ITERATE_LIVE_SECS overrides the 900s window.
+# ⏰ after the letters means this project is enrolled in the nightly launchd
+# tick (`iterate-run nightly enroll`); a dim `off` after it means the global
+# switch is off. Emoji ignore ANSI, so a word carries what colour cannot.
 # Case carries teaming, which colour had no room left to say: UPPERCASE = the
 # plan is teamified (`teamed: true`, so /iterate dispatches one subagent per
 # team), lowercase = flat (one lane, the launching session's model — a flat
@@ -221,12 +244,16 @@ fi
 # actually happened was "you are standing one directory too deep". The walk
 # stops at the repository root -- plans sit beside .git, never above it, so a
 # stray ~/.claude/iterate/plans can never leak into an unrelated project.
+# The anchor is .claude/iterate itself (plans/ OR archive/): a project whose
+# last plan was archived has no plans/ directory at all, and requiring that
+# exact path made the segment vanish precisely when it should have read
+# "nothing queued" (confirmed live, claudecodetricks after eclectus archived).
 iter_root_for() {
   local base="$1" d
   [ -n "$base" ] && [ -d "$base" ] || return 1
   d="$base"
   while :; do
-    [ -d "$d/.claude/iterate/plans" ] && { printf '%s' "$d"; return 0; }
+    { [ -d "$d/.claude/iterate/plans" ] || [ -d "$d/.claude/iterate/archive" ]; } && { printf '%s' "$d"; return 0; }
     [ -e "$d/.git" ] && return 1
     case "$d" in /|.|"") return 1 ;; esac
     d=$(dirname "$d")
@@ -239,13 +266,15 @@ if [ -n "$ITER_ROOT" ]; then
   ITER_LETTERS=""
   # Liveness: mtime of this project's heartbeat, stamped by iterate-run's
   # PreToolUse/PostToolUse hook. Missing file reads the same as stale.
-  ITER_EXEC="$GREEN"
+  ITER_EXEC="$DKGREEN"
+  ITER_HB_LIVE=0
   ITER_LIVE=0
   ITER_HB="$HOME/.claude/iterate-run/heartbeats/${ITER_ROOT//\//-}"
   if [ -f "$ITER_HB" ]; then
     ITER_HB_M=$(stat -f %m "$ITER_HB" 2>/dev/null || stat -c %Y "$ITER_HB" 2>/dev/null)
     if [ -n "$ITER_HB_M" ] && [ $(( $(date +%s) - ITER_HB_M )) -le "${ITERATE_LIVE_SECS:-900}" ]; then
       ITER_EXEC="${BOLD}${GREEN}"
+      ITER_HB_LIVE=1
     fi
   fi
   for pf in "$ITER_ROOT"/.claude/iterate/plans/*.md; do
@@ -278,8 +307,11 @@ if [ -n "$ITER_ROOT" ]; then
       *"status: paused"*)
         # a human stopped it on purpose; /iterate resume continues it
         ITER_LETTERS="${ITER_LETTERS}${MAGENTA}${L}${RESET}" ;;
+      *"status: queued"*)
+        # approved as-is for the nightly tick (/ip stage); still planned
+        ITER_LETTERS="${ITER_LETTERS}${ORANGE}${L}${RESET}" ;;
       *"phase: executing"*)
-        [ "$ITER_EXEC" != "$GREEN" ] && ITER_LIVE=1
+        [ "$ITER_HB_LIVE" = 1 ] && ITER_LIVE=1
         ITER_LETTERS="${ITER_LETTERS}${ITER_EXEC}${L}${RESET}" ;;
       *"phase: planned"*)
         ITER_LETTERS="${ITER_LETTERS}${YELLOW}${L}${RESET}" ;;
@@ -287,11 +319,28 @@ if [ -n "$ITER_ROOT" ]; then
         ITER_LETTERS="${ITER_LETTERS}${DIM}${L}${RESET}" ;;
     esac
   done
+  # The next plan's letter, dim, always last: iterate-run keeps each
+  # project's position in its own a-z walk under project_next_idx, keyed by
+  # the project's absolute path; a project it has never named is at a.
+  ITER_NEXT=$(jq -r --arg k "$ITER_ROOT" '.project_next_idx[$k] // 0' \
+    "$HOME/.claude/iterate-run/plan-names.json" 2>/dev/null)
+  case "$ITER_NEXT" in ''|*[!0-9]*) ITER_NEXT=0 ;; esac
+  ITER_NEXT_L=$(printf '%s' "abcdefghijklmnopqrstuvwxyz" | cut -c$((ITER_NEXT % 26 + 1)))
+  ITER_LETTERS="${ITER_LETTERS}${DIM}${ITER_NEXT_L}${RESET}"
+  # Enrolled in the nightly launchd tick? conductor.md says so per project;
+  # the global switch lives in iterate-run's store.
+  ITER_TIMER=""
+  if grep -q '^tick-source: *launchd' "$ITER_ROOT/.claude/iterate/conductor.md" 2>/dev/null; then
+    ITER_TIMER=" ⏰"
+    if jq -e '.enabled == false' "$HOME/.claude/iterate-run/nightly.json" >/dev/null 2>&1; then
+      ITER_TIMER="${ITER_TIMER} ${DIM}off${RESET}"
+    fi
+  fi
   # The icon lights up while a run is live: ⚡ replaces ⚙️. Emoji ignore
   # ANSI colour, so brightness has to come from the glyph itself.
   ITER_ICON="⚙️"
   [ "$ITER_LIVE" = 1 ] && ITER_ICON="⚡"
-  [ -n "$ITER_LETTERS" ] && ITER=" | ${ITER_ICON} ${ITER_LETTERS}"
+  ITER=" | ${ITER_ICON} ${ITER_LETTERS}${ITER_TIMER}"
 fi
 
 if [[ "$HOST" == warden* ]]; then

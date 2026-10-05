@@ -379,3 +379,36 @@ func TestEffectiveStartFallsBackToStartedWhenExecutingAbsent(t *testing.T) {
 		t.Errorf("EffectiveStart() = %v, %v; want %v", got, ok, want)
 	}
 }
+
+// status: queued is the staging marker /ip stage writes on a planned plan.
+// It is a planned-phase marker, so executing and every status: arm beat
+// it, exactly as the status line colours them.
+// TESTMASTER: id=iterrun.TestIsQueuedAndStateLabel tier=? parallel=yes
+func TestIsQueuedAndStateLabel(t *testing.T) {
+	cases := []struct {
+		name   string
+		p      PlanSummary
+		queued bool
+		label  string
+	}{
+		{"planned", PlanSummary{Phase: "planned"}, false, "planned"},
+		{"queued", PlanSummary{Phase: "planned", Status: "queued"}, true, "queued"},
+		{"queued with stamp", PlanSummary{Phase: "planned", Status: "queued: 2026-10-05T01:00:00Z by /ip stage"}, true, "queued"},
+		{"executing beats stale queued", PlanSummary{Phase: "executing", Status: "queued"}, true, "executing"},
+		{"operator wall", PlanSummary{Phase: "planned", Status: "blocked-on-operator: token"}, false, "blocked"},
+		{"quota wall is blocked too", PlanSummary{Phase: "executing", Status: "blocked-on-quota"}, false, "blocked"},
+		{"human gate reads blocked", PlanSummary{Phase: "executing", Status: "awaiting-human-gate: decide"}, false, "blocked"},
+		{"paused", PlanSummary{Phase: "executing", Status: "paused: 2026-10-05 at step 3/9"}, false, "paused"},
+		{"unblocked", PlanSummary{Phase: "executing", Status: "unblocked"}, false, "unblocked"},
+		{"custom phase surfaces", PlanSummary{Phase: "complete"}, false, "complete"},
+		{"no phase is planned", PlanSummary{}, false, "planned"},
+	}
+	for _, c := range cases {
+		if got := c.p.IsQueued(); got != c.queued {
+			t.Errorf("%s: IsQueued = %v, want %v", c.name, got, c.queued)
+		}
+		if got := c.p.StateLabel(); got != c.label {
+			t.Errorf("%s: StateLabel = %q, want %q", c.name, got, c.label)
+		}
+	}
+}

@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/x85446/claudecodetricks/src/internal/iterrun"
+	"strings"
+	"time"
 )
 
 // Set via -ldflags at build time (see Makefile). This is the first binary
@@ -37,6 +39,8 @@ func main() {
 		serveCmd(os.Args[2:])
 	case "purge":
 		purgeCmd(os.Args[2:])
+	case "nightly":
+		nightlyCmd(os.Args[2:])
 	case "name":
 		nameCmd(os.Args[2:])
 	case "version", "--version", "-v":
@@ -59,8 +63,13 @@ Usage:
   iterate-run serve [--port N]       (dashboard at http://localhost:N, default 8420; --port 0 picks an ephemeral port and prints it; GET /healthz for a liveness check)
   iterate-run purge --plan <name> | --all-completed [--yes] [--force]
   iterate-run name next               (claims this project's next codename, in its own a-z sequence)
+  iterate-run name peek               (this project's next letter and the word it would get, claiming neither)
   iterate-run name release <word>     (checks a codename back in so it can be issued again)
   iterate-run name depth              (word-pool depth per letter and namespace)
+  iterate-run nightly install [--every 10m]      (LaunchAgent com.x85446.iterate-nightly ticks enrolled projects' staged plans)
+  iterate-run nightly uninstall | on | off        (remove the agent; flip the global switch)
+  iterate-run nightly enroll [dir] | withdraw [dir]   (tick-source: launchd in the project's conductor.md)
+  iterate-run nightly status | tick [--dry-run]  (one fact per line; a tick launches claude -p "/iterate-conductor run" per project)
   iterate-run version`)
 }
 
@@ -82,7 +91,7 @@ func versionLine() string {
 // once per new plan, not speculatively.
 func nameCmd(args []string) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next | release <word> | depth")
+		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next | peek | release <word> | depth")
 		os.Exit(2)
 	}
 	switch args[0] {
@@ -98,6 +107,18 @@ func nameCmd(args []string) {
 			os.Exit(1)
 		}
 		fmt.Println(name)
+	case "peek":
+		cwd, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+		letter, word, err := iterrun.PeekPlanName(cwd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("%s %s\n", letter, word)
 	case "release":
 		if len(args) != 2 {
 			fmt.Fprintln(os.Stderr, "iterate-run: name release takes exactly one word")
@@ -117,7 +138,7 @@ func nameCmd(args []string) {
 	case "depth":
 		iterrun.PrintPoolDepth(os.Stdout)
 	default:
-		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next | release <word> | depth")
+		fmt.Fprintln(os.Stderr, "iterate-run: name requires a subcommand: next | peek | release <word> | depth")
 		os.Exit(2)
 	}
 }
@@ -440,5 +461,92 @@ func purgeCmd(args []string) {
 	}
 	if dryRun {
 		fmt.Println("\ndry run — nothing deleted. Add --yes to actually purge.")
+	}
+}
+
+// nightlyCmd is `iterate-run nightly <verb> [operand] [--flags]`; flags
+// parse in every position, per the house grammar.
+func nightlyCmd(args []string) {
+	const verbs = "install [--every 10m] | uninstall | on | off | enroll [dir] | withdraw [dir] | status | tick [--dry-run]"
+	var every time.Duration
+	dryRun := false
+	var pos []string
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--dry-run":
+			dryRun = true
+		case a == "--every" || strings.HasPrefix(a, "--every="):
+			v := strings.TrimPrefix(a, "--every=")
+			if a == "--every" {
+				if i+1 >= len(args) {
+					fmt.Fprintln(os.Stderr, "iterate-run: --every needs a duration (e.g. 10m)")
+					os.Exit(2)
+				}
+				i++
+				v = args[i]
+			}
+			d, err := time.ParseDuration(v)
+			if err != nil || d <= 0 {
+				fmt.Fprintf(os.Stderr, "iterate-run: --every %q is not a duration\n", v)
+				os.Exit(2)
+			}
+			every = d
+		case strings.HasPrefix(a, "--"):
+			fmt.Fprintf(os.Stderr, "iterate-run: unknown flag %q\n", a)
+			usage()
+			os.Exit(2)
+		default:
+			pos = append(pos, a)
+		}
+	}
+	if len(pos) == 0 {
+		fmt.Fprintln(os.Stderr, "iterate-run: nightly requires a verb: "+verbs)
+		os.Exit(2)
+	}
+	dirArg := func() string {
+		if len(pos) > 1 {
+			return pos[1]
+		}
+		cwd, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+			os.Exit(1)
+		}
+		return cwd
+	}
+	var err error
+	switch pos[0] {
+	case "install":
+		err = iterrun.Install(every)
+	case "uninstall":
+		err = iterrun.Uninstall()
+	case "on", "off":
+		cfg := iterrun.LoadNightlyConfig()
+		cfg.Enabled = pos[0] == "on"
+		err = iterrun.SaveNightlyConfig(cfg)
+	case "enroll":
+		err = iterrun.Enroll(dirArg())
+	case "withdraw":
+		err = iterrun.Withdraw(dirArg())
+	case "status":
+		iterrun.Status(os.Stdout)
+	case "tick":
+		err = iterrun.Tick(os.Stdout, dryRun)
+	case "run-one":
+		if len(pos) < 2 {
+			fmt.Fprintln(os.Stderr, "iterate-run: nightly run-one needs a project dir")
+			os.Exit(2)
+		}
+		// The child's own failure is recorded in the status log; the
+		// runner itself succeeded in running it.
+		_ = iterrun.RunOne(pos[1])
+	default:
+		fmt.Fprintln(os.Stderr, "iterate-run: nightly requires a verb: "+verbs)
+		os.Exit(2)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "iterate-run: %v\n", err)
+		os.Exit(1)
 	}
 }

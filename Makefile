@@ -109,7 +109,8 @@ endif
 .PHONY: deps deps-check deps-update
 .PHONY: fmt fmt-check vet lint check
 .PHONY: install uninstall
-.PHONY: coverage coverage-html
+.PHONY: coverage coverage-html statusline-check
+.PHONY: nightly-install nightly-uninstall nightly-status nightly-tick
 .PHONY: run watch
 .PHONY: version info
 .PHONY: help
@@ -235,6 +236,9 @@ test-hook: build  ## Test hooks with sample JSON input
 	$(Q)echo '{"hook_event_name":"PostToolUse","tool_name":"Write","cwd":"/tmp","tool_input":{"file_path":"test.txt"},"permission_mode":"default"}' | $(GIT_BIN) && \
 		echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) git-committer test passed" || \
 		echo -e "  $(COLOR_YELLOW)⚠$(COLOR_RESET) git-committer test completed with errors"
+
+statusline-check:  ## Byte-level fixtures for the statusline's ⚙️ segment (colours, next letter, ⏰, live/stalled)
+	$(Q)./dotfiles/statusline-check.sh
 
 coverage: check-tools  ## Generate test coverage report
 	$(Q)echo -e "$(COLOR_BLUE)→ Generating coverage report...$(COLOR_RESET)"
@@ -363,6 +367,21 @@ chrome-uninstall:  ## Unload and remove the Chrome launchd agent (stops it for g
 
 chrome-status:  ## Show whether the Chrome launchd agent is loaded and running
 	$(Q)./makehelp.sh chrome-status
+
+# The nightly tick (com.x85446.iterate-nightly) runs enrolled projects' staged
+# plans unattended; the installed iterate-run owns the plist, the switch and
+# the per-project enrollment, so these are thin aliases onto it.
+nightly-install: install  ## Arm the nightly launchd tick (iterate-run nightly install, every 10m)
+	$(Q)$(TOOLS_INSTALL_DIR)/iterate-run nightly install $(if $(NIGHTLY_EVERY),--every $(NIGHTLY_EVERY),)
+
+nightly-uninstall:  ## Boot out and remove the nightly launchd tick
+	$(Q)$(TOOLS_INSTALL_DIR)/iterate-run nightly uninstall
+
+nightly-status:  ## Show the nightly tick: plist, switch, and each enrolled project's last run
+	$(Q)$(TOOLS_INSTALL_DIR)/iterate-run nightly status
+
+nightly-tick:  ## Dry-run one nightly tick: what would launch, what is skipped and why
+	$(Q)$(TOOLS_INSTALL_DIR)/iterate-run nightly tick --dry-run
 
 # ==================================================================================== #
 # DEVELOPMENT TARGETS

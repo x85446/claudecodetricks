@@ -19,11 +19,11 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. This child is the ONLY th
    - Update its registry entry: `last_ms`, `runs += 1`, `avg_ms` (running average over history), `last_result`, `updated`.
    - **Re-derive `tier`** from the new `avg_ms` (fast ≤10s, standard ≤2min, slow >2min). If the tier CHANGED, flag it in the report (`⚠ <id> promoted to slow — 2m40s avg, will leave the iterate-safe set`) and update the test's header comment to match.
 5. **Report**: `run <selection>: N passed, M failed, batch <wall-clock> (P parallel / S serial)`, one line per failure with its error gist, plus any tier-change flags. When invoked from an iterate plan, failures are the plan's problem to fix (its validation gate) — report them plainly, don't loop retries here.
-6. If invoked with a selection that includes `slow` while an iterate plan is `phase: executing` in this project, say so and require the tier to have been explicitly named — bare `all` during a live plan downgrades to fast+standard with a one-line note.
+6. If invoked while an iterate plan is `phase: executing` in this project: a bare `all` downgrades to fast+standard with a one-line note, and `slow` runs only when named — by the tier word, or by a case id whose tier is slow. A drifted slow case the plan's FFIV sweep names IS that naming: run it, no confirmation, no "say-so" — the executor never waits for a human over machine time.
 
 ## Rules
 
 1. **Measured, never estimated.** No duration enters the registry except from an execution this skill performed and timed.
-2. **Tier changes are announced, not silent** — a test crossing into `slow` leaves the iterate-safe set, and the maintainer must see that happen.
+2. **Tier changes are announced, not silent** — a test crossing into `slow` leaves the default selection, and the maintainer must see that happen. Leaving the default selection is not leaving the plan's reach: a drifted slow case still runs in-plan when named.
 3. **Respect `parallel=no` absolutely** — it declares side effects measurement can't see.
 4. This child never edits test content, never deletes tests, never writes new ones — report gaps/failures to the invoker.

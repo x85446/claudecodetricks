@@ -14,10 +14,22 @@ const staleGrace = 2 * time.Minute
 // PrintStatus renders the human-facing tree view: every plan with a live
 // (or recently-finished) entry, teams under it, units under each team.
 func PrintStatus(cwd string, w fmtWriter) {
+	// Plan states first: one `plan <name> <state>` line per live plan, in
+	// the vocabulary the status line colours — blocked, paused, unblocked,
+	// executing, queued, planned. This is the CLI's only view of
+	// `status: queued` (a plan staged for the nightly tick): the unit
+	// registry below cannot see it, because nothing has run yet.
+	planStates, _ := ListPlans(cwd)
+	for _, p := range planStates {
+		fmt.Fprintf(w, "plan %s %s\n", p.Name, p.StateLabel())
+	}
+
 	dir := RegistryDir(cwd)
 	entries, err := ScanRegistry(dir)
 	if err != nil {
-		fmt.Fprintf(w, "no registry yet at %s\n", dir)
+		if len(planStates) == 0 {
+			fmt.Fprintf(w, "no registry yet at %s\n", dir)
+		}
 		return
 	}
 
@@ -30,8 +42,13 @@ func PrintStatus(cwd string, w fmtWriter) {
 		live = append(live, e)
 	}
 	if len(live) == 0 {
-		fmt.Fprintln(w, "no active or recently-finished iterate-run units")
+		if len(planStates) == 0 {
+			fmt.Fprintln(w, "no active or recently-finished iterate-run units")
+		}
 		return
+	}
+	if len(planStates) > 0 {
+		fmt.Fprintln(w)
 	}
 
 	byPlan := map[string][]Entry{}

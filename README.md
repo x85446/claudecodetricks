@@ -267,7 +267,8 @@ Each plan card carries:
 - **The right command to run it** — `/iterate <name>` for Claude Code plans, `$iterate <name>` for Codex ones. A project holding both shows both, labelled.
 - **The version** that produced it, read from whichever marker the plan carries.
 - **When the work actually happened** — the activity timelines carry hash marks on your own clock: hour numbers for a run of a few hours, `HH:MM` for a short one, dates for a long one. A bar under the `15` mark means that work ran at 3pm, so the chart can be read against your day rather than only against itself.
-- **Conductor state per project** — whether the unattended runner is working, watching, or stood down, and when it next checks. A conductor that is switched on but has nothing to trigger it reads `NO TRIGGER`, so a runner that will never actually fire cannot look healthy.
+- **Conductor state per project** — whether the unattended runner is working, watching, or stood down, and when it next checks. A conductor that is switched on but has nothing to trigger it reads `NO TRIGGER`, so a runner that will never actually fire cannot look healthy. A project enrolled in the nightly tick reads `tick launchd` instead.
+- **A `queued` badge** on a plan you have staged for the nightly tick (see below), distinct from `planned`: planned means written, queued means approved to run while you are away.
 
 ### What a run cost in tokens
 
@@ -286,6 +287,86 @@ Numbers come from the session transcripts Claude Code already writes, joined to 
 Plans are named after animals, drawn from a pool of 1,442 across every letter. Each project works through the alphabet in its own order, and no two plans anywhere on your machine ever get the same name.
 
 If a letter runs out, naming moves to the next letter with room rather than failing. Only a completely exhausted pool is an error, and it tells you how many names remain under each letter.
+
+To see what the next plan in a project will be called without claiming the name:
+
+```bash
+iterate-run name peek
+# h hamster
+```
+
+### Plan states in the terminal
+
+`iterate-run status`, run inside a project, lists every plan with its state before any running units:
+
+```
+plan flamingo executing
+plan gaur planned
+plan quokka queued
+```
+
+States are `blocked`, `paused`, `unblocked`, `executing`, `queued` and `planned`, in that order of precedence.
+
+The Claude Code status line carries the same states as one letter per plan after the `⚙️` icon, coloured by state and cased by shape (UPPERCASE for a teamed plan, lowercase for a flat one):
+
+| Colour | Meaning |
+|---|---|
+| bold green | executing, and something touched a tool inside the last 15 minutes |
+| dark green | executing according to the plan file, but nothing has run in 15 minutes — the session stalled or died |
+| yellow | planned, not yet approved |
+| orange | queued — approved for the nightly tick |
+| red | blocked on something only you can supply |
+| cyan | unblocked, waiting to be picked back up |
+| magenta | paused by you |
+
+The icon itself lights up as `⚡` while a run is live. The last letter is always dim: it is the letter the *next* plan will get, so the segment is never empty — an empty segment means the status line itself is broken, not that there are no plans. `⏰` after the letters means this project is enrolled in the nightly tick; `⏰ off` means the tick is installed but switched off. Orange and dark green need a 256-colour terminal; on a 16-colour one they appear as bright yellow and plain green.
+
+### Run staged plans overnight
+
+The nightly tick runs plans you have approved while you are away from the keyboard. It is a macOS launch agent that wakes every ten minutes, looks at every enrolled project, and starts an unattended run wherever one is due.
+
+Install it once:
+
+```bash
+make nightly-install          # or: iterate-run nightly install [--every 10m]
+```
+
+Enroll a project (run inside it), then approve the plan you want it to run:
+
+```bash
+iterate-run nightly enroll    # this project's plans may run unattended
+/ip stage <name>              # in Claude Code: approve the plan as it stands
+```
+
+A staged plan turns orange in the status line and `queued` on the dashboard. The next tick inside the project's launch window starts it; `/iterate <name>` starts it right now instead. Editing a staged plan unstages it — the approval covered the plan as you read it — so stage it again when you are happy with the change.
+
+Each tick skips a project when the tick is switched off, the project's conductor is disabled or paused, nothing is queued, a session is already live there, the previous overnight run is still going, or the current time is outside the project's launch schedule. `iterate-run nightly tick --dry-run` (or `make nightly-tick`) prints exactly what the next tick would do and why:
+
+```
+would launch /Users/you/workspace/project-a
+project-b: skip: nothing queued
+project-c: skip: outside launch-schedule (no allow rule matches), next window 2026-10-05 22:00
+```
+
+Everyday controls:
+
+```bash
+make nightly-status            # installed? switched on? each enrolled project's last run
+iterate-run nightly off        # pause every project's overnight runs
+iterate-run nightly on
+iterate-run nightly withdraw   # this project ticks on its own again
+make nightly-uninstall         # remove the launch agent
+```
+
+`iterate-run nightly status` prints one fact per line:
+
+```
+installed	/Users/you/Library/LaunchAgents/com.x85446.iterate-nightly.plist	every 10m0s	loaded
+enabled	true
+project	/Users/you/workspace/project-a	launched 2026-10-05T03:20:00Z exit 0	now
+```
+
+Results land under `~/.claude/log/iterate-nightly/`: one folder per project holding each run's output, and a `status.txt` with one line per event (`project-a: launched …`, `project-b: skip: live`, `disabled`). The tick needs a macOS login session, because it uses the same sign-in as your interactive Claude Code; it runs a missed interval when the machine wakes.
 
 
 ## Development

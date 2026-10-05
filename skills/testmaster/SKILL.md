@@ -31,7 +31,7 @@ Meta skill. Routes to one child per concern and owns the shared contracts below.
 **Tiers are derived from measured `avg_ms`, recomputed by `/testmaster-run` after every run:**
 - `fast` — avg ≤ 10s. Always safe to run, any time, including every iterate plan.
 - `standard` — avg ≤ 2min. Runs in iterate plans' end-of-plan test task.
-- `slow` — avg > 2min. **NEVER run inside an iterate plan.** Nightly/explicit-only. An hour-long suite mid-plan is exactly the failure this tier exists to prevent.
+- `slow` — avg > 2min. **Not in the default selection** (`run` = fast+standard): a full slow pass belongs to the nightly schedule or an explicit `run slow` / `run all`. A slow case an iterate plan's own work has drifted is the exception, and the plan runs it — inside its FFIV sweep, wrapped in `iterate-run run` for heartbeat, without asking. Unattended time is where slow tests belong; parking them for the operator's say-so is the failure this tier used to cause.
 
 **Per-test header** — every test function/file carries a TESTMASTER header comment the children keep in sync:
 ```
@@ -58,7 +58,7 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 
 ## Rules
 
-1. **Never run the slow tier inside an iterate plan.** The plan's standing test step is `run` (= fast+standard). Slow is nightly or an explicit user "run slow"/"run all".
+1. **The slow tier is never in the default selection.** The plan's standing test step is `run` (= fast+standard); a full slow pass is nightly or an explicit "run slow"/"run all". A drifted slow case attributable to the executing plan is named by its drift membership and runs in-plan — never deferred to the operator.
 2. **All timing claims trace to `history.jsonl`.** No estimated durations anywhere — a test with `runs: 0` reports "unmeasured", not a guess.
 3. **Registry writes go through the children.** The meta routes; it never edits state itself.
 4. **One nightly per project.** Check `nightly.json` before arming; canceling uses the exact recorded mechanism.
