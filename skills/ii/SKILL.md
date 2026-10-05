@@ -3,7 +3,7 @@ name: ii
 description: Alias for /iterate-inform. Typing /ii <project> <what to tell them> behaves exactly as /iterate-inform — a one-time bug report dropped in another project's iterate inbox. Exists purely as a shorthand.
 argument-hint: <project> <what to tell them>
 disable-model-invocation: true
-version: 5.12.0
+version: 5.12.1
 ---
 
 # /ii — alias for /iterate-inform

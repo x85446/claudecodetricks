@@ -6,7 +6,7 @@ description: "Alias for $iterate-inform. Typing $ii <project> <what to tell them
 
 # $ii — alias for $iterate-inform
 
-**Version:** iterate family 5.12.0
+**Version:** iterate family 5.12.1
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

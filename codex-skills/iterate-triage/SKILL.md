@@ -8,7 +8,7 @@ description: "Use when the status line shows a feature branch instead of \"main 
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.12.0
+**Version:** iterate family 5.12.1
 
 ## What this skill does
 
@@ -148,7 +148,7 @@ block reads `status: open` is another project waiting on this one: its session
 sent a bug report here with `$iterate-inform`. Each open item is one problem.
 Its `Detail` says who sent it, what it reports, and what it holds up on their
 side, all read from the file. Its `Fix` is `fix problem N`: triage runs
-`$ip inbox` to draft the plan, and reports the plan's name. That is planning
+`$ip plan the inbox` to draft the plan, and reports the plan's name. That is planning
 only. The plan is born unstaged, so `$ip stage <name>` or `$iterate <name>`
 is still the human's call. While one is open, never report the project as
 clean.
