@@ -62,6 +62,12 @@ sweeps: 14
 Project-scoped, always. The conductor never reaches outside the project it was
 started in.
 
+**Rewrite the frontmatter by changing keys, never by regenerating it.** Every
+key you did not touch — `tick-source:`, `conductor-schedule:`,
+`imported-issues:`, `watch-bound:` — survives a stand-down, a resume, a start
+and an ending exactly as it was. A dropped `tick-source:` would silently turn a
+launchd-ticked conductor back into a self-ticking one.
+
 ## Operations
 
 Route on `$1`:

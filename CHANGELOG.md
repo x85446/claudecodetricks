@@ -3,6 +3,30 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [flamingo] - 2026-10-05
+
+### Added
+- **The nightly tick**: `iterate-run nightly install|uninstall|on|off|enroll|withdraw|status|tick`. A LaunchAgent (`com.x85446.iterate-nightly`, `StartInterval` 600, `ProcessType Standard`) walks the registered projects every ten minutes and, for each enrolled one with a queued, unblocked or stalled-executing plan that is not live, not already running, and inside both its launch-schedule and conductor-schedule, spawns a detached `claude -p "/iterate-conductor run" --permission-mode auto`. Each project runs under its own flock; results land in `~/.claude/log/iterate-nightly/` with a one-line `status.txt` per event. `--dry-run` prints every decision and its reason.
+- `src/internal/iterrun/schedule.go`: the `/iterate-rules` launch-schedule grammar evaluated in Go — deny beats allow, any allow makes default-deny, windows wrap midnight, a day label matches the day the window opened, malformed lines fail closed; `conductor-schedule` intersects and can only narrow.
+- `status: queued` as a first-class plan state. `/ip stage|approve|queue <name>` writes it, `unstage` removes it, `list` marks `(queued)`, and every refinement op removes it and says so. `iterate-run status` prints one `plan <name> <state>` line per plan (blocked, paused, unblocked, executing, queued, planned); the dashboard badges and filters `queued`.
+- `iterate-run name peek`: the project's next plan letter and word, without claiming them.
+- Statusline: orange letter for a queued plan (256-colour 208, bright-yellow fallback), the next plan's letter always rendered dim after the real ones, and `⏰` when the project is enrolled in the nightly tick (`⏰ off` when the global switch is off).
+- `/iterate-conductor enroll|withdraw` and `tick-source: launchd` in `conductor.md`; `/iterate` understands `loop-mechanism: external` (arm nothing, cancel nothing, keep the field).
+- `make statusline-check` (22 byte-level fixtures in `dotfiles/statusline-check.sh`) and `make nightly-install|nightly-uninstall|nightly-status|nightly-tick`.
+
+### Changed
+- Statusline: an executing plan whose heartbeat is older than `ITERATE_LIVE_SECS` is dark green (256-colour 28, plain-green fallback) instead of merely un-bold; live stays bold green with `⚡`.
+- `/iterate`: clears `status: queued` on the transition to executing; a bare `/iterate` never launches a queued plan; rule 32 — pause is a human verb: the executor never ends a turn on a go-ahead request over machine time, and a drifted slow-tier case is run in-plan under `iterate-run run` rather than parked.
+- `/iterate-conductor`: picks unblocked → executing → queued and never a bare `phase: planned`; under `tick-source: launchd` arms no cron, writes `loop-mechanism: external` into the plan it dispatches, and stands down without a cron to cancel; a `status: paused` with no operator pause line is a self-pause defect it logs, clears and resumes.
+- `/iterate-planner`: plans are flat by default — "team this"/"teamify" opts in; the TESTMASTER finisher says drifted slow cases run inside the FFIV sweep.
+- TESTMASTER: the slow tier is out of the default selection, not out of a plan's reach — a drifted slow case the plan names runs without confirmation; a bare `run all` mid-plan still downgrades.
+- iterate family 5.10.0; CLAUDE.md legend and family docs follow.
+- `.claude/iterate/plans/` is gitignored: live plans are per-machine state, archives stay tracked.
+
+### Fixed
+- The statusline's `⚙️` segment vanished for a project whose last plan had been archived: the root walk required `.claude/iterate/plans/` to exist; it now anchors on `.claude/iterate` (plans/ or archive/).
+- The conductor could not dispatch `/iterate` at all — the Skill tool refuses a `disable-model-invocation` skill — and stood down with a staged plan in front of it; it now reads `/iterate`'s SKILL.md and follows it, the same sanctioned path the `/i` and `/ic` aliases use.
+
 ## [Unreleased]
 
 ### Added
