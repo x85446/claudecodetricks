@@ -231,6 +231,9 @@ fi
 # ⏰ after the letters means this project is enrolled in the nightly launchd
 # tick (`iterate-run nightly enroll`); a dim `off` after it means the global
 # switch is off. Emoji ignore ANSI, so a word carries what colour cannot.
+# 📥N after that counts open informs: bug reports another project's session
+# dropped in <root>/.claude/iterate/inbox with /iterate-inform, still reading
+# `status: open` above their first `## ` heading. `/ip inbox` plans them.
 # Case carries teaming, which colour had no room left to say: UPPERCASE = the
 # plan is teamified (`teamed: true`, so /iterate dispatches one subagent per
 # team), lowercase = flat (one lane, the launching session's model — a flat
@@ -244,16 +247,18 @@ fi
 # actually happened was "you are standing one directory too deep". The walk
 # stops at the repository root -- plans sit beside .git, never above it, so a
 # stray ~/.claude/iterate/plans can never leak into an unrelated project.
-# The anchor is .claude/iterate itself (plans/ OR archive/): a project whose
-# last plan was archived has no plans/ directory at all, and requiring that
-# exact path made the segment vanish precisely when it should have read
+# The anchor is .claude/iterate itself (plans/, archive/ OR inbox/): a project
+# whose last plan was archived has no plans/ directory at all, and requiring
+# that exact path made the segment vanish precisely when it should have read
 # "nothing queued" (confirmed live, claudecodetricks after eclectus archived).
+# A project whose only iterate state is an inform another project sent it has
+# neither, and must still show the 📥.
 iter_root_for() {
   local base="$1" d
   [ -n "$base" ] && [ -d "$base" ] || return 1
   d="$base"
   while :; do
-    { [ -d "$d/.claude/iterate/plans" ] || [ -d "$d/.claude/iterate/archive" ]; } && { printf '%s' "$d"; return 0; }
+    { [ -d "$d/.claude/iterate/plans" ] || [ -d "$d/.claude/iterate/archive" ] || [ -d "$d/.claude/iterate/inbox" ]; } && { printf '%s' "$d"; return 0; }
     [ -e "$d/.git" ] && return 1
     case "$d" in /|.|"") return 1 ;; esac
     d=$(dirname "$d")
@@ -336,11 +341,18 @@ if [ -n "$ITER_ROOT" ]; then
       ITER_TIMER="${ITER_TIMER} ${DIM}off${RESET}"
     fi
   fi
+  ITER_INBOX=""
+  ITER_OPEN=0
+  for inf in "$ITER_ROOT"/.claude/iterate/inbox/*.md; do
+    [ -e "$inf" ] || continue
+    awk '/^## /{exit} {print}' "$inf" 2>/dev/null | grep -q '^status: *open' && ITER_OPEN=$((ITER_OPEN + 1))
+  done
+  [ "$ITER_OPEN" -gt 0 ] && ITER_INBOX=" 📥${ITER_OPEN}"
   # The icon lights up while a run is live: ⚡ replaces ⚙️. Emoji ignore
   # ANSI colour, so brightness has to come from the glyph itself.
   ITER_ICON="⚙️"
   [ "$ITER_LIVE" = 1 ] && ITER_ICON="⚡"
-  ITER=" | ${ITER_ICON} ${ITER_LETTERS}${ITER_TIMER}"
+  ITER=" | ${ITER_ICON} ${ITER_LETTERS}${ITER_TIMER}${ITER_INBOX}"
 fi
 
 if [[ "$HOST" == warden* ]]; then

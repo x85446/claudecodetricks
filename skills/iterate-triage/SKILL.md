@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, with the one act that clears each. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: (none — reads the project state)
-version: 5.11.0
+version: 5.12.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -98,13 +98,13 @@ numbers. Nothing before, between, or after.
 ## Decide which case this is
 
 Read, in order: the current branch and whether the tree is dirty; every
-`./.claude/iterate/plans/*.md` frontmatter; `./.claude/iterate/current`; and
-`./.claude/iterate/conductor.md` if it exists. Then match the first case that
-fits.
+`./.claude/iterate/plans/*.md` frontmatter; `./.claude/iterate/current`;
+`./.claude/iterate/conductor.md` if it exists; and every
+`./.claude/iterate/inbox/*.md` key block. Then match the first case that fits.
 
 | State | Verdict and action |
 |---|---|
-| On default branch, clean, no plans | `complete: 0 of 0 · broken: 0 of 0 — clean, nothing outstanding.` Stop. |
+| On default branch, clean, no plans, no open informs | `complete: 0 of 0 · broken: 0 of 0 — clean, nothing outstanding.` Stop. |
 | Plans exist, all `phase: planned`, on default branch | **Planning session, never kicked off.** `broken: 0` — name the plans; `/iterate <name>` starts one. A normal resting state, not a fault. |
 | `phase: executing`, `running:` heartbeat fresh (<90s) | **A run is live right now.** Report the step count and leave it alone. Do not touch the branch, the plan, or the tree. |
 | `phase: executing`, no fresh heartbeat, all steps done, all validations green, not merged | **The merge never happened.** This is the failure case — finish it (see below). |
@@ -118,6 +118,16 @@ fits.
 | Several plans all-green but unmerged | Batch them: one merge session landing every branch, in dependency order, rather than N separate ones. |
 | `phase: closed` sitting in `plans/` | Should have been archived. Archive it now (nothing is lost, it is the step `/iterate` owed) and report `done — archived`. |
 | Not a git repo | Report plan state only; every branch line is a silent no-op. |
+
+**An open inform is a problem in every case above.** An `inbox/*.md` whose key
+block reads `status: open` is another project waiting on this one: its session
+sent a bug report here with `/iterate-inform`. Each open item is one problem.
+Its `Detail` says who sent it, what it reports, and what it holds up on their
+side, all read from the file. Its `Fix` is `fix problem N`: triage runs
+`/ip inbox` to draft the plan, and reports the plan's name. That is planning
+only. The plan is born unstaged, so `/ip stage <name>` or `/iterate <name>`
+is still the human's call. While one is open, never report the project as
+clean.
 
 ## What triage does without asking
 
