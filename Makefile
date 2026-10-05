@@ -19,6 +19,7 @@ LOGGER_BIN := $(BIN_DIR)/session-logger
 GIT_BIN := $(BIN_DIR)/git-committer
 CHAIN_GUARD_BIN := $(BIN_DIR)/chain-guard
 ITERATE_RUN_BIN := $(TOOLS_BIN_DIR)/iterate-run
+TESTMASTER_BIN := $(TOOLS_BIN_DIR)/testmaster
 
 # Where standalone tools (as opposed to hooks) get installed — already on
 # PATH for a standard Go setup, unlike INSTALL_DIR below.
@@ -172,7 +173,7 @@ check-tools:  ## Verify required tools are installed
 
 all: build  ## Alias for build — builds everything
 
-build: check-tools $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(ITERATE_RUN_BIN)  ## Build all binaries
+build: check-tools $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(ITERATE_RUN_BIN) $(TESTMASTER_BIN)  ## Build all binaries
 	$(Q)echo -e "$(COLOR_GREEN)✓ Build complete$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)Version: $(VERSION) ($(GIT_COMMIT))$(COLOR_RESET)"
 
@@ -205,6 +206,12 @@ $(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(wildcard $(INTERNA
 	$(Q)mkdir -p $(TOOLS_BIN_DIR)
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/iterate-run
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) iterate-run → $@"
+
+$(TESTMASTER_BIN): $(wildcard $(CMD_DIR)/testmaster/*.go) $(wildcard $(INTERNAL_DIR)/testmaster/*.go)
+	$(Q)echo -e "$(COLOR_BLUE)→ Building testmaster...$(COLOR_RESET)"
+	$(Q)mkdir -p $(TOOLS_BIN_DIR)
+	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/testmaster
+	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) testmaster → $@"
 
 rebuild: clean build  ## Clean and rebuild all binaries
 
@@ -331,11 +338,12 @@ install: build  ## Install hooks to Claude Code directory, and tools onto PATH
 	$(Q)echo -e "$(COLOR_BLUE)→ Installing tools...$(COLOR_RESET)"
 	$(Q)mkdir -p $(TOOLS_INSTALL_DIR)
 	$(Q)cp -f $(ITERATE_RUN_BIN) $(TOOLS_INSTALL_DIR)/
-	$(Q)chmod +x $(TOOLS_INSTALL_DIR)/iterate-run
+	$(Q)cp -f $(TESTMASTER_BIN) $(TOOLS_INSTALL_DIR)/
+	$(Q)chmod +x $(TOOLS_INSTALL_DIR)/iterate-run $(TOOLS_INSTALL_DIR)/testmaster
 	$(Q)if command -v codesign >/dev/null 2>&1; then \
-		codesign --force --sign - $(TOOLS_INSTALL_DIR)/iterate-run; \
+		codesign --force --sign - $(TOOLS_INSTALL_DIR)/iterate-run $(TOOLS_INSTALL_DIR)/testmaster; \
 	fi
-	$(Q)echo -e "$(COLOR_GREEN)✓ iterate-run installed to $(TOOLS_INSTALL_DIR)$(COLOR_RESET)"
+	$(Q)echo -e "$(COLOR_GREEN)✓ iterate-run and testmaster installed to $(TOOLS_INSTALL_DIR)$(COLOR_RESET)"
 
 uninstall:  ## Remove installed hooks and tools
 	$(Q)echo -e "$(COLOR_YELLOW)→ Uninstalling hooks...$(COLOR_RESET)"
@@ -343,6 +351,7 @@ uninstall:  ## Remove installed hooks and tools
 	$(Q)rm -f $(INSTALL_DIR)/session-logger
 	$(Q)rm -f $(INSTALL_DIR)/git-committer
 	$(Q)rm -f $(TOOLS_INSTALL_DIR)/iterate-run
+	$(Q)rm -f $(TOOLS_INSTALL_DIR)/testmaster
 	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks and tools uninstalled$(COLOR_RESET)"
 
 # ==================================================================================== #

@@ -1,5 +1,5 @@
 ---
-name: testmaster
+name: "testmaster"
 description: "Route ALL test-suite work here; the meta picks the child. Use for any test-suite work: \"testmaster\", \"testmaster init\", \"adopt this suite\", \"onboard testmaster\", \"set up testmaster here\", \"run the tests\", \"maintain the test suite\", \"add tests for <x>\", \"derive tests for <requirement>\", \"should this have a test\", \"what tests does this need\", \"prune the tests\", \"consolidate duplicate tests\", \"clean up the suite\", \"test report card\", \"how are the tests\", \"what's untested\", \"test coverage\", \"what did this change invalidate\", \"which tests drifted\", \"set up nightly tests\"."
 ---
 
@@ -7,7 +7,7 @@ description: "Route ALL test-suite work here; the meta picks the child. Use for 
 
 # $testmaster — SQA suite orchestrator (TESTMASTER)
 
-**Version:** 1.4.0
+**Version:** 1.5.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -54,23 +54,38 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 ## Shared contracts (all children obey these)
 
+**The runner is the `testmaster` binary** (`src/cmd/testmaster/` in claudecodetricks, installed to `~/go/bin` by `make install`). It runs tests outside the model's context: a pass is a count, and each failure is one line naming a log. Children drive it and never run, time, or record a test themselves.
+
+```
+testmaster suite run [fast|standard|slow|all|<id>|<glob>] [--failed]   # one summary line + one per problem
+testmaster suite discover        # ask go / cargo / pytest what tests exist; register the new ones
+testmaster suite status          # tiers, results, last run, slowest
+testmaster test add <id> --kind shell --cmd '<command>'                # any other language
+testmaster test set <id>… --blocking | --serial | --parallel
+testmaster test list [--failing|--unmeasured|--tier T] · test show <id> · test remove <id>…
+testmaster runner set <kind> -- <argv…>   # the project's real invocation: env, wrapper, venv
+```
+
+Kinds: `go` and `pytest` batch a package or directory into one invocation and read per-test results from `go test -json` / JUnit XML. `cargo` builds once and runs each test straight from its binary. `shell` runs any command (exit 0 pass, 77 skip, else fail), which is how every other language gets in.
+
 **State lives at `./.claude/testmaster/`** (project-local, created on first touch):
-- `registry.json` — one entry per test: `{id, cmd, file, avg_ms, last_ms, runs, tier, parallel_safe, last_result, updated}`. **Measured truth**: `avg_ms`/`last_ms` come only from real `$testmaster-run` executions — never estimated, never hand-edited.
-- `history.jsonl` — append-only run log: `{ts, id, ms, result, tier, runner}` per execution. This is the raw data behind every timing claim.
-- `report/index.html` — the self-contained report card (see `$testmaster-report`).
+- `registry.json`: the database. One entry per test: `{kind, <identity: pkg+name | nodeid | target+name | cmd>, dir, args, cmd, file, blocking, parallel_safe, avg_ms, last_ms, runs, tier, last_result, updated}`, plus top-level `runners` (per-kind command overrides), `sources` (where discovery looks) and `last_run` (the whole batch's wall-clock and counts). `cmd` is always the command that reruns that one test. **Measured truth**: `avg_ms`, `last_ms`, `runs` and `tier` come only from the binary's real executions of passing and failing runs (never skips or timeouts), never estimated, never hand-edited.
+- `history.jsonl`: an append-only run log. Each test result is `{ts, id, result, tier, runner}`, plus `ms` only when the test really executed. One batch line per run is `{ts, batch, ms, passed, failed, skipped, missing, not_run}`. This is the raw data behind every timing claim.
+- `failures/<id>.log`: one per **currently** failing test, holding its full output, exit code, commit and `rerun:` command. It is removed when the test passes again, so the directory is the red set. The directory ignores itself in git.
+- `report/index.html`: the self-contained report card (see `$testmaster-report`).
 
-**Tiers are derived from measured `avg_ms`, recomputed by `$testmaster-run` after every run:**
-- `fast` — avg ≤ 10s. Always safe to run, any time, including every iterate plan.
-- `standard` — avg ≤ 2min. Runs in iterate plans' end-of-plan test task.
-- `slow` — avg > 2min. **NEVER run inside an iterate plan.** Nightly/explicit-only. An hour-long suite mid-plan is exactly the failure this tier exists to prevent.
+**Tiers are derived from measured `avg_ms`, recomputed by the binary after every run:**
+- `fast`: avg ≤ 10s. Always safe to run, any time, including every iterate plan.
+- `standard`: avg ≤ 2min. Runs in iterate plans' end-of-plan test task.
+- `slow`: avg > 2min. **Not in the default selection** (`run` = fast+standard). A full slow pass belongs to the nightly schedule or an explicit `run slow` / `run all`. The exception is a slow case the iterate plan's own work has drifted: the plan runs it inside its FFIV sweep, wrapped in `iterate-run run` for heartbeat, without asking. Unattended time is where slow tests belong; parking them for the operator's say-so is the failure this tier used to cause.
 
-**Per-test header** — every test function/file carries a TESTMASTER header comment the children keep in sync:
+**Per-test header**: every test function or file carries a TESTMASTER header comment the children keep in sync:
 ```
 # TESTMASTER: id=<stable-id> tier=fast parallel=yes  (avg 3.2s over 41 runs)
 ```
-Division of authority: the **registry is authoritative for timing** (measured); the **header is authoritative for `parallel=`** (a declared property of the test's side effects — shared DB, port binds, global fixtures — that measurement can't infer). Conform passes (`$testmaster-prune`) sync the derived fields into headers; a header's `parallel=no` is never overridden by anyone.
+Division of authority: the **registry is authoritative for timing** (measured), and the **header is authoritative for `parallel=`** (a declared property of the test's side effects that measurement can't infer: a shared DB, port binds, global fixtures). `testmaster test set <id> --serial` carries a header's `parallel=no` into the registry, and nobody ever overrides it.
 
-**Parallelism**: `$testmaster-run` runs `parallel=yes` tests of a tier concurrently, `parallel=no` tests serially after. Real wall-clock for the whole batch also lands in `history.jsonl`.
+**Order of a run**: blocking tests first, one at a time, where the first that fails stops the run and everything else is reported not run. Then every parallel-safe invocation runs concurrently, longest first. Then the serial tests run one at a time. Independent tests always all run, however many of them fail. A test binary that crashes partway (a Go panic, a timeout) has its unrun tests run again, so one crash never hides the rest of its package.
 
 **Real-world mandate**: tests exercise the product the way a user/caller does (run the CLI, hit the endpoint, load the page) — the same interactive-testing mandate as `$iterate`. A "test" that only inspects code doesn't survive `$testmaster-prune`.
 
@@ -84,14 +99,14 @@ Division of authority: the **registry is authoritative for timing** (measured); 
 3. **run** ("run", "run fast", "run standard", "run slow", "run <test-id>") → invoke `$testmaster-run` explicitly, args verbatim. Bare "run" = fast+standard (the iterate-safe set).
 4. **report** ("report", "report card", "how are the tests") → invoke `$testmaster-report` explicitly.
 5. **nightly** ("nightly", "set up nightly tests") → Codex cannot schedule itself, so tell the user to create the nightly run once: a ChatGPT Automation firing `$testmaster run all` at local midnight, or an OS cron job running `codex exec`. **Record `mechanism: user-managed` in `./.claude/testmaster/nightly.json`** along with what you told them, and note that pausing it is theirs to do. Never arm a second nightly if `nightly.json` already records a live one.
-6. **status** ("status") → one screen from `registry.json`: counts per tier, pass/fail split, slowest 5, last full-run date. Read-only. For the *organized* view (by requirement, with validity) route to `catalog` instead.
+6. **status** ("status") → `testmaster suite status` and relay it: counts per tier, results, last run, failing tests with their logs, slowest 5. Read-only. For the *organized* view (by requirement, with validity) route to `catalog` instead.
 7. **default** (anything else describing test work) → decide maintain vs prune vs run by the work's nature and route as above.
 
 ## Rules
 
-1. **Never run the slow tier inside an iterate plan.** The plan's standing test step is `run` (= fast+standard). Slow is nightly or an explicit user "run slow"/"run all".
+1. **The slow tier is never in the default selection.** The plan's standing test step is `run` (= fast+standard); a full slow pass is nightly or an explicit "run slow"/"run all". A drifted slow case attributable to the executing plan is named by its drift membership and runs in-plan — never deferred to the operator.
 2. **All timing claims trace to `history.jsonl`.** No estimated durations anywhere — a test with `runs: 0` reports "unmeasured", not a guess.
-3. **Registry writes go through the children.** The meta routes; it never edits state itself.
+3. **Registry writes go through the binary.** Children call `testmaster`; the meta routes and never edits state itself.
 4. **One nightly per project.** Check `nightly.json` before arming; canceling uses the exact recorded mechanism.
 5. **Every test traces to a requirement.** A case exists because something was asked for — `$testmaster-derive` records the ask in the user's words, `$testmaster-catalog` keeps the link, and a test that traces to nothing is a `coverage` gap to resolve, not a test to keep by default.
 6. **Green is not the same as valid.** A test that passed before the code it covers changed is `drifted`, not `valid` — only a green run against the current tree clears it. Report drift whenever asked for suite health.

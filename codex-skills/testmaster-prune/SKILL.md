@@ -6,7 +6,7 @@ description: "TESTMASTER child (invoked via $testmaster): deletes dead tests, co
 
 # $testmaster-prune — keep the suite true
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -27,22 +27,21 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$testmaster` — ported.
 - `$testmaster-maintain` — ported.
-- `$testmaster-run` — ported.
 
 ## Steps
 
-1. **Dead-test sweep.** For each test (scoped by `$1`, else all): does the behavior it asserts still exist in the product? A test for removed code gets deleted — test file/function, registry entry, and header all together. Evidence standard: the feature is demonstrably gone from the code (grep the symbols/endpoints/flags it exercises), not merely "test is failing".
+1. **Dead-test sweep.** For each test (scoped by `$1`, else all): does the behavior it asserts still exist in the product? A test for removed code gets deleted — test file/function, registry entry (`testmaster test remove <id>`), and header all together. `MISSING` lines from `testmaster suite run` or `suite discover` are registry entries whose test is already gone from the tree: remove them. Evidence standard: the feature is demonstrably gone from the code (grep the symbols/endpoints/flags it exercises), not merely "test is failing".
 2. **Duplicate consolidation.** Tests asserting the same behavior through the same path merge into one (keep the most real-world variant; fold in any unique assertions from the others). Registry entries merge too — keep the survivor's measured history.
 3. **Truth check.** Every remaining test must actually run and assert current behavior. A test that's skipped, commented out, or permanently red is either fixed (behavior drifted → update the assertion to current truth), tiered correctly, or deleted with the dead-test evidence above — never left rotting.
 4. **Conform pass** — three-way sync per test:
    - Header `id=` ↔ registry entry exist for each other (orphans on either side get repaired).
    - Registry's measured `tier` is written into the header (registry wins on timing — it's measured).
-   - Header's `parallel=` is written into the registry (header wins on parallelism — it's declared). A header missing `parallel=` gets `no` until someone verifies otherwise.
-5. **Prove the suite still runs**: execute the fast tier once end-to-end after any deletion/merge. A prune that breaks the runner isn't a prune.
+   - Header's `parallel=` is written into the registry with `testmaster test set <id> --serial|--parallel` (header wins on parallelism — it's declared). A header missing `parallel=` gets `no` until someone verifies otherwise.
+5. **Prove the suite still runs**: `testmaster suite run fast` once after any deletion/merge. A prune that breaks the runner isn't a prune.
 6. Report: `pruned: N deleted (dead), M consolidated → K, C conformed; fast tier green`. List each deleted test with its one-line evidence.
 
 ## Rules
 
 1. **Deletion requires evidence the feature is gone** — a red test alone is a fix-or-tier decision, never a delete justification.
 2. Never author new test cases here — hand gaps you notice to `$testmaster-maintain` (name them in the report).
-3. Never edit measured timing fields — only `$testmaster-run` writes `avg_ms`/`last_ms`/`runs`.
+3. Never edit measured timing fields — only the `testmaster` binary writes `avg_ms`/`last_ms`/`runs`.

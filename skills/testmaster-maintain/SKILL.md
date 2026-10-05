@@ -2,7 +2,7 @@
 name: testmaster-maintain
 description: "TESTMASTER child (invoked via /testmaster): writes new test cases and updates existing ones to match current product behavior."
 argument-hint: <what changed / what needs coverage, e.g. "cover the new export endpoint">
-version: 1.1.0
+version: 1.2.0
 ---
 
 # /testmaster-maintain — keep test cases true to the product
@@ -15,8 +15,8 @@ Obey the shared contracts in `/testmaster`'s SKILL.md (state paths, tiers, heade
 2. **Scope the work** from `$1` (or the iterate plan's changed steps / branch diff when invoked mid-plan): which behaviors are new, which changed, which existing tests now assert stale behavior.
 3. **Write/update cases — as real-world as possible.** Each test exercises the product the way a caller does: invoke the real CLI, hit the running endpoint, drive the real script against a local/test target. Mocks only where the real dependency is genuinely unavailable, and say so in the test's comment.
 4. **Stamp the header** on every test you touch: `# TESTMASTER: id=<stable-id> tier=? parallel=<yes|no>` (comment syntax per language). Choose `parallel=no` whenever the test binds ports, mutates shared state, or uses global fixtures — when unsure, `no`. `tier=?` is correct for a new test: the tier is measured, not guessed.
-5. **Register**: add/update the entry in `./.claude/testmaster/registry.json` (`runs: 0`, `avg_ms: null`, `tier: "?"` for new tests — `/testmaster-run` fills in reality).
-6. **Prove each new/updated test executes**: run it once right now (this also gives the registry its first real measurement — record it via the same update `/testmaster-run` would make). A test that was never executed is not maintained, it's decoration.
+5. **Register**: `testmaster suite discover` picks up new Go, Rust and pytest tests. Anything else gets `testmaster test add <id> --kind shell --cmd '<runs just this test>'`. A header's `parallel=no` becomes `testmaster test set <id> --serial`. New tests register unmeasured (`tier: "?"`), and the runner fills in reality.
+6. **Prove each new/updated test executes**: `testmaster suite run <id>…` right now. That also gives the registry its first real measurement. A test that was never executed is not maintained, it's decoration.
 7. Report one line per case touched: `+ <id> (new|updated, first run <result> in <ms>)`.
 
 ## Rules
