@@ -2,7 +2,7 @@
 name: testmaster-run
 description: "TESTMASTER child (invoked via /testmaster): runs a tier or named tests through the testmaster binary, which measures them and updates the registry, and acts only on what failed."
 argument-hint: <fast | standard | slow | all | <test-id|glob> | --failed — bare/empty = fast+standard>
-version: 2.0.0
+version: 2.1.0
 ---
 
 # /testmaster-run — run the suite without reading it
@@ -11,13 +11,17 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. The `testmaster` binary d
 
 ## Steps
 
+0. **Reconcile first**: `testmaster suite discover`, every time (about 1.5s on a 160-test Go repo). Go, Rust and pytest tests written since the last run are registered by it and join this run.
+   - `UNLINKED <case> <test>`: a catalog case names a test the registry lacks. Run the Skill tool `testmaster-register` with those case ids before running, so the test runs this time instead of silently never.
+   - `MISSING <id>`: carry it into the report for `/testmaster-prune`.
+   - `discover: no go, cargo or pytest source`: a shell-only project. Carry on.
 1. **Select** from `$1` and pass it straight through:
    - empty / `run` → `testmaster suite run` (fast + standard + every unmeasured test: the iterate-safe set)
    - a tier, `all`, an id, or a glob (`'iterrun.*'`) → `testmaster suite run <words>`
    - "rerun the failures" → `testmaster suite run --failed`
 
    Inside an executing iterate plan, a bare `all` becomes the default set with a one-line note, and `slow` runs only when named: by the tier word, or by a slow case id the plan's FFIV sweep named. That case runs without asking.
-2. **Run it once.** From an iterate plan, wrap it for heartbeat (`iterate-run run -- testmaster suite run …`); otherwise run it bare. Exit 3 means nothing is registered: route to `/testmaster adopt`. If `testmaster` is not on PATH, stop with `testmaster is not installed — make install in claudecodetricks`. Never fall back to running tests one by one yourself: that is the token spend the binary exists to remove.
+2. **Run it once.** From an iterate plan, wrap it for heartbeat (`iterate-run run -- testmaster suite run …`); otherwise run it bare. Exit 3 means nothing is registered even after step 0: route to `/testmaster adopt`. If `testmaster` is not on PATH, stop with `testmaster is not installed — make install in claudecodetricks`. Never fall back to running tests one by one yourself: that is the token spend the binary exists to remove.
 3. **Read the output, not the tests.** It is one summary line plus one line per problem:
    ```
    run fast+standard: 158 passed, 2 failed, 7.9s
@@ -41,5 +45,5 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. The `testmaster` binary d
 1. **Measured, never estimated.** Only the binary writes `avg_ms`, `last_ms`, `runs`, `tier`, `last_result`, `history.jsonl`, `failures/`, and the catalog's `last_validated_commit`. Never hand-edit them, and never time a test yourself.
 2. **A pass is a count.** Never rerun a passing test to look at it, and never read a log for a test that passed.
 3. **Tier changes are announced, not silent.**
-4. **Blocking and serial are declared, not guessed**: `testmaster test set <id> --blocking` for a test whose failure makes the rest meaningless (a build, a fixture server), `--serial` for a header's `parallel=no`.
+4. **Registration belongs to `/testmaster-register`.** This child never runs `test add` or `test set`: adding a test, and deciding whether it blocks or runs alone, happens there.
 5. This child never edits test content, never deletes tests, never writes new ones. It reports gaps and failures to the invoker.

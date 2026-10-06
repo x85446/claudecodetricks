@@ -6,7 +6,7 @@ description: "TESTMASTER child (invoked via $testmaster): the organizing index �
 
 # $testmaster-catalog — keep the suite organized and know what's still true
 
-**Version:** 1.4.0
+**Version:** 1.5.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -35,32 +35,36 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 ## The catalog
 
-`./.claude/testmaster/catalog.json` — the index. `registry.json` stays the timing/result record; the catalog is the *meaning* record, and they join on test id.
+`./.claude/testmaster/catalog.json` — the index. `registry.json` stays the timing/result record; the catalog is the *meaning* record, and they join on each case's `test`.
 
 ```json
 {
-  "requirements": {
-    "req-mute-on-play": {
+  "schema": 1,
+  "project": "<name>",
+  "updated": "<UTC>",
+  "requirements": [
+    {
+      "id": "req-mute-on-play",
       "statement": "<the requirement in the user's own words>",
-      "source": "plan:quail step 4 | bug report | $testmaster-derive",
-      "added": "<UTC date>",
-      "cases": ["mute-1", "mute-2", "mute-3"]
+      "source": "plan:quail step 4 | bug report | $testmaster-derive | adopted",
+      "cases": [
+        {
+          "id": "mute-1",
+          "given": "...", "when": "...", "then": "...",
+          "test": "player.TestPlayMutes",
+          "covers": ["history.go", "audio_device.go"],
+          "covers_source": "coverage",
+          "validity": "valid",
+          "last_validated_commit": "6f15ace",
+          "last_validated": "<UTC>"
+        }
+      ]
     }
-  },
-  "tests": {
-    "mute-1": {
-      "requirement": "req-mute-on-play",
-      "given": "...", "when": "...", "then": "...",
-      "file": "history_test.go",
-      "covers": ["history.go", "audio_device.go"],
-      "covers_source": "coverage",
-      "validity": "valid",
-      "last_validated_commit": "6f15ace",
-      "last_validated": "<UTC>"
-    }
-  }
+  ]
 }
 ```
+
+`test` is the **registry id** of the test that proves the case, exactly as `testmaster test list` prints it (`iterrun.TestStatus`, a pytest node id, `target::name`, a shell test's id), or a list of ids when several tests prove it together. A bare function name is not a link. `testmaster suite discover` reports every link that names no registered test as `UNLINKED <case> <test>`, and `/testmaster-register` repairs it. A case with no `test` is either not implemented yet (`unverified`) or proven by a recorded live check (`evidence`, `verified_by`, `verified_at`) that no registered test repeats.
 
 ## Validity states — this is what makes tests go valid and invalid with each change
 
@@ -71,7 +75,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 | `orphaned` | The code it covers no longer exists, or its test does | every path in `covers` is gone from the tree, or the registry's `last_result` is `missing` |
 | `unverified` | Never executed (a freshly derived case) | `runs: 0` in registry.json |
 
-**Drift is not failure.** A drifted test may still pass — it just hasn't been *proven* against the current code. It stops being drifted the moment `$testmaster-run` executes it green: the `testmaster` binary stamps `last_validated_commit` and `last_validated` on every case a green test backs, matched by case `id` or by a scenario case's `test`. This distinction is the whole point: a suite that's all-green but 40% drifted is not a suite you can trust, and nothing else in TESTMASTER would tell you that.
+**Drift is not failure.** A drifted test may still pass — it just hasn't been *proven* against the current code. It stops being drifted the moment `$testmaster-run` executes it green: the `testmaster` binary stamps `last_validated_commit` and `last_validated` on every case a green test backs, matched by case `id` or by its `test` (every listed test green, when `test` is a list). This distinction is the whole point: a suite that's all-green but 40% drifted is not a suite you can trust, and nothing else in TESTMASTER would tell you that.
 
 ## Router — parse `$1`
 
@@ -84,7 +88,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
    Coverage: 12 requirements, 34 cases — 28 valid, 4 drifted, 2 unverified, 0 orphaned
    ```
 2. **drift** — only the drifted and orphaned entries, with the commits that caused the drift. This is the post-change question: *what did I just invalidate?*
-3. **coverage** — requirements with no cases, and cases with no test file. The gap list; hand it to `$testmaster-derive` (missing cases) or `$testmaster-maintain` (missing implementations).
+3. **coverage** — requirements with no cases, and cases with no `test`. The gap list; hand it to `$testmaster-derive` (missing cases) or `$testmaster-maintain` (missing implementations).
 4. **link `<test-id> <files...>`** — record which source files a test covers, by hand (`covers_source: "manual"`). Drift detection is only as good as `covers`, so this is how it gets corrected.
 
    To populate `covers` in bulk rather than one test at a time, that is `$testmaster-adopt` — it derives coverage from real per-test profiles. `link` is the correction, adoption is the feeder.

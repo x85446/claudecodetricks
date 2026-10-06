@@ -1,13 +1,13 @@
 ---
 name: "testmaster"
-description: "Route ALL test-suite work here; the meta picks the child. Use for any test-suite work: \"testmaster\", \"testmaster init\", \"adopt this suite\", \"onboard testmaster\", \"set up testmaster here\", \"run the tests\", \"maintain the test suite\", \"add tests for <x>\", \"derive tests for <requirement>\", \"should this have a test\", \"what tests does this need\", \"prune the tests\", \"consolidate duplicate tests\", \"clean up the suite\", \"test report card\", \"how are the tests\", \"what's untested\", \"test coverage\", \"what did this change invalidate\", \"which tests drifted\", \"set up nightly tests\"."
+description: "Route ALL test-suite work here; the meta picks the child. Use for any test-suite work: \"testmaster\", \"testmaster init\", \"adopt this suite\", \"onboard testmaster\", \"set up testmaster here\", \"run the tests\", \"maintain the test suite\", \"add tests for <x>\", \"register this test\", \"why didn't my test run\", \"derive tests for <requirement>\", \"should this have a test\", \"what tests does this need\", \"prune the tests\", \"consolidate duplicate tests\", \"clean up the suite\", \"test report card\", \"how are the tests\", \"what's untested\", \"test coverage\", \"what did this change invalidate\", \"which tests drifted\", \"set up nightly tests\"."
 ---
 
 <!-- version: shared across the family; see the **Version:** line above. -->
 
 # $testmaster — SQA suite orchestrator (TESTMASTER)
 
-**Version:** 1.5.0
+**Version:** 1.6.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -39,6 +39,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$testmaster-derive` — ported.
 - `$testmaster-maintain` — ported.
 - `$testmaster-prune` — ported.
+- `$testmaster-register` — ported.
 - `$testmaster-report` — ported.
 - `$testmaster-run` — ported.
 
@@ -48,6 +49,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 | `$testmaster-derive` | Read a requirement in the user's words and derive the test cases it implies |
 | `$testmaster-catalog` | The organizing index: requirement → cases → covered code, plus validity as code changes |
 | `$testmaster-maintain` | Write new test cases, update existing ones to match current behavior |
+| `$testmaster-register` | Put every test into the runner's registry (any language), decide blocking and serial, keep catalog links on registry ids; owns how to write a test the runner can run |
 | `$testmaster-prune` | Prune dead tests, consolidate duplicates, conform headers ↔ registry |
 | `$testmaster-run` | Execute a tier (or named tests), measure real durations, update the registry |
 | `$testmaster-report` | Regenerate the HTML report card from registry + run history |
@@ -58,13 +60,15 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 ```
 testmaster suite run [fast|standard|slow|all|<id>|<glob>] [--failed]   # one summary line + one per problem
-testmaster suite discover        # ask go / cargo / pytest what tests exist; register the new ones
+testmaster suite discover        # ask go / cargo / pytest what tests exist; register the new ones; UNLINKED catalog links
 testmaster suite status          # tiers, results, last run, slowest
 testmaster test add <id> --kind shell --cmd '<command>'                # any other language
 testmaster test set <id>… --blocking | --serial | --parallel
 testmaster test list [--failing|--unmeasured|--tier T] · test show <id> · test remove <id>…
 testmaster runner set <kind> -- <argv…>   # the project's real invocation: env, wrapper, venv
 ```
+
+**TESTMASTER registers its own suite.** The binary runs only what the registry names, so a test nobody registered never runs and nothing reports it. `$testmaster-run` runs `suite discover` before every run: it registers new Go, Rust and pytest tests, and reports each catalog case whose `test` names no registered test as `UNLINKED`. `$testmaster-register` registers everything discovery cannot see (every other language), decides blocking and serial, and keeps each case's `test` on a registry id. A test written anywhere, by a child or by a plan step, is registered and run once in the step that wrote it.
 
 Kinds: `go` and `pytest` batch a package or directory into one invocation and read per-test results from `go test -json` / JUnit XML. `cargo` builds once and runs each test straight from its binary. `shell` runs any command (exit 0 pass, 77 skip, else fail), which is how every other language gets in.
 
@@ -83,7 +87,7 @@ Kinds: `go` and `pytest` batch a package or directory into one invocation and re
 ```
 # TESTMASTER: id=<stable-id> tier=fast parallel=yes  (avg 3.2s over 41 runs)
 ```
-Division of authority: the **registry is authoritative for timing** (measured), and the **header is authoritative for `parallel=`** (a declared property of the test's side effects that measurement can't infer: a shared DB, port binds, global fixtures). `testmaster test set <id> --serial` carries a header's `parallel=no` into the registry, and nobody ever overrides it.
+`id=` is the catalog case id. The registry id is the binary's (`pkg.TestName`, a pytest node id, `target::name`, or the id given to `test add`), and the case's `test` field joins the two. Division of authority: the **registry is authoritative for timing** (measured), and the **header is authoritative for `parallel=`** (a declared property of the test's side effects that measurement can't infer: a shared DB, port binds, global fixtures). `testmaster test set <id> --serial` carries a header's `parallel=no` into the registry, and nobody ever overrides it.
 
 **Order of a run**: blocking tests first, one at a time, where the first that fails stops the run and everything else is reported not run. Then every parallel-safe invocation runs concurrently, longest first. Then the serial tests run one at a time. Independent tests always all run, however many of them fail. A test binary that crashes partway (a Go panic, a timeout) has its unrun tests run again, so one crash never hides the rest of its package.
 
@@ -95,12 +99,13 @@ Division of authority: the **registry is authoritative for timing** (measured), 
 0.25. **adopt** ("adopt", "init", "initialize", "onboard", "set up testmaster here", "bring this suite into testmaster", "conform this project") → invoke `$testmaster-adopt` explicitly, args verbatim. The one-time pass a project runs before anything else here is meaningful.
 0.5. **catalog** ("catalog", "status", "drift", "coverage", "impact <plan>", "what did this change invalidate", "what's untested") → invoke `$testmaster-catalog` explicitly, args verbatim.
 1. **maintain** ("maintain", "add/update tests for <x>") → invoke `$testmaster-maintain` explicitly, args verbatim.
+1.5. **register** ("register", "register this test", "add this test to the suite", "mark <test> blocking/serial", "why didn't my test run", "reconcile the registry") → invoke `$testmaster-register` explicitly, args verbatim.
 2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → invoke `$testmaster-prune` explicitly, args verbatim.
 3. **run** ("run", "run fast", "run standard", "run slow", "run <test-id>") → invoke `$testmaster-run` explicitly, args verbatim. Bare "run" = fast+standard (the iterate-safe set).
 4. **report** ("report", "report card", "how are the tests") → invoke `$testmaster-report` explicitly.
 5. **nightly** ("nightly", "set up nightly tests") → Codex cannot schedule itself, so tell the user to create the nightly run once: a ChatGPT Automation firing `$testmaster run all` at local midnight, or an OS cron job running `codex exec`. **Record `mechanism: user-managed` in `./.claude/testmaster/nightly.json`** along with what you told them, and note that pausing it is theirs to do. Never arm a second nightly if `nightly.json` already records a live one.
 6. **status** ("status") → `testmaster suite status` and relay it: counts per tier, results, last run, failing tests with their logs, slowest 5. Read-only. For the *organized* view (by requirement, with validity) route to `catalog` instead.
-7. **default** (anything else describing test work) → decide maintain vs prune vs run by the work's nature and route as above.
+7. **default** (anything else describing test work) → decide maintain vs register vs prune vs run by the work's nature and route as above.
 
 ## Rules
 

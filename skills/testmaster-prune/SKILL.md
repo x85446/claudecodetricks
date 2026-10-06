@@ -2,7 +2,7 @@
 name: testmaster-prune
 description: "TESTMASTER child (invoked via /testmaster): deletes dead tests, consolidates duplicates, and conforms headers to the registry."
 argument-hint: <optional scope, e.g. "the export tests" — default whole suite>
-version: 1.2.0
+version: 1.3.0
 ---
 
 # /testmaster-prune — keep the suite true
@@ -15,7 +15,7 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. This child is the suite's
 2. **Duplicate consolidation.** Tests asserting the same behavior through the same path merge into one (keep the most real-world variant; fold in any unique assertions from the others). Registry entries merge too — keep the survivor's measured history.
 3. **Truth check.** Every remaining test must actually run and assert current behavior. A test that's skipped, commented out, or permanently red is either fixed (behavior drifted → update the assertion to current truth), tiered correctly, or deleted with the dead-test evidence above — never left rotting.
 4. **Conform pass** — three-way sync per test:
-   - Header `id=` ↔ registry entry exist for each other (orphans on either side get repaired).
+   - Header `id=` ↔ catalog case, and the case's `test` ↔ registry entry: each exists for the other. A test with no registry entry goes to `/testmaster-register`; an `UNLINKED` case whose test is gone from the tree is dead, under step 1's evidence standard.
    - Registry's measured `tier` is written into the header (registry wins on timing — it's measured).
    - Header's `parallel=` is written into the registry with `testmaster test set <id> --serial|--parallel` (header wins on parallelism — it's declared). A header missing `parallel=` gets `no` until someone verifies otherwise.
 5. **Prove the suite still runs**: `testmaster suite run fast` once after any deletion/merge. A prune that breaks the runner isn't a prune.

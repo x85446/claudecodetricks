@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -104,6 +106,17 @@ func TestCLIEndToEnd(t *testing.T) {
 	out, _, code = cli(t, "suite", "run", "-C", dir)
 	if code != 0 || strings.Count(out, "\n") != 1 {
 		t.Errorf("all green should be one line and exit 0: %d\n%s", code, out)
+	}
+
+	// A shell-only project has nothing to discover, which is not an error;
+	// a catalog case naming a test the registry lacks is reported.
+	if err := os.WriteFile(filepath.Join(dir, ".claude/testmaster/catalog.json"), []byte(`{"requirements":[{"id":"r","cases":[
+	  {"id":"c-1","test":"ok"},{"id":"c-2","test":["ok","gone"]},{"id":"c-3"}]}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, errOut, code := cli(t, "suite", "discover", "-C", dir)
+	if code != 0 || out != "discover: no go, cargo or pytest source (name one: --kind <kind> --dir <path>)\nUNLINKED\tc-2\tgone\n" {
+		t.Errorf("discover on a shell-only project: code %d\n%s%s", code, out, errOut)
 	}
 
 	out, _, _ = cli(t, "suite", "status", "-C", dir)
