@@ -194,6 +194,7 @@ testmaster-catalog	userglobal	self	-
 testmaster-derive	userglobal	self	-
 testmaster-maintain	userglobal	self	-
 testmaster-prune	userglobal	self	-
+testmaster-register	userglobal	self	-
 testmaster-report	userglobal	self	-
 testmaster-run	userglobal	self	-
 transition-state	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/transition-state	-

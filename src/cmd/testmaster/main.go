@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -167,7 +168,9 @@ Examples:
 
 Detects go.mod, Cargo.toml and pytest config at the root and one level down.
 New tests are registered unmeasured; tests a toolchain no longer sees are
-reported, never removed.
+reported as MISSING, never removed. Each catalog case whose test is not
+registered is reported as UNLINKED. Shell tests are never discovered: they
+are registered with test add.
 
 Flags:
       --kind <go|cargo|pytest>   discover this toolchain only, and remember it as a source
@@ -532,7 +535,10 @@ func suiteDiscover(p *tm.Project, flags map[string]string, stdout, stderr io.Wri
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	reps, err := p.Discover(ctx, only, flags["dry-run"] != "")
-	if err != nil {
+	switch {
+	case errors.Is(err, tm.ErrNoSources):
+		fmt.Fprintln(stdout, "discover: no go, cargo or pytest source (name one: --kind <kind> --dir <path>)")
+	case err != nil:
 		return fail(stderr, err.Error(), "Name a source: testmaster suite discover --kind go --dir <path>")
 	}
 	code := 0
@@ -556,6 +562,13 @@ func suiteDiscover(p *tm.Project, flags map[string]string, stdout, stderr io.Wri
 		for _, id := range r.Missing {
 			fmt.Fprintf(stdout, "MISSING\t%s\n", id)
 		}
+	}
+	unlinked, err := p.Unlinked()
+	if err != nil {
+		return fail(stderr, err.Error())
+	}
+	for _, u := range unlinked {
+		fmt.Fprintf(stdout, "UNLINKED\t%s\t%s\n", u.Case, u.Test)
 	}
 	return code
 }

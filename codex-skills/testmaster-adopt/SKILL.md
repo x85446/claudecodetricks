@@ -7,7 +7,7 @@ description: "TESTMASTER child (invoked via $testmaster): brings an existing rep
 
 # $testmaster-adopt — make an existing suite conform
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -43,12 +43,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 `testmaster suite discover` does this for Go, Rust and pytest. It finds `go.mod`, `Cargo.toml` and pytest config at the root and one level down, asks each toolchain for its **actual** tests (never file names), registers the new ones unmeasured, and records where it looked in `sources`. One line per source comes back: `discover go .: 0 known, 357 new, 0 missing`.
 
-Every other toolchain is enumerated by hand and registered as a `shell` test, one command per test:
-
-| Toolchain | Enumerate with | Register each with |
-|---|---|---|
-| Node | `jest --listTests` / `vitest list` | `testmaster test add <id> --kind shell --cmd 'npx jest -t "<name>" <file>'` |
-| anything | the project's own listing | `testmaster test add <id> --kind shell --cmd '<runs just this test>'` |
+Every other toolchain's tests are registered by Skill tool `testmaster-register` (empty args: a whole-project reconcile). It sweeps the tree for test files no registry entry names, registers each as a `shell` test with the narrowest command that runs it, decides blocking and serial, and runs each once. Enumerate with the project's own listing first (`jest --listTests`, `vitest list`) when the toolchain has one.
 
 **Use the project's own runner, not the bare command.** These bare invocations fail on any project whose tests need environment — cgo headers, library paths, a fixture server, a build tag. When one fails, do not fight it: find how the project actually runs tests (its `make test` target, `npm test` script, `tox.ini`) and drive that, passing your flags through its own pass-through variable:
 

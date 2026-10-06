@@ -1,9 +1,9 @@
 ---
 name: testmaster
-description: "TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: adopt (onboard an existing suite), derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Route ALL test-suite work here; the meta picks the child."
-when_to_use: "Use for any test-suite work: \"testmaster\", \"testmaster init\", \"adopt this suite\", \"onboard testmaster\", \"set up testmaster here\", \"run the tests\", \"maintain the test suite\", \"add tests for <x>\", \"derive tests for <requirement>\", \"should this have a test\", \"what tests does this need\", \"prune the tests\", \"consolidate duplicate tests\", \"clean up the suite\", \"test report card\", \"how are the tests\", \"what's untested\", \"test coverage\", \"what did this change invalidate\", \"which tests drifted\", \"set up nightly tests\". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates."
+description: "TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: adopt (onboard an existing suite), derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, register (puts every test into the runner, any language), prune, run (real measured timing), report (HTML report card). Route ALL test-suite work here; the meta picks the child."
+when_to_use: "Use for any test-suite work: \"testmaster\", \"testmaster init\", \"adopt this suite\", \"onboard testmaster\", \"set up testmaster here\", \"run the tests\", \"maintain the test suite\", \"add tests for <x>\", \"register this test\", \"add this test to the suite\", \"mark <test> blocking\", \"why didn't my test run\", \"derive tests for <requirement>\", \"should this have a test\", \"what tests does this need\", \"prune the tests\", \"consolidate duplicate tests\", \"clean up the suite\", \"test report card\", \"how are the tests\", \"what's untested\", \"test coverage\", \"what did this change invalidate\", \"which tests drifted\", \"set up nightly tests\". Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates."
 argument-hint: <adopt | maintain | prune | run [tier] | report | nightly | status>
-version: 1.5.0
+version: 1.6.0
 ---
 <!-- version: bump on EVERY behavioral change (minor additions, major schema/contract changes, patch wording). -->
 
@@ -17,6 +17,7 @@ Meta skill. Routes to one child per concern and owns the shared contracts below.
 | `/testmaster-derive` | Read a requirement in the user's words and derive the test cases it implies |
 | `/testmaster-catalog` | The organizing index: requirement → cases → covered code, plus validity as code changes |
 | `/testmaster-maintain` | Write new test cases, update existing ones to match current behavior |
+| `/testmaster-register` | Put every test into the runner's registry (any language), decide blocking and serial, keep catalog links on registry ids; owns how to write a test the runner can run |
 | `/testmaster-prune` | Prune dead tests, consolidate duplicates, conform headers ↔ registry |
 | `/testmaster-run` | Execute a tier (or named tests), measure real durations, update the registry |
 | `/testmaster-report` | Regenerate the HTML report card from registry + run history |
@@ -27,13 +28,15 @@ Meta skill. Routes to one child per concern and owns the shared contracts below.
 
 ```
 testmaster suite run [fast|standard|slow|all|<id>|<glob>] [--failed]   # one summary line + one per problem
-testmaster suite discover        # ask go / cargo / pytest what tests exist; register the new ones
+testmaster suite discover        # ask go / cargo / pytest what tests exist; register the new ones; UNLINKED catalog links
 testmaster suite status          # tiers, results, last run, slowest
 testmaster test add <id> --kind shell --cmd '<command>'                # any other language
 testmaster test set <id>… --blocking | --serial | --parallel
 testmaster test list [--failing|--unmeasured|--tier T] · test show <id> · test remove <id>…
 testmaster runner set <kind> -- <argv…>   # the project's real invocation: env, wrapper, venv
 ```
+
+**TESTMASTER registers its own suite.** The binary runs only what the registry names, so a test nobody registered never runs and nothing reports it. `/testmaster-run` runs `suite discover` before every run: it registers new Go, Rust and pytest tests, and reports each catalog case whose `test` names no registered test as `UNLINKED`. `/testmaster-register` registers everything discovery cannot see (every other language), decides blocking and serial, and keeps each case's `test` on a registry id. A test written anywhere, by a child or by a plan step, is registered and run once in the step that wrote it.
 
 Kinds: `go` and `pytest` batch a package or directory into one invocation and read per-test results from `go test -json` / JUnit XML. `cargo` builds once and runs each test straight from its binary. `shell` runs any command (exit 0 pass, 77 skip, else fail), which is how every other language gets in.
 
@@ -52,7 +55,7 @@ Kinds: `go` and `pytest` batch a package or directory into one invocation and re
 ```
 # TESTMASTER: id=<stable-id> tier=fast parallel=yes  (avg 3.2s over 41 runs)
 ```
-Division of authority: the **registry is authoritative for timing** (measured), and the **header is authoritative for `parallel=`** (a declared property of the test's side effects that measurement can't infer: a shared DB, port binds, global fixtures). `testmaster test set <id> --serial` carries a header's `parallel=no` into the registry, and nobody ever overrides it.
+`id=` is the catalog case id. The registry id is the binary's (`pkg.TestName`, a pytest node id, `target::name`, or the id given to `test add`), and the case's `test` field joins the two. Division of authority: the **registry is authoritative for timing** (measured), and the **header is authoritative for `parallel=`** (a declared property of the test's side effects that measurement can't infer: a shared DB, port binds, global fixtures). `testmaster test set <id> --serial` carries a header's `parallel=no` into the registry, and nobody ever overrides it.
 
 **Order of a run**: blocking tests first, one at a time, where the first that fails stops the run and everything else is reported not run. Then every parallel-safe invocation runs concurrently, longest first. Then the serial tests run one at a time. Independent tests always all run, however many of them fail. A test binary that crashes partway (a Go panic, a timeout) has its unrun tests run again, so one crash never hides the rest of its package.
 
@@ -64,12 +67,13 @@ Division of authority: the **registry is authoritative for timing** (measured), 
 0.25. **adopt** ("adopt", "init", "initialize", "onboard", "set up testmaster here", "bring this suite into testmaster", "conform this project") → Skill tool: `testmaster-adopt`, args verbatim. The one-time pass a project runs before anything else here is meaningful.
 0.5. **catalog** ("catalog", "status", "drift", "coverage", "impact <plan>", "what did this change invalidate", "what's untested") → Skill tool: `testmaster-catalog`, args verbatim.
 1. **maintain** ("maintain", "add/update tests for <x>") → Skill tool: `testmaster-maintain`, args verbatim.
+1.5. **register** ("register", "register this test", "add this test to the suite", "mark <test> blocking/serial", "why didn't my test run", "reconcile the registry") → Skill tool: `testmaster-register`, args verbatim.
 2. **prune** ("prune", "consolidate", "conform", "clean up the suite") → Skill tool: `testmaster-prune`, args verbatim.
 3. **run** ("run", "run fast", "run standard", "run slow", "run <test-id>") → Skill tool: `testmaster-run`, args verbatim. Bare "run" = fast+standard (the iterate-safe set).
 4. **report** ("report", "report card", "how are the tests") → Skill tool: `testmaster-report`.
 5. **nightly** ("nightly", "set up nightly tests") → arm a scheduled full run (all tiers incl. slow) at local midnight via the harness's cron/schedule mechanism, prompt `/testmaster run all`. **Record the mechanism + job id in `./.claude/testmaster/nightly.json`** and tell the user the exact cancel command (a cron needs CronDelete — a /loop stop will NOT kill it). Never arm a second nightly if `nightly.json` already records a live one.
 6. **status** ("status") → `testmaster suite status` and relay it: counts per tier, results, last run, failing tests with their logs, slowest 5. Read-only. For the *organized* view (by requirement, with validity) route to `catalog` instead.
-7. **default** (anything else describing test work) → decide maintain vs prune vs run by the work's nature and route as above.
+7. **default** (anything else describing test work) → decide maintain vs register vs prune vs run by the work's nature and route as above.
 
 ## Rules
 

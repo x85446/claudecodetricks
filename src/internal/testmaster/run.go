@@ -418,16 +418,9 @@ func (p *Project) stampCatalog(green []string, commit, ts string) error {
 	if len(green) == 0 || commit == "" {
 		return nil
 	}
-	path := filepath.Join(p.Root, StateDir, "catalog.json")
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	dec := json.NewDecoder(strings.NewReader(string(b)))
-	dec.UseNumber()
-	var cat map[string]any
-	if err := dec.Decode(&cat); err != nil {
-		return fmt.Errorf("catalog.json: %w", err)
+	cat, err := p.readCatalog()
+	if cat == nil {
+		return err
 	}
 	ok := map[string]bool{}
 	for _, id := range green {
@@ -437,19 +430,12 @@ func (p *Project) stampCatalog(green []string, commit, ts string) error {
 	if len(short) > 8 {
 		short = short[:8]
 	}
-	reqs, _ := cat["requirements"].([]any)
 	stamped := 0
-	for _, r := range reqs {
-		req, _ := r.(map[string]any)
-		cases, _ := req["cases"].([]any)
-		for _, c := range cases {
-			cs, _ := c.(map[string]any)
-			id, _ := cs["id"].(string)
-			test, _ := cs["test"].(string)
-			if ok[id] || ok[test] {
-				cs["last_validated_commit"], cs["last_validated"] = short, ts
-				stamped++
-			}
+	for _, cs := range catalogCases(cat) {
+		id, _ := cs["id"].(string)
+		if ok[id] || allIn(caseTests(cs), ok) {
+			cs["last_validated_commit"], cs["last_validated"] = short, ts
+			stamped++
 		}
 	}
 	if stamped == 0 {
@@ -460,6 +446,17 @@ func (p *Project) stampCatalog(green []string, commit, ts string) error {
 		return err
 	}
 	return p.writeState("catalog.json", out)
+}
+
+// allIn reports whether ids is non-empty and every one is in set: a case
+// backed by several tests is proven only when all of them passed.
+func allIn(ids []string, set map[string]bool) bool {
+	for _, id := range ids {
+		if !set[id] {
+			return false
+		}
+	}
+	return len(ids) > 0
 }
 
 const logCap = 1 << 20 // keep the first and last MiB of a huge failure

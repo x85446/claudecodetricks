@@ -2,6 +2,7 @@ package testmaster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,6 +18,10 @@ type SourceReport struct {
 	Missing []string
 	Err     error
 }
+
+// ErrNoSources means no go, cargo or pytest source is recorded and none is
+// at the root or one level below: a project whose tests are all shell.
+var ErrNoSources = errors.New("no go.mod, Cargo.toml or pytest config at the root or one level below")
 
 // DetectSources finds the toolchains at the project root, and in its
 // immediate subdirectories for toolchains the root does not have.
@@ -99,7 +104,7 @@ func (p *Project) Discover(ctx context.Context, only *Source, dry bool) ([]Sourc
 	default:
 		sources = DetectSources(p.Root)
 		if len(sources) == 0 {
-			return nil, fmt.Errorf("no go.mod, Cargo.toml or pytest config at %s or one level below", p.Root)
+			return nil, ErrNoSources
 		}
 		p.Reg.Sources = sources
 	}

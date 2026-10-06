@@ -2,7 +2,7 @@
 name: testmaster-maintain
 description: "TESTMASTER child (invoked via /testmaster): writes new test cases and updates existing ones to match current product behavior."
 argument-hint: <what changed / what needs coverage, e.g. "cover the new export endpoint">
-version: 1.2.0
+version: 1.3.0
 ---
 
 # /testmaster-maintain — keep test cases true to the product
@@ -13,11 +13,10 @@ Obey the shared contracts in `/testmaster`'s SKILL.md (state paths, tiers, heade
 
 1. **Find the suite.** Locate the project's existing test layout (`make test` target, `tests/` dir, `*_test.go`, `spec/`, etc.). Follow the project's own conventions — never introduce a second test framework beside a working one.
 2. **Scope the work** from `$1` (or the iterate plan's changed steps / branch diff when invoked mid-plan): which behaviors are new, which changed, which existing tests now assert stale behavior.
-3. **Write/update cases — as real-world as possible.** Each test exercises the product the way a caller does: invoke the real CLI, hit the running endpoint, drive the real script against a local/test target. Mocks only where the real dependency is genuinely unavailable, and say so in the test's comment.
+3. **Write/update cases — as real-world as possible.** Each test exercises the product the way a caller does: invoke the real CLI, hit the running endpoint, drive the real script against a local/test target. Mocks only where the real dependency is genuinely unavailable, and say so in the test's comment. Follow "Writing a test the runner can run" in `/testmaster-register`'s SKILL.md: exit 77 to skip, failure output that explains itself, one command that runs just this test.
 4. **Stamp the header** on every test you touch: `# TESTMASTER: id=<stable-id> tier=? parallel=<yes|no>` (comment syntax per language). Choose `parallel=no` whenever the test binds ports, mutates shared state, or uses global fixtures — when unsure, `no`. `tier=?` is correct for a new test: the tier is measured, not guessed.
-5. **Register**: `testmaster suite discover` picks up new Go, Rust and pytest tests. Anything else gets `testmaster test add <id> --kind shell --cmd '<runs just this test>'`. A header's `parallel=no` becomes `testmaster test set <id> --serial`. New tests register unmeasured (`tier: "?"`), and the runner fills in reality.
-6. **Prove each new/updated test executes**: `testmaster suite run <id>…` right now. That also gives the registry its first real measurement. A test that was never executed is not maintained, it's decoration.
-7. Report one line per case touched: `+ <id> (new|updated, first run <result> in <ms>)`.
+5. **Register and prove**: Skill tool `testmaster-register` with every file you wrote or changed. It registers each test in any language, decides blocking and serial, sets each catalog case's `test` to the registry id, and runs each test once through the binary. A test that was never executed is not maintained, it's decoration.
+6. Report one line per case touched: `+ <id> (new|updated, first run <result> in <ms>)`, taken from the register report.
 
 ## Rules
 

@@ -544,6 +544,7 @@ func TestGreenRunStampsCatalogCases(t *testing.T) {
 	need(t, "git")
 	p := project(t, map[string]*Entry{
 		"ok":  {Kind: "shell", Cmd: "true && true"},
+		"ok2": {Kind: "shell", Cmd: "test -d ."},
 		"bad": {Kind: "shell", Cmd: "false"},
 	})
 	for _, args := range [][]string{{"init", "-q"}, {"-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "--allow-empty", "-m", "x"}} {
@@ -554,6 +555,8 @@ func TestGreenRunStampsCatalogCases(t *testing.T) {
 	write(t, p.Root, StateDir+"/catalog.json", `{"schema":1,"requirements":[{"id":"r","statement":"→ kept","cases":[
 	  {"id":"ok","covers":["a.go"]},
 	  {"id":"sc-1","test":"ok","then":"it ends with 📥2"},
+	  {"id":"both","test":["ok","ok2"]},
+	  {"id":"half","test":["ok","bad"]},
 	  {"id":"bad","covers":["b.go"]}]}]}`)
 	runAll(t, p, RunOptions{})
 	b, _ := os.ReadFile(filepath.Join(p.Root, StateDir, "catalog.json"))
@@ -570,8 +573,12 @@ func TestGreenRunStampsCatalogCases(t *testing.T) {
 	for _, c := range cat.Requirements[0].Cases {
 		stamped[c["id"].(string)] = c["last_validated_commit"] != nil
 	}
-	if !stamped["ok"] || !stamped["sc-1"] || stamped["bad"] {
-		t.Errorf("stamps = %v, want ok and sc-1 only", stamped)
+	if !stamped["ok"] || !stamped["sc-1"] || !stamped["both"] || stamped["half"] || stamped["bad"] {
+		t.Errorf("stamps = %v, want ok, sc-1 and both only", stamped)
+	}
+	unlinked, err := p.Unlinked()
+	if err != nil || len(unlinked) != 0 {
+		t.Errorf("Unlinked = %v, %v; every link names a registered test", unlinked, err)
 	}
 	if !strings.Contains(string(b), "📥2") || cat.Requirements[0].Statement != "→ kept" {
 		t.Errorf("catalog text mangled:\n%s", b)
