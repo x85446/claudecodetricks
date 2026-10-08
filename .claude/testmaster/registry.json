@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-06T00:14:41Z",
+  "updated": "2026-10-08T20:37:06Z",
   "sources": [
     {
       "kind": "go",
@@ -209,20 +209,6 @@
       "runs": 3,
       "avg_ms": 0,
       "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-06T00:14:41Z"
-    },
-    "dotfiles.statusline-check": {
-      "kind": "shell",
-      "name": "statusline-check",
-      "pkg": "dotfiles",
-      "cmd": "make statusline-check",
-      "file": "dotfiles/statusline-check.sh",
-      "parallel_safe": true,
-      "runs": 7,
-      "avg_ms": 4009,
-      "last_ms": 4711,
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-06T00:14:41Z"
