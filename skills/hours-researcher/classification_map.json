@@ -1,82 +1,82 @@
 {
- "_README": "USER-OWNED classification of real activity sources. Keys are case-insensitive SUBSTRINGS of a Claude-session cwd path (projects) or a browser hostname (domains); longest match wins. Each value sets: class (work|personal), and for work: company + nedo + category. NEDO = k8s work, machine bringup, cluster bringup/maintenance, k8s components (cilium, longhorn, etc.) \u2014 regardless of company. Anything unmatched is reported UNMAPPED and never auto-counted. THIS IS THE CORE JUDGEMENT \u2014 review/edit it so the truth base is trustworthy. STARTER VALUES BELOW ARE GUESSES, especially the ones marked REVIEW.",
+ "_README": "USER-OWNED classification of real activity sources. Keys are case-insensitive SUBSTRINGS of a Claude-session cwd path (projects) or a browser hostname (domains); longest match wins. Each value sets: class (work|personal), and for work: company + nedo + category. NEDO = k8s work, machine bringup, cluster bringup/maintenance, k8s components (cilium, longhorn, etc.) — regardless of company. Anything unmatched is reported UNMAPPED and never auto-counted. THIS IS THE CORE JUDGEMENT — review/edit it so the truth base is trustworthy. STARTER VALUES BELOW ARE GUESSES, especially the ones marked REVIEW.",
  "projects": {
   "iz-classic-OS": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "Edge OS / Wrangler (AlmaLinux)",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "mbed-edge-examples": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "Edge OS / Wrangler (AlmaLinux)",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "pe-utils": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "Edge OS / Wrangler (AlmaLinux)",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "meta-edge": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "edge-kubelet / Yocto",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "distro-pelion-edge": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "Edge OS / Wrangler (AlmaLinux)",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "site-infra": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "MaaS / node bringup",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "incusHost": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "incus host / node bringup",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "cloud-setup": {
    "class": "work",
    "company": "gravhl",
    "nedo": true,
    "category": "cluster migration",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "gravhl/backend": {
    "class": "work",
    "company": "gravhl",
    "nedo": true,
    "category": "cluster / backend infra",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "gravhl-media": {
    "class": "work",
    "company": "gravhl",
    "nedo": true,
    "category": "media cluster / cloudflared",
-   "master": "NEDO\u00b7Networking"
+   "master": "NEDO·Networking"
   },
   "mgmt/gravhl-infrastructure": {
    "class": "work",
    "company": "gravhl",
    "nedo": true,
    "category": "cluster mgmt",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "api-health-dashboard": {
    "class": "work",
@@ -97,14 +97,14 @@
    "company": "izuma",
    "nedo": true,
    "category": "cluster migration / infra (REVIEW)",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "x85446/claudecodetricks": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "izcrOS / Container OS spec (REVIEW)",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "x85446/kilroy": {
    "class": "work",
@@ -125,14 +125,14 @@
    "company": "izuma",
    "nedo": true,
    "category": "Myriplane control-plane",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "izuma/marketing": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business / SBIR / grants",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "tmctech/sites": {
    "class": "work",
@@ -153,70 +153,70 @@
    "company": "izuma",
    "nedo": true,
    "category": "Wrangler / k8s cluster",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "houses": {
    "class": "personal",
    "category": "house",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "6505-windows": {
    "class": "personal",
    "category": "house",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "financeSheets": {
    "class": "personal",
    "category": "finance / admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "personaldb": {
    "class": "personal",
    "category": "finance / admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "fintool": {
    "class": "personal",
    "category": "finance / admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "classicOSwork": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
-   "category": "classic OS / pelion-edge \u2192 AlmaLinux9",
-   "master": "NEDO\u00b7OS"
+   "category": "classic OS / pelion-edge → AlmaLinux9",
+   "master": "NEDO·OS"
   },
   "izcros": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "izcrOS container-OS / darkfactory spec",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "izuma/izdc": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "izdc requirements-graph / datacenter planning",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "sage-wiki": {
    "class": "personal",
    "category": "open-source PKB / learning",
-   "master": "Personal\u00b7Education"
+   "master": "Personal·Education"
   },
   "personal-mac-tools": {
    "class": "personal",
    "category": "personal dev tooling",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "tmctech/gitrunners": {
    "class": "work",
    "company": "tmctech",
    "nedo": true,
    "category": "CI runner cluster infra",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "tmctech/symplan": {
    "class": "work",
@@ -237,56 +237,161 @@
    "company": "izuma",
    "nedo": true,
    "category": "Myriplane density research",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "izuma/izuma-cloud-platform": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "cloud platform",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "izuma": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "izuma general (bare cwd)",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "x85446/taskmaster": {
    "class": "personal",
    "category": "personal dev tooling",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "x85446/llmtools": {
    "class": "personal",
    "category": "personal dev tooling",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "x85446/filemaster": {
    "class": "personal",
    "category": "personal dev tooling",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "x85446/osxvm": {
    "class": "personal",
    "category": "personal dev tooling",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "x85446/winvm": {
    "class": "personal",
    "category": "personal dev tooling",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "x85446/tax": {
    "class": "personal",
    "category": "tax / LLC admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "filecabinet": {
    "class": "personal",
    "category": "personal records",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
+  },
+  "x85446/osvms": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": true,
+   "category": "VM toolkit (osvms→izcli→izmachine)",
+   "master": "NEDO·Machine-Bringup"
+  },
+  "x85446/izcli": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": true,
+   "category": "VM toolkit (osvms→izcli→izmachine)",
+   "master": "NEDO·Machine-Bringup"
+  },
+  "izuma/izcli": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": true,
+   "category": "VM toolkit (osvms→izcli→izmachine)",
+   "master": "NEDO·Machine-Bringup"
+  },
+  "izuma/izmachine": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": true,
+   "category": "VM toolkit (osvms→izcli→izmachine)",
+   "master": "NEDO·Machine-Bringup"
+  },
+  "gravhl/GROUPS/backend": {
+   "class": "work",
+   "company": "gravhl",
+   "nedo": false,
+   "category": "gravhl-payments / policing rules experiment",
+   "master": "Gravhl"
+  },
+  "tmctech/incusmachines": {
+   "class": "work",
+   "company": "tmctech",
+   "nedo": true,
+   "category": "incus machine images",
+   "master": "NEDO·OS"
+  },
+  "tmctech/symmail": {
+   "class": "work",
+   "company": "tmctech",
+   "nedo": false,
+   "category": "symmail",
+   "master": "tmctech"
+  },
+  "izuma/RECODE": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": false,
+   "category": "codeconverter IAM/auth rewrite",
+   "master": "Izuma·Corp"
+  },
+  "tmctech/rs-storm": {
+   "class": "work",
+   "company": "tmctech",
+   "nedo": false,
+   "category": "rustorm SSH-config manager",
+   "master": "tmctech"
+  },
+  "tmctech/rustorm": {
+   "class": "work",
+   "company": "tmctech",
+   "nedo": false,
+   "category": "rustorm SSH-config manager",
+   "master": "tmctech"
+  },
+  "tmctech/keygenhelper": {
+   "class": "work",
+   "company": "tmctech",
+   "nedo": false,
+   "category": "keygenhelper SSH key tool",
+   "master": "tmctech"
+  },
+  "izuma/compass": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": false,
+   "category": "CUI enclave Audit Manager / Docs Engine",
+   "master": "Izuma·USGOV"
+  },
+  "izuma/izuma-dm-platform": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": true,
+   "category": "DM platform Helmfile k8s deployment",
+   "master": "NEDO·Cluster"
+  },
+  "izuma/izbooter": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": true,
+   "category": "edge OS boot/update/recovery scenarios",
+   "master": "NEDO·OS"
+  },
+  "izuma/exonet": {
+   "class": "work",
+   "company": "izuma",
+   "nedo": true,
+   "category": "exonet relay / WireGuard mesh overlay",
+   "master": "NEDO·Networking"
   }
  },
  "domains": {
@@ -295,750 +400,750 @@
    "company": "gravhl",
    "nedo": true,
    "category": "ArgoCD / k8s GitOps",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "mgmt.gravhl.com": {
    "class": "work",
    "company": "gravhl",
    "nedo": true,
    "category": "cluster mgmt UI",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "main.gravhl.com": {
    "class": "work",
    "company": "gravhl",
    "nedo": true,
    "category": "gravhl app",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "10.7.160.9:5240": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "MaaS / node bringup",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "developer.izumanetworks.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "Edge OS docs",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "dcaux.izumanetworks.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "BMC / iLO bringup",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "discuss.linuxcontainers.org": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "incus",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "entra.microsoft.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "incus Entra/OIDC",
-   "master": "NEDO\u00b7Networking"
+   "master": "NEDO·Networking"
   },
   "sam.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SAM.gov / federal registration",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "uspto.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "patent / USPTO",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "fees.uspto.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "patent / USPTO",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "patents.google.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "patent research",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "sbir.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / grants",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "secure.chase.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business finance",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "qbo.intuit.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business finance",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "familysearch.org": {
    "class": "personal",
    "category": "genealogy",
-   "master": "Personal\u00b7Genealogy"
+   "master": "Personal·Genealogy"
   },
   "findagrave.com": {
    "class": "personal",
    "category": "genealogy",
-   "master": "Personal\u00b7Genealogy"
+   "master": "Personal·Genealogy"
   },
   "ancestry.com": {
    "class": "personal",
    "category": "genealogy",
-   "master": "Personal\u00b7Genealogy"
+   "master": "Personal·Genealogy"
   },
   "athenahealth.com": {
    "class": "personal",
    "category": "health",
-   "master": "Personal\u00b7Health"
+   "master": "Personal·Health"
   },
   "phreesia.net": {
    "class": "personal",
    "category": "health",
-   "master": "Personal\u00b7Health"
+   "master": "Personal·Health"
   },
   "cochlear.com": {
    "class": "personal",
    "category": "health",
-   "master": "Personal\u00b7Health"
+   "master": "Personal·Health"
   },
   "ascension.org": {
    "class": "personal",
    "category": "health",
-   "master": "Personal\u00b7Health"
+   "master": "Personal·Health"
   },
   "autozone.com": {
    "class": "personal",
    "category": "cars",
-   "master": "Personal\u00b7Cars"
+   "master": "Personal·Cars"
   },
   "yotatech.com": {
    "class": "personal",
    "category": "cars",
-   "master": "Personal\u00b7Cars"
+   "master": "Personal·Cars"
   },
   "advanceautoparts.com": {
    "class": "personal",
    "category": "cars",
-   "master": "Personal\u00b7Cars"
+   "master": "Personal·Cars"
   },
   "eanesisd.rankone.com": {
    "class": "personal",
    "category": "kids / education",
-   "master": "Personal\u00b7Kids"
+   "master": "Personal·Kids"
   },
   "performancecourse.com": {
    "class": "personal",
    "category": "kids / sports",
-   "master": "Personal\u00b7Kids"
+   "master": "Personal·Kids"
   },
   "exposureevents.com": {
    "class": "personal",
    "category": "kids / sports",
-   "master": "Personal\u00b7Kids"
+   "master": "Personal·Kids"
   },
   "ballertv.com": {
    "class": "personal",
    "category": "kids / sports",
-   "master": "Personal\u00b7Kids"
+   "master": "Personal·Kids"
   },
   "delta.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "royalcaribbean.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "reservecalifornia.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "hulu.com": {
    "class": "personal",
    "category": "entertainment",
-   "master": "Personal\u00b7Entertainment"
+   "master": "Personal·Entertainment"
   },
   "peacocktv.com": {
    "class": "personal",
    "category": "entertainment",
-   "master": "Personal\u00b7Entertainment"
+   "master": "Personal·Entertainment"
   },
   "imdb.com": {
    "class": "personal",
    "category": "entertainment",
-   "master": "Personal\u00b7Entertainment"
+   "master": "Personal·Entertainment"
   },
   "ebay.com": {
    "class": "personal",
    "category": "shopping (REVIEW: server parts may be work)",
-   "master": "Personal\u00b7Shopping"
+   "master": "Personal·Shopping"
   },
   "amazon.com": {
    "class": "personal",
    "category": "shopping (REVIEW)",
-   "master": "Personal\u00b7Shopping"
+   "master": "Personal·Shopping"
   },
   "10.7.112.1": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "cluster mgmt service",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "10.7.158.": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "cluster / BMC node bringup",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "net.tlaloc.us": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "cluster network",
-   "master": "NEDO\u00b7Networking"
+   "master": "NEDO·Networking"
   },
   "unifi.ui.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "network bringup",
-   "master": "NEDO\u00b7Networking"
+   "master": "NEDO·Networking"
   },
   "grafana.us-east-1.mbedcloud.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "cluster monitoring",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "portal.mbedcloud.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "mbed cloud ops (REVIEW)",
-   "master": "Izuma\u00b7Corp"
+   "master": "Izuma·Corp"
   },
   "secure.login.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "federal / SBIR auth",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "certifications.sba.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / SBA",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "app.ramp.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business finance",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "employ.remote.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business / HR",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "switchdock.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "datacenter procurement (REVIEW)",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "alibaba.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "datacenter procurement (REVIEW)",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "www.dell.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "server procurement (REVIEW)",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "bankus.etrade.com": {
    "class": "personal",
    "category": "finance",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "us.etrade.com": {
    "class": "personal",
    "category": "finance",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "photos.google.com": {
    "class": "personal",
    "category": "photos",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "facebook.com": {
    "class": "personal",
    "category": "social",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "amctheatres.com": {
    "class": "personal",
    "category": "entertainment",
-   "master": "Personal\u00b7Entertainment"
+   "master": "Personal·Entertainment"
   },
   "ferguson.com": {
    "class": "personal",
    "category": "house / shopping (REVIEW)",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "apple.com": {
    "class": "personal",
    "category": "shopping (REVIEW)",
-   "master": "Personal\u00b7Shopping"
+   "master": "Personal·Shopping"
   },
   "xbyte.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "server procurement",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "dash.cloudflare.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "networking",
-   "master": "NEDO\u00b7Networking"
+   "master": "NEDO·Networking"
   },
   "portal.izuma.io": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "izuma product / ops",
-   "master": "Izuma\u00b7Corp"
+   "master": "Izuma·Corp"
   },
   "utils.izuma.io": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "izuma infra",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "eaglepointfunding.sharepoint.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / USGOV grants",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "mymidlandmortgage.com": {
    "class": "personal",
    "category": "mortgage",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "harborfreight.com": {
    "class": "personal",
    "category": "house / tools",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "linkedin.com": {
    "class": "personal",
    "category": "professional / social",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "usaa.com": {
    "class": "personal",
    "category": "finance",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "ecoticias.com": {
    "class": "personal",
    "category": "news",
-   "master": "Personal\u00b7Education"
+   "master": "Personal·Education"
   },
   "ble-linker.com": {
    "class": "personal",
    "category": "misc",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "api.id.me": {
    "class": "personal",
    "category": "identity",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "ubuntu.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "Ubuntu server / OS",
-   "master": "NEDO\u00b7OS"
+   "master": "NEDO·OS"
   },
   "gitlab.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "dev / GitLab",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "swicoauctions.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "server procurement",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "10.100.": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "internal infra",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "app.onpay.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "payroll / business finance",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "vrbo.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "izuma.cloudflareaccess.com": {
    "class": "work",
    "company": "gravhl",
    "nedo": true,
    "category": "Gravhl Management / cluster",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "mbedcloud.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "izuma device mgmt / monitoring",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "192.168.155.1": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "EdgeOS router / networking",
-   "master": "NEDO\u00b7Networking"
+   "master": "NEDO·Networking"
   },
   "skaffold.dev": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "k8s dev tooling",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "kube-vip.io": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "k8s component (kube-vip)",
-   "master": "NEDO\u00b7K8s-Components"
+   "master": "NEDO·K8s-Components"
   },
   "docs.tilt.dev": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "k8s dev tooling (tilt)",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "metalbear.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "k8s dev tooling (mirrord)",
-   "master": "NEDO\u00b7Cluster"
+   "master": "NEDO·Cluster"
   },
   "linbit.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "block storage (DRBD/LINBIT)",
-   "master": "NEDO\u00b7K8s-Components"
+   "master": "NEDO·K8s-Components"
   },
   "klarasystems.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "ZFS / storage",
-   "master": "NEDO\u00b7K8s-Components"
+   "master": "NEDO·K8s-Components"
   },
   "account.ui.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "ubiquiti / networking",
-   "master": "NEDO\u00b7Networking"
+   "master": "NEDO·Networking"
   },
   "www.chase.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business finance",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "dnb.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business / D&B",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "accounts.intuit.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business finance / QuickBooks",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "irs.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business / tax",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "acquisition.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / USGOV",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "navy.mil": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / USGOV",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "sba.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / SBA",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "izuma.io": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "izuma corporate",
-   "master": "Izuma\u00b7Corp"
+   "master": "Izuma·Corp"
   },
   "izumanetworks.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "izuma corporate",
-   "master": "Izuma\u00b7Corp"
+   "master": "Izuma·Corp"
   },
   "etrade.com": {
    "class": "personal",
    "category": "finance",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "bannerlife.com": {
    "class": "personal",
    "category": "life insurance",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "lgamerica.com": {
    "class": "personal",
    "category": "life insurance",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "finance.yahoo.com": {
    "class": "personal",
    "category": "news / finance",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "chewy.com": {
    "class": "personal",
    "category": "pets",
-   "master": "Personal\u00b7Shopping"
+   "master": "Personal·Shopping"
   },
   "homedepot.com": {
    "class": "personal",
    "category": "house",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "johnstonesupply.com": {
    "class": "personal",
    "category": "house / HVAC",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "abcofnebraska.com": {
    "class": "personal",
    "category": "house / roof",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "englertinc.com": {
    "class": "personal",
    "category": "house / roof",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "metalroofnation.com": {
    "class": "personal",
    "category": "house / roof",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "rbafibrexwindows.com": {
    "class": "personal",
    "category": "house / windows",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "ecochiefproducts.com": {
    "class": "personal",
    "category": "house / roof",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "texas.planning.org": {
    "class": "personal",
    "category": "job search",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "tml.careerwebsite.com": {
    "class": "personal",
    "category": "job search",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "tcma.org": {
    "class": "personal",
    "category": "job search",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "parks.ca.gov": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "rottentomatoes.com": {
    "class": "personal",
    "category": "entertainment",
-   "master": "Personal\u00b7Entertainment"
+   "master": "Personal·Entertainment"
   },
   "fandango.com": {
    "class": "personal",
    "category": "entertainment",
-   "master": "Personal\u00b7Entertainment"
+   "master": "Personal·Entertainment"
   },
   "ramp.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "business finance (Ramp)",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "login.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / USGOV auth",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "amazoncognito.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / USGOV portal",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "shopify.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "server procurement (MITXPC)",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "eanesisd.zoom.us": {
    "class": "personal",
    "category": "kids / education",
-   "master": "Personal\u00b7Kids"
+   "master": "Personal·Kids"
   },
   "monoprice.com": {
    "class": "personal",
    "category": "shopping",
-   "master": "Personal\u00b7Shopping"
+   "master": "Personal·Shopping"
   },
   "livescience.com": {
    "class": "personal",
    "category": "tech / education",
-   "master": "Personal\u00b7Education"
+   "master": "Personal·Education"
   },
   "koolance.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
    "category": "server cooling / machine bringup",
-   "master": "NEDO\u00b7Machine-Bringup"
+   "master": "NEDO·Machine-Bringup"
   },
   "tubitv.com": {
    "class": "personal",
-   "master": "Personal\u00b7Entertainment",
+   "master": "Personal·Entertainment",
    "category": "streaming (kids)"
   },
   "pluto.tv": {
    "class": "personal",
-   "master": "Personal\u00b7Entertainment",
+   "master": "Personal·Entertainment",
    "category": "streaming (kids)"
   },
   "portal.io": {
    "class": "personal",
-   "master": "Personal\u00b7House",
+   "master": "Personal·House",
    "category": "home AV / design (REVIEW)"
   },
   "kvue.com": {
    "class": "personal",
-   "master": "Personal\u00b7Misc",
+   "master": "Personal·Misc",
    "category": "local news"
   },
   "reddit.com": {
    "class": "work",
    "company": "izuma",
    "nedo": true,
-   "master": "NEDO\u00b7Machine-Bringup",
+   "master": "NEDO·Machine-Bringup",
    "category": "homelab/hardware (REVIEW: title-driven)"
   },
   "kvaser.com": {
@@ -1046,196 +1151,196 @@
    "company": "izuma",
    "nedo": false,
    "category": "hardware research (CAN / SMARC / PCB)",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "vector.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "hardware research (CAN / SMARC / PCB)",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "digikey.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "hardware research (CAN / SMARC / PCB)",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "flux.ai": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "hardware research (CAN / SMARC / PCB)",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "ipi.wiki": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "hardware research (CAN / SMARC / PCB)",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "nordicsemi.com": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "hardware research (CAN / SMARC / PCB)",
-   "master": "Izuma\u00b7Business"
+   "master": "Izuma·Business"
   },
   "cpa.state.tx.us": {
    "class": "personal",
    "category": "tax / LLC admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "sos.state.tx.us": {
    "class": "personal",
    "category": "tax / LLC admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "icis.corp.delaware.gov": {
    "class": "personal",
    "category": "tax / LLC admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "corp.delaware.gov": {
    "class": "personal",
    "category": "tax / LLC admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "texasregisteredagents.com": {
    "class": "personal",
    "category": "tax / LLC admin",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "www.paypal.com": {
    "class": "personal",
    "category": "finance / banking",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "account.venmo.com": {
    "class": "personal",
    "category": "finance / banking",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "americanexpress.com": {
    "class": "personal",
    "category": "finance / banking",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "navyfederal.org": {
    "class": "personal",
    "category": "finance / banking",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "verify.id.me": {
    "class": "personal",
    "category": "finance / banking",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "dcc.godaddy.com": {
    "class": "personal",
    "category": "finance / banking",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "sso.godaddy.com": {
    "class": "personal",
    "category": "finance / banking",
-   "master": "Personal\u00b7Finance"
+   "master": "Personal·Finance"
   },
   "mail.yahoo.com": {
    "class": "personal",
    "category": "personal email",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "americantall.com": {
    "class": "personal",
    "category": "shopping",
-   "master": "Personal\u00b7Shopping"
+   "master": "Personal·Shopping"
   },
   "www.temu.com": {
    "class": "personal",
    "category": "shopping",
-   "master": "Personal\u00b7Shopping"
+   "master": "Personal·Shopping"
   },
   "www.marriott.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "www.united.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "www.southwest.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "www.booking.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "tickets.la28.org": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "public-api.eventim.com": {
    "class": "personal",
    "category": "travel",
-   "master": "Personal\u00b7Travel"
+   "master": "Personal·Travel"
   },
   "www.zillow.com": {
    "class": "personal",
    "category": "real estate",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "www.redfin.com": {
    "class": "personal",
    "category": "real estate",
-   "master": "Personal\u00b7House"
+   "master": "Personal·House"
   },
   "tx-familyportal.cambiumast.com": {
    "class": "personal",
    "category": "kids / education",
-   "master": "Personal\u00b7Kids"
+   "master": "Personal·Kids"
   },
   "austinpetsalive.org": {
    "class": "personal",
    "category": "pets",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "donate.austinpetsalive.org": {
    "class": "personal",
    "category": "pets",
-   "master": "Personal\u00b7Misc"
+   "master": "Personal·Misc"
   },
   "simpler.grants.gov": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / grants",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "www.dodsbirsttr.mil": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "SBIR / grants",
-   "master": "Izuma\u00b7USGOV"
+   "master": "Izuma·USGOV"
   },
   "izumanetworks.atlassian.net": {
    "class": "work",
    "company": "izuma",
    "nedo": false,
    "category": "confluence / jira",
-   "master": "Izuma\u00b7Corp"
+   "master": "Izuma·Corp"
   }
  },
- "_DROP_README": "Hosts (substring match) discarded entirely as noise \u2014 not counted, not in UNMAPPED, only tallied as 'dropped N'. Per user review.",
+ "_DROP_README": "Hosts (substring match) discarded entirely as noise — not counted, not in UNMAPPED, only tallied as 'dropped N'. Per user review.",
  "drop": [
   "remotedesktop.google.com",
   "play.google.com",
@@ -1276,7 +1381,7 @@
    "class": "work",
    "company": "izuma",
    "nedo": true,
-   "master": "NEDO\u00b7K8s-Components",
+   "master": "NEDO·K8s-Components",
    "category": "k8s component"
   },
   {
@@ -1284,7 +1389,7 @@
    "class": "work",
    "company": "izuma",
    "nedo": true,
-   "master": "NEDO\u00b7Cluster",
+   "master": "NEDO·Cluster",
    "category": "cluster / CAPI / control-plane"
   },
   {
@@ -1292,7 +1397,7 @@
    "class": "work",
    "company": "izuma",
    "nedo": true,
-   "master": "NEDO\u00b7OS",
+   "master": "NEDO·OS",
    "category": "OS / Wrangler / edge"
   },
   {
@@ -1300,7 +1405,7 @@
    "class": "work",
    "company": "izuma",
    "nedo": true,
-   "master": "NEDO\u00b7Networking",
+   "master": "NEDO·Networking",
    "category": "networking"
   },
   {
@@ -1308,7 +1413,7 @@
    "class": "work",
    "company": "izuma",
    "nedo": true,
-   "master": "NEDO\u00b7Machine-Bringup",
+   "master": "NEDO·Machine-Bringup",
    "category": "server / machine bringup"
   },
   {
@@ -1316,7 +1421,7 @@
    "class": "work",
    "company": "izuma",
    "nedo": false,
-   "master": "Izuma\u00b7USGOV",
+   "master": "Izuma·USGOV",
    "category": "SBIR / USGOV / legal"
   },
   {
@@ -1324,57 +1429,57 @@
    "class": "work",
    "company": "izuma",
    "nedo": false,
-   "master": "Izuma\u00b7Business",
+   "master": "Izuma·Business",
    "category": "business / finance"
   },
   {
    "match": "(?i)(diabetes|blood sugar|headache|csf leak|leukemia|hearing|single.?sided deaf|symptom|methylphenidate|lisdex|cochlear|roehm|rohem|audiolog|\\bent\\b|short term memory|losing.*memory|health insurance|\\bbcbs\\b|banner ?life|life insurance|vaccine|providence|\\baudhd\\b)",
    "class": "personal",
-   "master": "Personal\u00b7Health",
+   "master": "Personal·Health",
    "category": "health"
   },
   {
    "match": "(?i)(metal roof|standing seam|oil canning|roofscape|seamless.*seam|\\bduct\\b|\\bhvac\\b|johnstone|sliding glass|double.?(pane|hung)|window (ordering|order|drawing)|architectu?ral window|aluminum window|window.*tarr?iff|tarr?iff.*window|series 1556|renewal by andersen|fibrex|10 squares|\\bsand(er|ing)\\b|threaded rod|belt sander|disc sander|drill press|table saw|schlage|smart lock|harbor freight|home ?depot|ledgerock)",
    "class": "personal",
-   "master": "Personal\u00b7House",
+   "master": "Personal·House",
    "category": "house"
   },
   {
    "match": "(?i)(4-?runner|nissan leaf|oil filter|windshield|\\bnissan\\b|\\btoyota\\b|brake pad|\\btires?\\b|volvo|hotcars)",
    "class": "personal",
-   "master": "Personal\u00b7Cars",
+   "master": "Personal·Cars",
    "category": "cars"
   },
   {
    "match": "(?i)(genealogy|ancestry|mccollum|strunk|\\bcensus\\b|findagrave|marriage 1[0-9]{3})",
    "class": "personal",
-   "master": "Personal\u00b7Genealogy",
+   "master": "Personal·Genealogy",
    "category": "genealogy"
   },
   {
    "match": "(?i)(basketball|middle school|eanes|summer camp|halftime|exposure events|\\bschool\\b|\\btubi\\b|\\bpluto\\b|two earbuds|ipad.*earbud|playstore|helping kids)",
    "class": "personal",
-   "master": "Personal\u00b7Kids",
+   "master": "Personal·Kids",
    "category": "kids / education"
   },
   {
    "match": "(?i)(cruise|alaska|\\bjapan\\b|\\bturo\\b|royal caribbean|reservecalifornia|glacier bay|zipair|port aransas|tokyo|parks\\.ca\\.gov|camping|\\bvrbo\\b|midland tx)",
    "class": "personal",
-   "master": "Personal\u00b7Travel",
+   "master": "Personal·Travel",
    "category": "travel"
   },
   {
    "match": "(?i)(the rookie|\\bnba\\b|\\b2k\\b|lakers|nuggets|spurs|imdb|braveheart|battle\\s?star|galactica|mandalorian|supergirl|star wars|rotten ?tomatoes|fandango|showtimes|movies? near me|what movies|movies has|been in\\?|cell block 99|the expanse|leviathan wakes|breadwinner|sheep detective|wemby|brunson|usmnt|karmelo|jordan finals|nintendo)",
    "class": "personal",
-   "master": "Personal\u00b7Entertainment",
+   "master": "Personal·Entertainment",
    "category": "entertainment"
   },
   {
    "match": "(?i)(city manager|assistant city manager|planning director|tml\\.org|tml city|\\btcma\\b|bee cave|giddings|georgetown.*acm|acm jobs|texas\\.planning|municipal league)",
    "class": "personal",
-   "master": "Personal\u00b7Misc",
+   "master": "Personal·Misc",
    "category": "job search"
   }
  ],
- "_MASTER_README": "Controlled MASTER vocabulary (report-item level). Work-NEDO: NEDO\u00b7Cluster, NEDO\u00b7K8s-Components, NEDO\u00b7OS, NEDO\u00b7Machine-Bringup, NEDO\u00b7Networking. Work non-NEDO: Izuma\u00b7Business, Izuma\u00b7USGOV, Izuma\u00b7Corp, Gravhl, tmctech. Personal: Personal\u00b7{Health,House,Cars,Kids,Travel,Finance,Entertainment,Genealogy,Shopping,Education,Misc}. Every projects/domains/keywords entry carries an explicit `master`; classify.py reads it and prints `MASTER | company \u2014 sub` per line."
+ "_MASTER_README": "Controlled MASTER vocabulary (report-item level). Work-NEDO: NEDO·Cluster, NEDO·K8s-Components, NEDO·OS, NEDO·Machine-Bringup, NEDO·Networking. Work non-NEDO: Izuma·Business, Izuma·USGOV, Izuma·Corp, Gravhl, tmctech. Personal: Personal·{Health,House,Cars,Kids,Travel,Finance,Entertainment,Genealogy,Shopping,Education,Misc}. Every projects/domains/keywords entry carries an explicit `master`; classify.py reads it and prints `MASTER | company — sub` per line."
 }

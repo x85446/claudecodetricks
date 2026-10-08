@@ -59,8 +59,11 @@ into NEDO's one-activity-per-slot format. Full method: [evidence-placement.md](e
    ```
    python3 evidence_hours.py place --week <tab> --section travis \
            --map project_task_map.json --browser \
-           --occupied /tmp/hm_occ.json [--cap <hours>] --json /tmp/hm_place.json
+           --occupied /tmp/hm_occ.json --adjacent --cap <30 − meeting hours> \
+           --json /tmp/hm_place.json
    ```
+   The SB sheet counts meeting cells in the weekly total, so the cap is 30 h
+   minus the week's joint/meeting hours in the Travis section.
    Use `--tz -5` for May–Oct (CDT), `-6` for Nov–Mar (CST).
 5. The script prints, and writes to `/tmp/hm_place.json`, the `(col,start,end,task)`
    ranges — each corresponding to a real 30-min window where that task was worked.

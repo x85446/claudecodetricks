@@ -246,6 +246,65 @@ def assign(cell, occupied, cap_slots):
             prev = pick
     return assigned, present, quota
 
+def assign_adjacent(cell, occupied, cap_slots, section, cnt):
+    """Multitasking unfold: every task keeps its full presence time. Each slot
+    keeps one task (contiguity-first); the other concurrent tasks shift to the
+    nearest free slot in the same column, preferring the side that extends a
+    same-task run. --cap trims each task proportionally, dropping its shifted
+    slots first, then its lowest-density (fewest events) real slots."""
+    cells = {k: v for k, v in cell.items() if k not in occupied}
+    present = collections.Counter()
+    for tasks in cells.values():
+        for t in tasks:
+            if not t.startswith("UNMAPPED:"):
+                present[t] += 1
+    assigned, extras = {}, []
+    by_day = collections.defaultdict(list)
+    for (col, row) in cells:
+        by_day[col].append(row)
+    for col, rows in by_day.items():
+        prev = None
+        for row in sorted(rows):
+            active = sorted(t for t in cells[(col, row)] if not t.startswith("UNMAPPED:"))
+            if not active:
+                prev = None
+                continue
+            pick = prev if prev in active else max(active, key=lambda t: present[t])
+            assigned[(col, row)] = pick
+            extras += [(col, row, t) for t in active if t != pick]
+            prev = pick
+    base = 2 if section == "travis" else 52
+    lo, hi = base, base + 47
+    density = {k: sum(n for t, n in cnt.get(k, {}).items() if not t.startswith("UNMAPPED:"))
+               for k in assigned}
+    shifted = set()
+    for col, row, t in extras:
+        for d in range(1, 48):
+            opts = [r for r in (row - d, row + d)
+                    if lo <= r <= hi and (col, r) not in occupied and (col, r) not in assigned]
+            if not opts:
+                continue
+            same = [r for r in opts if assigned.get((col, r + (1 if r < row else -1))) == t]
+            k = (col, (same or opts)[0])
+            assigned[k] = t; shifted.add(k); density[k] = 0
+            break
+    if cap_slots is not None and len(assigned) > cap_slots:
+        per = collections.defaultdict(list)
+        for k, t in assigned.items():
+            per[t].append(k)
+        n = len(assigned)
+        quota = {t: len(v) * cap_slots // n for t, v in per.items()}
+        for t in sorted(per, key=lambda t: -(len(per[t]) * cap_slots % n)):
+            if sum(quota.values()) >= cap_slots: break
+            quota[t] += 1
+        keep = {}
+        for t, ks in per.items():
+            ks.sort(key=lambda k: (k in shifted, -density[k], k))
+            for k in ks[:quota[t]]:
+                keep[k] = t
+        assigned = keep
+    return assigned, present, collections.Counter()
+
 def to_ranges(assigned):
     out = []
     by_col = collections.defaultdict(list)
@@ -281,6 +340,9 @@ def main():
     ap.add_argument("--dominant", action="store_true",
                     help="attention-based: place a task only in slots where it was the "
                          "dominant activity (most events), not a background session")
+    ap.add_argument("--adjacent", action="store_true",
+                    help="multitasking: each task keeps its full time; concurrent tasks "
+                         "shift to the nearest free slot the same day")
     ap.add_argument("--tz", type=float, default=-5.0, help="local offset from UTC (CDT=-5, CST=-6)")
     ap.add_argument("--json")
     a = ap.parse_args()
@@ -316,7 +378,10 @@ def main():
         occupied = {tuple(x) for x in json.load(open(a.occupied))}
     cap_slots = None if a.nocap else int(round(a.cap * 2))
     cell = shift_occupied(cell, occupied, a.section)  # work-during-meeting -> adjacent slot
-    assigned, present, quota = assign(cell, occupied, cap_slots)
+    if a.adjacent:
+        assigned, present, quota = assign_adjacent(cell, occupied, cap_slots, a.section, cnt)
+    else:
+        assigned, present, quota = assign(cell, occupied, cap_slots)
     ranges = to_ranges(assigned)
     tally = collections.Counter()
     for c, x, y, t in ranges:

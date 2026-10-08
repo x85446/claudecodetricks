@@ -22,8 +22,8 @@ style/format reference and a last-resort layout aid (see Fallback below).
 
 ## Integrity rules (hard — never violate)
 
-1. **Only place a slot where there is real evidence of work in that 30-min wall-clock window.** No invented windows. No RNG-chosen days/times.
-2. **Total placed time = real human working time, never more.** `--cap` can only trim *down* (e.g. a Softbank reporting ceiling). It can never pad up.
+1. **Every placed slot traces to real evidence of that task.** No invented windows. No RNG-chosen days/times. Under `--adjacent`, a concurrent task sits in the nearest free slot the same day as its real slot.
+2. **Total placed time never exceeds real task time.** NEDO accepts multitasking (Travis's policy), so concurrent tasks each keep their time under `--adjacent`. `--cap` can only trim *down*. It can never pad up.
 3. **Never auto-assign UNMAPPED activity to a task.** Anything not in `project_task_map.json` is reported separately for the user to decide. Non-Izuma projects (e.g. personal repos) must not become NEDO hours.
 4. **If a real activity has no timestamp evidence** (whiteboard, phone, in-person), do NOT synthesize it. Ask the user for the actual window, or leave it out.
 
@@ -40,6 +40,7 @@ style/format reference and a last-resort layout aid (see Fallback below).
   authorized — it represents the reportable portion of real work, never inflates.
 - `--occupied occ.json` — `[[col,row],...]` joint/meeting cells to avoid (from Step 3's writability read).
 - `--dominant` — attention-based placement: a task takes a slot only when it was the slot's dominant activity by event count. Without it, a mapped task merely present (e.g. an autonomous session emitting events in the background while the human works on something unmapped) claims the whole slot. Use `--dominant` whenever background/autonomous Claude sessions ran during the week.
+- `--adjacent` — **default for Travis.** Multitasking unfold: each slot keeps one task (contiguity-first); every other concurrent NEDO task shifts to the nearest free slot the same day, preferring the side that extends its run. Over the cap, each task trims proportionally, shifted slots first, then its lowest-density real slots.
 - `--tz` — local UTC offset (CDT = −5 May–Oct, CST = −6 Nov–Mar).
 
 ## Procedure

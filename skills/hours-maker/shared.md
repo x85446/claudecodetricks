@@ -36,12 +36,11 @@ Otherwise:
 1. Call `mcp__workspace-mcp__get_spreadsheet_info`. Filter sheet names to regex `^\d{1,2}/\d{1,2}/\d{2}$`.
 2. Pick latest by chronological date. **Run pre-validation on it** — if A1 doesn't match name, stop and ask user to fix (otherwise we propagate bad date to the new tab).
 3. Compute `new_tab` = latest + 7 days, formatted `M/D/YY` (no leading zeros).
-4. Duplicate: `mcp__workspace-mcp__create_sheet(source_sheet_name=<latest>, sheet_name=<new_tab>)`.
-5. **In parallel** (single response, multiple tool calls), clear the three data zones and set A1:
-   - `modify_sheet_values clear_values=true` on `'<new_tab>'!B2:H49`
-   - `modify_sheet_values clear_values=true` on `'<new_tab>'!B52:H99`
-   - `modify_sheet_values clear_values=true` on `'<new_tab>'!B101:H148`
-   - `modify_sheet_values` on `'<new_tab>'!A1` with value `='<latest_tab>'!A1 + 7`
+4. Duplicate with gspread and the tmctech SA (`~/.ssh/google-tmctech-mcp.json`, write access) — `mcp__workspace-mcp__create_sheet` cannot copy a tab: `sh.duplicate_sheet(src.id, insert_sheet_index=src.index+1, new_sheet_name=<new_tab>)`.
+5. Reset the data zones and set A1 (one `batch_update`, `USER_ENTERED`):
+   - `B2:H49` ← `=<col><row+99>` in every cell (Travis joint refs; never clear them)
+   - `B52:H99` and `B101:H148` ← cleared
+   - `A1` ← `='<latest_tab>'!A1 + 7`
 6. Verify A1 resolves correctly: `read_sheet_values '<new_tab>'!A1:H1` — confirm Wed date matches the new tab name.
 
 For freshly-created tabs, you can **skip Step 6s's Travis-formula sample check** — the duplicate preserves Travis's `=B101` formulas from the source tab. Only user-supplied tabs need that check.
@@ -63,6 +62,8 @@ Make **two parallel calendar searches** in a single response:
 2. `query="Softbank"`, same window.
 
 Repeat with `offset` if `moreResults=true`.
+
+Also run `query="*"` for the same window. The Myriplane team's titles often lack "Myriplane" (`Daily Sync up`, `Deep Dive Meeting`, `Sprint Review & Planning`, design discussions such as `Gateway API discussion`), and SoftBank-organized or Ryu's internal calls lack "Softbank". Include events attended by the Myriplane team (Yash, Suprith, Abhishek, Anirudh, Utkarsh) or organized from `g.softbank.co.jp`/Ryu. Exclude unrelated series (e.g. EPF funding check-ins, the Izuma Weekly Call).
 
 **Filter** each event:
 - `isCancelled` is false
@@ -90,6 +91,10 @@ For each event:
 | `Myriplane sync` | `Myriplane meeting` |
 | `Myriplane - Code Reviews` or `Code review` (Myriplane series) | `Code review` |
 | `Myriplane standup / dedicated` | `Myriplane Standup` |
+| `Daily Sync up` (Myriplane team) | `Myriplane Standup` |
+| `Deep Dive Meeting`, `Sprint Review & Planning`, other Myriplane-team discussions | `Myriplane meeting` |
+| `Internal Sync-up` (Ryu) | `Internal Softbank sync` |
+| SoftBank-organized (`g.softbank.co.jp`) | `Softbank meeting` |
 | any other `Myriplane *` | `Myriplane meeting` |
 | `SoftBank Weekly Meeting` | `SoftBank Weekly Meeting` |
 | `SoftBank PMO Meeting` | `SoftBank PMO Meeting` |
