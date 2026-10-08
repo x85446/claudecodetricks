@@ -17,7 +17,18 @@
   "izuma/iws": "Myriplane density research",
   "izuma/izdc": "datacenter requirements planning for cluster deployment",
   "izuma/izuma-cloud-platform": "cloud platform cluster work",
-  "tmctech/gitrunners": "CI runner cluster infrastructure"
+  "tmctech/gitrunners": "CI runner cluster infrastructure",
+  "x85446/osvms": "myriplane infra env bringup",
+  "tmctech/incusmachines": "myriplane infra env bringup",
+  "x85446/izcli": "alternative to incus provisioning",
+  "izuma/izcli": "alternative to incus provisioning",
+  "izuma/izmachine": "alternative to incus provisioning",
+  "x85446/claudecodetricks": "Container OS specifications",
+  "izuma/izuma-dm-platform": "device management platform k8s deployment",
+  "izuma/izbooter": "edge OS boot/update/recovery research",
+  "izuma/izcros": "Container OS specifications",
+  "izuma/wrangler": "AlmaLinux9 Wrangler maintenance",
+  "izuma/exonet": "cluster mesh networking (WireGuard overlay)"
  },
  "domains": {
   "argocd-mgmt.gravhl.com": "Myriplane CAPI with ArgoCD",
