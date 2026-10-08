@@ -110,7 +110,7 @@ endif
 .PHONY: deps deps-check deps-update
 .PHONY: fmt fmt-check vet lint check
 .PHONY: install uninstall
-.PHONY: coverage coverage-html statusline-check tutorial-box-test iterate-contract-test
+.PHONY: coverage coverage-html tutorial-box-test iterate-contract-test
 .PHONY: nightly-install nightly-uninstall nightly-status nightly-tick
 .PHONY: run watch
 .PHONY: version info
@@ -243,9 +243,6 @@ test-hook: build  ## Test hooks with sample JSON input
 	$(Q)echo '{"hook_event_name":"PostToolUse","tool_name":"Write","cwd":"/tmp","tool_input":{"file_path":"test.txt"},"permission_mode":"default"}' | $(GIT_BIN) && \
 		echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) git-committer test passed" || \
 		echo -e "  $(COLOR_YELLOW)⚠$(COLOR_RESET) git-committer test completed with errors"
-
-statusline-check:  ## Byte-level fixtures for the statusline's ⚙️ segment (colours, next letter, ⏰, live/stalled)
-	$(Q)./dotfiles/statusline-check.sh
 
 tutorial-box-test:  ## Render test for the tutorial runtime's boxes and menu on a pty at 60/80/132 columns (box-1..box-7)
 	$(Q)bash skills/tutorial/tests/box-test.sh
