@@ -43,9 +43,9 @@ Open: <count>
   - `questions (for human)` — open items only a human can clear: an unreached-but-pending `human-gate:` step, blocked-on-operator asks still unanswered, explicit questions parked in the Status/Log or Decisions log. 0 when none.
 - `Archived` — count of files in `archive/` (count `.md` files only, not `.teams/` directories).
 
-**Inbox section** (from `./.claude/iterate/inbox/*.md`, the informs other projects sent here with `/iterate-inform`):
-- `Open` — count of items whose key block (above the first `## `) reads `status: open`. `0` when the directory is missing.
-- One line per open item: the sender from its `From:` line, and its title from the `# Inform — <title>` heading. Consumed and dismissed items are not listed.
+**Inbox section** (from `./.claude/iterate/inbox/*.md`, the messages other projects sent here with `/mailbox`):
+- `Open` — count of messages whose key block (above the first `## `) reads `status: open` or `status: held`. `0` when the directory is missing.
+- One line per counted message: the sender from its `From:` line, its title from the `# <Kind> — <title>` heading, and `(held)` after a held one. Claimed, done, consumed and dismissed messages are not listed.
 
 Print nothing else — no advice, no next-step suggestions, no per-plan prose beyond the fixed fields. If a count is genuinely unreadable (corrupt plan file), print `?` for that cell rather than guessing. Then **stop**.
 
