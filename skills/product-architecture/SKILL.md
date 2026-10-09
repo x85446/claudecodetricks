@@ -1,7 +1,7 @@
 ---
 name: product-architecture
 description: "PRODUCT child (invoked via /product): the architecture — quality attributes, C4 views, crosscutting concerns and an ADR log, with a License and Cost verdict on every dependency it adopts."
-version: 1.1.0
+version: 1.2.0
 ---
 
 # /product-architecture — stage 6: the shape, and why it's that shape

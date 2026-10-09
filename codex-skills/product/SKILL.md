@@ -9,7 +9,7 @@ description: "PRODUCT — the product-definition meta: staged brief, competitors
 
 # $product — idea to engineering-ready definition
 
-**Version:** product family 1.1.0
+**Version:** product family 1.2.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -35,6 +35,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$product-competitors` — ported.
 - `$product-engineering` — ported.
 - `$product-features` — ported.
+- `$product-iteratemilestones` — ported.
 - `$product-milestones` — ported.
 - `$product-prd` — ported.
 - `$product-requirements` — ported.
@@ -54,6 +55,8 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 | 6 | Architecture | `$product-architecture` | `docs/architecture.md` |
 | 7 | Engineering | `$product-engineering` | `docs/engineering.md` |
 | 8 | Milestones | `$product-milestones` | `docs/milestones.md` |
+
+`$product-iteratemilestones` is not a stage. It is the user-typed bridge from `docs/milestones.md` to one `$ip` plan per milestone, and the meta never invokes it.
 
 Invoke children with explicit `$name` invocation. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
 
@@ -186,7 +189,7 @@ All nine `done` and invoked again: the docs stop being a deliverable and become 
 
 ## Output
 
-Always end with the state table and one line naming what happens next:
+Always end with the state table and one line naming what happens next. With all nine done, that line is `next: $product-iteratemilestones` until milestone plans exist:
 
 ```
 product: newproduct  ·  brownfield  ·  gate on
@@ -206,6 +209,6 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 4. **A locked document needs an explicit unlock.** The user approved that text; do not quietly improve it.
 5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW. Stage 8 is order.**
 6. **Traceability is enforced, not decorative.** Every requirement names its feature and its release. Orphans are reported as defects.
-7. **This family stops at documents.** It does not implement, and it does not write an iterate plan. Stage 8 shapes each milestone so `$ip` can take it as-is; handing one to `$ip` is the user's move, when they choose to make it.
+7. **This family stops at documents.** It does not implement, and no stage writes an iterate plan. Stage 8 shapes each milestone so `$ip` can take it as-is. Handing them over is the user's move: `$product-iteratemilestones`, typed by them, plans all thirty and chain-stages them.
 8. **`docs/` is the home**, alongside the code, in whatever repo `$product` runs in. Never a parallel doc tree beside a live one.
 9. **`$user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.

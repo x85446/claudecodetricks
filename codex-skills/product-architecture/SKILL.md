@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the architecture — quality
 
 # $product-architecture — stage 6: the shape, and why it's that shape
 
-**Version:** product family 1.1.0
+**Version:** product family 1.2.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
