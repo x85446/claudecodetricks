@@ -1,7 +1,7 @@
 ---
 name: product-milestones
 description: "PRODUCT child (invoked via /product): the build sequence — cuts each roadmap release into exactly 10 ordered milestones (M1-01…M3-10), each a shippable slice sized for one /ip plan."
-version: 1.2.0
+version: 1.2.1
 ---
 
 # /product-milestones — stage 8: the order it gets built in

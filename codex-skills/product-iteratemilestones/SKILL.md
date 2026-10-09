@@ -6,7 +6,7 @@ description: "Turns docs/milestones.md ($product stage 8) into one $iterate-plan
 
 # $product-iteratemilestones — milestones to plans
 
-**Version:** product family 1.2.0
+**Version:** product family 1.2.1
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -35,9 +35,9 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$iterate-planner` — ported.
 - `$product` — ported.
 
-Typing this command is the user's move that `$product` rule 7 reserves. The
-`$product` family's documents end at stage 8, and this is the one bridge to
-`$ip`.
+It is `$product`'s plans step. The meta runs it when all nine stages are
+done and no plan carries a `milestone:` key, and the user can also type it
+directly. Either one is the user's move that `$product` rule 7 reserves.
 
 `$ARGUMENTS` may name milestone ids (`M1-03 M2-01`) to plan only those.
 Otherwise every milestone that has no plan yet is planned.

@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the staged roadmap — draws
 
 # $product-roadmap — stage 4: what ships when
 
-**Version:** product family 1.2.0
+**Version:** product family 1.2.1
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

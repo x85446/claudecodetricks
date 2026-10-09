@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the build sequence — cuts 
 
 # $product-milestones — stage 8: the order it gets built in
 
-**Version:** product family 1.2.0
+**Version:** product family 1.2.1
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
