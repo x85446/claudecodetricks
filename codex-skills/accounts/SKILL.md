@@ -223,4 +223,4 @@ S1 uses rustorm's `privateKeyLocation` (`keepassxc` means the key lives in the K
 - Safe to auto-invoke for `show`, `where`, `check`. For `remember`, always confirm before writing.
 - `known.md` lives next to this `SKILL.md` inside `~/.agents/skills/accounts/`. **Skill update flows must not overwrite this file** — it's user data, not skill content. The canonical source repo (`~/workspace/x85446/claudecodetricks/skills/accounts/`) intentionally does NOT contain a `known.md`, so any `cp -r` install from source preserves the user's local data.
 - Per-project file path is fixed at `<project>/.claude/data/accounts.md` regardless of where this skill is installed.
-- If a previous version of this skill referenced `~/.ssh/.accounts-registry`, that file is no longer used — migrate any entries into `known.md` and delete the registry.
+- `~/.ssh/.accounts-registry` is not part of this skill. If it exists, migrate its entries into `known.md` and delete it.

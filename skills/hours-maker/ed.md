@@ -2,10 +2,9 @@
 
 Writes Ed's private work to **B52:H99** in the target tab. Placement is
 **evidence-driven** via [evidence-placement.md](evidence-placement.md), run with
-`--section ed` (row band B52:H99, row N → `(N-52)*30` min). Ed's "late-night /
-post-midnight" character is no longer a hardcoded RNG weighting — it falls out
-naturally because the engine places work at the **real times Ed's sessions
-happened**, which for Ed skew late. Read evidence-placement.md first; its
+`--section ed` (row band B52:H99, row N → `(N-52)*30` min). Ed's late-night /
+post-midnight character comes from the evidence: the engine places work at the
+**real times Ed's sessions happened**, which for Ed skew late. Read evidence-placement.md first; its
 integrity rules govern.
 
 ## Step 1e — Parse input

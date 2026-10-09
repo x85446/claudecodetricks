@@ -110,9 +110,9 @@ them and safely overwrite. **If uncertain, DO NOT overwrite.**
 
 ### FK Columns Are the Source of Truth
 
-On 2026-04-10 the text mirror columns (`category`, `sub_category`,
-`sub_sub`, `company`) were dropped from `transactions`. Only the FK
-columns remain: `tier1_id`, `tier2_id`, `tier3_id`, `company_id`.
+`transactions` has no text mirror columns (`category`, `sub_category`,
+`sub_sub`, `company`). The FK columns carry category and company:
+`tier1_id`, `tier2_id`, `tier3_id`, `company_id`.
 
 When you need a human-readable name, **JOIN the lookup table** instead
 of reading a text column:
@@ -446,8 +446,8 @@ the correct sign — do NOT re-negate.
      → unchanged).
   4. Strip trailing 4+ digit store numbers (` #12345`, ` 98765`).
 
-Do NOT greedily eat on dot-containing descriptions (the old regex
-`\s+[A-Z][A-Za-z. ]+\s+[A-Z]{2}$` was removed — don't reintroduce it).
+Do NOT greedily eat on dot-containing descriptions: a regex like
+`\s+[A-Z][A-Za-z. ]+\s+[A-Z]{2}$` does exactly that, so never use one.
 
 ##### source_tab assignment (critical — fixes "wrong statement opens" bug)
 
@@ -1751,10 +1751,10 @@ Backfills `transactions.account` where it's NULL or generic. Uses the same filen
 ## Important Rules
 
 1. **Always** run `PRAGMA foreign_keys=ON;` before any write operation
-2. **Always** write FK columns only (`tier1_id`, `tier2_id`, `tier3_id`, `company_id`). The text mirror columns were dropped — there's nothing to sync.
-3. **Always** dedup on `(source_tab, source_row)` before insert. The legacy `tab` synthetic key column was dropped on 2026-04-10.
+2. **Always** write FK columns only (`tier1_id`, `tier2_id`, `tier3_id`, `company_id`). There are no text mirror columns to sync.
+3. **Always** dedup on `(source_tab, source_row)` before insert.
 4. **Always** set `source_tab` to the **full filename** (e.g., `250103-amazon.csv`, NOT just `amazon`) and `site` to the vendor. This enables the native app to open the source document from `data/processed/`.
-5. **Always** let `created_at` default to CURRENT_TIMESTAMP — the legacy `row_created_at` column was dropped on 2026-04-10.
+5. **Always** let `created_at` default to CURRENT_TIMESTAMP.
 6. **Always** record `confidence` on every transaction
 7. **Always** show the `item` column in every transaction display
 8. **Always** enrich displays with source table data (JOIN the appropriate `src_*` table)

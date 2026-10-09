@@ -1,9 +1,9 @@
 # Hours Maker — empirical patterns (1/7/26 → 3/25/26)
 
-> ⚠️ **DEPRECATED AS A PLACEMENT SOURCE.** This file documents a statistical
+> ⚠️ **NOT A PLACEMENT SOURCE.** This file documents a statistical
 > distribution model (day shares, time-band tiers, RNG jitter, synthetic breaks).
-> Using it to *place* hours invents when work happened — that is synthesis, and
-> the skill no longer does it. **Placement is now evidence-driven** from real
+> Using it to *place* hours invents when work happened, which is synthesis.
+> **Placement is evidence-driven** from real
 > timestamps; see [evidence-placement.md](evidence-placement.md), which governs.
 >
 > This file is retained only for: (a) sheet-layout reference (coordinates, row↔time
@@ -86,12 +86,12 @@ Formula: `row = floor(hour*2) + floor(minute/30) + 2`.
 
 ## Time-of-day priority (where to place blocks)
 
-Revised after the 4/1/26 run feedback: Travis does **night work often**, so 21:00–23:30 is now weighted equal-to afternoon, ahead of late-afternoon and early-evening bands.
+Travis does **night work often**, so 21:00–23:30 is weighted equal to afternoon, ahead of late-afternoon and early-evening bands.
 
 | Tier | Rows | Time | Weight | Notes |
 |---|---|---|---|---|
 | 1 | 28–31 | 13:00–15:30 | 4 | Afternoon deep-work core |
-| 2 | 44–49 | 21:00–23:30 | 4 | **Night work** — frequent when joint slots are empty (was previously underweighted) |
+| 2 | 44–49 | 21:00–23:30 | 4 | **Night work** — frequent when joint slots are empty |
 | 3 | 20–25 | 09:00–12:30 | 2 | Morning |
 | 4 | 32–35 | 16:00–17:30 | 1 | Late afternoon |
 | 5 | 36–43 | 17:30–21:00 | 1 | Early evening — lowest priority of the active bands |

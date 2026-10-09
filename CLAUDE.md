@@ -109,6 +109,26 @@ Two properties keep it from becoming the problem it solves:
 The matching rule for humans lives in `~/.claude/CLAUDE.md` under "Never chain
 an allowlisted command"; this hook is its enforcement.
 
+## doc-guard (`src/cmd/doc-guard/`)
+
+A PostToolUse hook on Write and Edit that keeps documentation in the present
+tense. It scans the text just written to a doc for change narration ("is now",
+"no longer", "previously", "we renamed", "formerly", "as of v2", "Update:")
+and hands every hit back to the model to rewrite. The write has already
+happened, so it never blocks a tool call.
+
+`internal/docguard` holds both halves. `Scan` matches high-precision phrases
+only, skipping fenced code, inline code and quoted text, because a rule that
+lists the banned phrases quotes them on purpose. `Applies` scopes it: `.md`,
+`.mdx`, `.rst`, `.adoc`, `.txt` and READMEs, but not changelogs, release
+notes, ADR logs, or state under `.claude/` (plans, archives, notes, inbox,
+product state, memory). `CLAUDE.md`, skills and agent definitions are
+documentation and are checked. `doc-guard scan <file|dir>…` audits existing
+files (`path:line<TAB>phrase<TAB>text`, exit 1 on any hit). Codex has no hook,
+so `~/.codex/AGENTS.md` tells Codex to run the scan itself. The rule for
+humans lives in `~/.claude/CLAUDE.md` under "Documentation describes the
+present".
+
 ## Skills management (`skills/skillctl`)
 
 `skillctl` is the agent-facing tool for skills. Machine-first output: silent on
@@ -126,10 +146,9 @@ skills/skillctl targets         # symbolic target -> path
 ```
 
 **`skills/skillmap.tsv` is the single source of truth** for "installed where and
-why" — `name`, `targets`, `owner`. It replaced four sources that could and did
-disagree: `skillinstall.sh`'s case statement, the Rust TUI's `skill-mappings.toml`
-(both since removed), per-entry `.origin` files, and `external-sources.conf`. `skillinstall.sh` is now a thin
-human-facing shim over `skillctl` rather than a second implementation.
+why" — `name`, `targets`, `owner`, `family`. Nothing else records a skill's
+targets or owner. `skillinstall.sh` is a thin human-facing shim over
+`skillctl`, not a second implementation.
 
 `owner` is `self` when this repo authors the skill, or the path of the repo that
 does — those are **mirrored** here and must be edited at the owner (izmachine).
@@ -138,8 +157,7 @@ deployed. That is the normal state for most adopted skills, not a problem.
 
 **`sync` refuses to push over a target that is newer than its source** unless
 `--force`. Installing is a one-way push, so a newer target means someone edited
-the installed copy directly — pushing would destroy that edit silently. oracle
-is in exactly that state today.
+the installed copy directly — pushing would destroy that edit silently.
 
 ## Codex skill mirror
 

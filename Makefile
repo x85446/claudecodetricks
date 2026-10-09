@@ -18,6 +18,7 @@ VOICE_BIN := $(BIN_DIR)/voice-announcer
 LOGGER_BIN := $(BIN_DIR)/session-logger
 GIT_BIN := $(BIN_DIR)/git-committer
 CHAIN_GUARD_BIN := $(BIN_DIR)/chain-guard
+DOC_GUARD_BIN := $(BIN_DIR)/doc-guard
 ITERATE_RUN_BIN := $(TOOLS_BIN_DIR)/iterate-run
 TESTMASTER_BIN := $(TOOLS_BIN_DIR)/testmaster
 
@@ -149,9 +150,10 @@ info:  ## Display build configuration
 	$(Q)echo -e "  session-logger:  $(LOGGER_BIN)"
 	$(Q)echo -e "  git-committer:   $(GIT_BIN)"
 	$(Q)echo -e "  chain-guard:     $(CHAIN_GUARD_BIN)"
+	$(Q)echo -e "  doc-guard:       $(DOC_GUARD_BIN)"
 	$(Q)echo ""
 	$(Q)echo -e "$(COLOR_BOLD)Build Status:$(COLOR_RESET)"
-	$(Q)for bin in $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN); do \
+	$(Q)for bin in $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(DOC_GUARD_BIN); do \
 		if [ -f $$bin ]; then \
 			echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) $$bin ($$(du -h $$bin | cut -f1))"; \
 		else \
@@ -173,7 +175,7 @@ check-tools:  ## Verify required tools are installed
 
 all: build  ## Alias for build — builds everything
 
-build: check-tools $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(ITERATE_RUN_BIN) $(TESTMASTER_BIN)  ## Build all binaries
+build: check-tools $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(DOC_GUARD_BIN) $(ITERATE_RUN_BIN) $(TESTMASTER_BIN)  ## Build all binaries
 	$(Q)echo -e "$(COLOR_GREEN)✓ Build complete$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)Version: $(VERSION) ($(GIT_COMMIT))$(COLOR_RESET)"
 
@@ -200,6 +202,12 @@ $(CHAIN_GUARD_BIN): $(wildcard $(CMD_DIR)/chain-guard/*.go) $(wildcard $(INTERNA
 	$(Q)mkdir -p $(BIN_DIR)
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/chain-guard
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) chain-guard → $@"
+
+$(DOC_GUARD_BIN): $(wildcard $(CMD_DIR)/doc-guard/*.go) $(wildcard $(INTERNAL_DIR)/docguard/*.go)
+	$(Q)echo -e "$(COLOR_BLUE)→ Building doc-guard...$(COLOR_RESET)"
+	$(Q)mkdir -p $(BIN_DIR)
+	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/doc-guard
+	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) doc-guard → $@"
 
 $(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(wildcard $(INTERNAL_DIR)/iterrun/*.go)
 	$(Q)echo -e "$(COLOR_BLUE)→ Building iterate-run...$(COLOR_RESET)"
@@ -323,12 +331,14 @@ install: build  ## Install hooks to Claude Code directory, and tools onto PATH
 	$(Q)cp -f $(LOGGER_BIN) $(INSTALL_DIR)/
 	$(Q)cp -f $(GIT_BIN) $(INSTALL_DIR)/
 	$(Q)cp -f $(CHAIN_GUARD_BIN) $(INSTALL_DIR)/
+	$(Q)cp -f $(DOC_GUARD_BIN) $(INSTALL_DIR)/
 	$(Q)chmod +x $(INSTALL_DIR)/voice-announcer
 	$(Q)chmod +x $(INSTALL_DIR)/session-logger
 	$(Q)chmod +x $(INSTALL_DIR)/git-committer
 	$(Q)chmod +x $(INSTALL_DIR)/chain-guard
+	$(Q)chmod +x $(INSTALL_DIR)/doc-guard
 	$(Q)if command -v codesign >/dev/null 2>&1; then \
-		codesign --force --sign - $(INSTALL_DIR)/voice-announcer $(INSTALL_DIR)/session-logger $(INSTALL_DIR)/git-committer $(INSTALL_DIR)/chain-guard; \
+		codesign --force --sign - $(INSTALL_DIR)/voice-announcer $(INSTALL_DIR)/session-logger $(INSTALL_DIR)/git-committer $(INSTALL_DIR)/chain-guard $(INSTALL_DIR)/doc-guard; \
 	fi
 	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks installed to $(INSTALL_DIR)$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_CYAN)  Note: Update ~/.claude/settings.json to enable hooks$(COLOR_RESET)"
@@ -347,6 +357,8 @@ uninstall:  ## Remove installed hooks and tools
 	$(Q)rm -f $(INSTALL_DIR)/voice-announcer
 	$(Q)rm -f $(INSTALL_DIR)/session-logger
 	$(Q)rm -f $(INSTALL_DIR)/git-committer
+	$(Q)rm -f $(INSTALL_DIR)/chain-guard
+	$(Q)rm -f $(INSTALL_DIR)/doc-guard
 	$(Q)rm -f $(TOOLS_INSTALL_DIR)/iterate-run
 	$(Q)rm -f $(TOOLS_INSTALL_DIR)/testmaster
 	$(Q)echo -e "$(COLOR_GREEN)✓ Hooks and tools uninstalled$(COLOR_RESET)"
@@ -450,7 +462,7 @@ watch:  ## Watch for changes and rebuild (requires fswatch or inotifywait)
 
 clean:  ## Remove built binaries and test artifacts
 	$(Q)echo -e "$(COLOR_YELLOW)→ Cleaning build artifacts...$(COLOR_RESET)"
-	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(ITERATE_RUN_BIN)
+	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(DOC_GUARD_BIN) $(ITERATE_RUN_BIN)
 	$(Q)rm -f coverage.out coverage.html
 	$(Q)rm -rf $(SRC_DIR)/vendor
 	$(Q)echo -e "$(COLOR_GREEN)✓ Clean complete$(COLOR_RESET)"

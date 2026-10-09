@@ -19,7 +19,7 @@
 > | Phase 9 | 10-service-alignment |
 > | Phase 10 (also titled "Phase 8 — Migration Plan") | 11-migration-plan |
 >
-> All file paths in this document have been rewritten to the
+> All file paths in this document use the
 > `docs/codeconverter/` layout. There is no journey.md/journal in this pipeline —
 > ignore any journaling instructions. Where this document conflicts with the
 > stage's SKILL.md output contract (uniform headers, MANIFEST.md, output

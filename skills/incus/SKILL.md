@@ -21,7 +21,7 @@ else
 fi
 ```
 
-The user's incus universe lives on cypressMini (Mac). On any other host (the Warden Linux container, df-austin, etc.) you must `ssh cypressMini` to run incus commands. **`incusmagic` is remote-aware as of v1.3.0** — accepts `<remote>:<name>` syntax directly, or use the top-level `--remote NAME` / `-R NAME` flag, or set `INCUS_REMOTE=<name>` in the environment.
+The user's incus universe lives on cypressMini (Mac). On any other host (the Warden Linux container, df-austin, etc.) you must `ssh cypressMini` to run incus commands. **`incusmagic` (v1.3.0+) is remote-aware** — accepts `<remote>:<name>` syntax directly, or use the top-level `--remote NAME` / `-R NAME` flag, or set `INCUS_REMOTE=<name>` in the environment.
 
 ### Locating `incusmagic`
 

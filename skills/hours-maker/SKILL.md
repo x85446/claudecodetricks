@@ -71,7 +71,7 @@ Use the `Read` tool with the path `.claude/skills/hours-maker/<file>.md` (relati
 
 These apply to every mode and override anything in the per-mode files when they conflict.
 
-- **Integrity — placement is reconstruction, not invention (HARD RULE).** Hours and their day/time come from real evidence (calendar events, Claude-session/browser timestamps). Never synthesize *when* work happened, never pad a total above real working time, never auto-assign UNMAPPED/non-Izuma activity to a NEDO task. A reporting ceiling (e.g. Softbank under-reporting) may only trim the total **down**. Work with no timestamp evidence must be supplied by the user (real windows), not fabricated. See [evidence-placement.md](evidence-placement.md). This rule exists because an earlier version of this skill used pseudorandom placement that produced plausible-but-fabricated timesheet entries; that mode is removed.
+- **Integrity — placement is reconstruction, not invention (HARD RULE).** Hours and their day/time come from real evidence (calendar events, Claude-session/browser timestamps). Never synthesize *when* work happened, never pad a total above real working time, never auto-assign UNMAPPED/non-Izuma activity to a NEDO task. A reporting ceiling (e.g. Softbank under-reporting) may only trim the total **down**. Work with no timestamp evidence must be supplied by the user (real windows), not fabricated. See [evidence-placement.md](evidence-placement.md). Pseudorandom placement produces plausible-but-fabricated timesheet entries, which is why this rule exists.
 
 - **Section ownership** is strict:
   - Travis mode writes ONLY B2:H49
