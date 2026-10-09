@@ -72,7 +72,7 @@ status: open                  # → consumed (plan: <name>) when $iterate-planne
 - [YYYY-MM-DD] <a decision the user states as settled, one line, with the one-phrase why>
 ```
 
-Two sections, nothing else. **Never add an `## Open questions` or `## Research appendix` section** — those belonged to the discussion mode this skill no longer has, and the appendix in particular is what turned a notepad into a place depth went to die unread. Existing notes files that still carry those sections are left exactly as they are (the planner still mines them on handoff); just don't write new ones.
+Two sections, nothing else. **Never add an `## Open questions` or `## Research appendix` section** — a notepad that grows an appendix becomes a place depth goes to die unread. Notes files that carry those sections are left exactly as they are (the planner mines them on handoff); just don't write new ones.
 
 ## Mode router — parse `$1` and the user's phrasing
 

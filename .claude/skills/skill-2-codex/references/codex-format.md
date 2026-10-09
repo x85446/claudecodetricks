@@ -160,21 +160,17 @@ language + `/agent` CLI commands**, not a tool schema:
 ## Scheduled / recurring re-firing — NO in-session equivalent
 
 **`CronCreate` / `CronList` / `CronDelete` are Claude Code tools, not Codex
-tools.** An earlier version of this file asserted Codex had them, with Claude
-Code's own tool description attached ("session-only by default, durable to
-`.codex/scheduled_tasks.json`, recurring jobs expire after 7 days"). That was
-wrong and it shipped: ported skills instructed Codex to call tools that do not
-exist, and Codex reported `this session doesn't expose them`.
+tools.** A port that tells Codex to call them fails: Codex answers
+`this session doesn't expose them`.
 
 For Codex they are an **open feature request** — [openai/codex#25466][1], filed
 2026-05-31 by panbergco, still open with no maintainer response. The proposal
 describes `CronCreate`/`CronList`/`CronDelete` plus `ScheduleWakeup`, "session-only
 by default or durable to `.codex/scheduled_tasks.json`", and a `/loop` command.
 
-**That wording is where this file's error came from.** The earlier version
-transcribed the proposal as shipped capability, right down to the
-`scheduled_tasks.json` path. A proposal read as documentation is the specific
-failure mode to watch for here: check the issue state, not just the prose.
+**That proposal reads like shipped documentation**, right down to the
+`scheduled_tasks.json` path. A proposal read as documentation is the failure
+mode to watch for here: check the issue state, not just the prose.
 
 A working implementation exists on the author's fork —
 `github.com/panbergco/codex/tree/feat/session-scheduling-tools`, ~12 files

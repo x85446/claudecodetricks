@@ -183,3 +183,4 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 7. **This family stops at documents.** It does not implement, and no stage writes an iterate plan. Stage 8 shapes each milestone so `/ip` can take it as-is, and the plans step hands them over: typing `/product` past stage 8, or `/product-iteratemilestones` directly, is the user's move to `/ip`.
 8. **`docs/` is the home**, alongside the code, in whatever repo `/product` runs in. Never a parallel doc tree beside a live one.
 9. **`/user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.
+10. **Every document states the current decision, never its history.** A revision rewrites the affected text to the new truth. Nothing in it says "revised", "previously", "now" or "changed from". The state file's stage notes and drift log are the record of what changed and why.

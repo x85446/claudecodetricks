@@ -1,6 +1,6 @@
 ---
 name: "iterate-rules"
-description: "Read and write the iterate launch policy for THIS project in plain language — \"don't run iterate before 10pm\", \"require a keyword to launch\", \"weeknights only\", \"no runs over the holidays\", \"show the rules\", \"would a run start right now\". Writes ./.claude/iterate/policy.md, which $iterate enforces at launch."
+description: "Read and write the iterate launch policy for THIS project in plain language — \"don't run iterate before 10pm\", \"require a keyword to launch\", \"weeknights only\", \"no runs over the holidays\", \"show the rules\", \"would a run start right now\". Writes ./.claude/iterate/policy.md, which $iterate enforces at launch. Rules gate launching a run; they never touch plans, and never stop a run that is already going."
 ---
 
 
@@ -9,12 +9,6 @@ description: "Read and write the iterate launch policy for THIS project in plain
 # $iterate-rules — say when a run is allowed to start
 
 **Version:** iterate family 5.13.0
-
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -245,19 +239,16 @@ iterate-run iterate-v3.3 (commit 4dd09ec5, built 2026-08-27_17:02:20)
 included.** Run these two, from any directory:
 
 ```bash
-grep -m1 '^version:' ~/.claude/skills/iterate/SKILL.md   # the family version
+grep -m1 '^version:' ~/.agents/skills/iterate/SKILL.md   # the family version
 iterate-run version                                      # the binary
 ```
 
-The path is the Claude-side file on purpose: `skillctl` stamps the family
-number there, and the Codex ports are generated from it without the field.
-
-**Never quote a `version:` from the skill body you already have in context.**
-A session loads a skill body once and keeps it, so after a bump and reinstall
-the copy in context is stale — and reporting its number is precisely the
-memory recall this rule already forbids for the binary. Confirmed live: a
-session answered `iterate family 5.4.0` ten minutes after 5.5.0 was installed
-and verified on disk.
+**Never quote the `version:` in the skill body you already have in context.**
+A session loads a skill body once and keeps it, so after a `skillctl family
+iterate set` and reinstall, the copy in context is stale — and reporting its
+number is precisely the memory recall this rule already forbids for the
+binary. Confirmed live: a session answered `iterate family 5.4.0` ten minutes
+after 5.5.0 was installed and verified on disk.
 
 If members disagree, say so and name them: drift inside the family is a
 defect, not a state, and `skillctl family iterate set X.Y.Z` is the only

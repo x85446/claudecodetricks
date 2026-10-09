@@ -1,6 +1,6 @@
 ---
-name: incus
-description: Use whenever you need to interact with an incus VM or container — create, destroy, exec, snapshot, list, restore from snapshot, debug, or wire SSH access. Triggers on "launch incus", "spin up vm", "create container", "fresh alma 9 box", "exec into", "snapshot", "destroy this vm", "I need a test machine", "give me a build env", etc.
+name: "incus"
+description: "Use whenever you need to interact with an incus VM or container — create, destroy, exec, snapshot, list, restore from snapshot, debug, or wire SSH access. Auto-detects whether incus is reachable locally (you're on cypressMini) or whether you must `ssh cypressMini` to reach it. Knows the project's preferred remote from `<project>/.claude/incus.md` (asks once and records if unknown). Reads global routing.md for the catalog of remotes (H91, explorer, polaris2, ranger, houston, mercury, cruz, dc_austin, IncusOS, h94-oidc, local, images). Handles `incusmagic ssh enable travis` for key install and maintains `~/.ssh/config.d/<file>` so the user can `ssh <name>` immediately after creation. Watches for create→destroy→create cycles and proposes snapshot/restore. Triggers on \"launch incus\", \"spin up vm\", \"create container\", \"fresh alma 9 box\", \"exec into\", \"snapshot\", \"destroy this vm\", \"I need a test machine\", \"give me a build env\", etc."
 ---
 
 
@@ -10,12 +10,6 @@ description: Use whenever you need to interact with an incus VM or container —
 # $incus — incus VM/container management for Claude Code
 
 Read [routing.md](references/routing.md) for the catalog of remotes, location → ssh-config-file map, and defaults. Re-read whenever defaults might have shifted.
-
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-Auto-detects whether incus is reachable locally (you're on cypressMini) or whether you must `ssh cypressMini` to reach it. Knows the project's preferred remote from `<project>/.claude/incus.md` (asks once and records if unknown). Reads global routing.md for the catalog of remotes (H91, explorer, polaris2, ranger, houston, mercury, cruz, dc_austin, IncusOS, h94-oidc, local, images). Handles `incusmagic ssh enable travis` for key install and maintains `~/.ssh/config.d/<file>` so the user can `ssh <name>` immediately after creation. Watches for create→destroy→create cycles and proposes snapshot/restore.
 
 ## Usage
 
@@ -36,7 +30,7 @@ else
 fi
 ```
 
-The user's incus universe lives on cypressMini (Mac). On any other host (the Warden Linux container, df-austin, etc.) you must `ssh cypressMini` to run incus commands. **`incusmagic` is remote-aware as of v1.3.0** — accepts `<remote>:<name>` syntax directly, or use the top-level `--remote NAME` / `-R NAME` flag, or set `INCUS_REMOTE=<name>` in the environment.
+The user's incus universe lives on cypressMini (Mac). On any other host (the Warden Linux container, df-austin, etc.) you must `ssh cypressMini` to run incus commands. **`incusmagic` (v1.3.0+) is remote-aware** — accepts `<remote>:<name>` syntax directly, or use the top-level `--remote NAME` / `-R NAME` flag, or set `INCUS_REMOTE=<name>` in the environment.
 
 ### Locating `incusmagic`
 

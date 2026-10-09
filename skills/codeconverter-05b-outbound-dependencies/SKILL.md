@@ -12,9 +12,9 @@ the service itself calls *out*. On cutover day the replacement must be able to r
 every one of them, speaking the same protocol, with the same credentials, against
 the same names.
 
-**Why this stage exists.** "External dependencies" was previously split between
-stage 02 (which sketched a storage map) and stage 09 (which hunts for *other*
-services' hidden coupling to *this* one — the opposite direction). Neither produces
+**Why this stage exists.** Stage 02 sketches a storage map, and stage 09 hunts
+for *other* services' hidden coupling to *this* one, the opposite direction.
+Neither produces
 a checklist of "the replacement must still be able to call X". Left undefined, an
 outbound audit degenerates into "it talks to some services"; a rewrite then ships
 without an SMTP path or a licensing client and discovers it in staging. This stage

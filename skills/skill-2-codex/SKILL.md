@@ -76,7 +76,7 @@ reference files it copied.
 
 ### 3. Verify `agents/openai.yaml`
 
-`scaffold.sh` now writes this file itself whenever the source carried
+`scaffold.sh` writes this file itself whenever the source carried
 `disable-model-invocation: true`, because the mapping is fully confirmed
 and mechanical. Your job is to confirm it exists and that the key is
 **nested**:

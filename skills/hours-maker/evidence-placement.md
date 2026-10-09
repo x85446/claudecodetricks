@@ -15,9 +15,8 @@ it into NEDO's one-activity-per-slot grid. The **total reported time equals real
 human wall-clock working time** (concurrent task-time collapsed to human time), so
 the result is always conservative — at or below what you actually put in.
 
-The old approach (pseudorandom tier placement + synthetic breaks, see
-`patterns.md`) is **deprecated as a placement source**. It invented *when* work
-happened. Do not use it to place hours. `patterns.md` survives only as a
+Pseudorandom tier placement with synthetic breaks (`patterns.md`) is **not a
+placement source**: it invents *when* work happened. Do not use it to place hours. `patterns.md` survives only as a
 style/format reference and a last-resort layout aid (see Fallback below).
 
 ## Integrity rules (hard — never violate)
