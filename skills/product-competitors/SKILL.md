@@ -2,7 +2,7 @@
 name: product-competitors
 description: "PRODUCT child (invoked via /product): knows the market — deep-crawls competitor and own-product sites, maintains a fair competitive feature matrix, and renders docs/competitors.md. Also standalone for marketing: competitor matrix, feature scoring, tagging, TSV/web/ppt/xlsx/collateral export."
 argument-hint: "<product> [init|discover <url>|add-competitor <name>|crawl <competitor|all>|audit|tag|matrix|render|export <format>]"
-version: 1.1.0
+version: 1.2.0
 ---
 
 # /product-competitors — know the market

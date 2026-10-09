@@ -1,7 +1,7 @@
 ---
 name: product-engineering
 description: "PRODUCT child (invoked via /product): the engineering spec — stack and versions, interface contracts, performance budgets, and the build, test and deploy story, specific enough to start work against."
-version: 1.1.0
+version: 1.2.0
 ---
 
 # /product-engineering — stage 7: enough to start building

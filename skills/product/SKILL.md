@@ -3,7 +3,7 @@ name: product
 description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture, engineering and milestones docs. Routes all product-definition work; picks the child."
 when_to_use: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"what order do we build it in\", \"break the roadmap into milestones\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions (/user-docs), NOT building it (/iterate)."
 argument-hint: "[status | next | <stage> | maintain | unlock <stage>] [--fast]"
-version: 1.1.0
+version: 1.2.0
 disable-model-invocation: true
 ---
 
@@ -24,6 +24,8 @@ Nine documents, each earned from the one before it. The chain exists so that by 
 | 6 | Architecture | `/product-architecture` | `docs/architecture.md` |
 | 7 | Engineering | `/product-engineering` | `docs/engineering.md` |
 | 8 | Milestones | `/product-milestones` | `docs/milestones.md` |
+
+`/product-iteratemilestones` is not a stage. It is the user-typed bridge from `docs/milestones.md` to one `/ip` plan per milestone, and the meta never invokes it.
 
 Invoke children with the Skill tool. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
 
@@ -156,7 +158,7 @@ All nine `done` and invoked again: the docs stop being a deliverable and become 
 
 ## Output
 
-Always end with the state table and one line naming what happens next:
+Always end with the state table and one line naming what happens next. With all nine done, that line is `next: /product-iteratemilestones` until milestone plans exist:
 
 ```
 product: newproduct  ·  brownfield  ·  gate on
@@ -176,6 +178,6 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 4. **A locked document needs an explicit unlock.** The user approved that text; do not quietly improve it.
 5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW. Stage 8 is order.**
 6. **Traceability is enforced, not decorative.** Every requirement names its feature and its release. Orphans are reported as defects.
-7. **This family stops at documents.** It does not implement, and it does not write an iterate plan. Stage 8 shapes each milestone so `/ip` can take it as-is; handing one to `/ip` is the user's move, when they choose to make it.
+7. **This family stops at documents.** It does not implement, and no stage writes an iterate plan. Stage 8 shapes each milestone so `/ip` can take it as-is. Handing them over is the user's move: `/product-iteratemilestones`, typed by them, plans all thirty and chain-stages them.
 8. **`docs/` is the home**, alongside the code, in whatever repo `/product` runs in. Never a parallel doc tree beside a live one.
 9. **`/user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.
