@@ -231,6 +231,7 @@ Content rules:
 - Use `!`command`` for dynamic context injection (preprocessing).
 - Be specific about agent delegation -- include exact prompt text.
 - Specify all file paths (inputs, outputs, scripts, references).
+- Present tense only, in the skill and in every CLAUDE.md entry it adds: describe what the skill does, never how it changed ("now does", "no longer", "previously", "an earlier version"). The commit carries the change.
 
 **Step 4: Add supporting files (if needed)**
 
