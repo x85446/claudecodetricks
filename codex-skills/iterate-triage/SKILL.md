@@ -8,7 +8,7 @@ description: "Use when the status line shows a feature branch instead of \"main 
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.12.1
+**Version:** iterate family 5.13.0
 
 ## What this skill does
 
@@ -130,7 +130,7 @@ Read, in order: the current branch and whether the tree is dirty; every
 
 | State | Verdict and action |
 |---|---|
-| On default branch, clean, no plans, no open informs | `complete: 0 of 0 · broken: 0 of 0 — clean, nothing outstanding.` Stop. |
+| On default branch, clean, no plans, no open or held messages | `complete: 0 of 0 · broken: 0 of 0 — clean, nothing outstanding.` Stop. |
 | Plans exist, all `phase: planned`, on default branch | **Planning session, never kicked off.** `broken: 0` — name the plans; `$iterate <name>` starts one. A normal resting state, not a fault. |
 | `phase: executing`, `running:` heartbeat fresh (<90s) | **A run is live right now.** Report the step count and leave it alone. Do not touch the branch, the plan, or the tree. |
 | `phase: executing`, no fresh heartbeat, all steps done, all validations green, not merged | **The merge never happened.** This is the failure case — finish it (see below). |
@@ -143,15 +143,19 @@ Read, in order: the current branch and whether the tree is dirty; every
 | `phase: closed` sitting in `plans/` | Should have been archived. Archive it now (nothing is lost, it is the step `$iterate` owed) and report `done — archived`. |
 | Not a git repo | Report plan state only; every branch line is a silent no-op. |
 
-**An open inform is a problem in every case above.** An `inbox/*.md` whose key
-block reads `status: open` is another project waiting on this one: its session
-sent a bug report here with `$iterate-inform`. Each open item is one problem.
-Its `Detail` says who sent it, what it reports, and what it holds up on their
-side, all read from the file. Its `Fix` is `fix problem N`: triage runs
-`$ip plan the inbox` to draft the plan, and reports the plan's name. That is planning
-only. The plan is born unstaged, so `$ip stage <name>` or `$iterate <name>`
-is still the human's call. While one is open, never report the project as
-clean.
+**An open or held message is a problem in every case above.** An `inbox/*.md`
+whose key block reads `status: open` or `status: held` is another project
+waiting on this one: its session sent a request or bug report here with
+`$mailbox`. Each message is one problem. Its `Detail` says who sent it, what
+it asks, and what it holds up on their side, all read from the file. A held
+message also says what it is held on.
+- **Open**: the `Fix` is `fix problem N`, and triage runs `$ip plan inbox <id>`
+  to draft the plan and reports the plan's name. That is planning only. The
+  plan is born unstaged, so `$ip stage <name>` or `$iterate <name>` is still
+  the human's call.
+- **Held**: the `Fix` is the one human act its `held (…)` reason names.
+
+While either is open, never report the project as clean.
 
 ## What triage does without asking
 

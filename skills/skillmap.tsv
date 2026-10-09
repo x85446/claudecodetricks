@@ -120,6 +120,7 @@ iterate-triage	userglobal	self	iterate
 izmachine	userglobal	~/workspace/izuma/izmachine/skills/izmachine	-
 list	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list	-
 list-dead-letter	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list-dead-letter	-
+mailbox	userglobal	self	-
 mark-fixed	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/mark-fixed	-
 mark-verified	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/leaf/mark-verified	-
 marketing-doc-formatter	imarketing	self	-
