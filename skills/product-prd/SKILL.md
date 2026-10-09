@@ -1,7 +1,7 @@
 ---
 name: product-prd
 description: "PRODUCT child (invoked via /product): the PRD — problem, customer, positioning, non-goals and success signals, written strictly as WHAT and WHY with no technology in it."
-version: 1.2.0
+version: 1.2.1
 ---
 
 # /product-prd — stage 2: what we are building and why

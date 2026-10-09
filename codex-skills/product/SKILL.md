@@ -9,7 +9,7 @@ description: "PRODUCT — the product-definition meta: staged brief, competitors
 
 # $product — idea to engineering-ready definition
 
-**Version:** product family 1.2.0
+**Version:** product family 1.2.1
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -56,7 +56,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 | 7 | Engineering | `$product-engineering` | `docs/engineering.md` |
 | 8 | Milestones | `$product-milestones` | `docs/milestones.md` |
 
-`$product-iteratemilestones` is not a stage. It is the user-typed bridge from `docs/milestones.md` to one `$ip` plan per milestone, and the meta never invokes it.
+After stage 8 comes the **plans step**: `$product-iteratemilestones` turns `docs/milestones.md` into one `$ip` plan per milestone and chain-stages them. It writes no document and has no gate. It is done once a plan in `./.claude/iterate/plans/` or `archive/` carries a `milestone:` key.
 
 Invoke children with explicit `$name` invocation. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
 
@@ -67,6 +67,7 @@ $product                      # resume at the first unfinished stage
 $product status               # the state table, nothing else
 $product next                 # run exactly one stage, then stop
 $product <stage>              # jump to a stage by name or number
+$product plans                # milestones → one chained $ip plan each (runs by itself after stage 8)
 $product maintain             # all nine done: reconcile docs against reality
 $product unlock <stage>       # reopen a locked document for revision
 $product --fast               # run the whole chain unattended
@@ -124,8 +125,9 @@ A state file written before a stage existed (one ending at row 7) gains the miss
 
 1. `status` → print the table and stop.
 2. An explicit stage → run that one (warn, don't refuse, if its predecessors are unfinished: a PRD written before the landscape is a guess, and the user may know that).
-3. All nine `done` → **maintain mode** (Step 6).
-4. Otherwise → the first stage that is not `done`. Resume mid-stage work rather than restarting it.
+3. All nine `done`, but no plan carries a `milestone:` key → **the plans step**. Invoke explicit `$name` invocation with `product-iteratemilestones` and stop when it reports. A finished definition with nothing planned has nothing built to reconcile, so maintain mode there would audit docs against code that does not exist yet.
+4. All nine `done` and milestone plans exist → **maintain mode** (Step 6).
+5. Otherwise → the first stage that is not `done`. Resume mid-stage work rather than restarting it.
 
 ## Step 3 — Run the stage
 
@@ -180,7 +182,7 @@ Only when this loop has run does the gate open.
 
 ## Step 6 — Maintain mode
 
-All nine `done` and invoked again: the docs stop being a deliverable and become a claim about reality. Check the claim.
+All nine `done`, milestone plans written, and invoked again: the docs stop being a deliverable and become a claim about reality. Check the claim.
 
 1. **Reconcile** each document against what is now true — the code as it stands, shipped behavior, the roadmap against what actually released, milestones against what main actually delivers, competitors re-checked if the research is over 90 days old. A release that has shipped means the next release's ten milestones get re-cut against what it proved.
 2. **Report drift** as a list: the document, the stale claim, and what is true now. Append to the state file's drift log with the date.
@@ -189,7 +191,7 @@ All nine `done` and invoked again: the docs stop being a deliverable and become 
 
 ## Output
 
-Always end with the state table and one line naming what happens next. With all nine done, that line is `next: $product-iteratemilestones` until milestone plans exist:
+Always end with the state table and one line naming what happens next:
 
 ```
 product: newproduct  ·  brownfield  ·  gate on
@@ -209,6 +211,6 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 4. **A locked document needs an explicit unlock.** The user approved that text; do not quietly improve it.
 5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW. Stage 8 is order.**
 6. **Traceability is enforced, not decorative.** Every requirement names its feature and its release. Orphans are reported as defects.
-7. **This family stops at documents.** It does not implement, and no stage writes an iterate plan. Stage 8 shapes each milestone so `$ip` can take it as-is. Handing them over is the user's move: `$product-iteratemilestones`, typed by them, plans all thirty and chain-stages them.
+7. **This family stops at documents.** It does not implement, and no stage writes an iterate plan. Stage 8 shapes each milestone so `$ip` can take it as-is, and the plans step hands them over: typing `$product` past stage 8, or `$product-iteratemilestones` directly, is the user's move to `$ip`.
 8. **`docs/` is the home**, alongside the code, in whatever repo `$product` runs in. Never a parallel doc tree beside a live one.
 9. **`$user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.

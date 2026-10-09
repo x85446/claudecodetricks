@@ -2,8 +2,7 @@
 name: product-iteratemilestones
 description: "Turns docs/milestones.md (/product stage 8) into one /iterate-planner plan per milestone, all 30, and chain-stages them so each plan queues the next when it finishes green."
 argument-hint: "[M1-03 …]"
-disable-model-invocation: true
-version: 1.2.0
+version: 1.2.1
 ---
 
 # /product-iteratemilestones — milestones to plans
@@ -15,9 +14,9 @@ plan is staged now. Each plan's last step stages the next one, and only a
 plan that finishes green reaches that step. So a blocked milestone holds
 everything behind it, and nothing builds on work that never landed.
 
-Typing this command is the user's move that `/product` rule 7 reserves. The
-`/product` family's documents end at stage 8, and this is the one bridge to
-`/ip`.
+It is `/product`'s plans step. The meta runs it when all nine stages are
+done and no plan carries a `milestone:` key, and the user can also type it
+directly. Either one is the user's move that `/product` rule 7 reserves.
 
 `$ARGUMENTS` may name milestone ids (`M1-03 M2-01`) to plan only those.
 Otherwise every milestone that has no plan yet is planned.
