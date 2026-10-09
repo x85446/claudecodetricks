@@ -1,7 +1,7 @@
 ---
 name: product-roadmap
 description: "PRODUCT child (invoked via /product): the staged roadmap — draws release lines across the feature map to fix v1/MVP, v2 and v3, each slice a journey usable end to end on its own."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /product-roadmap — stage 4: what ships when

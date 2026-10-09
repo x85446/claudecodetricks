@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the requirements — testabl
 
 # $product-requirements — stage 5: testable behavior
 
-**Version:** product family 1.0.0
+**Version:** product family 1.1.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

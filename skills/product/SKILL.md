@@ -1,15 +1,15 @@
 ---
 name: product
-description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture and engineering docs. Routes all product-definition work; picks the child."
-when_to_use: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions (/user-docs), NOT building it (/iterate)."
+description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture, engineering and milestones docs. Routes all product-definition work; picks the child."
+when_to_use: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"what order do we build it in\", \"break the roadmap into milestones\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions (/user-docs), NOT building it (/iterate)."
 argument-hint: "[status | next | <stage> | maintain | unlock <stage>] [--fast]"
-version: 1.0.0
+version: 1.1.0
 disable-model-invocation: true
 ---
 
 # /product — idea to engineering-ready definition
 
-Eight documents, each earned from the one before it. The chain exists so that by the end **the MVP is not an opinion**: it is the top release slice of a feature inventory that came from a story map, built on a PRD that came from a real competitive landscape.
+Nine documents, each earned from the one before it. The chain exists so that by the end **the MVP is not an opinion**: it is the top release slice of a feature inventory that came from a story map, built on a PRD that came from a real competitive landscape.
 
 ## Children
 
@@ -23,6 +23,7 @@ Eight documents, each earned from the one before it. The chain exists so that by
 | 5 | Requirements | `/product-requirements` | `docs/requirements.md` |
 | 6 | Architecture | `/product-architecture` | `docs/architecture.md` |
 | 7 | Engineering | `/product-engineering` | `docs/engineering.md` |
+| 8 | Milestones | `/product-milestones` | `docs/milestones.md` |
 
 Invoke children with the Skill tool. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
 
@@ -33,7 +34,7 @@ Invoke children with the Skill tool. Never write a stage's document yourself —
 /product status               # the state table, nothing else
 /product next                 # run exactly one stage, then stop
 /product <stage>              # jump to a stage by name or number
-/product maintain             # all eight done: reconcile docs against reality
+/product maintain             # all nine done: reconcile docs against reality
 /product unlock <stage>       # reopen a locked document for revision
 /product --fast               # run the whole chain unattended
 ```
@@ -67,6 +68,7 @@ started: <YYYY-MM-DD>
 | 5 | requirements | docs/requirements.md | pending | no | — |
 | 6 | architecture | docs/architecture.md | pending | no | — |
 | 7 | engineering | docs/engineering.md | pending | no | — |
+| 8 | milestones | docs/milestones.md | pending | no | — |
 
 ## Open clarifications
 - [ ] <stage> — <the question, verbatim from the marker>
@@ -81,13 +83,15 @@ started: <YYYY-MM-DD>
 
 One line per marker, checkbox unchecked while it is open. The gate counts unchecked lines; prose here is not countable and does not exist as far as the gate is concerned.
 
+A state file written before a stage existed (one ending at row 7) gains the missing row as `pending` on the next read, so the next run picks it up rather than entering maintain mode.
+
 `status`: `pending` · `in-progress` · `done` · `blocked`. `locked`: `yes` once the user approves it, and a locked document is never rewritten without `/product unlock <stage>`.
 
 ## Step 2 — Pick the stage
 
 1. `status` → print the table and stop.
 2. An explicit stage → run that one (warn, don't refuse, if its predecessors are unfinished: a PRD written before the landscape is a guess, and the user may know that).
-3. All eight `done` → **maintain mode** (Step 6).
+3. All nine `done` → **maintain mode** (Step 6).
 4. Otherwise → the first stage that is not `done`. Resume mid-stage work rather than restarting it.
 
 ## Step 3 — Run the stage
@@ -105,7 +109,7 @@ Two rules the children inherit and the meta enforces:
   | Something nobody can know until the product or its data exists — "how does it perform on Melissa's real documents" | No marker. Write it under `## Deferred validations` as a planned check. | Stage 5 turns it into a requirement's acceptance criterion; stage 7 into a test. |
 
   The test between the first two: *could I find this out myself if I tried?* If yes, it is research and you owe it. Research that genuinely comes up empty — site blocked, nothing public — becomes a **cited absence**: "Not publicly documented as of <date>; checked <sources>." That is a finding with a source, not a marker. On symude, "which reusable engines provide learned indexes" and "does enCodePlus connect cross-city research to AI drafting" were both research the child owed, filed as questions for the user and labelled "research I owe; still open" — the exact thing this table forbids.
-- **Stages 0–4 describe WHAT and WHY only.** No tech stack, no schema, no API shape, no library names. HOW begins at stage 6. A technology named in the PRD is a decision nobody made, smuggled past the architecture stage.
+- **Stages 0–4 describe WHAT and WHY only.** No tech stack, no schema, no API shape, no library names. HOW begins at stage 6. Stage 8 is sequence: it orders what stages 4–7 already decided and adds no scope of its own. A technology named in the PRD is a decision nobody made, smuggled past the architecture stage.
 
 ## Step 4 — Analyze before the gate
 
@@ -113,7 +117,7 @@ Every stage ends with a consistency pass over what now exists. Report it as a sh
 
 - **Contradictions** — this document against every earlier one.
 - **Gaps** — a required section that is empty or hand-waved.
-- **Orphans and dangling ids** — an `R-NN` naming a nonexistent `F-NN`, a feature in no release slice, a release slice with no features, a competitor claim with no source.
+- **Orphans and dangling ids** — an `R-NN` naming a nonexistent `F-NN`, a feature in no release slice, a release slice with no features, a competitor claim with no source, a requirement in no milestone or in two.
 - **Altitude violations** — HOW leaking into stages 0–4.
 - **Unresolved markers** — every `[NEEDS CLARIFICATION]` still open, named.
 - **Unfinished research** — any `[NEEDS RESEARCH]` still in the document. This is a defect in the child's work, not a question for the user: **re-enter the child's research on exactly those items** (one subagent per item, in parallel) and re-run analyze. Two passes without progress → write the cited absence and move on. The user never sees a `[NEEDS RESEARCH]`.
@@ -137,15 +141,15 @@ Only when this loop has run does the gate open.
 
 **Open markers block approval.** If the state file still has an unchecked clarification for this stage after Step 4.5, the approval options are not offered. Instead: list the open questions, and offer revise · ask me again · **approve with open questions** (override). The override is the only way through, it must be chosen explicitly, and it is recorded on the stage row as `override: N open` — a locked document with a known hole says so in the state table forever, and every later stage's analyze pass names the inherited marker. Nobody arrives at stage 5 surprised that stage 1 never settled who the competitors were.
 
-**`gate: fast` (`--fast`).** Run the whole chain without stopping, then present all eight documents and every analyze block together. Set every completed stage `done` but `locked: no` — nothing the user has not seen gets locked. Markers accumulate during the run; the final review runs Step 4.5 over all of them first, then gates each stage in order under the same open-marker rule.
+**`gate: fast` (`--fast`).** Run the whole chain without stopping, then present all nine documents and every analyze block together. Set every completed stage `done` but `locked: no` — nothing the user has not seen gets locked. Markers accumulate during the run; the final review runs Step 4.5 over all of them first, then gates each stage in order under the same open-marker rule.
 
 **`--fast` does not override a `kill`.** If stage 0 returns `kill`, stop there and report it even in fast mode. Running six more stages on an idea the brief just killed is precisely the waste stage 0 exists to prevent. A `needs-clarification` verdict stops fast mode too — it means the brief could not answer its own questions, and everything downstream would inherit the guesswork.
 
 ## Step 6 — Maintain mode
 
-All eight `done` and invoked again: the docs stop being a deliverable and become a claim about reality. Check the claim.
+All nine `done` and invoked again: the docs stop being a deliverable and become a claim about reality. Check the claim.
 
-1. **Reconcile** each document against what is now true — the code as it stands, shipped behavior, the roadmap against what actually released, competitors re-checked if the research is over 90 days old.
+1. **Reconcile** each document against what is now true — the code as it stands, shipped behavior, the roadmap against what actually released, milestones against what main actually delivers, competitors re-checked if the research is over 90 days old. A release that has shipped means the next release's ten milestones get re-cut against what it proved.
 2. **Report drift** as a list: the document, the stale claim, and what is true now. Append to the state file's drift log with the date.
 3. **Fix on request.** Maintain mode reports; it rewrites a locked document only when the user says to. Unlocking is explicit.
 4. Nothing drifted → `docs already true — no changes` and touch nothing.
@@ -170,8 +174,8 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 2. **Order is the product, not bureaucracy.** Each stage consumes its predecessors; skipping one means the skipped reasoning is now an assumption, and the analyze pass will say so.
 3. **`[NEEDS CLARIFICATION]` over a plausible guess**, always — and every marker is put to the user before the gate, one question each. Approval with a marker still open exists only as an explicit, recorded override.
 4. **A locked document needs an explicit unlock.** The user approved that text; do not quietly improve it.
-5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW.**
+5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW. Stage 8 is order.**
 6. **Traceability is enforced, not decorative.** Every requirement names its feature and its release. Orphans are reported as defects.
-7. **This family stops at documents.** It does not implement, and it does not write an iterate plan — handing the docs to `/ip` is the user's move, when they choose to make it.
+7. **This family stops at documents.** It does not implement, and it does not write an iterate plan. Stage 8 shapes each milestone so `/ip` can take it as-is; handing one to `/ip` is the user's move, when they choose to make it.
 8. **`docs/` is the home**, alongside the code, in whatever repo `/product` runs in. Never a parallel doc tree beside a live one.
 9. **`/user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.

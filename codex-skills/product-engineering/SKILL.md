@@ -6,14 +6,14 @@ description: "PRODUCT child (invoked via $product): the engineering spec — sta
 
 # $product-engineering — stage 7: enough to start building
 
-**Version:** product family 1.0.0
+**Version:** product family 1.1.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
      plan's planner-version / executor-version. -->
 
 
-The last stage. Where the architecture says *what shape*, this says *what exactly* — named versions, real interface signatures, budgets with numbers, and how the thing gets built, tested and shipped. The test of this document: an engineer who has read only this and the two docs before it can start on Monday without asking what to use.
+The last HOW stage. Where the architecture says *what shape*, this says *what exactly* — named versions, real interface signatures, budgets with numbers, and how the thing gets built, tested and shipped. The test of this document: an engineer who has read only this and the two docs before it can start on Monday without asking what to use.
 
 ## Dependencies
 
@@ -22,6 +22,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$dev-makefiles` — ported.
 - `$ip` — ported.
 - `$product` — ported.
+- `$product-milestones` — ported.
 - `$testmaster` — ported.
 - `$testmaster-adopt` — ported.
 - `$testmaster-derive` — ported.
@@ -121,4 +122,4 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 5. **Build work goes through make targets** per `$dev-makefiles` — never ad-hoc shell in the spec.
 6. **Every v1 requirement maps to at least one test case.** Report the unmapped ones; that list is the real coverage gap.
 7. **Specify v1 in full; sketch v2 and v3 only where they constrain a v1 decision.** Detail beyond the committed release ages into fiction.
-8. **This is the last stage. It does not start building.** The family ends with documents; `$ip` turns them into an executable plan when the user decides to.
+8. **It does not start building.** Stage 8 (`$product-milestones`) orders the work into milestones; the family ends with documents, and `$ip` turns a milestone into an executable plan when the user decides to.

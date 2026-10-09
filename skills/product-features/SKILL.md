@@ -1,7 +1,7 @@
 ---
 name: product-features
 description: "PRODUCT child (invoked via /product): the feature inventory — a Jeff Patton story-map backbone of activities and steps, every feature under it as a numbered F-NN with a MoSCoW priority."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # /product-features — stage 3: everything the product could do
