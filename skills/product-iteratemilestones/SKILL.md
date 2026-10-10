@@ -2,7 +2,7 @@
 name: product-iteratemilestones
 description: "Turns docs/milestones.md (/product stage 8) into one /iterate-planner plan per milestone, all 30, and chain-stages them so each plan queues the next when it finishes green."
 argument-hint: "[M1-03 …]"
-version: 1.2.1
+version: 1.3.0
 ---
 
 # /product-iteratemilestones — milestones to plans

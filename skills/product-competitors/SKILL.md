@@ -2,12 +2,26 @@
 name: product-competitors
 description: "PRODUCT child (invoked via /product): knows the market — deep-crawls competitor and own-product sites, maintains a fair competitive feature matrix, and renders docs/competitors.md. Also standalone for marketing: competitor matrix, feature scoring, tagging, TSV/web/ppt/xlsx/collateral export."
 argument-hint: "<product> [init|discover <url>|add-competitor <name>|crawl <competitor|all>|audit|tag|matrix|render|export <format>]"
-version: 1.2.1
+version: 1.3.0
 ---
 
 # /product-competitors — know the market
 
 Two jobs, one body of knowledge: the competitive landscape for the **product** family's `docs/competitors.md`, and the detailed matrix that marketing works from. Internal only, and brutally honest — every competitive fact lives here whether we win or lose.
+
+## Decide, then report
+
+This skill asks the user nothing. Every call the evidence supports, it makes, writes down with its basis, and moves on:
+
+- which competitors to assess, and each one's tier;
+- how the Us column rates our product (see "The Us column");
+- which differently-named capabilities are the same thing;
+- a capability competitors define so differently that it splits into two rows;
+- a feature's category and importance, and its tags.
+
+Each call goes under `## Calls made` in the document it shapes, one line with its basis, so the `/product` gate reviews every call without reading the research. The gate is where the user corrects a call; in standalone use the user corrects by re-running a verb with the right input. Names, URLs or competitors the user gives in the invocation are inputs, never questions.
+
+Research is written as found. There is no preview and no "shall I write these" step: every claim in the research file carries its source, and the document is the thing the user reviews.
 
 ## Invocation
 
@@ -111,7 +125,7 @@ Launch all three in a single message so they run concurrently. Each receives the
 ### Where findings land
 
 1. Compile all three agents' output into one research file: `.claude/product/competitors/research/<name>.md` (document mode) or the same path in the marketing repo (matrix mode), with sections Site map · Features & capabilities (categorized, source-cited) · Positioning (value props, personas, use cases, differentiation, tone) · Raw content index.
-2. **Present findings with AskUserQuestion before writing any assessment.** Research is a proposal, never a commit.
+2. Write the assessments straight from the research file. Crawl reports that hold only a site map never block the rest: the capabilities they could not show are `UNKNOWN`, and the gap is named under "Insufficient evidence".
 3. Matrix mode: map findings onto existing features or propose new ones, then UPDATE/INSERT assessments with `researched_at = date('now')`, `UPDATE competitors SET last_crawled = date('now')`, and INSERT into `crawl_log`.
 4. Document mode: the research file is the record; `render` turns it into `docs/competitors.md` and `docs/competitive_features.md`.
 
@@ -123,24 +137,24 @@ If a crawl is blocked or fails, report exactly what was reachable and what wasn'
 
 1. Create the database, run [schema.sql](schema.sql).
 2. INSERT our product into `our_products`.
-3. Ask who the main competitors are — name, website, tier (primary/secondary/emerging) for each — and INSERT them.
-4. Ask for feature categories, INSERT into `categories`.
+3. Find the main competitors: the ones the user named, the alternatives the product's own site and any brief name, and the products a market search turns up. Give each a website and a tier (primary/secondary/emerging) from the research, and INSERT them.
+4. Derive feature categories from our product's own site and docs, INSERT into `categories`.
 5. Generate the empty TSV export.
 
 ### Add competitor
 
-1. Ask for full name, website, tier, notes.
+1. Take the name from the invocation. Find its website and tier by research, and write notes from what the research shows.
 2. INSERT into `competitors`, linked to our product.
 3. INSERT `competitor_assessments` at `UNKNOWN` for every existing feature.
-4. Suggest a crawl.
+4. Run `crawl <competitor>`.
 
 ### Add feature
 
-1. Show existing categories, ask which (or create one).
-2. Ask importance: critical / high / medium / low / nice-to-have.
+1. Put it in the existing category it fits best, or create one when none fits.
+2. Set importance (critical / high / medium / low / nice-to-have) from how the market treats it: table-stakes capabilities are critical or high.
 3. INSERT into `features`; INSERT `our_assessments` with our status.
-4. INSERT `competitor_assessments` per competitor — ask, or `UNKNOWN`.
-5. Ask for tags, INSERT `feature_tags`.
+4. INSERT `competitor_assessments` per competitor from existing research, `UNKNOWN` where the research never mentions it.
+5. Tag it by the tag table's meanings, INSERT `feature_tags`.
 
 ### Audit
 
@@ -173,7 +187,7 @@ Document mode audits the research files instead: which competitors have no resea
 /product-competitors izuma-edge tag ppt category=Performance verdict=BETTER
 ```
 
-Query matching features, show the matches, confirm, then INSERT `feature_tags`.
+Query matching features, INSERT `feature_tags`, and list what was tagged.
 
 ### Render — `docs/competitors.md`
 
@@ -206,8 +220,8 @@ The `product` family's stage-1 output. One page, written for whoever reads `docs
 **Table stakes** (must have to be considered): …
 **Differentiators** (why they'd pick us): …
 
-## Open questions
-- [NEEDS CLARIFICATION] <what research could not settle>
+## Calls made
+- <the call, and the evidence it rests on — e.g. "Competitor set: the four the brief names plus Acme, the top result for <market query>; Foo excluded, consumer-only">
 
 ## Deferred validations
 - <what can only be checked once the product or its data exists — carried forward, never a marker>
@@ -216,6 +230,18 @@ The `product` family's stage-1 output. One page, written for whoever reads `docs
 In matrix mode, `render` derives every cell from `v_comparison` rather than restating prose. Features tagged `roadmap-gap` are listed under "Where we lose today" and carried into `/product-roadmap`.
 
 The "Table stakes vs differentiators" section of this document is a summary of the next file, never an independent opinion.
+
+#### The Us column
+
+The Us column rates the product `docs/brief.md` defines, not the code as it stands. Stage 1 exists to decide what to build, so it compares the product the brief commits to against the market.
+
+| The brief… | Us |
+|---|---|
+| commits to the capability | `YES`, or `PARTIAL` where the brief scopes it narrower than the market does |
+| rules it out (a non-goal) | `NO` |
+| is silent on it | brownfield: what the code ships today · greenfield: `NO` |
+
+In brownfield, a cell where the brief's rating runs ahead of the code says so in Notes ("brief; code does not deliver it yet"), so the gap reaches the roadmap. Standalone with no brief, Us is what our product ships today. The Us column never enters a coverage number, which counts competitors only.
 
 ### Render — `docs/competitive_features.md`
 
@@ -256,8 +282,8 @@ CF-01, …  — <one line each: what "has it" concretely means, with the source>
 ## Insufficient evidence
 CF-04 — <which competitors are UNKNOWN, and the crawl that would settle it>
 
-## Open questions
-- [NEEDS CLARIFICATION] <a capability whose definition competitors interpret so differently that one row can't hold it>
+## Calls made
+- <each name merge, each capability split into two rows because competitors define it differently, and the threshold if it is not 70%>
 
 ## Deferred validations
 - <what can only be checked once the product or its data exists — carried forward, never a marker>
@@ -267,7 +293,7 @@ CF-04 — <which competitors are UNKNOWN, and the crawl that would settle it>
 
 **Matrix mode:** run the `Competitive Features` query in [queries.sql](queries.sql) with `:stakes = 0.70` (or the threshold the header states) — one row per `features` entry, coverage computed over that product's competitors. Never hand-compute the classes; the query and the file header must agree.
 
-**Document mode:** the feature extractor already returns YES / NO / PARTIAL per capability per site. Take the union of capabilities across every research file, normalize names that are the same thing said differently (state each merge), fill the grid, and mark anything a research file never mentions `UNKNOWN` — never `NO`. Absence of evidence is a crawl gap, not a competitor weakness.
+**Document mode:** the feature extractor already returns YES / NO / PARTIAL per capability per site. Take the union of capabilities across every research file, normalize names that are the same thing said differently (each merge goes under `## Calls made`), fill the grid, and mark anything a research file never mentions `UNKNOWN` — never `NO`. Absence of evidence is a crawl gap, not a competitor weakness.
 
 ### Export
 
@@ -301,7 +327,7 @@ The three collateral formats are written by a writer agent reading the research 
 1. **Never exaggerate our advantages.** Objective evidence only.
 2. **Never downplay a competitor's strengths.** If they beat us, document it.
 3. **Always cite sources** — `source_url` and `researched_at` on every assessment.
-4. **Mark uncertainty — then go clear it.** `UNKNOWN` is a cell that needs a crawl, and this is the stage that crawls. A `[NEEDS RESEARCH]` is a to-do for *you*; it never leaves this stage. `[NEEDS CLARIFICATION]` is only for what the user alone can answer — which competitors matter to *them*, which tier, which market. "Research I owe; still open" is not a disposition this stage may emit: research is done, or its absence is cited with the sources checked and the date.
+4. **Mark uncertainty — then go clear it.** `UNKNOWN` is a cell that needs a crawl, and this is the stage that crawls. A `[NEEDS RESEARCH]` is a to-do for *you*; it never leaves this stage. This stage writes no `[NEEDS CLARIFICATION]`: which competitors matter, their tier and the market come from the brief and the research, and land under `## Calls made`. "Research I owe; still open" is not a disposition this stage may emit: research is done, or its absence is cited with the sources checked and the date.
 5. **Include context.** "200+ integrations vs our 45 (2026-03)" beats "they win".
 6. **Separate fact from opinion.** Quantify where possible.
 7. **Set confidence.** `high` = official source, `medium` = inferred, `low` = secondhand.
@@ -312,7 +338,7 @@ The three collateral formats are written by a writer agent reading the research 
 2. **The store is the source of truth; every export and render is a derived artifact.** Never hand-edit an export.
 3. **`PRAGMA foreign_keys=ON`** before any write.
 4. **The kitchensink is internal.** It exists to be honest, not flattering.
-5. **AskUserQuestion before writing crawl findings.** Always.
+5. **Ask nothing.** Decide from the evidence, write, and list each call under `## Calls made`. The `/product` gate is the review.
 6. **Parallel research** — all three agents in one message; one agent set per competitor for `crawl all`.
 7. **Never hardcode competitor names in queries** — columns are dynamic.
 8. **Never create `marketing.sqlite`** in a repo that didn't have it.

@@ -1,7 +1,7 @@
 ---
 name: product-requirements
 description: "PRODUCT child (invoked via /product): the requirements — testable EARS statements (WHEN/SHALL) with acceptance criteria, each numbered R-NN and traced to its feature and its release."
-version: 1.2.1
+version: 1.3.0
 ---
 
 # /product-requirements — stage 5: testable behavior

@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the engineering spec — sta
 
 # $product-engineering — stage 7: enough to start building
 
-**Version:** product family 1.2.1
+**Version:** product family 1.3.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

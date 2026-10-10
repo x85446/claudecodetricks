@@ -9,7 +9,7 @@ description: "PRODUCT — the product-definition meta: staged brief, competitors
 
 # $product — idea to engineering-ready definition
 
-**Version:** product family 1.2.1
+**Version:** product family 1.3.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -172,7 +172,7 @@ Only when this loop has run does the gate open.
 
 ## Step 5 — The gate
 
-**`gate: on` (default).** Present the document's headline content and the analyze block. Then ask for approval with a plain numbered-list question: approve and continue · approve and stop · revise (say what) · skip this stage. On approval set `done` and `locked: yes`, stamp the date, and continue to the next stage — or stop if that is what they chose.
+**`gate: on` (default).** Present the document's headline content, its `## Calls made` list (the judgment calls the child made without asking), and the analyze block. Then ask for approval with a plain numbered-list question: approve and continue · approve and stop · revise (say what) · skip this stage. On approval set `done` and `locked: yes`, stamp the date, and continue to the next stage — or stop if that is what they chose.
 
 **Open markers block approval.** If the state file still has an unchecked clarification for this stage after Step 4.5, the approval options are not offered. Instead: list the open questions, and offer revise · ask me again · **approve with open questions** (override). The override is the only way through, it must be chosen explicitly, and it is recorded on the stage row as `override: N open` — a locked document with a known hole says so in the state table forever, and every later stage's analyze pass names the inherited marker. Nobody arrives at stage 5 surprised that stage 1 never settled who the competitors were.
 

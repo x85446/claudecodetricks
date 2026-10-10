@@ -3,7 +3,7 @@ name: product
 description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture, engineering and milestones docs. Routes all product-definition work; picks the child."
 when_to_use: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"what order do we build it in\", \"break the roadmap into milestones\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions (/user-docs), NOT building it (/iterate)."
 argument-hint: "[status | next | <stage> | maintain | unlock <stage>] [--fast]"
-version: 1.2.1
+version: 1.3.0
 disable-model-invocation: true
 ---
 
@@ -141,7 +141,7 @@ Only when this loop has run does the gate open.
 
 ## Step 5 — The gate
 
-**`gate: on` (default).** Present the document's headline content and the analyze block. Then ask for approval with AskUserQuestion: approve and continue · approve and stop · revise (say what) · skip this stage. On approval set `done` and `locked: yes`, stamp the date, and continue to the next stage — or stop if that is what they chose.
+**`gate: on` (default).** Present the document's headline content, its `## Calls made` list (the judgment calls the child made without asking), and the analyze block. Then ask for approval with AskUserQuestion: approve and continue · approve and stop · revise (say what) · skip this stage. On approval set `done` and `locked: yes`, stamp the date, and continue to the next stage — or stop if that is what they chose.
 
 **Open markers block approval.** If the state file still has an unchecked clarification for this stage after Step 4.5, the approval options are not offered. Instead: list the open questions, and offer revise · ask me again · **approve with open questions** (override). The override is the only way through, it must be chosen explicitly, and it is recorded on the stage row as `override: N open` — a locked document with a known hole says so in the state table forever, and every later stage's analyze pass names the inherited marker. Nobody arrives at stage 5 surprised that stage 1 never settled who the competitors were.
 
