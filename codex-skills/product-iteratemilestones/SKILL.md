@@ -6,7 +6,7 @@ description: "Turns docs/milestones.md ($product stage 8) into one $iterate-plan
 
 # $product-iteratemilestones — milestones to plans
 
-**Version:** product family 1.2.1
+**Version:** product family 1.3.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

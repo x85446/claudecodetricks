@@ -1,7 +1,7 @@
 ---
 name: product-brief
 description: "PRODUCT child (invoked via /product): the stage-0 brief — a working-backwards PRFAQ that states the idea as a shipped thing, then returns a go / needs-clarification / kill verdict before any further stage runs."
-version: 1.2.1
+version: 1.3.0
 ---
 
 # /product-brief — stage 0: is this worth the other seven stages?
