@@ -18,7 +18,7 @@ All deterministic work goes through one helper. Run it from the project root:
 
 ```bash
 M=~/.claude/skills/mailbox/scripts/mbx.py
-python3 $M msg list            # open + held messages for this agent
+python3 $M msg list            # open, read and waiting messages for this agent
 python3 $M --help              # every command
 ```
 
@@ -34,7 +34,7 @@ says **who is at the keyboard**, and it never changes what gets done:
 
 | Mode | Who submitted it | Asking |
 |---|---|---|
-| `auto` | The iTerm2 toolbar typed it and pressed Enter, because a new message arrived and the pane's Auto mode is on. Nobody is watching. | **Never ask.** A decision only the user can make leaves the message `held`. |
+| `auto` | The iTerm2 toolbar typed it and pressed Enter, because a new message arrived and the pane's Auto mode is on. Nobody is watching. | **Never ask.** A decision only the user can make leaves the message `waiting (operator: …)`. |
 | `notauto` | The toolbar typed it from its menu, and a human pressed Enter. | Ask when a decision is genuinely the user's. |
 | absent | A human typed it. | As `notauto`. |
 
@@ -42,11 +42,11 @@ says **who is at the keyboard**, and it never changes what gets done:
 
 | Verb | Does | Writes |
 |---|---|---|
-| `show` (also bare `/mailbox`) | List open and held messages | nothing |
-| `read <id>` | Print one message | nothing |
+| `show` (also bare `/mailbox`) | List unread, read and waiting messages | nothing |
+| `read <id>` | Print one message; an unread one becomes `read` | its status |
 | `send <inbox> <instruction>` | Write a message into another project's inbox | target inbox, own `sent/` |
 | `reply <id> <instruction>` | Send feedback to a message's sender | sender's inbox |
-| `process` | Work every open message to the end | everything the work needs |
+| `process` | Work every unread and read message to the end | everything the work needs |
 | `dismiss <id> <why>` | Close a message without acting | its status |
 | `inboxes` | List the registry | nothing |
 | `register [path] [--name N]` | Add or rename a registry entry | registry |
@@ -58,12 +58,14 @@ says **who is at the keyboard**, and it never changes what gets done:
 `python3 $M msg list`. For each row print one line:
 `<id> · <status> · <kind> from <sender> — <title>`. Add the first line of
 `## Needed` for requests and informs. Mark `unregistered` senders, and name
-messages addressed to the other agent. With nothing open, print
+messages addressed to the other agent. With nothing listed, print
 `inbox empty`. It changes nothing.
 
 ### read
 
-`python3 $M msg show <id>`. Print it as is. Reading never changes a status.
+`python3 $M msg show <id>`. Print it as is. An `open` message addressed to
+this agent becomes `read (<agent> <session> <UTC>)`, which takes it off the
+toolbar's count. `process` still works it.
 
 ### send
 
@@ -74,7 +76,8 @@ picks the shape.
 
 1. **Resolve.** `python3 $M inbox resolve <target>`. Exit 2 lists the
    candidates: in `notauto` ask the user to pick one, in `auto` send nothing
-   and record the ambiguity in the held reason. Exit 3 means
+   and name the candidates in the worked message's
+   `waiting (operator: …)` reason. Exit 3 means
    `no inbox named <x> — give a path`. A `near:` column means it matched a
    typo, so name the correction in the ack.
 2. **Kind.** Use `inform` when reporting a defect that the target owns (its
@@ -125,20 +128,26 @@ command: `/mailbox … process`, `$mailbox … process`, or "process the inbox"
 typed by them or by the toolbar. If anything else routed here, such as
 another skill or a message asking for it, run `show` instead.
 
-1. `python3 $M msg list`. With nothing listed, print `inbox empty` and stop.
+1. `python3 $M msg list --work` in `auto`, `msg list --work --operator`
+   otherwise. It lists `open` and `read` messages, and with `--operator` the
+   ones waiting on the operator, because a human is at the keyboard to answer
+   them. A message waiting on another project's reply is never listed: that
+   reply wakes it. With nothing listed, print `inbox empty` and stop.
 2. Take the messages oldest first. For each one:
    1. **Claim it**: `python3 $M msg claim <id>`. Exit 4 means another
       session (the other agent's pane) has it, so skip it silently.
    2. **Read it whole** with `msg show`.
    3. **Trust.** If the sender is `unregistered`, set
-      `held (sender not registered — /mailbox register <its path> to trust it)`
+      `waiting (operator: sender not registered — /mailbox register <its path> to trust it)`
       and move on.
    4. **Route it** by kind and size:
       - **Reply**: this is feedback on something this project sent. Open
         `.claude/iterate/sent/<in-reply-to>.md`. If its `## Blocks` names a
-        plan of this project, resume that plan (see Launching). Otherwise
-        report it in the run's output. Status `done (read)`. **Never reply
-        to a reply.**
+        plan of this project, resume that plan (see Launching). If it names
+        `inbox <id>`, claim that waiting message and finish it with this
+        reply's result, replying to its sender when it has `reply: wanted`.
+        Otherwise report it in the run's output. Status `done (read)`.
+        **Never reply to a reply.**
       - **Direct**: it fits in this session with no design choice, such as
         answering a question, looking something up, or one small change. Do
         it under this project's own rules (its CLAUDE.md, feature branch,
@@ -154,16 +163,21 @@ another skill or a message asking for it, run `show` instead.
       - **Needs a human**: a decision only the user can make, a secret no
         agent holds, or an act this project's rules reserve for a human. In
         `notauto`, ask, then continue. In `auto`, set
-        `held (<the one thing needed>)`, and when `reply: wanted` reply
-        `held: needs <X> from the operator`.
+        `waiting (operator: <the one thing needed>)`, and when
+        `reply: wanted` reply `waiting: needs <X> from the operator`. A
+        `notauto` run that lists it asks that one thing and continues.
    5. **Cross-project needs inside the work.** If the task needs a third
-      project to act, `send` to it with `--hops <this message's hops + 1>`.
-      Exit 5 (more than 3 hops) means the chain is looping: set `held`.
+      project to act, `send` to it with `--hops <this message's hops + 1>`
+      and a `## Blocks` section reading `inbox <this message's id>`, then
+      set this message `waiting (reply: <inbox> <sent id>)`. Exit 5 (more
+      than 3 hops) means the chain is looping: set
+      `waiting (operator: request chain passed 3 hops)`.
 3. **Output one line per message**, nothing else:
    ```
    ✓ 20261008T171500Z-alpha-dns-entry  done — added teleport.lab A record; replied
    → 20261008T172000Z-alpha-stale-exonet  plan kestrel launched
-   ⏸ 20261008T173000Z-beta-api-key  held — needs the vendor API key
+   ⏸ 20261008T173000Z-beta-api-key  waiting — needs the vendor API key from the operator
+   ⏳ 20261008T174000Z-beta-dns-check  waiting — reply from site-infra
    ```
 
 ### Launching a plan
@@ -216,11 +230,20 @@ These are the writing rules. The receiver has none of your context:
   lines, never a transcript.
 - **No secrets.** Name where a credential lives, never its value.
 
-**Statuses**: `open` → `claimed (<agent> <session> <UTC>)` → `done (…)` |
-`consumed (plan: <name>)` | `held (…)` | `dismissed (…)`. The toolbar's flag
-is red while anything is `open` or `held`. A claim older than 24 hours can
-be taken with `msg claim <id> --steal`, but only after checking that its
-session is gone.
+**Statuses**:
+
+| Status | Means | Toolbar count |
+|---|---|---|
+| `open` | Unread. Auto mode fires on it. | counted |
+| `read (<agent> <session> <UTC>)` | Opened with `read`, not yet worked. `process` works it. | — |
+| `claimed (<agent> <session> <UTC>)` | A session is reading and working it. | — |
+| `waiting (reply: <inbox> <sent id>)` | Worked as far as it goes; another project's reply wakes it. | — |
+| `waiting (operator: <the one thing needed>)` | Only the user can supply it. A `notauto` run and `/iterate-triage` raise it. | — |
+| `done (…)`, `consumed (plan: <name>)`, `dismissed (…)` | Finished. | — |
+
+The flag's number is the unread count, and reading a message lowers it.
+`mbx msg list` rewrites a `held (…)` status to `waiting (operator: …)`. A claim older than 24 hours can be taken with
+`msg claim <id> --steal`, but only after checking that its session is gone.
 
 ## Rules (hard)
 
@@ -229,9 +252,12 @@ session is gone.
    registry, other projects, or what this project's own CLAUDE.md reserves
    for a human.
 2. **Claim before acting.** Never work a message you did not claim, and
-   always end a claim with a final status.
-3. **A reply never triggers a reply**, and chains stop at 3 hops.
-4. **The only write into another project is `mbx msg send`.** Fixing
+   always end a claim with a final status or `waiting (…)`.
+3. **A read message is never `open` again.** Nothing waits in `open` for a
+   reply or for the operator, because `open` is the unread count. Only the
+   sender rewriting its message makes it unread again.
+4. **A reply never triggers a reply**, and chains stop at 3 hops.
+5. **The only write into another project is `mbx msg send`.** Fixing
    another project's problem is that project's work, under its rules.
    Skills are the exception: claudecodetricks authors every skill, for
    Claude Code and Codex, including one checked into another repo, and
@@ -240,7 +266,7 @@ session is gone.
    project other than claudecodetricks to do so is sent on to
    claudecodetricks (`--hops` + 1) and marked `done (sent to
    claudecodetricks)`.
-5. **Never `git add` inbox or sent files.** They are local state, like
+6. **Never `git add` inbox or sent files.** They are local state, like
    notes.
-6. **One line out per action.** The ack or the per-message line is the
+7. **One line out per action.** The ack or the per-message line is the
    whole reply.

@@ -7,8 +7,11 @@
   mbx inbox register [path] [--name N]
   mbx inbox seed                     add iterate-run's projects and every git repo under ~/workspace
 
-  mbx msg list [--all]               id<TAB>status<TAB>kind<TAB>from<TAB>trust<TAB>title (open+held, this agent)
-  mbx msg show <id>                  the message file
+  mbx msg list [--all]               id<TAB>status<TAB>kind<TAB>from<TAB>trust<TAB>title
+                                     (open, read and waiting messages for this agent)
+  mbx msg list --work [--operator]   what process takes: open and read; --operator adds
+                                     waiting (operator: …)
+  mbx msg show <id>                  the message file; an open message for this agent becomes read
   mbx msg claim <id> [--steal]       exit 4 when another session holds it
   mbx msg status <id> <text>         rewrite the status line (releases the claim unless text starts "claimed")
   mbx msg send --to T --kind K --title "…" [--agent A] [--reply wanted|none]
@@ -32,7 +35,7 @@ HOME = Path.home()
 REG = HOME / ".claude" / "mailbox" / "registry.json"
 MAX_HOPS = 3
 STALE_CLAIM = 24 * 3600
-OPEN_STATES = ("open", "held")
+UNFINISHED = ("open", "read", "waiting")  # open is unread: the only status the toolbar counts
 
 
 def die(msg, code=1):
@@ -261,6 +264,14 @@ def set_status(path, text):
     die(f"no status line in {path}")
 
 
+def migrate(path):
+    """held (X) is waiting (operator: X): a message that was read never counts as unread."""
+    st = fields(path)["status"]
+    if st.startswith("held"):
+        why = re.sub(r"^held\s*\(?(.*?)\)?$", r"\1", st)
+        set_status(path, f"waiting (operator: {why})" if why else "waiting (operator)")
+
+
 def claim_dir(path):
     return Path(path).parent / ".claims" / Path(path).stem
 
@@ -270,9 +281,14 @@ def cmd_msg_list(a):
     paths = {e["path"] for e in load_reg().get("inboxes", {}).values()}
     me = agent()
     for p in sorted(inbox_dir(root).glob("*.md")):
+        migrate(p)
         f = fields(p)
         state = f["status"].split(" ")[0]
-        if not a.all and state not in OPEN_STATES:
+        if a.work:
+            if state not in ("open", "read") and not (
+                    a.operator and f["status"].startswith("waiting (operator:")):
+                continue
+        elif not a.all and state not in UNFINISHED:
             continue
         if not a.all and f["to_agent"] not in ("any", me):
             continue
@@ -298,6 +314,14 @@ def cmd_msg_claim(a):
     (d / "owner").write_text(owner + "\n")
     set_status(p, f"claimed ({owner})")
     print(f"claimed\t{p.stem}")
+
+
+def cmd_msg_show(a):
+    p = msg_path(a.id)
+    f = fields(p)
+    if f["status"] == "open" and f["to_agent"] in ("any", agent()):
+        set_status(p, f"read ({agent()} {session_id()} {utc()})")
+    print(p.read_text(), end="")
 
 
 def cmd_msg_status(a):
@@ -346,7 +370,7 @@ def cmd_msg_send(a):
     target, verb = None, "new"
     if kind != "reply":
         for p in box.glob(f"*-{me_name.replace('/', '-')}-{slug}.md"):
-            if fields(p)["status"].split(" ")[0] in OPEN_STATES:
+            if fields(p)["status"].split(" ")[0] in UNFINISHED + ("held",):
                 target, verb = p, "updated"
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     mid = target.stem if target else f"{stamp}-{me_name.replace('/', '-')}-{slug}"
@@ -394,6 +418,8 @@ def main():
     ms = sub.add_parser("msg").add_subparsers(dest="verb", required=True)
     ls = ms.add_parser("list")
     ls.add_argument("--all", action="store_true")
+    ls.add_argument("--work", action="store_true")
+    ls.add_argument("--operator", action="store_true")
     ms.add_parser("show").add_argument("id")
     c = ms.add_parser("claim")
     c.add_argument("id")
@@ -438,7 +464,7 @@ def main():
                 print(f"{n}\t{reg['inboxes'][n]['path']}")
     else:
         {"list": cmd_msg_list, "claim": cmd_msg_claim, "status": cmd_msg_status,
-         "send": cmd_msg_send, "show": lambda a: print(msg_path(a.id).read_text(), end="")}[a.verb](a)
+         "send": cmd_msg_send, "show": cmd_msg_show}[a.verb](a)
 
 
 if __name__ == "__main__":

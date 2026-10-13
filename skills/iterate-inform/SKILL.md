@@ -2,7 +2,7 @@
 name: iterate-inform
 description: "Alias for /mailbox send --kind inform, kept so /iterate-inform still works: sends another project a one-time bug report about a problem it owns."
 argument-hint: <project> <what to tell them — an instruction to the AI>
-version: 5.14.0
+version: 5.15.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 

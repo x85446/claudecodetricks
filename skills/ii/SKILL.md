@@ -3,7 +3,7 @@ name: ii
 description: Alias for /mailbox send --kind inform. Typing /ii <project> <what to tell them> drops a one-time bug report in another project's inbox. Exists purely as a shorthand.
 argument-hint: <project> <what to tell them>
 disable-model-invocation: true
-version: 5.14.0
+version: 5.15.0
 ---
 
 # /ii — alias for /mailbox send --kind inform

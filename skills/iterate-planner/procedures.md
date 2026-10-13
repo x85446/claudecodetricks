@@ -26,8 +26,10 @@ Archived: <count>
 
 Inbox:
 -------------------------
-Open: <count>
+Unread: <count>
   - <sender>: <title>
+Waiting on you: <count>
+  - <sender>: <title> — <the one thing needed>
 ```
 
 **Git section** (skip the whole section with one line `not a git repo` if there's no `.git`):
@@ -44,8 +46,8 @@ Open: <count>
 - `Archived` — count of files in `archive/` (count `.md` files only, not `.teams/` directories).
 
 **Inbox section** (from `./.claude/iterate/inbox/*.md`, the messages other projects sent here with `/mailbox`):
-- `Open` — count of messages whose key block (above the first `## `) reads `status: open` or `status: held`. `0` when the directory is missing.
-- One line per counted message: the sender from its `From:` line, its title from the `# <Kind> — <title>` heading, and `(held)` after a held one. Claimed, done, consumed and dismissed messages are not listed.
+- `Unread` — count of messages whose key block (above the first `## `) reads `status: open`. `0` when the directory is missing. One line per unread message: the sender from its `From:` line and its title from the `# <Kind> — <title>` heading.
+- `Waiting on you` — count of messages whose key block reads `status: waiting (operator: …)` or `status: held (…)`. One line per message, ending in the thing its status names. Read, claimed, reply-waiting, done, consumed and dismissed messages are not listed.
 
 Print nothing else — no advice, no next-step suggestions, no per-plan prose beyond the fixed fields. If a count is genuinely unreadable (corrupt plan file), print `?` for that cell rather than guessing. Then **stop**.
 
