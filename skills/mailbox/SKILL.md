@@ -232,16 +232,16 @@ These are the writing rules. The receiver has none of your context:
 
 **Statuses**:
 
-| Status | Means | Toolbar count |
+| Status | Means | Toolbar flag |
 |---|---|---|
-| `open` | Unread. Auto mode fires on it. | counted |
+| `open` | Unread. Auto mode fires on it. | red, counted |
 | `read (<agent> <session> <UTC>)` | Opened with `read`, not yet worked. `process` works it. | — |
 | `claimed (<agent> <session> <UTC>)` | A session is reading and working it. | — |
 | `waiting (reply: <inbox> <sent id>)` | Worked as far as it goes; another project's reply wakes it. | — |
-| `waiting (operator: <the one thing needed>)` | Only the user can supply it. A `notauto` run and `/iterate-triage` raise it. | — |
+| `waiting (operator: <the one thing needed>)` | Only the user can supply it. A `notauto` run and `/iterate-triage` raise it. | blue, counted |
 | `done (…)`, `consumed (plan: <name>)`, `dismissed (…)` | Finished. | — |
 
-The flag's number is the unread count, and reading a message lowers it.
+The red flag's number is the unread count, and reading a message lowers it. The blue flag counts messages waiting on the user; it never triggers Auto mode.
 `mbx msg list` rewrites a `held (…)` status to `waiting (operator: …)`. A claim older than 24 hours can be taken with
 `msg claim <id> --steal`, but only after checking that its session is gone.
 

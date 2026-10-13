@@ -161,9 +161,10 @@ func hasStartablePlan(dir string) bool {
 	return false
 }
 
-// decideProject applies the skip order the plan fixed: not enrolled,
-// conductor disabled or paused, nothing startable, heartbeat live, lock
-// held, outside either schedule — then launch. The global switch is the
+// decideProject applies the skip order: not enrolled, conductor disabled
+// or paused, nothing startable, lock held (a tick's child is running),
+// heartbeat live (another session is working here), outside either
+// schedule — then launch. The global switch is the
 // tick's own first check, before any project is looked at.
 func decideProject(dir string, now time.Time, live time.Duration) TickDecision {
 	d := TickDecision{Dir: dir}
@@ -184,12 +185,12 @@ func decideProject(dir string, now time.Time, live time.Duration) TickDecision {
 		d.Reason = "nothing queued"
 		return d
 	}
-	if st, err := os.Stat(HeartbeatPath(dir)); err == nil && now.Sub(st.ModTime()) <= live {
-		d.Reason = "live"
-		return d
-	}
 	if nightlyLockHeld(dir) {
 		d.Reason = "running"
+		return d
+	}
+	if st, err := os.Stat(HeartbeatPath(dir)); err == nil && now.Sub(st.ModTime()) <= live && !ownTrail(dir, st.ModTime()) {
+		d.Reason = "live"
 		return d
 	}
 	launch, err := ReadLaunchSchedule(dir)
@@ -210,6 +211,26 @@ func decideProject(dir string, now time.Time, live time.Duration) TickDecision {
 	}
 	d.Launch = true
 	return d
+}
+
+// ownTrail reports whether a heartbeat is the trail of this project's last
+// tick child rather than a session working now. The child's hooks stamp the
+// heartbeat until it exits, and its run record's Finished is written after
+// that, so a stamp no later than Finished is the child's own. Counting it
+// as live skipped every tick inside the live window after a run ended: one
+// filemaster step per 16–24 minutes, the rest idle. A stamp after Finished
+// is another session, and a run with no Finished (killed before recording)
+// leaves the window to decide.
+func ownTrail(dir string, beat time.Time) bool {
+	lr, ok := loadLastRun(dir)
+	if !ok || lr.Finished == "" {
+		return false
+	}
+	fin, err := time.Parse(time.RFC3339, lr.Finished)
+	if err != nil {
+		return false
+	}
+	return !beat.After(fin.Add(2 * time.Second)) // Finished is whole seconds
 }
 
 // nightlyLockHeld tries the project's lock without blocking: held means a

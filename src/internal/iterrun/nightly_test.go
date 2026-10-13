@@ -98,6 +98,26 @@ func TestDecideProjectSkipOrder(t *testing.T) {
 	if d := decideProject(p1, time.Now().Add(live+time.Minute), live); !d.Launch {
 		t.Errorf("heartbeat older than the window: %s; want launch", d)
 	}
+
+	// The last tick child's own stamps, left behind when it finished, are not
+	// a live session: the next tick launches straight away.
+	if err := os.MkdirAll(NightlyLockDir(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fin := time.Now().UTC().Add(time.Second)
+	saveLastRun(LastRun{Dir: p1, Launched: fin.Add(-time.Hour).Format(time.RFC3339), Finished: fin.Format(time.RFC3339)})
+	if d := decideProject(p1, time.Now(), live); !d.Launch {
+		t.Errorf("heartbeat from the finished child: %s; want launch", d)
+	}
+	// A stamp after the child finished is another session working.
+	later := fin.Add(time.Minute)
+	if err := os.Chtimes(HeartbeatPath(p1), later, later); err != nil {
+		t.Fatal(err)
+	}
+	if d := decideProject(p1, later.Add(time.Minute), live); d.Reason != "live" {
+		t.Errorf("heartbeat after the child finished: %s; want skip: live", d)
+	}
+	os.Remove(nightlyLastRunPath(p1))
 	os.Remove(HeartbeatPath(p1))
 
 	// tick-6: the previous child still holds the lock.
