@@ -250,6 +250,10 @@ the runner appends its own arguments after it.
 
 Usage:
   testmaster runner list
+
+The shell line is always listed. With no override it ends in "default" and
+shows the shell this OS resolves: bash -c on macOS and Linux; on Windows, Git
+Bash, else PowerShell 7, else Windows PowerShell, else cmd /C.
 `,
 	"runner clear": `testmaster runner clear — return a toolchain to its default command
 
@@ -336,6 +340,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		for _, k := range tm.Kinds {
 			if v, ok := p.Reg.Runners[k]; ok {
 				fmt.Fprintf(stdout, "%s\t%s\n", k, strings.Join(v, " "))
+			} else if k == "shell" {
+				fmt.Fprintf(stdout, "shell\t%s\tdefault\n", strings.Join(tm.DefaultShell(), " "))
 			}
 		}
 		return 0

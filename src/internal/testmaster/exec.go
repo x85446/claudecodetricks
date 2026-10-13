@@ -25,17 +25,22 @@ type proc struct {
 // Failed reports whether the process did not exit 0 for any reason.
 func (r proc) Failed() bool { return r.Exit != 0 || r.TimedOut || r.Interrupted || r.StartErr != nil }
 
-// runProc runs argv in dir with stdin closed. The child gets its own process
-// group so a timeout or Ctrl-C kills everything it spawned (make → bash →
-// the test), not just the first process.
+// killedExit is the exit code a killed test reports on every OS: 128 + SIGKILL,
+// what a shell prints for a process killed by signal 9.
+const killedExit = 128 + int(syscall.SIGKILL)
+
+// runProc runs argv in dir with stdin closed. The child and everything it
+// spawns (make → bash → the test) form one tree, so a timeout or Ctrl-C kills
+// all of it, not just the first process: a process group on Unix, a Job
+// Object on Windows.
 func runProc(ctx context.Context, dir string, env []string, timeout time.Duration, combined bool, argv ...string) proc {
 	tctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cmd := exec.CommandContext(tctx, argv[0], argv[1:]...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), env...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
+	tree := prepareTree(cmd)
+	defer tree.close()
 	cmd.WaitDelay = 5 * time.Second
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -45,7 +50,15 @@ func runProc(ctx context.Context, dir string, env []string, timeout time.Duratio
 		cmd.Stderr = &stderr
 	}
 	start := time.Now()
-	err := cmd.Run()
+	err := cmd.Start()
+	if err == nil {
+		if terr := tree.started(); terr != nil {
+			_ = cmd.Process.Kill()
+			_ = cmd.Wait()
+			return proc{Exit: -1, StartErr: terr, Elapsed: time.Since(start)}
+		}
+		err = cmd.Wait()
+	}
 	r := proc{Stdout: stdout.Bytes(), Stderr: stderr.Bytes(), Elapsed: time.Since(start)}
 	var ee *exec.ExitError
 	switch {
@@ -53,7 +66,7 @@ func runProc(ctx context.Context, dir string, env []string, timeout time.Duratio
 	case errors.As(err, &ee):
 		r.Exit = ee.ExitCode()
 		if r.Exit < 0 {
-			r.Exit = 128 + int(syscall.SIGKILL)
+			r.Exit = killedExit
 		}
 	default:
 		if cmd.ProcessState == nil {

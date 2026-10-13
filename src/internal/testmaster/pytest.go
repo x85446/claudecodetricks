@@ -257,7 +257,7 @@ func (a pytestAdapter) discover(ctx context.Context, p *Project, src Source) ([]
 			continue
 		}
 		file, _, _ := strings.Cut(line, "::")
-		e := Entry{Kind: "pytest", Dir: normDir(src.Dir), NodeID: line, File: p.Rel(filepath.Join(dir, file))}
+		e := Entry{Kind: "pytest", Dir: normDir(src.Dir), NodeID: line, File: p.relFile(filepath.Join(dir, file))}
 		e.Cmd = a.repro(p, &e)
 		id := line
 		if d := normDir(src.Dir); d != "" {

@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [hoatzin] - 2026-10-13
+
+### Added
+- `testmaster` builds and runs natively on Windows (windows/amd64, windows/arm64). A timeout or interrupt terminates the test's Job Object: the child starts suspended, joins the job, then resumes, so nothing it spawns escapes. `taskkill /T` is the fallback. A child a passing test leaves running is left alone, as on Unix.
+- Windows run lock: `LockFileEx` on `.claude/testmaster/failures/.lock`, with the same refusal text as `flock` on Unix, released by the kernel however the holder exits.
+- Windows default shell for `--kind shell` tests: Git Bash (on PATH or beside `git.exe`, never the WSL launcher), then PowerShell 7, Windows PowerShell, `cmd /C`. `cmd` gets its command verbatim. `testmaster runner list` prints the resolved default with a trailing `default`.
+- `.github/workflows/testmaster.yml`: vet and tests on ubuntu-24.04, macos-15 and windows-2025, plus four cross-builds; actions pinned by SHA.
+- `make build-testmaster-cross`: the CI matrix's four cross-builds, locally.
+
+### Fixed
+- Registry `file` paths use forward slashes on every OS, so one `registry.json` reads the same from a Windows checkout.
+- `make clean` removes the testmaster binary, so a reinstall never carries a stale version stamp.
+
 ## [gaur] - 2026-10-05
 
 ### Added

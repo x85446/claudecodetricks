@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	tm "github.com/x85446/claudecodetricks/src/internal/testmaster"
 )
 
 func cli(t *testing.T, args ...string) (string, string, int) {
@@ -72,6 +74,39 @@ func TestCLIEndToEnd(t *testing.T) {
 		t.Errorf("run: code %d\n%s", code, out)
 	}
 
+	state := filepath.Join(dir, ".claude", "testmaster")
+	if b, err := os.ReadFile(filepath.Join(state, "failures", "bad.log")); err != nil || !strings.Contains(string(b), "rerun:   echo nope; exit 1") {
+		t.Errorf("failure log: %v\n%s", err, b)
+	}
+	history, _ := os.ReadFile(filepath.Join(state, "history.jsonl"))
+	for _, id := range []string{"ok", "bad", "gate"} {
+		if !strings.Contains(string(history), `"id":"`+id+`"`) {
+			t.Errorf("history.jsonl has no line for %s:\n%s", id, history)
+		}
+	}
+
+	// A second run while another process holds the project lock is refused
+	// and writes nothing.
+	p, err := tm.Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	release, err := p.Lock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	registry, _ := os.ReadFile(filepath.Join(state, "registry.json"))
+	if _, errOut, code := cli(t, "suite", "run", "-C", dir); code == 0 || !strings.Contains(errOut, filepath.Join("failures", ".lock")) {
+		t.Errorf("run under a held lock: code %d, stderr %q", code, errOut)
+	}
+	if b, _ := os.ReadFile(filepath.Join(state, "registry.json")); string(b) != string(registry) {
+		t.Error("a refused run changed registry.json")
+	}
+	if b, _ := os.ReadFile(filepath.Join(state, "history.jsonl")); string(b) != string(history) {
+		t.Error("a refused run changed history.jsonl")
+	}
+	release()
+
 	out, _, _ = cli(t, "test", "list", "--failing", "-C", dir)
 	if strings.TrimSpace(out) != "bad" {
 		t.Errorf("failing list = %q", out)
@@ -129,6 +164,9 @@ func TestCLIEndToEnd(t *testing.T) {
 	}
 	if _, errOut, code := cli(t, "test", "list", "--jobs", "2", "-C", dir); code != 2 || !strings.Contains(errOut, "--jobs does not apply to test list") {
 		t.Errorf("misplaced local flag: %d %q", code, errOut)
+	}
+	if out, _, _ := cli(t, "runner", "list", "-C", dir); out != "shell\t"+strings.Join(tm.DefaultShell(), " ")+"\tdefault\n" {
+		t.Errorf("runner list with no override = %q", out)
 	}
 	if _, _, code := cli(t, "runner", "set", "shell", "-C", dir, "--", "sh", "-c"); code != 0 {
 		t.Error("runner set failed")

@@ -268,7 +268,7 @@ func (a goAdapter) discover(ctx context.Context, p *Project, src Source) ([]Foun
 		for _, name := range names[imp] {
 			e := Entry{Kind: "go", Dir: normDir(src.Dir), Pkg: pkg, Name: name}
 			if f, ok := files[name]; ok {
-				e.File = p.Rel(f)
+				e.File = p.relFile(f)
 			}
 			e.Cmd = a.repro(p, &e)
 			alt := strings.ReplaceAll(strings.TrimPrefix(pkg, "./"), "/", ".") + "." + name

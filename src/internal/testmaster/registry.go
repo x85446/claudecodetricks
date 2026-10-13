@@ -17,7 +17,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -313,6 +312,11 @@ func (p *Project) Rel(path string) string {
 	return path
 }
 
+// relFile renders a path for the registry: relative to the project root, with
+// forward slashes on every OS, so one registry.json serves a checkout on any
+// of them.
+func (p *Project) relFile(path string) string { return filepath.ToSlash(p.Rel(path)) }
+
 // DirOf resolves an entry's working directory.
 func (p *Project) DirOf(e *Entry) string {
 	if e.Dir == "" || e.Dir == "." {
@@ -386,7 +390,7 @@ func (p *Project) Lock() (func(), error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+	if err := lockFile(f); err != nil {
 		f.Close()
 		return nil, fmt.Errorf("another testmaster process holds %s", p.Rel(f.Name()))
 	}

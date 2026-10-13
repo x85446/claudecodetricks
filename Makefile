@@ -223,6 +223,13 @@ $(TESTMASTER_BIN): $(wildcard $(CMD_DIR)/testmaster/*.go) $(wildcard $(INTERNAL_
 
 rebuild: clean build  ## Clean and rebuild all binaries
 
+.PHONY: build-testmaster-cross
+build-testmaster-cross: check-tools  ## Cross-build testmaster for windows/amd64, windows/arm64, linux/amd64, darwin/arm64 (the CI matrix)
+	$(Q)for t in windows/amd64 windows/arm64 linux/amd64 darwin/arm64; do \
+		(cd $(SRC_DIR) && GOOS=$${t%/*} GOARCH=$${t#*/} $(GO) build $(GOFLAGS) -o /dev/null ./cmd/testmaster) || exit 1; \
+		echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) testmaster $$t"; \
+	done
+
 # ==================================================================================== #
 # TESTING TARGETS
 # ==================================================================================== #
@@ -462,7 +469,7 @@ watch:  ## Watch for changes and rebuild (requires fswatch or inotifywait)
 
 clean:  ## Remove built binaries and test artifacts
 	$(Q)echo -e "$(COLOR_YELLOW)→ Cleaning build artifacts...$(COLOR_RESET)"
-	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(DOC_GUARD_BIN) $(ITERATE_RUN_BIN)
+	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(DOC_GUARD_BIN) $(ITERATE_RUN_BIN) $(TESTMASTER_BIN)
 	$(Q)rm -f coverage.out coverage.html
 	$(Q)rm -rf $(SRC_DIR)/vendor
 	$(Q)echo -e "$(COLOR_GREEN)✓ Clean complete$(COLOR_RESET)"

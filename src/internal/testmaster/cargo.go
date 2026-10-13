@@ -228,7 +228,7 @@ func (a cargoAdapter) discover(ctx context.Context, p *Project, src Source) ([]F
 			if !ok {
 				continue
 			}
-			e := Entry{Kind: "cargo", Dir: normDir(src.Dir), Pkg: pkgOf[x.manifestDir], Target: key, Name: name, File: p.Rel(x.src)}
+			e := Entry{Kind: "cargo", Dir: normDir(src.Dir), Pkg: pkgOf[x.manifestDir], Target: key, Name: name, File: p.relFile(x.src)}
 			e.Cmd = a.repro(p, &e)
 			found = append(found, Found{ID: tname + "::" + name, AltID: key + "::" + name, Entry: e})
 		}
