@@ -7,7 +7,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.13.0
+**Version:** iterate family 5.14.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -486,6 +486,8 @@ After all steps are done (or appear done), execute every validation check from `
 
 "Static code inspection passes" / "tests pass" / "the diff looks right" alone is NEVER sufficient. If the plan's Nb doesn't include a real execution step, ADD one before declaring the check green. Log the addition in the Decisions log.
 
+**Long-running tests are not run.** An iterate run implements code and proves it with fast and standard tests. A long-running test (over the standard tier's 2 minutes: a slow-tier case, a soak, an observation window) runs only when the plan's `Long tests:` constraint names it or the user asks for it in this session. Then it runs through `iterate-run run` for heartbeat. Otherwise a slow case an Nb names, or one the FFIV sweep finds drifted, stays drifted for the nightly, and the step is checked off on its fast and standard cases. An Nb that waits on wall-clock time the user never asked for ("observe for 24 hours", "a week of use") is a planning defect: validate its bounded form (seeded fixtures, an injected clock, a window short enough for the standard tier), log `Inferred: bounded <check> — long form not asked for`, and carry on. Never park on a long test and never ask about one.
+
 If any check fails:
 - **Don't ask the user.** Diagnose, re-attempt the affected step, re-run all validation.
 - Cap: 5 cycles of (re-attempt + re-validate) on the *same* failing check. If still failing on cycle 5, log "blocked: <check> failed after 5 cycles, last error: <error>" and stop (see step 5).
@@ -500,7 +502,7 @@ If any check fails:
 - **Add a `Finished: <UTC timestamp now>` line** (same `date -u +%Y-%m-%dT%H:%M:%SZ` format as `Executing:`) right before archiving — this is the real "done at" instant the dashboard's "Ran for" figure reads once archived. Without it, that figure falls back to the latest CONFIRMED activity span (hook/registry data), which can simply not exist for a project with neither wired up — confirmed live: a flat plan showed "Running for 0s" despite a correct `Executing:`, because there was no activity data to compute a span against at all. Set once, never touched again.
 - Cancel the auto-resume loop — the exact mechanism recorded in `loop-mechanism:`, per "Auto-resume" — nothing was armed by this skill, so clear the field and tell the user if their Automation is still firing.
 - Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`. If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it. If the plan was teamed, also move `./.claude/iterate/plans/<name>.teams/` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.teams/` (the per-team logs are already merged into the archived plan file — this just keeps the raw team logs around for audit, don't leave the working `.teams/` dir behind).
-- Report a 3-5 line summary: goal, what was done, validation results, time taken, **and the merge result** (`merged to <default> via PR <url>, branch deleted` — or the ⚠ not-merged flag with reason). On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
+- Report a 3-5 line summary: goal, what was done, validation results (with `left for the nightly: <slow case ids>` when the plan drifted any), time taken, **and the merge result** (`merged to <default> via PR <url>, branch deleted` — or the ⚠ not-merged flag with reason). On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
 - **Suggest `$oracle harvest`** to the user — one line at end of report: "If anything in this run is worth remembering for next time, run `$oracle harvest`." Don't auto-invoke; oracle harvesting is opt-in.
 
 **On human-gate reached (every agent-completable validation green; only the plan's marked `human-gate` step remains):** this is the DESIGNED ending of a plan that ends in a human decision session — it is success-with-handoff, not "blocked", and it must not fall through to the stuck path below.

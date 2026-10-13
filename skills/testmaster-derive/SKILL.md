@@ -2,7 +2,7 @@
 name: testmaster-derive
 description: "TESTMASTER child (invoked via /testmaster): derives test-case specs from a stated requirement, including the negative, every-path, restore-state, and interrupted cases. Specs only, no code."
 argument-hint: <the requirement in the user's words, e.g. "hitting play mutes the device when mute-devices is on">
-version: 1.1.0
+version: 1.2.0
 ---
 
 # /testmaster-derive — turn a stated requirement into the test cases it implies
@@ -25,7 +25,7 @@ A requirement stated in plain language almost always specifies the happy path an
    - the **interrupted case** — the trigger starts and something aborts it (quit, error, crash) — is the state left correct?
 3. **Flag genuine ambiguity as a question, don't invent an answer.** When the requirement doesn't determine the expected result (the restore-state case usually doesn't), write the case with `expected: AMBIGUOUS — <the two candidate behaviors>` and surface it to the caller. The planner turns these into `Inferred:` decisions it logs; a human can overrule.
 4. **Write the specs** to `./.claude/testmaster/catalog.json` as a new requirement entry (see `/testmaster-catalog` for the schema): the requirement statement in the user's own words, plus one case per enumerated scenario with `id`, `given`, `when`, `then`, and `tier: "?"`.
-5. **Report** to the caller: one line per case — `<id>: given <state>, when <trigger>, then <effect>` — with ambiguous ones marked. Keep it to the case list; no commentary.
+5. **Report** to the caller: one line per case — `<id>: given <state>, when <trigger>, then <effect>` — with ambiguous ones marked, then one `not built:` line per long-running property (rule 6). Keep it to the case list; no commentary.
 
 ## Worked example
 
@@ -51,3 +51,4 @@ Two cases the prose never mentioned (mute-5, mute-6) and one it stated only as a
 3. **Never resolve an ambiguity silently.** Mark it `AMBIGUOUS` and name both candidate behaviors; the caller decides and logs the decision.
 4. **Use the user's own words for the requirement statement** — it is what a future reader matches the tests back to.
 5. Derive from the requirement, not from the implementation: this runs at planning time, when there is often no code yet.
+6. **Inside an iterate session, no case needs longer than 2 minutes unless the user asked.** A property that shows over time (aged state, a leak, a drift across a day) gets a bounded case: seeded fixtures for the aged state, an injected clock, fewer iterations, a window that still crosses the boundary that matters. A property only a long run can show gets no case. Return it to the caller as `not built: <property> — long-running`. The caller passing the user's explicit ask (the plan's `Long tests:` line) is the only thing that lifts this.

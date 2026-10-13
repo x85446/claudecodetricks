@@ -6,7 +6,7 @@ description: "TESTMASTER child (invoked via $testmaster): runs a tier or named t
 
 # $testmaster-run — run the suite without reading it
 
-**Version:** 2.1.0
+**Version:** 2.2.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -27,6 +27,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$testmaster` — ported.
 - `$testmaster-prune` — ported.
+- `$testmaster-register` — ported.
 
 ## Steps
 
@@ -39,7 +40,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
    - a tier, `all`, an id, or a glob (`'iterrun.*'`) → `testmaster suite run <words>`
    - "rerun the failures" → `testmaster suite run --failed`
 
-   Inside an executing iterate plan, a bare `all` becomes the default set with a one-line note, and `slow` runs only when named: by the tier word, or by a slow case id the plan's FFIV sweep named. That case runs without asking.
+   Inside an executing iterate plan, `slow`, `all`, and any slow-tier id or glob shrink to the default set with a one-line note (`slow tier left for the nightly: <ids>`), unless the plan's `Long tests:` constraint or the user's own message in this session names those tests. A slow case the plan drifted is reported, never run.
 2. **Run it once.** From an iterate plan, wrap it for heartbeat (`iterate-run run -- testmaster suite run …`); otherwise run it bare. Exit 3 means nothing is registered even after step 0: route to `$testmaster adopt`. If `testmaster` is not on PATH, stop with `testmaster is not installed — make install in claudecodetricks`. Never fall back to running tests one by one yourself: that is the token spend the binary exists to remove.
 3. **Read the output, not the tests.** It is one summary line plus one line per problem:
    ```
@@ -64,5 +65,5 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 1. **Measured, never estimated.** Only the binary writes `avg_ms`, `last_ms`, `runs`, `tier`, `last_result`, `history.jsonl`, `failures/`, and the catalog's `last_validated_commit`. Never hand-edit them, and never time a test yourself.
 2. **A pass is a count.** Never rerun a passing test to look at it, and never read a log for a test that passed.
 3. **Tier changes are announced, not silent.**
-4. **Registration belongs to `/testmaster-register`.** This child never runs `test add` or `test set`: adding a test, and deciding whether it blocks or runs alone, happens there.
+4. **Registration belongs to `$testmaster-register`.** This child never runs `test add` or `test set`: adding a test, and deciding whether it blocks or runs alone, happens there.
 5. This child never edits test content, never deletes tests, never writes new ones. It reports gaps and failures to the invoker.

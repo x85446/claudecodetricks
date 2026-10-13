@@ -7,7 +7,7 @@ description: "TESTMASTER child (invoked via $testmaster): puts tests into the ru
 
 # $testmaster-register — TESTMASTER registers its own suite
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -133,7 +133,7 @@ With nothing to register: `register: nothing unregistered`.
 3. **The failure output is the bug report.** The log is the first and often only thing the fixer reads. Print the command that ran, expected versus actual, and the file or input involved. "assertion failed" on its own costs a rerun.
 4. **It owns its state.** It uses temp dirs and its own (or `:0`) ports, cleans up after itself, and never depends on another test running first.
 5. **One command runs just it.** Its registry `cmd`, run from the project root, runs this test and no other. A test reachable only by running a whole suite gets its own `make` target or selector. Write the `cmd` for bash, with forward-slash paths: Git Bash runs it on Windows too.
-6. **It is bounded.** It finishes inside the 10-minute floor. Anything longer is a measured slow-tier test, not a hang.
+6. **It is bounded.** It finishes inside the 10-minute floor. Anything longer is a measured slow-tier test, not a hang. A test written in an iterate session finishes within 2 minutes unless the plan's `Long tests:` constraint names it.
 7. **It exercises the product the way a caller does** (the shared real-world mandate).
 
 ## Rules
