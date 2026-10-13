@@ -210,7 +210,7 @@ func TestBlockingFailureStopsTheRunButIndependentFailuresDoNot(t *testing.T) {
 
 	marker := filepath.Join(p.Root, "ran")
 	p.Reg.Tests["build"] = &Entry{Kind: "shell", Cmd: "exit 1", Blocking: true, Tier: "?"}
-	p.Reg.Tests["after"] = &Entry{Kind: "shell", Cmd: "touch " + marker, Tier: "?"}
+	p.Reg.Tests["after"] = &Entry{Kind: "shell", Cmd: "touch " + filepath.ToSlash(marker), Tier: "?"}
 	rep = runAll(t, p, RunOptions{})
 	if rep.BlockedBy != "build" || rep.Counts[NotRun] != 31 || rep.Counts[Fail] != 1 {
 		t.Fatalf("blocked run: blockedBy=%q counts=%v", rep.BlockedBy, rep.Counts)
@@ -226,7 +226,7 @@ func TestBlockingFailureStopsTheRunButIndependentFailuresDoNot(t *testing.T) {
 // parallel=no tests never overlap anything; parallel tests do overlap.
 func TestSerialTestsRunAlone(t *testing.T) {
 	dir := t.TempDir()
-	lock := filepath.Join(dir, "busy")
+	lock := filepath.ToSlash(filepath.Join(dir, "busy"))
 	guard := "if [ -e " + lock + " ]; then echo overlap; exit 1; fi; touch " + lock + "; sleep 0.3; rm " + lock
 	f := false
 	p := project(t, map[string]*Entry{
@@ -286,24 +286,6 @@ func TestTierChangeIsReportedAndDefaultSelection(t *testing.T) {
 	p.Reg.Tests["was-fast"].LastResult = Fail
 	if ids, label, _ := p.Select(nil, true); strings.Join(ids, ",") != "was-fast" || label != "failed" {
 		t.Errorf("--failed selected %v (%s)", ids, label)
-	}
-}
-
-func TestShellTimeoutKillsTheWholeProcessGroup(t *testing.T) {
-	marker := filepath.Join(t.TempDir(), "survived")
-	p := project(t, map[string]*Entry{
-		"hang": {Kind: "shell", Cmd: "(sleep 2; touch " + marker + ") & sleep 60"},
-	})
-	rep := runAll(t, p, RunOptions{Timeout: 300 * time.Millisecond})
-	if rep.Counts[Timeout] != 1 {
-		t.Fatalf("counts = %v", rep.Counts)
-	}
-	time.Sleep(2500 * time.Millisecond)
-	if _, err := os.Stat(marker); err == nil {
-		t.Error("a grandchild outlived the timeout")
-	}
-	if p.Reg.Tests["hang"].Runs != 0 {
-		t.Error("a timeout was recorded as a measured duration")
 	}
 }
 

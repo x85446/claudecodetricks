@@ -2485,8 +2485,333 @@
       "id": "req-testmaster-runner",
       "source": "user",
       "statement": "I want a companion app that helps testrunner run tests external to token calls. It can be written in go. It needs to be language agnostic e.g. can run rust tests, python tests, etc. It maintains a text based database or sqlite database per project so that it knows exactly what test cases to run and run through and how to get them. A pass is just a pass. We don't even need to tell the AI TestMaster that it passed. A failure is a failure and we should capture the failure output and give that to a file that TestMaster then can go read about the full test. So it should run through the full test cases until there's a blocking test. But if we had 300 tests that are meant to be ran independent, then it runs through all 300 and then it tells TestMaster only of the failures. It can tell it statistics on passing, but I don't need the TestMaster actually seeing and looking at the test."
+    },
+    {
+      "cases": [
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; a shell test starts a child that starts a grandchild sleeping past the unit timeout",
+          "id": "wtree-1",
+          "source": "plan:hoatzin",
+          "then": "status timeout, the grandchild is gone within WaitDelay, and the run goes on to the next test",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "the unit timeout expires"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; the same three-process tree is running",
+          "id": "wtree-2",
+          "source": "plan:hoatzin",
+          "then": "status interrupted, every process in the tree is gone, and no timing is stamped for that test",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "the run's context is cancelled (the path Ctrl-C takes)"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; a test exits 0 before its timeout",
+          "id": "wtree-3",
+          "source": "plan:hoatzin",
+          "then": "status pass and no termination is issued (negative case)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "the unit finishes"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; a test exits 3 on its own",
+          "id": "wtree-4",
+          "source": "plan:hoatzin",
+          "then": "status fail with exit 3 recorded, not a kill code, and its failure log is written",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "the unit finishes"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; a test leaves a detached child running and exits 0",
+          "id": "wtree-5",
+          "source": "plan:hoatzin",
+          "then": "the child is left alone, matching Unix, which kills only on timeout or interrupt (decision: AMBIGUOUS resolved toward parity)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "the unit finishes"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "macOS or Linux",
+          "id": "wtree-6",
+          "source": "plan:hoatzin",
+          "then": "it passes unchanged (Unix parity)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "TestShellTimeoutKillsTheWholeProcessGroup runs"
+        }
+      ],
+      "id": "req-hoatzin-win-tree",
+      "requirement": "native Windows process-tree cancellation — a timeout or an interrupt kills everything the test spawned, not just the first process (kingtut inbox 20261013T051222Z)",
+      "source": "plan:hoatzin"
+    },
+    {
+      "cases": [
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; run A holds the project lock",
+          "id": "wlock-1",
+          "source": "plan:hoatzin",
+          "then": "B is refused at once naming .claude/testmaster/failures/.lock, and registry.json and history.jsonl are unchanged by B",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "run B starts in the same project"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; no other run",
+          "id": "wlock-2",
+          "source": "plan:hoatzin",
+          "then": "it takes the lock, and registry.json and history.jsonl carry its results (negative case)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "a run starts and finishes"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; run A holding the lock is terminated hard (taskkill /F)",
+          "id": "wlock-3",
+          "source": "plan:hoatzin",
+          "then": "B takes the lock immediately",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "run B starts"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; run A finished normally",
+          "id": "wlock-4",
+          "source": "plan:hoatzin",
+          "then": "B takes the lock",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "run B starts"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; a .lock file is left on disk with no holder",
+          "id": "wlock-5",
+          "source": "plan:hoatzin",
+          "then": "it takes the lock: a stale file is not a lock",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "a run starts"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "two different projects",
+          "id": "wlock-6",
+          "source": "plan:hoatzin",
+          "then": "both proceed: the lock is per project",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "runs start in both at once"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "macOS or Linux",
+          "id": "wlock-7",
+          "source": "plan:hoatzin",
+          "then": "refusal and release behave as on Windows (Unix parity)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "the same contention test runs"
+        }
+      ],
+      "id": "req-hoatzin-win-lock",
+      "requirement": "an exclusive kernel-backed project run lock — two testmaster runs in one project never interleave registry writes, and the lock is released when the holder exits however it exits (kingtut inbox 20261013T051222Z)",
+      "source": "plan:hoatzin"
+    },
+    {
+      "cases": [
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; no shell runner set; Git Bash on PATH",
+          "id": "wsh-1",
+          "source": "plan:hoatzin",
+          "then": "it runs under bash -c; exit 0 passes, 77 skips, anything else fails",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "a shell test runs"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; the only bash on PATH is the WSL launcher C:\\Windows\\System32\\bash.exe",
+          "id": "wsh-2",
+          "source": "plan:hoatzin",
+          "then": "the WSL launcher is never chosen; resolution falls through to PowerShell (decision: AMBIGUOUS resolved, WSL runs in another filesystem view)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "a shell test runs"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; no Git Bash; pwsh present (else powershell.exe)",
+          "id": "wsh-3",
+          "source": "plan:hoatzin",
+          "then": "it runs under pwsh -NoProfile -NonInteractive -Command; exit 77 skips and exit 3 fails with 3",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "a shell test runs"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; testmaster runner set shell -- cmd /c",
+          "id": "wsh-4",
+          "source": "plan:hoatzin",
+          "then": "cmd /c is used verbatim (the override beats the default)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "a shell test runs"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "Windows; no bash and no PowerShell",
+          "id": "wsh-5",
+          "source": "plan:hoatzin",
+          "then": "it runs under cmd /C (decision: last resort, always present)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "a shell test runs"
+        },
+        {
+          "covers": [
+            "src/internal/testmaster/exec.go",
+            "src/internal/testmaster/registry.go",
+            "src/internal/testmaster/shell.go",
+            "src/cmd/testmaster/main.go"
+          ],
+          "covers_source": "convention",
+          "given": "macOS or Linux; no runner set",
+          "id": "wsh-6",
+          "source": "plan:hoatzin",
+          "then": "it runs under bash -c as before (Unix parity)",
+          "tier": "?",
+          "validity": "unverified",
+          "when": "a shell test runs"
+        }
+      ],
+      "id": "req-hoatzin-win-shell",
+      "requirement": "compatible shell invocation — shell-kind tests run under a Windows-capable shell instead of assuming /bin/sh, and runner set shell still overrides it (kingtut inbox 20261013T051222Z)",
+      "source": "plan:hoatzin"
     }
   ],
   "schema": 1,
-  "updated": "2026-10-05T18:03:58Z"
+  "updated": "2026-10-13T05:14:39Z"
 }

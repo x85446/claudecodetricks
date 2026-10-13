@@ -24,7 +24,7 @@ func (a shellAdapter) plan(p *Project, ids []string, floor time.Duration) []Unit
 	var units []Unit
 	for _, id := range ids {
 		id, e := id, p.Reg.Tests[id]
-		argv := append(p.Reg.Runner("shell", "bash", "-c"), e.Cmd)
+		argv := append(p.Reg.Runner("shell", DefaultShell()...), e.Cmd)
 		timeout := unitTimeout(floor, []*Entry{e})
 		units = append(units, Unit{
 			Kind: "shell", IDs: []string{id}, Display: withDir(e.Dir, e.Cmd),
