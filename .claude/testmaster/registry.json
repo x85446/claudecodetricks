@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-10T01:22:09Z",
+  "updated": "2026-10-13T05:33:49Z",
   "sources": [
     {
       "kind": "go",
@@ -2006,6 +2006,17 @@
       "last_result": "pass",
       "updated": "2026-10-10T01:22:09Z"
     },
+    "testmaster.TestDefaultShellIsBashOnUnix": {
+      "kind": "go",
+      "name": "TestDefaultShellIsBashOnUnix",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestDefaultShellIsBashOnUnix$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/testmaster_unix_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
     "testmaster.TestDetectSources": {
       "kind": "go",
       "name": "TestDetectSources",
@@ -2084,6 +2095,72 @@
       "last_result": "pass",
       "updated": "2026-10-10T01:22:09Z"
     },
+    "testmaster.TestHelperProcess": {
+      "kind": "go",
+      "name": "TestHelperProcess",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestHelperProcess$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/helper_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "testmaster.TestInterruptKillsTheWholeTree": {
+      "kind": "go",
+      "name": "TestInterruptKillsTheWholeTree",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestInterruptKillsTheWholeTree$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/proctree_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "testmaster.TestLockIsExclusiveAcrossProcessesAndDiesWithItsHolder": {
+      "kind": "go",
+      "name": "TestLockIsExclusiveAcrossProcessesAndDiesWithItsHolder",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestLockIsExclusiveAcrossProcessesAndDiesWithItsHolder$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/lock_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "testmaster.TestLockIsPerProject": {
+      "kind": "go",
+      "name": "TestLockIsPerProject",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestLockIsPerProject$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/lock_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "testmaster.TestLockReleaseAndStaleFile": {
+      "kind": "go",
+      "name": "TestLockReleaseAndStaleFile",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestLockReleaseAndStaleFile$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/lock_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "testmaster.TestPassingTestsDetachedChildSurvives": {
+      "kind": "go",
+      "name": "TestPassingTestsDetachedChildSurvives",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestPassingTestsDetachedChildSurvives$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/proctree_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
     "testmaster.TestPytestAdapter": {
       "kind": "go",
       "name": "TestPytestAdapter",
@@ -2109,6 +2186,17 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-10T01:22:09Z"
+    },
+    "testmaster.TestSelfExitKeepsItsCode": {
+      "kind": "go",
+      "name": "TestSelfExitKeepsItsCode",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestSelfExitKeepsItsCode$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/proctree_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "testmaster.TestSerialTestsRunAlone": {
       "kind": "go",
@@ -2136,6 +2224,17 @@
       "last_result": "pass",
       "updated": "2026-10-10T01:22:09Z"
     },
+    "testmaster.TestShellRunnerOverrideBeatsTheDefault": {
+      "kind": "go",
+      "name": "TestShellRunnerOverrideBeatsTheDefault",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestShellRunnerOverrideBeatsTheDefault$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/shellpick_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
     "testmaster.TestShellTimeoutKillsTheWholeProcessGroup": {
       "kind": "go",
       "name": "TestShellTimeoutKillsTheWholeProcessGroup",
@@ -2161,6 +2260,28 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-10T01:22:09Z"
+    },
+    "testmaster.TestTimeoutKillsTheWholeTree": {
+      "kind": "go",
+      "name": "TestTimeoutKillsTheWholeTree",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestTimeoutKillsTheWholeTree$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/proctree_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "testmaster.TestWindowsShellResolution": {
+      "kind": "go",
+      "name": "TestWindowsShellResolution",
+      "pkg": "./src/internal/testmaster",
+      "cmd": "go test -count=1 -run '^TestWindowsShellResolution$' ./src/internal/testmaster",
+      "file": "src/internal/testmaster/shellpick_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "tutorial.box-test": {
       "kind": "shell",

@@ -312,6 +312,11 @@ func (p *Project) Rel(path string) string {
 	return path
 }
 
+// relFile renders a path for the registry: relative to the project root, with
+// forward slashes on every OS, so one registry.json serves a checkout on any
+// of them.
+func (p *Project) relFile(path string) string { return filepath.ToSlash(p.Rel(path)) }
+
 // DirOf resolves an entry's working directory.
 func (p *Project) DirOf(e *Entry) string {
 	if e.Dir == "" || e.Dir == "." {

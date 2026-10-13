@@ -56,8 +56,8 @@ testmaster suite discover
 
 Act on each line:
 
-- `discover <kind> <dir>: N known, M new, K missing`: the M new tests are now registered. Carry on.
-- `MISSING <id>`: the toolchain no longer has that test. Hand it to `$testmaster-prune`; never re-add it.
+- `discover <kind> <dir>: N known, M new, K missing`: the M new tests are registered. Carry on.
+- `MISSING <id>`: the toolchain does not report that test. Hand it to `$testmaster-prune`; never re-add it.
 - `UNLINKED <case> <test>`: a catalog case names a test the registry lacks. Either the test exists but is unregistered (register it in step 2), or the link is not a registry id (rewrite the case's `test` to the id `testmaster test list` shows), or the test is gone (hand the case to `$testmaster-prune`).
 - `discover: no go, cargo or pytest source`: every test here is a shell test. That is normal.
 
@@ -132,7 +132,7 @@ With nothing to register: `register: nothing unregistered`.
 2. **The exit code is the verdict.** Exit 0 only when it checked something and that held. Exit 77 when it cannot run here (a missing tool, no VM), because that is a skip, never a pass. Any other exit is a failure. A script that prints `SKIP` and exits 0 is recorded as a pass.
 3. **The failure output is the bug report.** The log is the first and often only thing the fixer reads. Print the command that ran, expected versus actual, and the file or input involved. "assertion failed" on its own costs a rerun.
 4. **It owns its state.** It uses temp dirs and its own (or `:0`) ports, cleans up after itself, and never depends on another test running first.
-5. **One command runs just it.** Its registry `cmd`, run from the project root, runs this test and no other. A test reachable only by running a whole suite gets its own `make` target or selector.
+5. **One command runs just it.** Its registry `cmd`, run from the project root, runs this test and no other. A test reachable only by running a whole suite gets its own `make` target or selector. Write the `cmd` for bash, with forward-slash paths: Git Bash runs it on Windows too.
 6. **It is bounded.** It finishes inside the 10-minute floor. Anything longer is a measured slow-tier test, not a hang.
 7. **It exercises the product the way a caller does** (the shared real-world mandate).
 
