@@ -2,6 +2,11 @@
 
 What changed, for people who use this.
 
+## 2026-10-13 — The test runner works on Windows
+
+**New**
+- The test runner builds and runs on Windows as well as macOS and Linux. Stopping a test, or letting it time out, stops everything it started. Shell tests run in Git Bash when it is installed, so the same test command works on all three systems.
+
 ## 2026-10-05 — Tidy tutorial menus, and runs that settle their own design questions
 
 **Improved**
