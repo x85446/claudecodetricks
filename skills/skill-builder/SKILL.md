@@ -241,6 +241,8 @@ If your skill needs detailed reference docs, examples, or scripts, add them alon
 
 All skills are backed up to the central skill repository and deployed to their target project.
 
+**Who writes it:** this session, always. claudecodetricks authors every skill, for Claude Code and Codex. A skill whose files are checked into another repo (a mirrored `owner` in `skills/skillmap.tsv`, such as `~/workspace/izuma/izmachine/skills/izmachine`) is edited in that repo on a worktree branch and merged by PR there, then mirrored into `skills/[skill-name]/` and ported with `skills/skill-2-codex/scripts/sync-all.sh --install --only [skill-name]`. Never ask another project's session to write, restructure or port a skill; send it an inform that its skill files changed.
+
 **Backup location (always):** `~/workspace/x85446/claudecodetricks/skills/[skill-name]/`
 This is the canonical copy. The installer script deploys from here.
 

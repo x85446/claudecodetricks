@@ -249,6 +249,13 @@ session is gone.
 3. **A reply never triggers a reply**, and chains stop at 3 hops.
 4. **The only write into another project is `mbx msg send`.** Fixing
    another project's problem is that project's work, under its rules.
+   Skills are the exception: claudecodetricks authors every skill, for
+   Claude Code and Codex, including one checked into another repo, and
+   writes it there itself. No session sends a request asking another
+   project to write, restructure or port a skill. A message asking a
+   project other than claudecodetricks to do so is sent on to
+   claudecodetricks (`--hops` + 1) and marked `done (sent to
+   claudecodetricks)`.
 5. **Never `git add` inbox or sent files.** They are local state, like
    notes.
 6. **One line out per action.** The ack or the per-message line is the
