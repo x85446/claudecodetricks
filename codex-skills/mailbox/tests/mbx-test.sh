@@ -1,6 +1,7 @@
 #!/bin/bash
 # Fixtures for skills/mailbox/scripts/mbx.py: registry seeding and resolution, send/dedup,
-# agent targeting, atomic claims, reply threading, the hop limit, legacy informs.
+# agent targeting, read marking, atomic claims, the work list, waiting states, reply threading,
+# the hop limit, legacy informs and held statuses.
 # Runs against throwaway repos under a scratch HOME; PASS/FAIL per case, exit 1 on any failure.
 set -u
 MBX="$(cd "$(dirname "$0")/.." && pwd)/scripts/mbx.py"
@@ -34,9 +35,20 @@ z" | mbx "$A" msg send --to bravo --title "Codex only" --agent codex >/dev/null
 out=$(mbx "$B" msg list); check "codex-targeted message hidden from claude" '[[ "$out" != *"Codex only"* ]]' "$out"
 out=$(MAILBOX_AGENT=codex mbx "$B" msg list); check "codex sees it" '[[ "$out" == *"Codex only"* ]]' "$out"
 
+cid=$(ls "$B/.claude/iterate/inbox" | grep codex-only | sed 's/\.md$//')
+mbx "$B" msg show "$cid" >/dev/null; check "reading another agent's message leaves it open" 'grep -q "^status: open" "$B/.claude/iterate/inbox/$cid.md"' ""
+mbx "$B" msg show "$id" >/dev/null; check "reading an open message marks it read" 'grep -q "^status: read (claude " "$f"' "$(grep ^status: "$f")"
+out=$(mbx "$B" msg list --work); check "a read message stays on the work list" '[[ "$out" == "$id	read ("* ]]' "$out"
+echo "## Needed
+w" | mbx "$A" msg send --to bravo --title "Deploy the thing" >/dev/null
+check "a resend makes a read message unread again" 'grep -q "^status: open" "$f"' "$(grep ^status: "$f")"
 mbx "$B" msg claim "$id" >/dev/null; out=$(mbx "$B" msg claim "$id" 2>&1); rc=$?
 check "second claim exits 4" '[[ $rc == 4 && "$out" == claimed* ]]' "$out"
 out=$(mbx "$B" msg list); check "claimed message leaves the open list" '[[ "$out" != *"$id"* ]]' "$out"
+mbx "$B" msg status "$id" "waiting (reply: charlie 20260101T000000Z-bravo-x)" >/dev/null
+out=$(mbx "$B" msg list --work --operator); check "waiting on a reply is never on the work list" '[[ "$out" != *"$id"* ]]' "$out"
+out=$(mbx "$B" msg list); check "waiting messages stay listed by show" '[[ "$out" == *"$id	waiting (reply:"* ]]' "$out"
+mbx "$B" msg claim "$id" >/dev/null
 mbx "$B" msg status "$id" "done (deployed)" >/dev/null
 check "final status releases the claim" '[[ ! -d "$B/.claude/iterate/inbox/.claims/$id" ]] && grep -q "^status: done (deployed)" "$f"' ""
 
@@ -52,5 +64,9 @@ mkdir -p "$FX/stranger"; printf '# Request — hi\n\nFrom: stranger (%s/stranger
 out=$(mbx "$B" msg list); check "unregistered sender flagged" '[[ "$out" == *"stranger	unregistered	hi"* ]]' "$out"
 printf '# Inform — old style\n\nFrom: alpha (%s) · plan none · branch main · commit abc\nSent: 2026-01-01T00:00:00Z\nstatus: open\n\n## Problem\np\n' "$A" > "$B/.claude/iterate/inbox/20250101T000000Z-alpha-old-style.md"
 out=$(mbx "$B" msg list); check "legacy inform parses as an open inform" '[[ "$out" == *"20250101T000000Z-alpha-old-style	open	inform	alpha	trusted	old style"* ]]' "$out"
+
+printf '# Request — needs key\n\nFrom: alpha (%s) · agent claude\nstatus: held (needs the vendor API key)\n\n## Needed\nx\n' "$A" > "$B/.claude/iterate/inbox/20250102T000000Z-alpha-needs-key.md"
+out=$(mbx "$B" msg list --work); check "legacy held becomes waiting on the operator" 'grep -q "^status: waiting (operator: needs the vendor API key)$" "$B/.claude/iterate/inbox/20250102T000000Z-alpha-needs-key.md" && [[ "$out" != *needs-key* ]]' "$out"
+out=$(mbx "$B" msg list --work --operator); check "--operator adds operator waits to the work list" '[[ "$out" == *"needs-key	waiting (operator: needs the vendor API key)"* ]]' "$out"
 
 echo "$pass passed, $fail failed"; [[ $fail == 0 ]]
