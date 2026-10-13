@@ -1,6 +1,6 @@
 ---
 name: izmachine
-description: Use for every virtual machine or container request, wherever the guest should run — create, inspect, run a command inside, ssh into, snapshot, clone, roll back, lock or destroy one, or bring machines up from a .iz definition file — through the `izmachine` binary. Covers all six providers (lume, lima, utm, container, docker, incus) behind one grammar and places each guest by izmachine's own rules (the project's .iz `remote`/`needs`, then the project or user `remote` setting, then the `*` default remote). Triggers on "run this on a linux box", "test it on windows", "check that on a mac VM", "spin up a VM", "make me a linux box", "I need a windows machine", "fresh mac VM", "give me a throwaway box to test on", "run this in a container", "ssh into the VM", "snapshot this VM", "roll it back", "clone that VM", "destroy the test VM", "what VMs do I have", "what guests are on this host", "is the provider ready", ".iz file", "izmachine".
+description: Choose where each requested VM or container runs by reading and writing placement directives in the project .iz, validating them, and using izmachine to rank compatible remotes. Manage guests across all six providers and every registered host through the live CLI contract. Triggers on "run this on a linux box", "test it on windows", "check that on a mac VM", "spin up a VM", "make me a linux box", "I need a windows machine", "fresh mac VM", "give me a throwaway box to test on", "run this in a container", "ssh into the VM", "snapshot this VM", "roll it back", "clone that VM", "destroy the test VM", "what VMs do I have", "what guests are on this host", "is the provider ready", ".iz file", "izmachine".
 argument-hint: <what you want, e.g. "a throwaway linux box called t1" or "run the test suite in dev1" or "destroy t1">
 ---
 
@@ -427,8 +427,9 @@ izmachine up mybox
     "message":".iz: no machine \"mybox\"; this file defines dev"}}
 ```
 
-So if you need the guest to land under a different name, **edit a copy of the
-file** and set `name = "<guest>"` in the section. Say that you did.
+For a one-off guest name, edit a copy of the file and set `name = "<guest>"`
+in the section. Select that copy with `--izfile`. For maintained project
+machines, edit the project's `./.iz` in place and validate the result.
 
 **Bare `up` brings up every definition in the file.** A section can wait for
 others with `dependency.up = "machine.<key>.up"` (or an array of such quoted
@@ -469,7 +470,8 @@ section and preserves every other top-level table untouched. A
 |---|---|---|
 | `provider` | **REQUIRED** | which provider runs it: `lume`, `lima`, `utm`, `container`, `docker`, `incus`, or a plugin's name |
 | `name` | optional | the guest's real name; defaults to the section key |
-| `remote` | optional | a remote from `izmachine remote list`, or `<remote>:<guest>` naming the guest too |
+| `remote` | optional | a remote from `izmachine remote list`, or `<remote>:<guest>` naming the guest too; mutually exclusive with `needs` |
+| `needs` | optional | placement constraints: `kind`, `arch`, `class`; izmachine ranks compatible remotes by load; mutually exclusive with `remote` |
 | `dependency.up` | optional | `"machine.<key>.up"` or an array of them: definitions to bring up first |
 | `kind` | optional | `vm` or `container` |
 | `os` | optional | an os id (`ubuntu`, `alpine`, …) or a platform (`linux`) |
@@ -663,21 +665,50 @@ with `kernel` and `arch` empty; start it and ask again if you need those.
 
 ## Where a guest runs
 
-Placement happens before any create, and izmachine makes it:
+The skill maintains the placement directive; izmachine chooses the host.
 
-1. **Run from the project root.** The project's `.iz` (`remote =` or `needs =`)
-   and `izmachine.toml` (`remote` setting) apply only from there. A guest
-   created elsewhere lands wherever that directory's rules say.
-2. **Never add `--local` or `--remote` unless the user named a place.** "Spin up
-   a linux box" names no place, so the command carries neither flag and
-   izmachine resolves the remote: the file's `remote`/`needs`, then the
-   project or user `remote` setting, then the `*` default. The user saying
-   "on D71" or "here on this Mac" is what puts `--remote D71` or `--local` on
-   the line.
-3. **Say where it landed.** Read `resolution.remote` from
-   `izmachine up --dry-run --format json` before an `up`, or the REMOTE column
-   (JSON `remote`) of `izmachine list` after a `direct create`, and name that
-   remote in your reply.
+1. **Run from the project root and read `./.iz`.** Follow an existing
+   definition's `remote` or `needs` as written. Preserve unrelated definitions,
+   non-`[machine]` tables and the project's other tools' settings.
+2. **Author a definition when one is missing.** If `./.iz` is absent, run
+   `izmachine init --format json`, then maintain that file in place. Give the
+   requested machine `provider`, `kind`, `os` and a placement directive. Add
+   `needs = { kind = "vm" }` for a VM, or the corresponding container kind,
+   including `arch` and `class` only when the request requires them. Add that
+   directive to a definition that has neither `remote` nor `needs`.
+3. **Choose a compatible provider from the live contract.** Consult
+   `izmachine help --json` and registered remote capabilities. Preserve a
+   declared provider that serves the request. For a Linux VM, Incus supports
+   compatible Incus hosts; Lima supports local or SSH-hosted Lima. Use the
+   available provider pool that serves the requested kind, OS and features.
+   The `needs` directive lets the matcher rank that pool by observed load.
+4. **Use `remote = "<name>"` when the user names a place.** `remote` and
+   `needs` are mutually exclusive. Preserve explicit location instructions;
+   add `--local` or `--remote` only when the user names a place. An unspecified
+   location receives a `needs` directive rather than an agent-chosen host.
+5. **Validate after every write.** Run `izmachine validate --format json`,
+   then `izmachine up <key> --dry-run --format json`. Read and report
+   `resolution.remote` and the placement trace before running
+   `izmachine up <key> --format json`. Validation and dry-run must succeed
+   before creating anything. Preserve an existing guest's identity and locks.
+
+For a macOS VM, declare Lume and let provider compatibility restrict placement
+to an Apple host that offers Lume (local or an appropriately registered SSH
+remote):
+
+```toml
+[machine.mac-test]
+provider = "lume"
+kind = "vm"
+os = "macos"
+needs = { kind = "vm" }
+```
+
+The command reference follows `izmachine help --json` from the executing binary.
+Inspect the live command and flag definitions before authoring a CLI invocation.
+Maintain this skill's reference with `make test-skill-parity` when that surface
+changes, including selector expressions and saved selectors when the binary
+supports them.
 
 ## Safety — the rules that matter most
 
