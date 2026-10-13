@@ -1,8 +1,8 @@
 ---
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, with the one act that clears each. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
-argument-hint: (none — reads the project state)
-version: 5.15.0
+argument-hint: "[fix all [<plan>]]"
+version: 5.16.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -167,6 +167,19 @@ a `fix problem N` line, not a script in the user's lap: prepare it, say what it
 does and what it costs if wrong, and run it on their word. A human who has to
 execute a fix triage could have executed has been made to do the work twice —
 once deciding, once typing.
+
+## Called by the conductor — `fix all [<plan>]`
+
+`/iterate-conductor` runs triage with `fix all <plan>` on a plan whose run
+stopped before it finished, before handing it to `/iterate` again. Starting the
+conductor is the consent: read the state as usual, scoped to that plan, its
+branch and loose work, then run every route that would have been a `fix problem
+N` line without waiting for the word. Two kinds still wait for a human and stay
+in the answer as written: a route that rewrites history or discards work
+(force-push, hard reset, branch delete, rebase onto a moved main), and every
+`launch problem N` or clipboard script. Mark a plan `status: unblocked` when
+its blocker is cleared. Answer in the usual shape: it lands in the conductor's
+sweep log.
 
 ## Running a fix
 

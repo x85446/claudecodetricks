@@ -8,7 +8,7 @@ description: "Use when the status line shows a feature branch instead of \"main 
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.15.0
+**Version:** iterate family 5.16.0
 
 ## What this skill does
 
@@ -26,7 +26,7 @@ lines, and then fixes what it can.
 
 ## Usage
 
-Argument: (none — reads the project state). `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: [fix all [<plan>]]. `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 
@@ -191,6 +191,19 @@ a `fix problem N` line, not a script in the user's lap: prepare it, say what it
 does and what it costs if wrong, and run it on their word. A human who has to
 execute a fix triage could have executed has been made to do the work twice —
 once deciding, once typing.
+
+## Called by the conductor — `fix all [<plan>]`
+
+`$iterate-conductor` runs triage with `fix all <plan>` on a plan whose run
+stopped before it finished, before handing it to `$iterate` again. Starting the
+conductor is the consent: read the state as usual, scoped to that plan, its
+branch and loose work, then run every route that would have been a `fix problem
+N` line without waiting for the word. Two kinds still wait for a human and stay
+in the answer as written: a route that rewrites history or discards work
+(force-push, hard reset, branch delete, rebase onto a moved main), and every
+`launch problem N` or clipboard script. Mark a plan `status: unblocked` when
+its blocker is cleared. Answer in the usual shape: it lands in the conductor's
+sweep log.
 
 ## Running a fix
 

@@ -8,7 +8,7 @@ description: "Works the whole plan queue unattended. When started, sweeps every 
 
 # $iterate-conductor — keep the whole queue moving
 
-**Version:** iterate family 5.15.0
+**Version:** iterate family 5.16.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -130,8 +130,9 @@ One sweep, right now, regardless of `enabled:`. Does not arm anything and does
 not change enablement — the way to try the conductor without committing to it.
 
 **Under `tick-source: launchd`, `run` IS the tick.** `iterate-run nightly` invokes
-it, already inside both schedules and already past the live-heartbeat and lock
-checks. Before handing a plan to `$iterate <name>` (by reading its SKILL.md — see the
+it, already inside both schedules and already past the lock and live-heartbeat
+checks: no session works in the project, so a plan still `phase: executing` is
+one whose run ended before it finished. Before handing a plan to `$iterate <name>` (by reading its SKILL.md — see the
 sweep, step 5) — or resuming an executing one whose field is empty — write
 `loop-mechanism: external` into its key block, so
 `$iterate` arms no loop of its own: nothing armed inside a `claude -p` turn
@@ -273,9 +274,13 @@ One tick. Do these in order and stop at the first that applies.
    the schedules still shape when work happens. A conductor that ignored them
    would make them meaningless.
 
-3. **`current:` is set and that plan is still executing** → exit silently.
-   `$iterate` owns it and has its own resumption loop; a conductor tick here has
-   no job. If that plan is `status: paused`, `$iterate pause` already set
+3. **`current:` is set and that plan is still executing.** Under a cron this
+   conductor armed, exit silently: `$iterate` owns it and has its own
+   resumption loop. **Under `tick-source: launchd` the run that drove it has
+   ended without finishing it**, so it stalled: run `$iterate-triage` through
+   explicit `$name` invocation with `fix all <name>`, which finds why the run stopped and
+   clears everything a machine can, then hand the plan to `$iterate <name>`
+   again (step 5's hand-off). If that plan is `status: paused`, `$iterate pause` already set
    `paused: true` here as well, so this tick never ran; if it somehow did, set
    it now and exit — the plan box must not run against a plan a human stopped.
 
@@ -300,7 +305,9 @@ One tick. Do these in order and stop at the first that applies.
 
    1. `status: unblocked` (cyan) — someone just cleared its path; honour that
       before starting anything new.
-   2. `phase: executing` with no terminal status — finish what is already begun.
+   2. `phase: executing` with no terminal status — finish what is already
+      begun. Nothing drives it, so its run stopped: `$iterate-triage fix all
+      <name>` first, then the hand-off.
    3. `status: queued` — a planned plan a human staged with `$ip stage`,
       oldest `Started:` first. **Never a bare `phase: planned`**: unstaged is
       unapproved, and launching it unattended is the conductor spending what
@@ -339,7 +346,11 @@ boundary. Mistaking one for the other archives unfinished work and moves on.
 **Complete** — `$iterate` has already merged and archived it. Log one line.
 
 **Blocked** (`status: blocked-on-operator`, `awaiting-human-gate`, or a 5-cycle
-giveup) — try to clear it before accepting it as blocked:
+giveup) — try to clear it before accepting it as blocked. First run
+`$iterate-triage fix all <name>`, once per blocked state: a plan whose file has
+not changed since its last triage is not triaged again. When triage leaves it
+`status: unblocked`, hand it to `$iterate <name>` in this sweep. Otherwise climb
+the ladder:
 
 ### Clearing a blocker means a different approach, not more retries
 
