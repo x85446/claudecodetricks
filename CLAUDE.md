@@ -150,8 +150,13 @@ why" — `name`, `targets`, `owner`, `family`. Nothing else records a skill's
 targets or owner. `skillinstall.sh` is a thin human-facing shim over
 `skillctl`, not a second implementation.
 
-`owner` is `self` when this repo authors the skill, or the path of the repo that
-does — those are **mirrored** here and must be edited at the owner (izmachine).
+`owner` is `self` when the skill's files live in this repo, or the path of the
+repo they are checked into — those are **mirrored** here. **claudecodetricks
+authors every skill, for Claude Code and Codex, wherever its files live.** A
+mirrored skill is edited by a claudecodetricks session in its owner repo (a
+worktree branch and a PR there), then mirrored into `skills/<name>/` and ported.
+No other project's session writes, restructures or ports a skill; one that
+needs a skill change sends claudecodetricks a request.
 `targets` of `-` means backup-only: registered so it is backed up, never
 deployed. That is the normal state for most adopted skills, not a problem.
 
