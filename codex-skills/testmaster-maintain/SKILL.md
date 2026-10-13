@@ -6,7 +6,7 @@ description: "TESTMASTER child (invoked via $testmaster): writes new test cases 
 
 # $testmaster-maintain — keep test cases true to the product
 
-**Version:** 1.3.0
+**Version:** 1.4.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -27,12 +27,13 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$testmaster` — ported.
 - `$testmaster-prune` — ported.
+- `$testmaster-register` — ported.
 
 ## Steps
 
 1. **Find the suite.** Locate the project's existing test layout (`make test` target, `tests/` dir, `*_test.go`, `spec/`, etc.). Follow the project's own conventions — never introduce a second test framework beside a working one.
 2. **Scope the work** from `$1` (or the iterate plan's changed steps / branch diff when invoked mid-plan): which behaviors are new, which changed, which existing tests now assert stale behavior.
-3. **Write/update cases — as real-world as possible.** Each test exercises the product the way a caller does: invoke the real CLI, hit the running endpoint, drive the real script against a local/test target. Mocks only where the real dependency is genuinely unavailable, and say so in the test's comment. Follow "Writing a test the runner can run" in `/testmaster-register`'s SKILL.md: exit 77 to skip, failure output that explains itself, one command that runs just this test.
+3. **Write/update cases — as real-world as possible.** Each test exercises the product the way a caller does: invoke the real CLI, hit the running endpoint, drive the real script against a local/test target. Mocks only where the real dependency is genuinely unavailable, and say so in the test's comment. Follow "Writing a test the runner can run" in `$testmaster-register`'s SKILL.md: exit 77 to skip, failure output that explains itself, one command that runs just this test.
 4. **Stamp the header** on every test you touch: `# TESTMASTER: id=<stable-id> tier=? parallel=<yes|no>` (comment syntax per language). Choose `parallel=no` whenever the test binds ports, mutates shared state, or uses global fixtures — when unsure, `no`. `tier=?` is correct for a new test: the tier is measured, not guessed.
 5. **Register and prove**: Skill tool `testmaster-register` with every file you wrote or changed. It registers each test in any language, decides blocking and serial, sets each catalog case's `test` to the registry id, and runs each test once through the binary. A test that was never executed is not maintained, it's decoration.
 6. Report one line per case touched: `+ <id> (new|updated, first run <result> in <ms>)`, taken from the register report.
@@ -42,3 +43,4 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 1. New behavior without a test, and changed behavior with an un-updated test, are both incomplete work — cover both directions every invocation.
 2. Never delete or consolidate tests here — that's `$testmaster-prune`'s job (removal needs its dead-code evidence standard).
 3. Never mark `parallel=yes` without checking the test's side effects.
+4. **Inside an iterate session, every test finishes within 2 minutes unless the plan's `Long tests:` constraint names it.** Compress time instead of waiting it out: seeded fixtures, an injected clock, fewer iterations. See "Iterate sessions never build or run long-running tests" in `$testmaster`.

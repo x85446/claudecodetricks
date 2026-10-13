@@ -2,7 +2,7 @@
 name: testmaster-maintain
 description: "TESTMASTER child (invoked via /testmaster): writes new test cases and updates existing ones to match current product behavior."
 argument-hint: <what changed / what needs coverage, e.g. "cover the new export endpoint">
-version: 1.3.0
+version: 1.4.0
 ---
 
 # /testmaster-maintain — keep test cases true to the product
@@ -23,3 +23,4 @@ Obey the shared contracts in `/testmaster`'s SKILL.md (state paths, tiers, heade
 1. New behavior without a test, and changed behavior with an un-updated test, are both incomplete work — cover both directions every invocation.
 2. Never delete or consolidate tests here — that's `/testmaster-prune`'s job (removal needs its dead-code evidence standard).
 3. Never mark `parallel=yes` without checking the test's side effects.
+4. **Inside an iterate session, every test finishes within 2 minutes unless the plan's `Long tests:` constraint names it.** Compress time instead of waiting it out: seeded fixtures, an injected clock, fewer iterations. See "Iterate sessions never build or run long-running tests" in `/testmaster`.

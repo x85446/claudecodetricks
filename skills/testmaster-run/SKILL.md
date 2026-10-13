@@ -2,7 +2,7 @@
 name: testmaster-run
 description: "TESTMASTER child (invoked via /testmaster): runs a tier or named tests through the testmaster binary, which measures them and updates the registry, and acts only on what failed."
 argument-hint: <fast | standard | slow | all | <test-id|glob> | --failed — bare/empty = fast+standard>
-version: 2.1.0
+version: 2.2.0
 ---
 
 # /testmaster-run — run the suite without reading it
@@ -20,7 +20,7 @@ Obey the shared contracts in `/testmaster`'s SKILL.md. The `testmaster` binary d
    - a tier, `all`, an id, or a glob (`'iterrun.*'`) → `testmaster suite run <words>`
    - "rerun the failures" → `testmaster suite run --failed`
 
-   Inside an executing iterate plan, a bare `all` becomes the default set with a one-line note, and `slow` runs only when named: by the tier word, or by a slow case id the plan's FFIV sweep named. That case runs without asking.
+   Inside an executing iterate plan, `slow`, `all`, and any slow-tier id or glob shrink to the default set with a one-line note (`slow tier left for the nightly: <ids>`), unless the plan's `Long tests:` constraint or the user's own message in this session names those tests. A slow case the plan drifted is reported, never run.
 2. **Run it once.** From an iterate plan, wrap it for heartbeat (`iterate-run run -- testmaster suite run …`); otherwise run it bare. Exit 3 means nothing is registered even after step 0: route to `/testmaster adopt`. If `testmaster` is not on PATH, stop with `testmaster is not installed — make install in claudecodetricks`. Never fall back to running tests one by one yourself: that is the token spend the binary exists to remove.
 3. **Read the output, not the tests.** It is one summary line plus one line per problem:
    ```

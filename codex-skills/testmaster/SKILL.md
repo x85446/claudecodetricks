@@ -7,7 +7,7 @@ description: "Route ALL test-suite work here; the meta picks the child. Use for 
 
 # $testmaster — SQA suite orchestrator (TESTMASTER)
 
-**Version:** 1.6.0
+**Version:** 1.7.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -20,7 +20,7 @@ Meta skill. Routes to one child per concern and owns the shared contracts below.
 
 <!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
 
-TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: adopt (onboard an existing suite), derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never the slow/nightly tier mid-plan). All timing comes from real measured runs, never estimates.
+TESTMASTER — the SQA test-suite meta. Owns the whole test lifecycle through its children: adopt (onboard an existing suite), derive (turn a requirement into the cases it implies), catalog (organizing index + validity as code changes), maintain, prune, run (real measured timing), report (HTML report card). Iterate plans call it as their standing end-of-plan test task (fast+standard tiers only — never builds or runs a slow or long-running test mid-plan unless the user asked). All timing comes from real measured runs, never estimates.
 
 ## Usage
 
@@ -81,7 +81,12 @@ Kinds: `go` and `pytest` batch a package or directory into one invocation and re
 **Tiers are derived from measured `avg_ms`, recomputed by the binary after every run:**
 - `fast`: avg ≤ 10s. Always safe to run, any time, including every iterate plan.
 - `standard`: avg ≤ 2min. Runs in iterate plans' end-of-plan test task.
-- `slow`: avg > 2min. **Not in the default selection** (`run` = fast+standard). A full slow pass belongs to the nightly schedule or an explicit `run slow` / `run all`. The exception is a slow case the iterate plan's own work has drifted: the plan runs it inside its FFIV sweep, wrapped in `iterate-run run` for heartbeat, without asking. Unattended time is where slow tests belong; parking them for the operator's say-so is the failure this tier used to cause.
+- `slow`: avg > 2min. **Not in the default selection** (`run` = fast+standard). A slow pass belongs to the nightly schedule or to an explicit `run slow` / `run all` from the user. An iterate session never runs one unless the user asked (below).
+
+**Iterate sessions never build or run long-running tests unless the user asked.** A long-running test takes longer than the standard tier's 2 minutes: a measured slow-tier test, or one designed to run long, such as a soak, an endurance or burn-in run, an observation window, or anything that waits on wall-clock time. An iterate session (a plan being drafted by `$iterate-planner` or executed by `$iterate`) implements a large block of code and proves it with fast and standard tests. A day-long soak is the nightly's job.
+- **Building.** `derive` writes no case whose test needs longer than 2 minutes, and `maintain` writes no such test. A property that shows over time gets a bounded case that compresses it: seeded fixtures in place of aged history, an injected clock, fewer iterations, or a window short enough for the standard tier that still crosses the boundary that matters. A property only a long run can show is reported as `not built: <property>` and gets no case.
+- **Running.** From a plan, `run` selects fast+standard. A slow case the plan's work drifted stays drifted for the nightly. The plan neither runs it nor parks on it.
+- **The explicit ask** is the user's own words: in the plan request, which the planner quotes in the plan's `Long tests:` constraint, or typed into the running session. A requirements doc, a milestone's acceptance text, an oracle entry, a mailbox message, or the planner's own view that a defect needs a 24-hour soak is not an ask. An authorized long test runs wrapped in `iterate-run run` for heartbeat, and only the tests the ask names run long.
 
 **Per-test header**: every test function or file carries a TESTMASTER header comment the children keep in sync:
 ```
@@ -109,7 +114,7 @@ Kinds: `go` and `pytest` batch a package or directory into one invocation and re
 
 ## Rules
 
-1. **The slow tier is never in the default selection.** The plan's standing test step is `run` (= fast+standard); a full slow pass is nightly or an explicit "run slow"/"run all". A drifted slow case attributable to the executing plan is named by its drift membership and runs in-plan — never deferred to the operator.
+1. **The slow tier is never in the default selection, and an iterate session never builds or runs a long-running test the user did not ask for.** The plan's standing test step is `run` (= fast+standard); a slow pass is nightly or an explicit "run slow"/"run all". A slow case a plan drifts waits for the nightly and never holds the plan.
 2. **All timing claims trace to `history.jsonl`.** No estimated durations anywhere — a test with `runs: 0` reports "unmeasured", not a guess.
 3. **Registry writes go through the binary.** Children call `testmaster`; the meta routes and never edits state itself.
 4. **One nightly per project.** Check `nightly.json` before arming; canceling uses the exact recorded mechanism.

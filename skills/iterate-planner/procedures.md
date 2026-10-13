@@ -125,8 +125,8 @@ A nonzero `could effect` is not an annotation of what the plan happens to contai
 
 When the count is nonzero and no existing step covers that scope, append an FFIV step before the standing finishers:
 
-> `Na: FFIV the <y> cases this plan puts into drift — Find which of them actually drifted (git diff ∩ covers after the plan's steps), Fix each against current behavior, Iterate until the set is dry, Verify green — slow-tier cases included: a drifted case is re-run here, never deferred to the nightly or to the operator. [skill: /testmaster]`
-> `Nb: /testmaster-catalog drift reports zero drifted cases attributable to this plan; every case it names is green against HEAD.`
+> `Na: FFIV the <y> cases this plan puts into drift — Find which of them actually drifted (git diff ∩ covers after the plan's steps), Fix each against current behavior, Iterate until the set is dry, Verify green across fast and standard. A drifted slow-tier case waits for the nightly unless the plan's `Long tests:` line names it, and is never parked for the operator. [skill: /testmaster]`
+> `Nb: /testmaster-catalog drift reports zero drifted fast or standard cases attributable to this plan; every case it names is green against HEAD; drifted slow cases are listed in the plan log for the nightly.`
 > Provenance: `Standing rule: nonzero could-effect always FFIVs.`
 
 ### Prediction vs derived
