@@ -223,6 +223,13 @@ $(TESTMASTER_BIN): $(wildcard $(CMD_DIR)/testmaster/*.go) $(wildcard $(INTERNAL_
 
 rebuild: clean build  ## Clean and rebuild all binaries
 
+.PHONY: build-testmaster-cross
+build-testmaster-cross: check-tools  ## Cross-build testmaster for windows/amd64, windows/arm64, linux/amd64, darwin/arm64 (the CI matrix)
+	$(Q)for t in windows/amd64 windows/arm64 linux/amd64 darwin/arm64; do \
+		(cd $(SRC_DIR) && GOOS=$${t%/*} GOARCH=$${t#*/} $(GO) build $(GOFLAGS) -o /dev/null ./cmd/testmaster) || exit 1; \
+		echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) testmaster $$t"; \
+	done
+
 # ==================================================================================== #
 # TESTING TARGETS
 # ==================================================================================== #

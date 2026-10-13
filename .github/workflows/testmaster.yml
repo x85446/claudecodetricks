@@ -31,6 +31,9 @@ jobs:
         with:
           go-version-file: go.mod
       - name: gofmt
+        # Windows checkouts convert to CRLF, which gofmt reports; the format is
+        # the same on every OS, so Linux checks it.
+        if: matrix.os == 'ubuntu-24.04'
         run: test -z "$(gofmt -l src/internal/testmaster src/cmd/testmaster)"
       - name: vet
         run: go vet ./src/internal/testmaster/... ./src/cmd/testmaster/...
