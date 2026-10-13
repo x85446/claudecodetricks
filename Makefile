@@ -469,7 +469,7 @@ watch:  ## Watch for changes and rebuild (requires fswatch or inotifywait)
 
 clean:  ## Remove built binaries and test artifacts
 	$(Q)echo -e "$(COLOR_YELLOW)→ Cleaning build artifacts...$(COLOR_RESET)"
-	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(DOC_GUARD_BIN) $(ITERATE_RUN_BIN)
+	$(Q)rm -f $(VOICE_BIN) $(LOGGER_BIN) $(GIT_BIN) $(CHAIN_GUARD_BIN) $(DOC_GUARD_BIN) $(ITERATE_RUN_BIN) $(TESTMASTER_BIN)
 	$(Q)rm -f coverage.out coverage.html
 	$(Q)rm -rf $(SRC_DIR)/vendor
 	$(Q)echo -e "$(COLOR_GREEN)✓ Clean complete$(COLOR_RESET)"
