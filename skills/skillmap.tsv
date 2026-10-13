@@ -215,6 +215,5 @@ uxmaster-linux	userglobal	self	-
 uxmaster-macos	userglobal	self	-
 uxmaster-web	userglobal	self	-
 uxmaster-windows	userglobal	self	-
-vm	userglobal	self	-
 window-schedule	houses	self	-
 zot-populate	-	~/workspace/gravhl/GROUPS/backend/.claude/skills/zot-populate	-
