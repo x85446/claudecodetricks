@@ -7,7 +7,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.18.0
+**Version:** iterate family 5.20.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -34,6 +34,17 @@ This skill invokes other skills with Codex's explicit `$name` syntax. Each must 
 
 Project state stays at `./.claude/iterate/` — **not** `./.agents/`. That path is read and written by the `iterate-run` binary (dashboard, plan-name registry, run wrapper), which is harness-agnostic; moving it would split state between harnesses and blind the dashboard.
 
+
+## Binary-owned assignment entry
+
+Before the interactive entry decisions, check whether the supervisor supplied a versioned assignment with assignment/run/project/plan/step/source-digest identity and a result destination. Such a request uses this bounded path instead of the whole-plan loop below:
+
+1. Read the supplied task and validation, preserve every identity field, and work only that pair or the explicitly typed diagnosis, intake or delivery task. Read referenced skills needed for that work.
+2. Preserve the supervisor's working directory, branch/worktree ownership and launch snapshot. Do not create a loop/timer, invoke conductor start/tick, dispatch another pair, change queue/config/lease state, clear staging, or check plan boxes. The binary owns admission and checkpoint writes.
+3. Verify the assigned result and write the exact supplied JSON result contract to its destination. Set `task_complete` and `validation_met` truthfully, with concrete evidence. Use `completed` only when both are true; otherwise use `retry`, `blocked`, `partial` or `interrupted` and an actionable blocker. Preserve identity and source digest unchanged.
+4. Return after this assignment. A successful pair is not whole-plan completion. Merge, publish, archive and external delivery require an explicit delivery assignment or the direct human whole-plan workflow. The supervisor validates the result before advancement.
+
+For a direct human whole-plan invocation, first inspect `iterate-run conductor status --json` for the canonical project. An existing conductor owner prevents concurrent edits: report the owned assignment, or honor an explicit pause/kill request through the binary before continuing. A stale ownership claim requires binary reconciliation, not manual lease deletion.
 
 ## Named plans & state files (this is how resumption works)
 
@@ -63,12 +74,12 @@ Resolve in this order:
    - If `running:` is a fresh heartbeat (<90s), a tick is mid-step somewhere. Do not interrupt it: set the flag below and say `pausing — step <n> finishes, then nothing more runs`. That tick ends its turn as normal; the next one hits the guard in 0.5.
    - Set `status: paused: <UTC now> at step <n>/<m>` in the frontmatter. `phase: executing` stays — paused is a run state, not an ending.
    - There is no loop to cancel here: under Codex the resumption trigger is the user's own Automation (see "Auto-resume"). Say so — `pause your Automation for <name> if you set one; its ticks are no-ops while paused, which is safe, just not silent` — and leave `loop-mechanism:` as it is.
-   - **If the conductor is driving this plan** (`conductor.md` has `enabled: true` and `current:` naming it), set `paused: true` there too and log it in both files. A paused plan under a running conductor is indistinguishable from a stalled one: the plan box would park it as blocked within 45 minutes. `resume` clears both.
+   - If binary status identifies a conductor-owned assignment, use its project ID and current config revision with `iterate-run conductor pause --project ID --revision N --json`. The supervisor drains its checkpoint; do not write conductor state or clean up its resources.
    - **Stop what the plan left running** — every entry in `## Running resources` still up, then the leak sweep — exactly as "Running resources" describes. This is the half of pause that gives the machine back: a paused plan whose VMs keep running has not paused anything that costs.
    - Commit loose work on the feature branch, as `$iterate-triage` does — a paused run is exactly the idle branch that loses work. A real message, never "wip".
    - Touch nothing else: not the branch, not the tree, not `running:`. Log one line — `paused by operator at step <n> — <k> files committed as <sha>, <j> resources stopped (<names>)` — and report the same line plus `resume with $iterate resume`.
 
-   **`resume`** — remove `status: paused`, log `resumed by operator`, clear the conductor's `paused:` if the pause log line says it set it, then continue exactly as `$iterate <name>` does on an executing plan: re-check the branch, **start every resource pause stopped** (the `paused-by: pause` entries, in order, each verified up before the next), pick up at the first unchecked step, and print the one-line auto-resume note from "Auto-resume". `$iterate <name>` on a paused plan does the same — an explicit human invocation is a resume. A no-arg tick never is (0.5).
+   **`resume`** — remove `status: paused`, log `resumed by operator`, resume the conductor project through its revisioned binary API if this operator pause stopped it, and return to that supervisor if it owns the plan. Otherwise continue exactly as `$iterate <name>` does on an executing plan: re-check the branch, **start every resource pause stopped** (the `paused-by: pause` entries, in order, each verified up before the next), pick up at the first unchecked step, and print the one-line auto-resume note from "Auto-resume". `$iterate <name>` on a paused plan does the same — an explicit human invocation is a resume. A no-arg tick never is (0.5).
 0.5. **Re-entry guard — a terminal plan does not resume on a no-arg tick.** If `$1` is empty and the resolved executing plan has `status: blocked-on-operator` (or `status: awaiting-human-gate`, or `status: paused`) already set, AND nothing material has changed since it was written (no new user message addressing the blocker, no change to the gate's input files): this tick has no job. **First check whether the loop is somehow still armed** (`loop-mechanism:` non-empty in the plan file) — it shouldn't be, the terminal path cancels it, but if it is (a prior run died before canceling, or canceled the wrong mechanism), cancel it NOW with verification, log one line `re-entry guard: killed leftover <mechanism>`, and exit. Otherwise **exit immediately and silently** — no status re-verification, no environment audits, no "handoff document" polishing, no re-asserting the wall. Confirmed live (civet): 13+ hours of once-a-minute ticks against an already-blocked plan, each manufacturing self-generated audit work because nothing told a resuming tick that "already terminal, nothing changed" means *stop*, not *find something to do*. A user-typed `$iterate <name>` (non-empty `$1`) bypasses this guard — an explicit human invocation IS a material change, so re-check the blocker for real then. For `status: paused` nothing else counts as material — not a new message, not a changed file; a paused plan stays paused until `$iterate resume` or `$iterate <name>` says otherwise.
 1. **A plan is already `phase: executing`** (scan `plans/`): resume THAT plan from its "Status / Log", honoring the concurrency lock. This takes precedence over everything below — it's what makes the cron re-fires (which pass no argument) continue the live run instead of prompting. If several are somehow executing, pick the one named by `current`, else the most-recently-heartbeated.
 1.5. **Project launch gate (only if this project set one).** Read `./.claude/iterate/policy.md` if it exists (see "Project policy" below). If it sets `require-launch-keyword: <word>` and that word is **not** present anywhere in the argument, do NOT launch: print the policy's stated reason plus `re-run as \`$iterate <plan> <word>\`` and **stop**. Nothing is transitioned, no lock taken, no cron armed.
@@ -245,7 +256,7 @@ Every plan produces two changelog entries in the project root — the git-worthy
 
 **Drafting (during execution — coordinator only, never teams):** every time you check off a step or merge a team's `TEAM DONE`, append one line to the plan file's `## Changelog draft` section while context is hot: `- [added|changed|fixed|removed|security|internal] <what changed, product-level phrasing> (step N)`. One line per real change — skip steps that produced no change (pure verification, research recorded elsewhere). This is cheap, crash-safe raw material, not published prose.
 
-**Publishing (once, in Step 5's success path, BEFORE `$feature-branch finish`) — a real final sweep, not a copy-paste of the draft.** The draft is a mid-flight journal: a feature that took three attempts, got reworked, or was partially rolled back has three-plus lines describing states that no longer exist. Two mandatory passes over it:
+**Publishing (once, in Step 5's success path, BEFORE `$feature-branch finish`) — a real final sweep, not a copy-paste of the draft.** The draft is a working journal and can contain several intermediate descriptions of one feature. Two mandatory passes produce the final account:
 
 1. **Consolidate — describe what LANDED, not the journey.** Group draft lines by the actual feature/fix they belong to (not by step number — one feature often spans several steps and re-attempts). Each group becomes ONE line describing the final, as-merged state. Lines describing superseded intermediate states, reverted work, or fix-of-my-own-earlier-line are folded away entirely — the reader gets the net change, never the churn. (Rewrites that ship nothing net = no line.)
 2. **Validate — every published claim must be true of the final tree.** For each consolidated line, confirm it's backed by a green validation (or directly observable in the final state: file exists, endpoint responds, behavior demonstrated). A draft line whose feature was later cut, disabled, or left broken does NOT publish — drafts record intent at check-off time; only the sweep confirms survival. When in doubt, re-check the thing itself, not the draft.
@@ -577,10 +588,10 @@ So, the moment you notice the context was compacted — a summary in place of th
 history, or simply that you cannot recall the last few steps in detail:
 
 1. **Re-read the plan file before doing anything else.** Not to "check", but
-   because it is now your only accurate account of where the run is. Never
+   because it is your accurate account of where the run is. Never
    reconstruct progress from the summary; a summary is lossy exactly where step
    numbers and validation outcomes live.
-2. **Re-read this skill if the rules are no longer in context.** A compacted run
+2. **Re-read this skill if the rules are absent from context.** A compacted run
    that has forgotten its own contract is how a plan gets a cheerful wrap-up at
    step 7 of 22.
 3. **Resume, do not restart.** A checked-off step is done — do not redo it,
@@ -625,7 +636,7 @@ re-runnable, and gate every delete on its own check passing. That is normal
 engineering, not a workaround.
 
 **What is never a blocker:** your own caution, a large number, a resource you
-created but no longer remember creating, or an operation you have already
+created but cannot recall creating, or an operation you have already
 performed once in this plan. Blocked means *a human must supply something you
 cannot* — a credential, a physical action, a decision only they can make.
 

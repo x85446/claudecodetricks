@@ -2,7 +2,7 @@
 name: iterate-rules
 description: Read and write the iterate launch policy for THIS project in plain language — "don't run iterate before 10pm", "require a keyword to launch", "weeknights only", "no runs over the holidays", "show the rules", "would a run start right now". Writes ./.claude/iterate/policy.md, which /iterate enforces at launch. Rules gate launching a run; they never touch plans, and never stop a run that is already going.
 argument-hint: <the rule in your own words, or "show" / "test" / "remove <rule>" / "clear">
-version: 5.18.0
+version: 5.20.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -20,13 +20,7 @@ writes the schema `/iterate` actually enforces.
 | `/iterate-rules` | **Gate** — when a run may start |
 | `/iterate` (`/i`) | **Execute** |
 
-**`/iterate-conductor` delegates here.** `/ic schedule <rule>` routes to this
-skill — the conductor reads `policy.md` but never writes it. That separation is
-deliberate: this file gates every launch in the project, human or conductor, so
-a supervisor that could rewrite it would have escaped the thing meant to contain
-it. The conductor's own `conductor-schedule:` is separate, lives in
-`conductor.md`, and is intersected with the schedule here — it can narrow the
-conductor's hours but never widen them.
+**Conductor automation rules use the binary.** For conductor schedule, named window, budget, overdrive or window-end requests, follow the sibling `iterate-conductor/SKILL.md` configuration workflow. Read and apply revisioned config through `iterate-run conductor`; never write conductor state or calculate its admission policy here. `show`/`test` for conductor rules call its status/explain/simulate commands. Project-wide binary time windows intersect automation windows. The file-based manual launch policy below remains an additional launch gate; it does not implement conductor recurrence or in-flight window closure.
 
 **Scope, and it is narrow.** These rules gate *starting* a run. They never
 touch plans, never change what a run does, and — this one matters — never stop

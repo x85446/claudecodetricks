@@ -7,7 +7,7 @@ description: Triggers on "$iterate-notes", "take a note", "note this", "add a no
 
 # $iterate-notes — Write it down, don't work it out
 
-**Version:** iterate family 5.18.0
+**Version:** iterate family 5.20.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -18,7 +18,7 @@ The capture skill for the iterate stack:
 
 ## What this skill does
 
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
+<!-- The startup description stays concise; detailed routing lives in the skill body. -->
 
 The note-taking half of the iterate stack — capture ideas for the NEXT iterate plan, before any formal planning. Notes live under ./.claude/iterate/notes/.
 

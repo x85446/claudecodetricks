@@ -8,7 +8,7 @@ description: "Read and write the iterate launch policy for THIS project in plain
 
 # $iterate-rules — say when a run is allowed to start
 
-**Version:** iterate family 5.18.0
+**Version:** iterate family 5.20.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -47,13 +47,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 | `$iterate-rules` | **Gate** — when a run may start |
 | `$iterate` (`$i`) | **Execute** |
 
-**`$iterate-conductor` delegates here.** `$ic schedule <rule>` routes to this
-skill — the conductor reads `policy.md` but never writes it. That separation is
-deliberate: this file gates every launch in the project, human or conductor, so
-a supervisor that could rewrite it would have escaped the thing meant to contain
-it. The conductor's own `conductor-schedule:` is separate, lives in
-`conductor.md`, and is intersected with the schedule here — it can narrow the
-conductor's hours but never widen them.
+**Conductor automation rules use the binary.** For conductor schedule, named window, budget, overdrive or window-end requests, follow the sibling `iterate-conductor/SKILL.md` configuration workflow. Read and apply revisioned config through `iterate-run conductor`; never write conductor state or calculate its admission policy here. `show`/`test` for conductor rules call its status/explain/simulate commands. Project-wide binary time windows intersect automation windows. The file-based manual launch policy below remains an additional launch gate; it does not implement conductor recurrence or in-flight window closure.
 
 **Scope, and it is narrow.** These rules gate *starting* a run. They never
 touch plans, never change what a run does, and — this one matters — never stop
