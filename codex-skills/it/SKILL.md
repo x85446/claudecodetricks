@@ -27,6 +27,6 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$iterate-triage` — ported.
 
-Invoke `$iterate-triage` explicitly, passing `$ARGUMENTS` through **verbatim** — no interpretation, no preprocessing, no summarizing. Everything (state reading, the broken-only report shape, the fix scripts, the `launch problem N` flow, commits of loose work) is handled by `$iterate-triage` itself.
+Invoke `$iterate-triage` explicitly, passing `$ARGUMENTS` through **verbatim** — no interpretation, no preprocessing, no summarizing. Everything (state reading, the broken-only report shape, the fix scripts, the `fix problem N` / `fix all` / `launch problem N` flows, commits of loose work) is handled by `$iterate-triage` itself.
 
 If explicit `$name` invocation cannot invoke `iterate-triage` (e.g. it's blocked or missing), read `~/.agents/skills/iterate-triage/SKILL.md` and follow it directly with `$ARGUMENTS` as its input — the alias must never produce behavior different from the real skill.

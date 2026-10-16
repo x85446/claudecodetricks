@@ -1,7 +1,7 @@
 ---
 name: product-engineering
 description: "PRODUCT child (invoked via /product): the engineering spec — stack and versions, interface contracts, performance budgets, and the build, test and deploy story, specific enough to start work against."
-version: 1.4.0
+version: 1.5.0
 ---
 
 # /product-engineering — stage 7: enough to start building
@@ -22,7 +22,8 @@ The last HOW stage. Where the architecture says *what shape*, this says *what ex
    - **Build** — every repeatable dev task is a make target. `/dev-makefiles` governs the Makefile; name the targets this product needs, don't hand-roll shell.
    - **Test** — `/testmaster` owns the suite; requirements feed `/testmaster-derive`. Name the tiers (fast ≤10s, standard ≤2min, slow nightly-only) and what belongs in each.
    - **Deploy** — the environments, what promotes between them, and how a release is rolled back.
-   - **Machines** — every development, test and staging machine the story needs (a guest per supported OS for the install and integration tiers, a server to run against) is named by need, kind, OS and version, and lives as a `[machine.<key>]` definition in the project's `.iz` with a `needs` directive, kept by `/izmachine`. izmachine chooses the host; the spec never names one unless the user did.
+   - **Machines** — every development, test and staging machine the story needs (a guest per supported OS for the install and integration tiers, a server to run against) is named by need, kind, OS, version and architecture, and lives as a `[machine.<key>]` definition in the project's `.iz` with a `needs` directive, kept by `/izmachine`. izmachine chooses the host; the spec never names one unless the user did. Stage 9 (`/product-environment`) brings each one up and proves the stack on it, so every OS version and architecture the product targets is named here: an unnamed one cannot be proven.
+   - **Access** — every third-party account, credential, OAuth client, signing identity and deploy target the stack or the deploy story needs, named by what it is and which requirement uses it, never by its value. Stage 9 proves each one or lists the one operator act that clears it.
 
 6. **State the observability contract** concretely enough to be implemented: what is logged at what level, what metrics exist with what labels, what is traced, and what an on-call person does at 3am with only this.
 

@@ -1,12 +1,12 @@
 ---
 name: "product-iteratemilestones"
-description: "Turns docs/milestones.md ($product stage 8) into one $iterate-planner plan per milestone, all 30, and chain-stages them so each plan queues the next when it finishes green."
+description: "PRODUCT stage 10, the plans step: turns docs/milestones.md into one $iterate-planner plan per milestone, all 30, and chain-stages them so each plan queues the next when it finishes green; the chain head is staged only once stage 9 (environment) is done."
 ---
 
 
 # $product-iteratemilestones — milestones to plans
 
-**Version:** product family 1.3.0
+**Version:** product family 1.5.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -35,9 +35,9 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$iterate-planner` — ported.
 - `$product` — ported.
 
-It is `$product`'s plans step. The meta runs it when all nine stages are
-done and no plan carries a `milestone:` key, and the user can also type it
-directly. Either one is the user's move that `$product` rule 7 reserves.
+It is `$product`'s plans step, stage 10. The meta runs it when stages 0–9
+are done and no plan carries a `milestone:` key, and the user can also type
+it directly. Either one is the user's move that `$product` rule 7 reserves.
 
 `$ARGUMENTS` may name milestone ids (`M1-03 M2-01`) to plan only those.
 Otherwise every milestone that has no plan yet is planned.
@@ -48,9 +48,12 @@ Read, from the project root:
 
 1. **`docs/milestones.md`** must exist. Missing → print
    `no docs/milestones.md — run $product milestones first` and stop.
-2. **`./.claude/product/state.md` row 8.** If it is not `done`, say so in
-   one line and continue. The user typed this, and planning from an
-   unapproved sequence is their call.
+2. **`./.claude/product/state.md` rows 8 and 9.** Row 8 not `done`: say so
+   in one line and continue. The user typed this, and planning from an
+   unapproved sequence is their call. Row 9 (environment) not `done`: the
+   plans are still written, and step 4 stages nothing, because a chain
+   launched into walls nobody listed parks on the first one. Say so in one
+   line and name the count of open operator acts from `docs/environment.md`.
 3. **Existing plans.** Scan `./.claude/iterate/plans/*.md` and
    `./.claude/iterate/archive/*.md` for a key-block line `milestone: <ID>`.
    A milestone that already has a plan is skipped and listed. Rerunning never
@@ -98,6 +101,13 @@ mappings in addition to everything iterate-planner already requires:
 - Constraints: one `Depends on: <what that milestone produces> (from
   milestone <dep ID>)` line per dependency. License and Cost lines restate
   docs/engineering.md's stack verdicts.
+- Environment: read docs/environment.md when it exists. A step that needs
+  a machine uses one of its Machines keys (`izmachine up <key>`, rolled back
+  to its `clean` snapshot for an install check), never a new host or a new
+  definition. The access preflight's verification step for a need the
+  document lists reuses that row's Proof as its Nb. A need the document
+  does not list is an environment gap: still write the verification step,
+  and report `env gap: <need>` in your reply line.
 - Provenance: `Milestone <ID> from docs/milestones.md (<date>): <title>`.
 - Last step, after the standing finishers: "Stage the next milestone
   (<successor ID>)", skill: iterate-planner. It finds the plan in
@@ -126,8 +136,9 @@ After each release's subagents return, check the files, not the replies:
 
 ## 4. Set current and stage the chain head
 
-Skip this outside a git repository, or when a milestone plan is already
-queued or executing, because the chain is already live.
+Skip this outside a git repository, when state row 9 (environment) is not
+`done`, or when a milestone plan is already queued or executing, because
+the chain is already live.
 
 The **chain head** is the earliest milestone whose plan is neither archived
 nor closed. Write its name to `./.claude/iterate/current`, then invoke the
@@ -149,7 +160,10 @@ chain: kestrel (M1-01) staged — each plan stages the next when it finishes gre
 ```
 
 Outside git, the chain line reads
-`chain: not staged — not a git repo; git init, then run this again`.
+`chain: not staged — not a git repo; git init, then run this again`. With
+stage 9 open it reads `chain: not staged — environment has <N> operator
+acts open (docs/environment.md); $product environment after each, then run
+this again`.
 
 ## Rules
 
@@ -165,3 +179,6 @@ Outside git, the chain line reads
    belongs to is the user's to unlock.
 6. **Stale plans are reported, never rewritten.** A re-cut milestones
    document means the user decides whether to `$ip delete` and rerun.
+7. **The chain head waits for the environment.** Plans are written whenever
+   the user asks; the head is staged only once stage 9 is `done`, so the
+   first unattended launch meets no wall stage 9 did not list.

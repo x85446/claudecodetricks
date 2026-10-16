@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the build sequence — cuts 
 
 # $product-milestones — stage 8: the order it gets built in
 
-**Version:** product family 1.3.0
+**Version:** product family 1.5.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -24,7 +24,6 @@ sized so that `$ip` can turn it into one plan.
 Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
 
 - `$ip` — ported.
-- `$izmachine` — ported.
 - `$product` — ported.
 
 **The rule that makes a milestone real:** it is a thin vertical slice, never a
@@ -47,8 +46,8 @@ one part) applied a second time, inside each release.
 2. **Cut v1 into ten.**
    - **M1-01 is the walking skeleton**: the thinnest path through the v1
      journey that runs end to end on the real stack, on every target OS
-     (each on its own `$izmachine` guest), with one hard-coded document and
-     one command. Its job is to prove the containers connect, everywhere the
+     (each on the guest stage 9 proves for it), with one hard-coded document
+     and one command. Its job is to prove the containers connect, everywhere the
      product runs, before anything is deepened. No later milestone is one
      OS's port of another's work (`$product` rule 11).
    - **M1-02 to M1-09 each deepen the skeleton** by one capability the

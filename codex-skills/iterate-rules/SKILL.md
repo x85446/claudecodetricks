@@ -30,12 +30,10 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$i` — ported.
 - `$ibs` — ported.
-- `$ic` — ported.
 - `$in` — ported.
 - `$ip` — ported.
 - `$iterate` — ported.
 - `$iterate-brainstorm` — ported.
-- `$iterate-conductor` — ported.
 - `$iterate-notes` — ported.
 - `$iterate-planner` — ported.
 
