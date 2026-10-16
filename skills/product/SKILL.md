@@ -123,6 +123,7 @@ Every stage ends with a consistency pass over what now exists. Report it as a sh
 - **Gaps** — a required section that is empty or hand-waved.
 - **Orphans and dangling ids** — an `R-NN` naming a nonexistent `F-NN`, a feature in no release slice, a release slice with no features, a competitor claim with no source, a requirement in no milestone or in two.
 - **Altitude violations** — HOW leaking into stages 0–4.
+- **Hardware reasons** — a decision justified by the machines the team owns (platform order, a platform cut from a release, an untested OS), or a named host where a machine need belongs (rule 11). Rewrite it from the user evidence, or as a need izmachine places.
 - **Unresolved markers** — every `[NEEDS CLARIFICATION]` still open, named.
 - **Unfinished research** — any `[NEEDS RESEARCH]` still in the document. This is a defect in the child's work, not a question for the user: **re-enter the child's research on exactly those items** (one subagent per item, in parallel) and re-run analyze. Two passes without progress → write the cited absence and move on. The user never sees a `[NEEDS RESEARCH]`.
 
@@ -184,3 +185,4 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 8. **`docs/` is the home**, alongside the code, in whatever repo `/product` runs in. Never a parallel doc tree beside a live one.
 9. **`/user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.
 10. **Every document states the current decision, never its history.** A revision rewrites the affected text to the new truth. Nothing in it says "revised", "previously", "now" or "changed from". The state file's stage notes and drift log are the record of what changed and why.
+11. **Hardware at hand is never a reason.** Where the product gets built, tested and run during development is `/izmachine`'s decision: it supplies macOS, Linux and Windows guests on whatever hosts are registered. No stage orders platforms, cuts a platform from a release, or limits what can be tested because of the machines the team owns ("the founder's pilot hardware is macOS" is not evidence). A stage that needs to know whether a platform can be built or tested asks izmachine (`izmachine remote list --format json`, `izmachine up <key> --dry-run --format json`) and writes its answer, never an assumption.

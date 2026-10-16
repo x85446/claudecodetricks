@@ -22,6 +22,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$accounts` — ported.
 - `$dev-makefiles` — ported.
 - `$ip` — ported.
+- `$izmachine` — ported.
 - `$product` — ported.
 - `$product-milestones` — ported.
 - `$testmaster` — ported.
@@ -42,6 +43,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
    - **Build** — every repeatable dev task is a make target. `$dev-makefiles` governs the Makefile; name the targets this product needs, don't hand-roll shell.
    - **Test** — `$testmaster` owns the suite; requirements feed `$testmaster-derive`. Name the tiers (fast ≤10s, standard ≤2min, slow nightly-only) and what belongs in each.
    - **Deploy** — the environments, what promotes between them, and how a release is rolled back.
+   - **Machines** — every development, test and staging machine the story needs (a guest per supported OS for the install and integration tiers, a server to run against) is named by need, kind, OS and version, and lives as a `[machine.<key>]` definition in the project's `.iz` with a `needs` directive, kept by `$izmachine`. izmachine chooses the host; the spec never names one unless the user did.
 
 6. **State the observability contract** concretely enough to be implemented: what is logged at what level, what metrics exist with what labels, what is traced, and what an on-call person does at 3am with only this.
 
@@ -123,4 +125,5 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 5. **Build work goes through make targets** per `$dev-makefiles` — never ad-hoc shell in the spec.
 6. **Every v1 requirement maps to at least one test case.** Report the unmapped ones; that list is the real coverage gap.
 7. **Specify v1 in full; sketch v2 and v3 only where they constrain a v1 decision.** Detail beyond the committed release ages into fiction.
-8. **It does not start building.** Stage 8 (`$product-milestones`) orders the work into milestones; the family ends with documents, and `$ip` turns a milestone into an executable plan when the user decides to.
+8. **Machines are needs, not hosts.** The spec says what each environment needs and leaves placement to `$izmachine`. A supported OS is tested on its own guest; no platform goes untested because the team lacks that hardware.
+9. **It does not start building.** Stage 8 (`$product-milestones`) orders the work into milestones; the family ends with documents, and `$ip` turns a milestone into an executable plan when the user decides to.

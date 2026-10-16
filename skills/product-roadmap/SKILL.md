@@ -84,4 +84,5 @@ Release lines drawn horizontally across the story map from stage 3. This is wher
 5. **A Must feature below the v1 line needs a reason** stated in the audit. That's allowed — "must eventually" and "must at launch" are different claims — but it must be said out loud.
 6. **No dates and no estimates.** Now/Next/Later is the axis. Ordering is a product decision; scheduling is not this family's job.
 7. **v3 steers stage 6 without committing anyone.** Its purpose is to stop the architecture from painting v3 into a corner.
-8. **Never invent a feature here.** If a slice needs something absent from the inventory, that is a stage-3 gap — go back and add it there with an id.
+8. **Platform order comes from users and evidence, never from hardware at hand.** Which operating systems land in v1, v2 and v3 is decided by who uses the product and what the evidence shows. The team's own machines are not a reason: `/izmachine` supplies a guest of any OS to build and test on (`/product` rule 11).
+9. **Never invent a feature here.** If a slice needs something absent from the inventory, that is a stage-3 gap — go back and add it there with an id.

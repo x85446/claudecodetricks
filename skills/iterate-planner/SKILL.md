@@ -3,7 +3,7 @@ name: iterate-planner
 description: "The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it; plans are flat by default (teamify on request), can be staged for the nightly tick, and end with three standing finishers (Makefile, TESTMASTER, user-docs). Plans are saved and codenamed under ./.claude/iterate/plans/. Never executes — the user runs /iterate for that."
 when_to_use: "Triggers on \"/iterate-planner\" or its alias \"/ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\", \"publish\" / \"show plan\", \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch unmerged), \"roll <name>\" (unfinished steps to a new plan, same branch), \"notes-to-plan\", \"plan the inbox\" (turns /mailbox messages into a plan). Release candidate: \"release candidate task to track: <x>\", \"rc list\", \"rc plan\". Staging for the nightly tick: \"stage <name>\", \"approve <name>\", \"queue <name>\", \"unstage <name>\". Teaming: \"team this\", \"teamify\", \"team up the plan\"; reverse with \"flat\", \"flatify\", \"un-team\". Also the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip tests/docs/makefile\") suppressing the standing finishers for that plan."
 argument-hint: "<optional context, e.g. \"restate the plan from above\", \"plan: 1. do X, 2. validate Y\", \"stage <name>\" to approve a plan for the nightly tick, or \"teamify\" / \"flat\" to team or un-team the current plan>"
-version: 5.19.0
+version: 5.20.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -280,7 +280,18 @@ A requirement that names a *vendor* is not automatically a dependency on that ve
 
 The IMAP call was right and nothing separated the two but a proper noun the roadmap document happened to use. Four validations went out written against `api.fastmail.com`, a twelve-plan queue was gated behind them, and the run ended on a paid account nobody had — to exercise an open RFC (8620/8621) that three open-source servers implement and docker starts in a minute. **A vendor name in a source document is a default, not a constraint.** When you inherit one, inherit the standard and pick the implementation yourself; write the validation against the local server and let the vendor be a bonus. Say so in the step's provenance (`Inferred: JMAP is RFC 8620 — local Stalwart is a creation step, not a Fastmail dependency`) so the substitution is visible rather than silent.
 
-1. **Scan for access dependencies** — anything later steps need reachable that isn't already local/guaranteed: SSH hosts / remote machine names (`ssh <host>`, "on <host>", VM/container targets reached via a remote), API keys / access keys / tokens / credentials / secrets, gated URLs (dashboards, APIs requiring login), cloud accounts (AWS/GCP/Cloudflare/etc.), git remotes or GitHub/GitLab orgs+repos not already known-accessible, database connection targets.
+**Second, the placement test — where a thing runs is izmachine's decision, never the plan's.**
+
+A step that needs a machine (a Linux, Windows or macOS box, a clean guest for an install check, a VM or container to build, test or run a service on) states what it needs and lets `izmachine` choose the host. That need is a **creation step** tagged `[skill: /izmachine]`, and it is not an access dependency:
+
+- **Na** names the machine by need: kind (`vm` or container), OS and version, and arch or class only when the work requires them. `/izmachine` keeps it as a `[machine.<key>]` definition in the project's `.iz` with a `needs` directive.
+- **Nb** is `izmachine up <key> --dry-run --format json` succeeding, with `resolution.remote` reported, then the real command the later steps run inside the guest.
+- **A host name is never the plan's to choose.** A host or provider named by a source document, an earlier plan, the oracle or memory (`cypressLinux`, a particular remote, "the Mac mini") is a default, not a constraint: drop it and write the need. Only the user's own words naming a place make it `remote = "<name>"`, and only then does that remote go through the access scan below.
+- **Hardware at hand is never a reason.** izmachine supplies macOS, Linux and Windows guests on whatever hosts are registered. A step is never cut, deferred or moved to another plan because the current machine runs a different OS.
+
+Record the placement in the step's provenance (`Inferred: Windows 11 guest — izmachine places it; no host named`) so it is visible rather than silent.
+
+1. **Scan for access dependencies** — anything later steps need reachable that isn't already local/guaranteed: SSH hosts / remote machine names the user named (`ssh <host>`, "on <host>"; a VM or container is the placement test's, above), API keys / access keys / tokens / credentials / secrets, gated URLs (dashboards, APIs requiring login), cloud accounts (AWS/GCP/Cloudflare/etc.), git remotes or GitHub/GitLab orgs+repos not already known-accessible, database connection targets.
 2. **For each dependency found, identify the SPECIFIC capability later steps actually need** — not bare reachability. "Can ssh to cypressLinux" is not the requirement; "can ssh to cypressLinux AND run `incus` there AND read a target VM's build status" is. Bare-connectivity checks miss exactly the failure mode this step exists to catch.
 3. **Dedupe** — one verification step per distinct target+capability, even if several later steps reference it.
 4. **Write one verification Step+Validation pair per dependency, tagged `[skill: /accounts]`** (the `accounts` skill already owns SSH/credential/cloud-account access diagnosis and repair — don't reinvent it here):
@@ -339,7 +350,7 @@ The available-skills list is already in context (descriptions are always loaded)
 
 1. Match the step's actual work against the available skills. If one applies, append the tag to the step line: `[skill: /dev-makefiles]` — or `[skill: /auditor → /importer-fix]` for read-then-write pairs. The tag is a binding instruction to `/iterate`, not a suggestion.
 2. If no skill fits, tag `[skill: none — <two-word reason>]` (e.g. `[skill: none — plain edit]`). Explicit, so the user can see the gap rather than wonder.
-3. Match on the work's NATURE, not its noun: a step that builds/compiles → `/dev-makefiles`; touches SSH/creds/remotes → `/accounts`; branch/PR work → `/feature-branch`; a domain skill's subject → that skill. When a step's wording is ambiguous, read the candidate skill's description once and decide — don't tag speculatively.
+3. Match on the work's NATURE, not its noun: a step that builds/compiles → `/dev-makefiles`; touches SSH/creds/remotes → `/accounts`; branch/PR work → `/feature-branch`; needs a machine (a VM, a container, a clean guest, a box of another OS) → `/izmachine`; a domain skill's subject → that skill. `/incus` is for work on Incus itself (its hosts, clusters, networks), never for getting a machine. When a step's wording is ambiguous, read the candidate skill's description once and decide — don't tag speculatively.
 4. Applies equally to steps added later (op 4/10 adds, auto-classify time) — one cheap judgment per new step, same as team classification.
 
 This exists because plans reliably bypassed installed skills: executors built software with ad-hoc shell instead of the Makefile skill, because nothing at planning time forced the lookup. The tag converts an always-loaded description into an explicit instruction at the moment of action.
@@ -674,6 +685,8 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 34. **Only a release plan notarizes, staples, tags a version or publishes** (§5.11). Every other plan stops at signing, never preflights the notary profile, and names it `notary` when a target needs it. Release requests go to `/iterate-release`; a `mode: release` plan is never staged.
 
 35. **A stand-in for a live-only proof is tracked for the release candidate.** When a step replaces something only the real thing proves (a live account, a real provider's endpoint, a human at a consent screen) with a stub, a mock or a skipped case, the same step tracks it with op 8.8 and its validation names the `RC-NN`. The default suite then never touches the live resource, and the real proof still runs before a version ships. A `mode: rc` plan is never staged.
+
+36. **Where a thing runs is izmachine's call.** A step that needs a machine writes the need (kind, OS, version) and is tagged `[skill: /izmachine]`; izmachine picks the host from the project's `.iz`. The plan names a host only when the user's own words named it, and never cuts, defers or splits work because the current machine runs another OS (Step 5, the placement test).
 
 ## Examples
 
