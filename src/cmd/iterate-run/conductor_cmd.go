@@ -190,6 +190,8 @@ func runConductorCLI(args []string, input io.Reader, output, diagnostics io.Writ
 	switch verb {
 	case "status", "explain":
 		data, err = s.Evaluate(ctx, conductor.EvaluateRequest{ProjectID: project})
+	case "overdrive-conversion":
+		data, err = s.PreviewOverdriveConversion(ctx, f.values["subscription"], f.values["id"])
 	case "simulate":
 		var b []byte
 		b, err = read()
@@ -483,6 +485,7 @@ Resources: project, subscription, sequence, preset, power-band, time-window,
 Actions:   list, show, create, edit, duplicate, delete
 Other:     config show|validate|apply; usage show|refresh; run list;
            event list --run ID; templates; migrate; completion bash|zsh|fish
+           overdrive-conversion --subscription ACCOUNT --id WINDOW (read-only)
 
 Flags:
   --json                    Stable schema_version/ok/revision/data/error envelope
@@ -514,7 +517,7 @@ conflict, 4 unavailable. -- terminates option parsing.`)
 	}
 }
 func conductorCompletion(out, diag io.Writer, shell string) int {
-	words := "conductor status explain simulate tick start stop pause resume kill migrate project subscription sequence preset power-band time-window overdrive automation usage run event config list show create edit duplicate delete apply validate refresh templates"
+	words := "conductor status explain simulate overdrive-conversion tick start stop pause resume kill migrate project subscription sequence preset power-band time-window overdrive automation usage run event config list show create edit duplicate delete apply validate refresh templates"
 	switch shell {
 	case "bash":
 		fmt.Fprintf(out, "complete -W '%s' iterate-run\n", words)
@@ -579,6 +582,8 @@ func validateConductorCommand(f conductorFlags) error {
 		add("project")
 	case "simulate":
 		add("file")
+	case "overdrive-conversion":
+		add("subscription", "id")
 	case "tick":
 		add("project", "worker")
 	case "start", "resume", "pause", "stop", "kill":

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/x85446/claudecodetricks/src/internal/conductor"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 	"github.com/x85446/claudecodetricks/src/internal/iterrun"
@@ -124,7 +126,7 @@ func TestConductorCLIHTTPSharedDefinitions(t *testing.T) {
 	}
 }
 
-// TESTMASTER: id=indigobird-cli-six-color-cases tier=? parallel=yes
+// TESTMASTER: id=indigobird-cli-six-color-cases tier=fast parallel=yes
 func TestConductorCLISixColorCases(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("PTY fixture requires POSIX")
@@ -334,5 +336,43 @@ func TestConductorCLIProjectQueue(t *testing.T) {
 	}
 	if env.Data.Queue.Depth != 1 || len(env.Data.Queue.Plans) != 1 || env.Data.Queue.Plans[0].Name != "queued" {
 		t.Fatal(out.String())
+	}
+}
+
+// TESTMASTER: id=indigobird-cli-conversion-readonly tier=? parallel=yes
+func TestConductorCLIConversionReadOnly(t *testing.T) {
+	store := t.TempDir()
+	s := iterrun.NewConductorService(store)
+	c, _ := s.Config()
+	sub := &c.Subscriptions[0]
+	sub.AccountID = "account"
+	sub.PoolID = "pool"
+	sub.OverdriveWindows = []model.OverdriveWindow{{ID: "convert", Name: "Before reset", Enabled: true, StartMode: "reset_relative", HoursBeforeReset: 6.5, EndMode: "next_reset", TargetUsedPercent: 60, Recurrence: model.Recurrence{Days: []int{6}, Start: "00:00", End: "00:00", Timezone: "UTC", EveryWeeks: 1}}}
+	c, err := s.Apply(c.Revision, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	reset := now.Add(24 * time.Hour)
+	err = s.PutUsage(model.Usage{SubscriptionID: sub.ID, AccountID: sub.AccountID, PoolID: sub.PoolID, Supported: true, Source: "fixture", ObservedAt: now, Weekly: &model.Allowance{StartsAt: reset.Add(-7 * 24 * time.Hour), ResetsAt: reset, ResetTrusted: true}, ShortUnsupported: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, _ := os.ReadFile(filepath.Join(store, "config.json"))
+	runtimeBefore, _ := os.ReadFile(filepath.Join(store, "runtime.json"))
+	var out, diag bytes.Buffer
+	code := runConductorCLI([]string{"--json", "overdrive-conversion", "--subscription", sub.ID, "--id", "convert", "--store", store}, strings.NewReader(""), &out, &diag)
+	var env struct {
+		OK   bool                          `json:"ok"`
+		Data conductor.OverdriveConversion `json:"data"`
+	}
+	_ = json.Unmarshal(out.Bytes(), &env)
+	if code != 0 || diag.Len() != 0 || !env.OK || env.Data.Revision != c.Revision || env.Data.Window.HoursBeforeReset != 6.5 || env.Data.Window.ID != "convert" || !env.Data.End.Equal(reset) {
+		t.Fatal(code, out.String(), diag.String())
+	}
+	after, _ := os.ReadFile(filepath.Join(store, "config.json"))
+	runtimeAfter, _ := os.ReadFile(filepath.Join(store, "runtime.json"))
+	if !bytes.Equal(before, after) || !bytes.Equal(runtimeBefore, runtimeAfter) {
+		t.Fatal("CLI preview changed store")
 	}
 }

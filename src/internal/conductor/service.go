@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -88,6 +90,9 @@ func NewID(prefix string) string {
 	return prefix + "-" + hex.EncodeToString(b)
 }
 func Canonical(path string) (string, error) {
+	if strings.TrimSpace(path) == "" {
+		return "", errors.New("project path is required")
+	}
 	p, e := filepath.Abs(path)
 	if e != nil {
 		return "", e
@@ -102,6 +107,18 @@ func Canonical(path string) (string, error) {
 	}
 	if !fi.IsDir() {
 		return "", fmt.Errorf("project path is not a directory")
+	}
+	if _, e = os.Stat(p + string(os.PathSeparator) + "."); e != nil {
+		return "", fmt.Errorf("project directory must allow access: %w", e)
+	}
+	f, e := os.Open(p)
+	if e != nil {
+		return "", fmt.Errorf("project directory must allow reading: %w", e)
+	}
+	_, e = f.Readdirnames(1)
+	_ = f.Close()
+	if e != nil && e != io.EOF {
+		return "", fmt.Errorf("project directory must allow reading: %w", e)
 	}
 	return filepath.Clean(p), nil
 }

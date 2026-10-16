@@ -63,10 +63,15 @@ def main():
                 start_mode='weekly', recurrence=dict(days=[4], start='00:00', end='00:00', timezone='America/Chicago', every_weeks=1),
                 end_mode='next_reset', target_used_percent=100)]
             base = dict(id='filemaster-overdrive', name='Follow Codex overdrive', project_id=project_id, enabled=True,
-                        priority=10, mode='overdrive', participants=[sequence_id, claude_sequence], entries=[],
+                        priority=10, mode='overdrive', participants=[sequence_id], entries=[],
                         honor_engine_overdrive=True, only_during_overdrive=True,
                         run_limit='drain_queue', on_window_end='finish_checkpoint')
-            cfg['automations'] = [base]
+            unrelated_rule = dict(id='unrelated-rule', name='Unrelated rule', project_id=project_id,
+                                  enabled=False, priority=20, mode='keep_working', participants=[],
+                                  entries=[dict(id='unrelated-entry', sequence_id=claude_sequence, max_band='green')],
+                                  honor_engine_overdrive=False, only_during_overdrive=False,
+                                  run_limit='drain_queue', on_window_end='finish_checkpoint')
+            cfg['automations'] = [base, unrelated_rule]
             revision = cfg['revision']
             read('config', 'validate', '--file', '-', payload=cfg)
             read('config', 'apply', '--file', '-', '--revision', str(revision), '--dry-run', payload=cfg)
@@ -80,7 +85,10 @@ def main():
             # Reapplying the same conversational draft uses the existing stable
             # identities; the atomic API must not append duplicate definitions.
             repeated = read('config', 'apply', '--file', '-', '--revision', str(cfg['revision']), payload=cfg)['data']
-            assert [a['id'] for a in repeated['automations']] == ['filemaster-overdrive']
+            assert [a['id'] for a in repeated['automations']] == ['filemaster-overdrive', 'unrelated-rule']
+            assert repeated['automations'][0]['participants'] == [sequence_id]
+            assert not repeated['automations'][0].get('window_id')
+            assert repeated['automations'][1] == unrelated_rule
             assert len(next(s for s in repeated['subscriptions'] if s['id'] == sub['id'])['overdrive_windows']) == 3
             assert len(next(s for s in repeated['subscriptions'] if s['id'] == claude['id'])['overdrive_windows']) == 1
             assert repeated['subscriptions'][-1] == unrelated
@@ -97,10 +105,26 @@ def main():
                                 entries=[dict(id='first', sequence_id=sequence_id, max_band='green'),
                                          dict(id='second', sequence_id=sequence_id, max_band='yellow'),
                                          dict(id='third', sequence_id=sequence_id, max_band='red')])
-                    current['automations'] = [base, rule]
+                    current['automations'] = [base, unrelated_rule, rule]
                     read('config', 'apply', '--file', '-', '--revision', str(current['revision']), payload=current)
                     assert direct('automation', 'show', 'scheduled')['data']['on_window_end'] == ending
                     assert direct('automation', 'show', 'scheduled')['data']['run_limit'] == limit
+            current = read('config', 'show')['data']
+            for _ in range(2):
+                current = read('config', 'apply', '--file', '-', '--revision', str(current['revision']), payload=current)['data']
+                assert current['automations'] == [base, unrelated_rule, rule]
+                assert direct('automation', 'show', 'scheduled')['data']['entries'] == rule['entries']
+            # Independent account-window edits preserve neighboring windows and rules.
+            old_subscriptions = copy.deepcopy(current['subscriptions'])
+            edited = next(s for s in current['subscriptions'] if s['id'] == sub['id'])['overdrive_windows'][0]
+            edited.update(enabled=True, target_used_percent=75)
+            current = read('config', 'apply', '--file', '-', '--revision', str(current['revision']), payload=current)['data']
+            saved_windows = direct('subscription', 'show', sub['id'])['data']['overdrive_windows']
+            old_windows = next(s for s in old_subscriptions if s['id'] == sub['id'])['overdrive_windows']
+            assert saved_windows[0]['enabled'] and saved_windows[0]['target_used_percent'] == 75
+            assert saved_windows[1:] == old_windows[1:]
+            assert direct('subscription', 'show', claude['id'])['data'] == next(s for s in old_subscriptions if s['id'] == claude['id'])
+            assert current['automations'] == [base, unrelated_rule, rule]
             # Named policy edits preserve references and unrelated definitions.
             current = read('config', 'show')['data']
             policy = copy.deepcopy(current['power_bands'][0])

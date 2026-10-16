@@ -155,6 +155,9 @@ func (s *Service) TickProject(ctx context.Context, projectID string) (out TickRe
 		if pg.Started.IsZero() {
 			pg.Started = s.now()
 			pg.LastProgress = s.now()
+		} else if previous := pg.LastResult; previous != nil && previous.Outcome == "completed" && pg.CompletedSteps[previous.Step] == previous.SourceDigest && (a.Step != previous.Step || a.Kind == "delivery") {
+			// A new checkpoint starts its no-progress budget after any gated idle interval.
+			pg.LastProgress = s.now()
 		}
 		r.Progress[x.Plan.ID] = pg
 		if e = atomicJSON(filepath.Join(dir, "run.json"), l); e != nil {

@@ -173,6 +173,10 @@ func ConductorAPI(s *conductor.Service) http.Handler {
 			if get() {
 				data, err = s.Status(r.Context())
 			}
+		case "visibility":
+			if get() {
+				data, err = conductorVisibility(r.Context(), s, r.URL.Query().Get("project"))
+			}
 		case "runtime":
 			if get() {
 				var rt conductor.Runtime
@@ -241,6 +245,16 @@ func ConductorAPI(s *conductor.Service) http.Handler {
 				var req conductor.BudgetPreviewRequest
 				if err = conductorDecode(r, &req); err == nil {
 					data, err = s.BudgetPreview(r.Context(), req)
+				}
+			}
+		case "overdrive-conversion":
+			if post() {
+				var req struct {
+					SubscriptionID string `json:"subscription_id"`
+					WindowID       string `json:"window_id"`
+				}
+				if err = conductorDecode(r, &req); err == nil {
+					data, err = s.PreviewOverdriveConversion(r.Context(), req.SubscriptionID, req.WindowID)
 				}
 			}
 		case "overdrive-options":

@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -137,18 +135,6 @@ func ConductorResource(s *conductor.Service, noun, verb, id, parent string, body
 			canonical, e := conductor.Canonical(path)
 			if path == "" || e != nil {
 				return nil, c.Revision, errors.New("project.path: choose an existing accessible directory")
-			}
-			if _, e := os.Stat(canonical + string(os.PathSeparator) + "."); e != nil {
-				return nil, c.Revision, errors.New("project.path: directory must allow access")
-			}
-			folder, e := os.Open(canonical)
-			if e != nil {
-				return nil, c.Revision, errors.New("project.path: directory must allow reading")
-			}
-			_, e = folder.Readdirnames(1)
-			_ = folder.Close()
-			if e != nil && e != io.EOF {
-				return nil, c.Revision, errors.New("project.path: directory must allow reading")
 			}
 			m["path"] = canonical
 			if m["name"] == nil || m["name"] == "" {

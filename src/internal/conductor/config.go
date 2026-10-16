@@ -205,7 +205,7 @@ func (s *Service) Apply(expected int64, draft model.Config) (c model.Config, e e
 			p := &draft.Projects[i]
 			p.Path, x = Canonical(p.Path)
 			if x != nil {
-				return fmt.Errorf("projects.%s.path: %w", p.ID, x)
+				return fmt.Errorf("project.path: %s: %w", p.ID, x)
 			}
 		}
 		revisions(&draft, old)
@@ -465,7 +465,7 @@ func ValidateDraft(draft model.Config) (model.Config, error) {
 	for i := range draft.Projects {
 		path, e := Canonical(draft.Projects[i].Path)
 		if e != nil {
-			return draft, e
+			return draft, fmt.Errorf("project.path: %s: %w", draft.Projects[i].ID, e)
 		}
 		draft.Projects[i].Path = path
 	}

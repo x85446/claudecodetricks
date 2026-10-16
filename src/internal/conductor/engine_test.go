@@ -1820,6 +1820,10 @@ func TestIndigobirdOverdriveCheckpointRetirement(t *testing.T) {
 				if result.err != nil || result.out.Result == nil || result.out.Result.Outcome != "completed" {
 					t.Fatal(result)
 				}
+				windows := result.out.Assignment.Subscription.OverdriveWindows
+				if len(windows) != 1 || !windows[0].Enabled || windows[0].Recurrence.End != "13:00" {
+					t.Fatal("active overdrive snapshot changed with saved edit", windows)
+				}
 			case <-time.After(3 * time.Second):
 				t.Fatal("active overdrive checkpoint did not finish")
 			}
@@ -2018,5 +2022,323 @@ func TestIndigobirdSharedPoolAdmission(t *testing.T) {
 	}
 	if src.checkpoints != 2 {
 		t.Fatal("pool isolation lost checkpoints", src.checkpoints)
+	}
+}
+
+func twoSubscriptions(c *model.Config) {
+	other := c.Subscriptions[0]
+	other.ID = "second"
+	other.Name = "Second"
+	other.AccountID = "second-identity"
+	other.PoolID = "second-pool"
+	other.Sequences = []model.Sequence{{ID: "second-sequence", Name: "build"}}
+	other.OverdriveWindows = nil
+	c.Subscriptions = append(c.Subscriptions, other)
+}
+
+// TESTMASTER: id=indigobird-project-rules-routing tier=fast parallel=yes
+func TestIndigobirdDistinctRuleWindows(t *testing.T) {
+	s, src, c := fixture(t, "")
+	twoSubscriptions(&c)
+	c.TimeWindows = []model.TimeWindow{{ID: "early", Name: "Early", Enabled: true, Recurrence: model.Recurrence{Days: []int{5}, Start: "11:00", End: "13:00", Timezone: "UTC", EveryWeeks: 1}}, {ID: "late", Name: "Late", Enabled: true, Recurrence: model.Recurrence{Days: []int{5}, Start: "13:00", End: "15:00", Timezone: "UTC", EveryWeeks: 1}}}
+	c.Automations[0].Mode = "scheduled"
+	c.Automations[0].WindowID = "early"
+	second := c.Automations[0]
+	second.ID = "second-rule"
+	second.Name = "Second route"
+	second.WindowID = "late"
+	second.Entries = []model.Entry{{ID: "second-entry", SequenceID: "second-sequence", MaxBand: model.Red}}
+	c.Automations = append(c.Automations, second)
+	if _, e := s.Apply(c.Revision, c); e != nil {
+		t.Fatal(e)
+	}
+	first, e := s.Tick(context.Background())
+	if e != nil || first.Assignment == nil || first.Assignment.Subscription.ID != "account" || first.Assignment.Step != 1 {
+		t.Fatal("early route", first, e)
+	}
+	base := s.now()
+	s.Clock = func() time.Time { return base.Add(2 * time.Hour) }
+	restarted := NewService(s.Dir, src)
+	restarted.Clock = s.Clock
+	restarted.CollectUsage = s.CollectUsage
+	next, e := restarted.Tick(context.Background())
+	if e != nil || next.Assignment == nil || next.Assignment.Subscription.ID != "second" || next.Assignment.Step != 2 || next.Assignment.Automation.ID != "second-rule" {
+		t.Fatal("late route", next, e)
+	}
+	if src.checkpoints != 2 {
+		t.Fatal("window handoff repeated pair")
+	}
+	s.Clock = func() time.Time { return base.Add(3 * time.Hour) }
+	restarted.Clock = s.Clock
+	closed, e := restarted.Tick(context.Background())
+	if e != nil || closed.Assignment != nil {
+		t.Fatal("exclusive scheduled end dispatched", closed, e)
+	}
+	c, e = restarted.Config()
+	if e != nil {
+		t.Fatal(e)
+	}
+	c.Automations[1].Mode = "keep_working"
+	c.Automations[1].WindowID = ""
+	if _, e = restarted.Apply(c.Revision, c); e != nil {
+		t.Fatal(e)
+	}
+	anytime, e := restarted.Tick(context.Background())
+	if e != nil || anytime.Assignment == nil || anytime.Assignment.Subscription.ID != "second" {
+		t.Fatal("same ordered profile did not run anytime", anytime, e)
+	}
+}
+
+// TESTMASTER: id=indigobird-project-rules-overlap tier=fast parallel=yes
+func TestIndigobirdRuleOverlapSelection(t *testing.T) {
+	for _, criterion := range []string{"priority", "reset", "id"} {
+		t.Run(criterion, func(t *testing.T) {
+			s, src, c := fixture(t, "hold")
+			twoSubscriptions(&c)
+			second := c.Automations[0]
+			second.ID = "a-rule"
+			second.Name = "Other"
+			second.Entries = []model.Entry{{ID: "second-entry", SequenceID: "second-sequence", MaxBand: model.Red}}
+			c.Automations[0].ID = "z-rule"
+			c.Automations = append(c.Automations, second)
+			want := "a-rule"
+			if criterion == "priority" {
+				c.Automations[0].Priority = -1
+				want = "z-rule"
+			}
+			collect := s.CollectUsage
+			s.CollectUsage = func(ctx context.Context, sub model.Subscription) (model.Usage, error) {
+				u, e := collect(ctx, sub)
+				if criterion == "reset" && sub.ID == "account" {
+					u.Weekly.ResetsAt = s.now().Add(2 * 24 * time.Hour)
+				}
+				return u, e
+			}
+			if criterion == "reset" {
+				want = "z-rule"
+			}
+			if _, e := s.Apply(c.Revision, c); e != nil {
+				t.Fatal(e)
+			}
+			type tick struct {
+				out TickResult
+				err error
+			}
+			done := make(chan tick, 1)
+			go func() { out, e := s.Tick(context.Background()); done <- tick{out, e} }()
+			defer s.Control(context.Background(), "kill", "project")
+			var active Lease
+			waitUntil(t, 3*time.Second, func() bool {
+				r, _ := s.Runtime()
+				for _, l := range r.Leases {
+					if l.PID > 0 {
+						active = l
+						return true
+					}
+				}
+				return false
+			})
+			if active.Assignment.Automation.ID != want {
+				t.Fatal("wrong overlapping rule winner", criterion, active.Assignment.Automation.ID, want)
+			}
+			other := NewService(s.Dir, src)
+			other.Clock = s.Clock
+			other.CollectUsage = s.CollectUsage
+			duplicate, e := other.Tick(context.Background())
+			if e != nil || duplicate.Assignment != nil {
+				t.Fatal("overlapping rules double dispatched", duplicate, e)
+			}
+			if e = os.WriteFile(active.Assignment.ResultPath+".continue", nil, 0600); e != nil {
+				t.Fatal(e)
+			}
+			select {
+			case result := <-done:
+				if result.err != nil || src.checkpoints != 1 {
+					t.Fatal("overlap checkpoint", result.err, src.checkpoints)
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("overlap owner did not finish")
+			}
+		})
+	}
+}
+
+// TESTMASTER: id=indigobird-ordered-profiles-overdrive tier=fast parallel=yes
+func TestIndigobirdUnorderedOverdriveSelection(t *testing.T) {
+	for _, scenario := range []string{"nearest-trusted", "unknown-later", "fair-tie", "window-transition"} {
+		t.Run(scenario, func(t *testing.T) {
+			s, src, c := overdriveFixture(t, "")
+			twoSubscriptions(&c)
+			c.Subscriptions[1].OverdriveEnabled = true
+			w := c.Subscriptions[0].OverdriveWindows[0]
+			w.ID = "second-over"
+			w.Name = "Second capacity"
+			c.Subscriptions[1].OverdriveWindows = []model.OverdriveWindow{w}
+			c.Automations[0].Mode = "overdrive"
+			c.Automations[0].OnlyOverdrive = true
+			c.Automations[0].Entries = nil
+			c.Automations[0].Participants = []string{"second-sequence", "sequence"}
+			if scenario == "window-transition" {
+				c.Subscriptions[1].OverdriveWindows[0].Recurrence.Start = "13:00"
+				c.Subscriptions[1].OverdriveWindows[0].Recurrence.End = "15:00"
+			}
+			collect := s.CollectUsage
+			s.CollectUsage = func(ctx context.Context, sub model.Subscription) (model.Usage, error) {
+				u, e := collect(ctx, sub)
+				if scenario == "nearest-trusted" && sub.ID == "second" {
+					u.Weekly.ResetsAt = s.now().Add(2 * 24 * time.Hour)
+				}
+				if scenario == "unknown-later" && sub.ID == "account" {
+					u.Weekly.ResetTrusted = false
+					u.Weekly.ResetsAt = s.now().Add(time.Hour)
+				}
+				return u, e
+			}
+			if _, e := s.Apply(c.Revision, c); e != nil {
+				t.Fatal(e)
+			}
+			wants := []string{"second"}
+			if scenario == "fair-tie" {
+				wants = []string{"account", "second", "account"}
+			}
+			if scenario == "window-transition" {
+				wants = []string{"account", "second"}
+			}
+			for i, want := range wants {
+				if scenario == "window-transition" && i == 1 {
+					base := s.now()
+					s.Clock = func() time.Time { return base.Add(2 * time.Hour) }
+				}
+				restarted := NewService(s.Dir, src)
+				restarted.PollInterval = 10 * time.Millisecond
+				restarted.Clock = s.Clock
+				restarted.CollectUsage = s.CollectUsage
+				out, e := restarted.Tick(context.Background())
+				if e != nil || out.Assignment == nil || out.Assignment.Subscription.ID != want || !out.Assignment.Budget.OverdriveActive {
+					t.Fatal("unordered overdrive winner", scenario, i, want, out, e)
+				}
+			}
+		})
+	}
+}
+
+// TESTMASTER: id=indigobird-engine-policy-metadata tier=fast parallel=yes
+func TestIndigobirdResetMetadataPrecedence(t *testing.T) {
+	s, src, c := overdriveFixture(t, "")
+	c.Subscriptions[0].Tier = "Custom enterprise allowance"
+	c.Subscriptions[0].TypicalReset = model.ResetSchedule{Day: 6, Time: "00:00", Timezone: "UTC"}
+	c.Subscriptions[0].OverdriveWindows[0].StartMode = "reset_relative"
+	c.Subscriptions[0].OverdriveWindows[0].EndMode = "next_reset"
+	c.Subscriptions[0].OverdriveWindows[0].HoursBeforeReset = 24
+	c.Automations[0].OnlyOverdrive = true
+	if _, e := s.Apply(c.Revision, c); e != nil {
+		t.Fatal(e)
+	}
+	restarted := NewService(s.Dir, src)
+	restarted.Clock = s.Clock
+	restarted.CollectUsage = s.CollectUsage
+	loaded, e := restarted.Config()
+	if e != nil || loaded.Subscriptions[0].Tier != c.Subscriptions[0].Tier || loaded.Subscriptions[0].TypicalReset != c.Subscriptions[0].TypicalReset {
+		t.Fatal("metadata persistence", loaded, e)
+	}
+	out, e := restarted.Tick(context.Background())
+	if e != nil || out.Assignment != nil {
+		t.Fatal("typical Saturday reset overrode trusted Monday reset", out, e)
+	}
+	collect := s.CollectUsage
+	trusted := false
+	restarted.CollectUsage = func(ctx context.Context, sub model.Subscription) (model.Usage, error) {
+		u, e := collect(ctx, sub)
+		u.Weekly.ResetsAt = s.now().Add(12 * time.Hour)
+		u.Weekly.ResetTrusted = trusted
+		return u, e
+	}
+	out, e = restarted.Tick(context.Background())
+	if e != nil || out.Assignment != nil {
+		t.Fatal("estimated reset fabricated capacity", out, e)
+	}
+	trusted = true
+	out, e = restarted.Tick(context.Background())
+	if e != nil || out.Assignment == nil || !out.Assignment.Budget.OverdriveActive || src.checkpoints != 1 {
+		t.Fatal("trusted live reset did not open actual window", out, e)
+	}
+}
+
+// TESTMASTER: id=indigobird-project-rules-scope tier=fast parallel=yes
+func TestIndigobirdOverdriveProjectScope(t *testing.T) {
+	s, src, c := overdriveFixture(t, "")
+	twoSubscriptions(&c)
+	c.Subscriptions[1].OverdriveEnabled = false
+	c.TimeWindows = []model.TimeWindow{{ID: "closed", Name: "Closed", Enabled: true, Recurrence: model.Recurrence{Days: []int{5}, Start: "13:00", End: "14:00", Timezone: "UTC", EveryWeeks: 1}}}
+	for _, id := range []string{"second-project", "closed-project", "other-engine"} {
+		p := model.Project{ID: id, Name: id, Path: t.TempDir(), Enabled: true}
+		if id == "closed-project" {
+			p.WindowID = "closed"
+		}
+		c.Projects = append(c.Projects, p)
+		a := c.Automations[0]
+		a.ID = id + "-rule"
+		a.Name = id
+		a.ProjectID = id
+		sequence := "sequence"
+		if id == "other-engine" {
+			sequence = "second-sequence"
+		}
+		a.Entries = []model.Entry{{ID: id + "-entry", SequenceID: sequence, MaxBand: model.Green}}
+		c.Automations = append(c.Automations, a)
+	}
+	collect := s.CollectUsage
+	s.CollectUsage = func(ctx context.Context, sub model.Subscription) (model.Usage, error) {
+		u, e := collect(ctx, sub)
+		u.Weekly.UsedPercent = 80
+		return u, e
+	}
+	var e error
+	c, e = s.Apply(c.Revision, c)
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, id := range []string{"project", "second-project", "closed-project", "other-engine"} {
+		out, e := s.TickProject(context.Background(), id)
+		want := id == "project" || id == "second-project"
+		if e != nil || (out.Assignment != nil) != want {
+			t.Fatal("overdrive scope", id, out, e)
+		}
+		if want && !out.Assignment.Budget.OverdriveActive {
+			t.Fatal("shared engine rule did not inherit override")
+		}
+	}
+	for i := range c.PowerBands[0].GreenCurve {
+		c.PowerBands[0].GreenCurve[i] = 90
+		c.PowerBands[0].RedCurve[i] = 95
+	}
+	c.Subscriptions[0].OverdriveEnabled = false
+	if _, e = s.Apply(c.Revision, c); e != nil {
+		t.Fatal(e)
+	}
+	out, e := s.TickProject(context.Background(), "other-engine")
+	if e != nil || out.Assignment == nil || out.Assignment.Budget.OverdriveActive {
+		t.Fatal("universal edit did not reach independent subscription", out, e)
+	}
+	if src.checkpoints != 3 {
+		t.Fatal("scope gates ran unexpected work", src.checkpoints)
+	}
+}
+
+// TESTMASTER: id=indigobird-projects-approval tier=fast parallel=yes
+func TestIndigobirdUnapprovedPlanGates(t *testing.T) {
+	s, src, _ := fixture(t, "")
+	src.plans = []Plan{{Name: "draft", State: "planned"}, {Name: "paused", State: "paused", Staged: true, Blocked: true, Reason: "Paused"}, {Name: "operator", State: "blocked", Staged: true, Blocked: true, Reason: "Operator approval required"}}
+	out, e := s.Tick(context.Background())
+	if e != nil || out.Assignment != nil || src.checkpoints != 0 {
+		t.Fatal("unapproved plan started", out, e)
+	}
+	if len(out.Decision.Candidates) != 2 {
+		t.Fatal("blocked plans lost explanations", out.Decision.Candidates)
+	}
+	for _, row := range out.Decision.Candidates {
+		if row.Code != "plan_blocked" {
+			t.Fatal("approval gates were bypassed or masked", row)
+		}
 	}
 }

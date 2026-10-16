@@ -3,6 +3,7 @@ package iterrun
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -384,7 +385,7 @@ func TestConductorAPIOverdriveWindowSamples(t *testing.T) {
 	}
 }
 
-// TESTMASTER: id=indigobird-api-invalid-folders-readiness tier=? parallel=yes
+// TESTMASTER: id=indigobird-api-invalid-folders-readiness tier=fast parallel=yes
 func TestConductorAPIInvalidFoldersAndReadiness(t *testing.T) {
 	s := NewConductorService(t.TempDir())
 	h := ConductorAPI(s)
@@ -418,6 +419,14 @@ func TestConductorAPIInvalidFoldersAndReadiness(t *testing.T) {
 		if w.Code != 400 || env.Error == nil || env.Error.Field != "project.path" || env.Error.Remedy == "" {
 			t.Fatalf("invalid folder %q: %d %s", path, w.Code, w.Body)
 		}
+		draft := c
+		draft.Projects = []model.Project{{ID: "bad", Name: "bad", Path: path}}
+		w = conductorRequest(t, h, "POST", "config", "http://localhost:8420", "localhost:8420", map[string]any{"expected_revision": c.Revision, "config": draft})
+		env = ConductorEnvelope{}
+		_ = json.Unmarshal(w.Body.Bytes(), &env)
+		if w.Code != 400 || env.Error == nil || env.Error.Field != "project.path" {
+			t.Fatalf("full configuration bypass for %q: %d %s", path, w.Code, w.Body)
+		}
 	}
 	var readiness model.Readiness
 	acceptanceData(t, h, "POST", "probe", map[string]any{"subscription": model.Subscription{ID: "absent", Name: "Absent", Adapter: "codex", Executable: filepath.Join(root, "absent-cli")}}, &readiness)
@@ -441,7 +450,7 @@ func TestConductorAPIInvalidFoldersAndReadiness(t *testing.T) {
 	}
 }
 
-// TESTMASTER: id=indigobird-api-field-errors-recurrence tier=? parallel=yes
+// TESTMASTER: id=indigobird-api-field-errors-recurrence tier=fast parallel=yes
 func TestConductorAPIFieldErrorsAndRecurrenceRestore(t *testing.T) {
 	s := NewConductorService(t.TempDir())
 	c, _ := s.Config()
@@ -481,5 +490,129 @@ func TestConductorAPIFieldErrorsAndRecurrenceRestore(t *testing.T) {
 	after, _ := os.ReadFile(filepath.Join(s.Dir, "config.json"))
 	if !bytes.Equal(before, after) {
 		t.Fatal("invalid/draft edits altered last committed definitions")
+	}
+}
+
+// TESTMASTER: id=indigobird-api-cursor-expiry-recovery tier=? parallel=yes
+func TestConductorAPICursorExpiryRecovery(t *testing.T) {
+	s := NewConductorService(t.TempDir())
+	project := t.TempDir()
+	a := model.Assignment{ID: "assignment-retained", RunID: "retained-run", ProjectID: "project-retained", ProjectPath: project, Plan: "alpha", Subscription: model.Subscription{ID: "account", Name: "Fixture"}, Sequence: model.Sequence{ID: "sequence", Name: "build"}}
+	lease := conductor.Lease{Assignment: a, Status: "completed"}
+	raw, _ := json.Marshal(lease)
+	runDir := filepath.Join(s.Dir, "runs", a.RunID)
+	if err := conductor.AtomicWrite(filepath.Join(runDir, "run.json"), raw); err != nil {
+		t.Fatal(err)
+	}
+	// A retained suffix reproduces cursor expiry without thousands of durable writes.
+	var retained bytes.Buffer
+	for seq := uint64(100); seq <= 104; seq++ {
+		e := model.Event{Version: 1, RunID: a.RunID, AssignmentID: a.ID, ProjectPath: project, Plan: "alpha", Sequence: seq, Kind: "activity", Message: fmt.Sprintf("retained event %d", seq)}
+		if err := json.NewEncoder(&retained).Encode(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := conductor.AtomicWrite(filepath.Join(runDir, "events.jsonl"), retained.Bytes()); err != nil {
+		t.Fatal(err)
+	}
+	read := func(service *conductor.Service, after uint64) conductor.EventPage {
+		t.Helper()
+		var page conductor.EventPage
+		acceptanceData(t, ConductorAPI(service), "GET", fmt.Sprintf("events?run_id=%s&project_id=%s&plan=alpha&after=%d&limit=2", a.RunID, a.ProjectID, after), nil, &page)
+		return page
+	}
+	first := read(s, 7)
+	if !first.Expired || first.Cursor != 101 || len(first.Events) != 2 || first.Events[0].Sequence != 100 {
+		t.Fatal("expired cursor did not recover retained suffix", first)
+	}
+	seen := map[uint64]bool{}
+	page := first
+	for {
+		for _, event := range page.Events {
+			if seen[event.Sequence] || event.RunID != a.RunID || event.ProjectPath != project {
+				t.Fatal("duplicate or cross-run event", event)
+			}
+			seen[event.Sequence] = true
+		}
+		if len(page.Events) == 0 {
+			break
+		}
+		previous := page.Cursor
+		page = read(NewConductorService(s.Dir), previous)
+		if page.Expired || page.Cursor < previous {
+			t.Fatal("restart lost cursor", page)
+		}
+	}
+	if len(seen) != 5 || page.Cursor != 104 {
+		t.Fatal("pagination lost retained history", seen, page)
+	}
+	again := read(NewConductorService(s.Dir), 101)
+	if again.Expired || len(again.Events) != 2 || again.Events[0].Sequence != 102 || again.Events[1].Sequence != 103 {
+		t.Fatal("stable resume cursor changed", again)
+	}
+	for _, path := range []string{"events?run_id=retained-run&project_id=other", "events?run_id=retained-run&plan=other", "events?run_id=missing"} {
+		w := conductorRequest(t, ConductorAPI(s), "GET", path, "", "localhost:8420", nil)
+		if w.Code != 404 {
+			t.Fatal("unscoped cursor read", w.Code, w.Body.String())
+		}
+	}
+	after, _ := os.ReadFile(filepath.Join(runDir, "events.jsonl"))
+	runAfter, _ := os.ReadFile(filepath.Join(runDir, "run.json"))
+	rt, _ := s.Runtime()
+	if !bytes.Equal(after, retained.Bytes()) || !bytes.Equal(runAfter, raw) || rt.Revision != 0 || len(rt.Leases) != 0 {
+		t.Fatal("history reads mutated durable evidence or acquired execution")
+	}
+}
+
+// TESTMASTER: id=indigobird-api-visibility-conversion tier=? parallel=yes
+func TestConductorAPIVisibilityAndConversion(t *testing.T) {
+	s, c, now := acceptanceSimulation(t)
+	sub := &c.Subscriptions[0]
+	sub.OverdriveWindows = []model.OverdriveWindow{{ID: "convert", Name: "Before reset", Enabled: true, StartMode: "weekly", EndMode: "next_reset", TargetUsedPercent: 60, Recurrence: model.Recurrence{Days: []int{6}, Start: "00:00", End: "00:00", Timezone: "UTC", EveryWeeks: 1}}}
+	c, err := s.Apply(c.Revision, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reset := time.Date(2026, 10, 18, 3, 30, 0, 0, time.UTC)
+	u := model.Usage{SubscriptionID: sub.ID, AccountID: sub.AccountID, PoolID: sub.PoolID, Source: "authentic fixture", Supported: true, ObservedAt: now.Add(-45 * time.Second), Weekly: &model.Allowance{StartsAt: reset.AddDate(0, 0, -7), ResetsAt: reset, ResetTrusted: true}, ShortUnsupported: true}
+	if err = s.PutUsage(u); err != nil {
+		t.Fatal(err)
+	}
+	rt, _ := s.Runtime()
+	snapshotSub := *sub
+	snapshotSub.Name = "Recorded account"
+	snapshotSeq := sub.Sequences[0]
+	snapshotSeq.Name = "Recorded sequence"
+	rt.Leases["visibility-run"] = conductor.Lease{Status: "running", Assignment: model.Assignment{ID: "visibility-assignment", RunID: "visibility-run", ProjectID: "p", ProjectPath: c.Projects[0].Path, Plan: "alpha", Subscription: snapshotSub, Sequence: snapshotSeq}}
+	raw, _ := json.Marshal(rt)
+	if err = conductor.AtomicWrite(filepath.Join(s.Dir, "runtime.json"), raw); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := os.ReadFile(filepath.Join(s.Dir, "config.json"))
+	var views []conductorVisibilityView
+	acceptanceData(t, ConductorAPI(s), "GET", "visibility", nil, &views)
+	if len(views) != 1 || views[0].State != "running" || views[0].EffectiveSequence != "Recorded account · Recorded sequence" || !strings.Contains(views[0].NextOpportunity, "checkpoint") || views[0].Reason != "Assignment in progress: alpha" || len(views[0].Usage) != 2 || views[0].Usage[0].AgeSeconds != 45 || views[0].Usage[0].Source != u.Source || !views[0].Usage[0].Available {
+		t.Fatalf("visibility %+v", views)
+	}
+	if views[0].Usage[1].Available || !views[0].Usage[1].ObservedAt.IsZero() {
+		t.Fatal("missing candidate telemetry fabricated", views[0].Usage[1])
+	}
+	acceptanceData(t, ConductorAPI(s), "GET", "visibility?project=/another-project", nil, &views)
+	if len(views) != 0 {
+		t.Fatal("cross project visibility", views)
+	}
+	var converted conductor.OverdriveConversion
+	acceptanceData(t, ConductorAPI(s), "POST", "overdrive-conversion", map[string]string{"subscription_id": sub.ID, "window_id": "convert"}, &converted)
+	if converted.Revision != c.Revision || converted.Window.HoursBeforeReset != 27.5 || converted.Window.ID != "convert" || converted.Window.TargetUsedPercent != 60 || !converted.End.Equal(reset) {
+		t.Fatal(converted)
+	}
+	bad := conductorRequest(t, ConductorAPI(s), "POST", "overdrive-conversion", "http://localhost:8420", "localhost:8420", map[string]string{"subscription_id": sub.ID, "window_id": "missing"})
+	if bad.Code != 400 {
+		t.Fatal(bad.Code, bad.Body.String())
+	}
+	after, _ := os.ReadFile(filepath.Join(s.Dir, "config.json"))
+	runtimeAfter, _ := os.ReadFile(filepath.Join(s.Dir, "runtime.json"))
+	if !bytes.Equal(before, after) || !bytes.Equal(raw, runtimeAfter) {
+		t.Fatal("presentation mutated state")
 	}
 }
