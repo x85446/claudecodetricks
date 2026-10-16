@@ -615,4 +615,22 @@ func TestConductorAPIVisibilityAndConversion(t *testing.T) {
 	if !bytes.Equal(before, after) || !bytes.Equal(raw, runtimeAfter) {
 		t.Fatal("presentation mutated state")
 	}
+	// The same public view projects a known opening after current work finishes.
+	rt.Leases = map[string]conductor.Lease{}
+	raw, _ = json.Marshal(rt)
+	if err = conductor.AtomicWrite(filepath.Join(s.Dir, "runtime.json"), raw); err != nil {
+		t.Fatal(err)
+	}
+	c.TimeWindows = []model.TimeWindow{{ID: "next-window", Name: "Saturday", Enabled: true, Recurrence: model.Recurrence{Days: []int{6}, Start: "00:00", End: "01:00", Timezone: "UTC", EveryWeeks: 1}}}
+	c.Automations[0].Mode = "scheduled"
+	c.Automations[0].WindowID = "next-window"
+	c, err = s.Apply(c.Revision, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	acceptanceData(t, ConductorAPI(s), "GET", "visibility", nil, &views)
+	expectedOpening := time.Date(2026, 10, 17, 0, 0, 0, 0, time.UTC)
+	if len(views) != 1 || views[0].NextOpening == nil || !views[0].NextOpening.Equal(expectedOpening) || !views[0].PreviewHorizon.Equal(now.Add(14*24*time.Hour)) || !strings.Contains(views[0].NextOpportunity, "budget") || len(views[0].Usage) != 2 {
+		t.Fatalf("public opening %+v", views)
+	}
 }

@@ -48,6 +48,8 @@ Bars increase from **0% used** to **100% used**. The black marker shows current 
 
 Each subscription owns any number of enabled overdrive windows. A window starts on selected weekly days/time or a number of hours before a trusted reset, and ends at its target, scheduled boundary or reset. Its target is **weekly percentage used**. A 60% target permits soft-band bypass while use is below 60%; 100% permits consumption until hard exhaustion. Bright green covers exactly the active used target; any ordinary green allowance beyond that remains dark green.
 
+For a saved weekly window, changing **Start relative to** to **Hours before trusted reset** previews an equivalent offset from fresh, account-bound reset evidence. The preview preserves that allowance interval’s exact start/end and window identity. Multiple-day, multiweek or independently ending windows stay weekly when one offset cannot represent them. Future local start times follow the trusted reset and hour offset, including daylight-saving or provider reset changes.
+
 Overdrive does not choose a project. A participating project automation supplies eligible queued work. It never bypasses hard provider limits, freshness, project schedules, disabled state, staging or locks. At target/end/reset, overdrive-only automations wait; ordinary honoring automations return to normal bands. Targets do not reserve a balance or guarantee an exact percentage at completion.
 
 For example, a Codex subscription can have Saturday 00:00 → 100% used, Monday 00:00 → 100% used with an explicit Tuesday boundary, and Thursday 16:00 → 60% used. A Filemaster Follow subscription overdrive automation simply participates through a Codex launch sequence. Actual reset evidence governs reset-ended windows; Conductor does not redeem reset tokens.
@@ -70,6 +72,7 @@ iterate-run conductor project list --json
 iterate-run conductor explain --project PROJECT_ID --json
 iterate-run conductor config show --json
 iterate-run conductor sequence preview SEQUENCE_ID --subscription SUBSCRIPTION_ID --json
+iterate-run conductor overdrive-conversion --subscription SUBSCRIPTION_ID --id WINDOW_ID --json
 iterate-run conductor run list --project PROJECT_ID --json
 iterate-run conductor event list --run RUN_ID --json
 ```
@@ -90,6 +93,8 @@ A revision conflict preserves the concurrent edit. Read the current configuratio
 JSON commands return one envelope with revision and data or a structured error. Exit codes are 0 for success/read-only waiting, 1 for operation failure, 2 for invalid usage, 3 for revision conflict and 4 for gated or unavailable dispatch. `iterate-run conductor --help` lists resources and flags.
 
 ## Live progress and recovery
+
+Project views and plan timelines share launch visibility: the effective sequence, usage age, admission reason and next opportunity. An enabled schedule supplies its next opening within a fourteen-day preview horizon; an unknown quota recovery, missing queue/telemetry condition or stopped conductor remains explicit. Active assignments show their saved launch sequence rather than a later configuration edit.
 
 The binary drains child stdout and stderr, stores protected logs, and normalizes activity into durable events. The portal polls those events and state; closing or disconnecting the browser does not stop execution. Reconnection resumes from a cursor. Execution-token totals describe the run, while account allowance comes from authenticated provider telemetry.
 

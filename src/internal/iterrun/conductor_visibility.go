@@ -23,6 +23,8 @@ type conductorVisibilityView struct {
 	EffectiveSequence string               `json:"effective_sequence"`
 	Reason            string               `json:"reason"`
 	NextOpportunity   string               `json:"next_opportunity"`
+	NextOpening       *time.Time           `json:"next_opening,omitempty"`
+	PreviewHorizon    time.Time            `json:"preview_horizon"`
 	Usage             []conductorUsageView `json:"usage"`
 }
 
@@ -90,6 +92,13 @@ func conductorVisibility(ctx context.Context, s *conductor.Service, path string)
 		if chosen != nil && chosen.Selected {
 			v.NextOpportunity = "Eligible at the next conductor tick; admission is checked again"
 		}
+		opening, err := s.NextOpportunity(ctx, p.ID)
+		if err != nil {
+			return nil, err
+		}
+		v.NextOpportunity = opening.Reason
+		v.NextOpening = opening.At
+		v.PreviewHorizon = opening.Horizon
 		for _, lease := range r.Leases {
 			if lease.Assignment.ProjectID != p.ID || (lease.Status != "running" && lease.Status != "claimed") {
 				continue
@@ -99,6 +108,7 @@ func conductorVisibility(ctx context.Context, s *conductor.Service, path string)
 			v.EffectiveSequence = model.SequenceName(a.Subscription, a.Sequence)
 			v.Reason = "Assignment in progress: " + a.Plan
 			v.NextOpportunity = "After the active checkpoint; admission is evaluated again"
+			v.NextOpening = nil
 			ids[a.Subscription.ID] = true
 		}
 		for _, sub := range c.Subscriptions {

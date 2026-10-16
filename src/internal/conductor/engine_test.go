@@ -78,6 +78,10 @@ prompt,result=sys.argv[1:3]
 m=re.search(r'identity fields in this template: (\{.*?\})\.',prompt)
 r=json.loads(m.group(1))
 behavior=` + fmt.Sprintf("%q", behavior) + `
+if behavior=='contract':
+ for instruction in ('contract expansion, parity repair, or regression', 'continue instead of requesting a human decision', 'a secret no agent has, physical access, or an external party', 'Do not edit plan checkboxes or start another pair'):
+  assert instruction in prompt, instruction
+ print(json.dumps({'type':'activity','kind':'activity','provider_id':'contract-policy','message':'bounded contract-expansion policy received'}),flush=True)
 if behavior=='sleep': time.sleep(10)
 if behavior=='plain': print('human-readable agent log')
 if behavior in ('descendant','holdtree'):
@@ -2340,5 +2344,14 @@ func TestIndigobirdUnapprovedPlanGates(t *testing.T) {
 		if row.Code != "plan_blocked" {
 			t.Fatal("approval gates were bypassed or masked", row)
 		}
+	}
+}
+
+// TESTMASTER: id=contract-3 tier=fast parallel=yes
+func TestIndigobirdBoundedContractExpansion(t *testing.T) {
+	s, source, _ := fixture(t, "contract")
+	out, err := s.Tick(context.Background())
+	if err != nil || out.Assignment == nil || out.Result == nil || out.Result.Outcome != "completed" || source.checkpoints != 1 {
+		t.Fatalf("real executor did not receive bounded autonomous repair policy: %+v %v", out, err)
 	}
 }
