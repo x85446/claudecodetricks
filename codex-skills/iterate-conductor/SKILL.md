@@ -1,13 +1,31 @@
 ---
-name: iterate-conductor
-description: Control the binary conductor and its shared dashboard configuration; start, pause, inspect or configure project automations, AI subscriptions, launch sequences, schedules, power bands and overdrive.
+name: "iterate-conductor"
+description: "Control the binary conductor and its shared dashboard configuration; start, pause, inspect or configure project automations, AI subscriptions, launch sequences, schedules, power bands and overdrive."
 ---
 
-**Version:** iterate family 5.22.0
 
 # $iterate-conductor — control the binary conductor
 
+**Version:** iterate family 5.22.0
+
+<!-- codex-port: Codex frontmatter permits only name and description, so the
+     version lives here in the body. Read it from this line when stamping a
+     plan's planner-version / executor-version. -->
+
+
 `iterate-run conductor` owns configuration, queue selection, schedules, budgets, leases, retries, process supervision and durable results. This skill translates the user's request into its CLI operations. The dashboard at http://localhost:8420 uses the same service and state.
+
+## Usage
+
+Argument: status | start | stop | pause | resume | run | kill | schedule <rule>. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+
+<!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
+
+## Dependencies
+
+Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
+
+- `$iterate` — ported.
 
 Use `scripts/control.sh` beside this skill, or invoke `iterate-run conductor` directly. The script only forwards literal arguments and preserves stdout, stderr and exit status. Run `iterate-run conductor --help` before relying on command syntax. If the binary is unavailable, report the missing installation; do not substitute an AI scheduler.
 

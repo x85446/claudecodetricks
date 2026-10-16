@@ -1,18 +1,12 @@
 ---
 name: "user-docs"
-description: "\"update the product docs\", \"sync the user docs\", \"document the new features\". Developer/internal docs are out of scope."
+description: "Maintains the END-USER product documentation of the current project: documents new features and how to operate them, updates changed behavior, and DELETES docs for removed features. \"update the product docs\", \"sync the user docs\", \"document the new features\". Developer/internal docs are out of scope."
 ---
 
 
 # $user-docs — keep the user docs true to the product
 
 **Version:** 1.0.0
-
-## What this skill does
-
-<!-- codex-port: moved out of the startup description, which is charged against Codex's manifest budget in every session. This text is documentation, not routing signal, so it belongs at the body level where it loads on trigger. No trigger phrase was moved. -->
-
-Maintains the END-USER product documentation of the current project: documents new features and how to operate them, updates changed behavior, and DELETES docs for removed features.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

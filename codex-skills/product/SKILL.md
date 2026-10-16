@@ -1,6 +1,6 @@
 ---
 name: "product"
-description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture, engineering and milestones docs. Routes all product-definition work; picks the child. \"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"what order do we build it in\", \"break the roadmap into milestones\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions ($user-docs), NOT building it ($iterate)."
+description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture, engineering, milestones and environment docs, then the plans. Routes all product-definition work; picks the child. \"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"what order do we build it in\", \"break the roadmap into milestones\", \"set up the environment\", \"tear down the human gates\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions ($user-docs), NOT building it ($iterate)."
 ---
 
 
@@ -9,18 +9,18 @@ description: "PRODUCT — the product-definition meta: staged brief, competitors
 
 # $product — idea to engineering-ready definition
 
-**Version:** product family 1.3.0
+**Version:** product family 1.5.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
      plan's planner-version / executor-version. -->
 
 
-Nine documents, each earned from the one before it. The chain exists so that by the end **the MVP is not an opinion**: it is the top release slice of a feature inventory that came from a story map, built on a PRD that came from a real competitive landscape.
+Ten documents, each earned from the one before it, then the plans. The chain exists so that by the end **the MVP is not an opinion**: it is the top release slice of a feature inventory that came from a story map, built on a PRD that came from a real competitive landscape — and so that the build runs headless, because every wall the roadmap meets was found and torn down before the first plan launched.
 
 ## Usage
 
-Argument: "[status | next | <stage> | maintain | unlock <stage>] [--fast]". `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: "[status | next | <stage> | plans | maintain | unlock <stage>] [--fast]". `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 
@@ -35,6 +35,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$product-brief` — ported.
 - `$product-competitors` — ported.
 - `$product-engineering` — ported.
+- `$product-environment` — ported.
 - `$product-features` — ported.
 - `$product-iteratemilestones` — ported.
 - `$product-milestones` — ported.
@@ -56,8 +57,10 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 | 6 | Architecture | `$product-architecture` | `docs/architecture.md` |
 | 7 | Engineering | `$product-engineering` | `docs/engineering.md` |
 | 8 | Milestones | `$product-milestones` | `docs/milestones.md` |
+| 9 | Environment | `$product-environment` | `docs/environment.md` + `./.iz` |
+| 10 | Plans | `$product-iteratemilestones` | `./.claude/iterate/plans/` |
 
-After stage 8 comes the **plans step**: `$product-iteratemilestones` turns `docs/milestones.md` into one `$ip` plan per milestone and chain-stages them. It writes no document and has no gate. It is done once a plan in `./.claude/iterate/plans/` or `archive/` carries a `milestone:` key.
+Stage 9 is the last document: every machine, credential and live-only proof the whole roadmap needs, proven or reduced to one operator act on one list. Stage 10 is the **plans step**: `$product-iteratemilestones` turns `docs/milestones.md` into one `$ip` plan per milestone and chain-stages them. It writes no document and has no gate. It is done once a plan in `./.claude/iterate/plans/` or `archive/` carries a `milestone:` key, and it stages the chain head only when stage 9 is `done`, because a chain launched into walls nobody listed parks on the first one.
 
 Invoke children with explicit `$name` invocation. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
 
@@ -68,8 +71,9 @@ $product                      # resume at the first unfinished stage
 $product status               # the state table, nothing else
 $product next                 # run exactly one stage, then stop
 $product <stage>              # jump to a stage by name or number
-$product plans                # milestones → one chained $ip plan each (runs by itself after stage 8)
-$product maintain             # all nine done: reconcile docs against reality
+$product environment          # stage 9: prove every machine and credential, list the operator acts
+$product plans                # stage 10: milestones → one chained $ip plan each (runs by itself after stage 9)
+$product maintain             # all ten done and planned: reconcile docs and probes against reality
 $product unlock <stage>       # reopen a locked document for revision
 $product --fast               # run the whole chain unattended
 ```
@@ -104,6 +108,8 @@ started: <YYYY-MM-DD>
 | 6 | architecture | docs/architecture.md | pending | no | — |
 | 7 | engineering | docs/engineering.md | pending | no | — |
 | 8 | milestones | docs/milestones.md | pending | no | — |
+| 9 | environment | docs/environment.md | pending | no | — |
+| 10 | plans | .claude/iterate/plans/ | pending | — | — |
 
 ## Open clarifications
 - [ ] <stage> — <the question, verbatim from the marker>
@@ -118,16 +124,16 @@ started: <YYYY-MM-DD>
 
 One line per marker, checkbox unchecked while it is open. The gate counts unchecked lines; prose here is not countable and does not exist as far as the gate is concerned.
 
-A state file written before a stage existed (one ending at row 7) gains the missing row as `pending` on the next read, so the next run picks it up rather than entering maintain mode.
+A state file written before a stage existed (one ending at row 7 or 8) gains each missing row as `pending` on the next read, so the next run picks it up rather than entering maintain mode. Row 10 is `done` when a plan carries a `milestone:` key, whichever run wrote it.
 
-`status`: `pending` · `in-progress` · `done` · `blocked`. `locked`: `yes` once the user approves it, and a locked document is never rewritten without `$product unlock <stage>`.
+`status`: `pending` · `in-progress` · `done` · `blocked`. `locked`: `yes` once the user approves it, and a locked document is never rewritten without `$product unlock <stage>`. Row 9's lock covers its inventory of needs; its Proof and Status columns and its operator-acts list describe reality and are rewritten by every re-probe without an unlock. Row 10 has no lock.
 
 ## Step 2 — Pick the stage
 
 1. `status` → print the table and stop.
 2. An explicit stage → run that one (warn, don't refuse, if its predecessors are unfinished: a PRD written before the landscape is a guess, and the user may know that).
-3. All nine `done`, but no plan carries a `milestone:` key → **the plans step**. Invoke explicit `$name` invocation with `product-iteratemilestones` and stop when it reports. A finished definition with nothing planned has nothing built to reconcile, so maintain mode there would audit docs against code that does not exist yet.
-4. All nine `done` and milestone plans exist → **maintain mode** (Step 6).
+3. Stages 0–9 `done`, but no plan carries a `milestone:` key → **the plans step** (row 10). Invoke explicit `$name` invocation with `product-iteratemilestones` and stop when it reports. A finished definition with nothing planned has nothing built to reconcile, so maintain mode there would audit docs against code that does not exist yet.
+4. All ten `done` and milestone plans exist → **maintain mode** (Step 6).
 5. Otherwise → the first stage that is not `done`. Resume mid-stage work rather than restarting it.
 
 ## Step 3 — Run the stage
@@ -145,7 +151,7 @@ Two rules the children inherit and the meta enforces:
   | Something nobody can know until the product or its data exists — "how does it perform on Melissa's real documents" | No marker. Write it under `## Deferred validations` as a planned check. | Stage 5 turns it into a requirement's acceptance criterion; stage 7 into a test. |
 
   The test between the first two: *could I find this out myself if I tried?* If yes, it is research and you owe it. Research that genuinely comes up empty — site blocked, nothing public — becomes a **cited absence**: "Not publicly documented as of <date>; checked <sources>." That is a finding with a source, not a marker. On symude, "which reusable engines provide learned indexes" and "does enCodePlus connect cross-city research to AI drafting" were both research the child owed, filed as questions for the user and labelled "research I owe; still open" — the exact thing this table forbids.
-- **Stages 0–4 describe WHAT and WHY only.** No tech stack, no schema, no API shape, no library names. HOW begins at stage 6. Stage 8 is sequence: it orders what stages 4–7 already decided and adds no scope of its own. A technology named in the PRD is a decision nobody made, smuggled past the architecture stage.
+- **Stages 0–4 describe WHAT and WHY only.** No tech stack, no schema, no API shape, no library names. HOW begins at stage 6. Stage 8 is sequence: it orders what stages 4–7 already decided and adds no scope of its own. Stage 9 is proof: it establishes what stages 6–8 need to exist and decides nothing about the product. A technology named in the PRD is a decision nobody made, smuggled past the architecture stage.
 
 ## Step 4 — Analyze before the gate
 
@@ -156,6 +162,7 @@ Every stage ends with a consistency pass over what now exists. Report it as a sh
 - **Orphans and dangling ids** — an `R-NN` naming a nonexistent `F-NN`, a feature in no release slice, a release slice with no features, a competitor claim with no source, a requirement in no milestone or in two.
 - **Altitude violations** — HOW leaking into stages 0–4.
 - **Platform staging** — an operating system ordered ("macOS first, Linux next, Windows later"), a feature split by OS, one OS's variant placed in a later release than the feature, a decision justified by the machines the team owns, or a named host where a machine need belongs (rule 11). Fold the OS into the feature and place it with the feature's release.
+- **Environment gaps** (stage 9 and after) — a target OS, version or architecture with no Machines row, a vendor named in requirements or architecture with no Access row, a host the user did not name, a secret value in any document, a `ready` row without a probe and date, an operator act without a milestone.
 - **Unresolved markers** — every `[NEEDS CLARIFICATION]` still open, named.
 - **Unfinished research** — any `[NEEDS RESEARCH]` still in the document. This is a defect in the child's work, not a question for the user: **re-enter the child's research on exactly those items** (one subagent per item, in parallel) and re-run analyze. Two passes without progress → write the cited absence and move on. The user never sees a `[NEEDS RESEARCH]`.
 
@@ -178,15 +185,17 @@ Only when this loop has run does the gate open.
 
 **Open markers block approval.** If the state file still has an unchecked clarification for this stage after Step 4.5, the approval options are not offered. Instead: list the open questions, and offer revise · ask me again · **approve with open questions** (override). The override is the only way through, it must be chosen explicitly, and it is recorded on the stage row as `override: N open` — a locked document with a known hole says so in the state table forever, and every later stage's analyze pass names the inherited marker. Nobody arrives at stage 5 surprised that stage 1 never settled who the competitors were.
 
-**`gate: fast` (`--fast`).** Run the whole chain without stopping, then present all nine documents and every analyze block together. Set every completed stage `done` but `locked: no` — nothing the user has not seen gets locked. Markers accumulate during the run; the final review runs Step 4.5 over all of them first, then gates each stage in order under the same open-marker rule.
+**Stage 9's gate is readiness.** Its document is presented as the counts of its three tables and its `## Operator acts` list. The stage is `done` when the list is empty. Approving with acts open is the same override, recorded as `override: N acts`, and every later plan that reaches one of those acts parks on it — the user chose that. The acts are the operator's to do; `$product environment` after any of them re-probes every row and drops what cleared.
+
+**`gate: fast` (`--fast`).** Run the whole chain without stopping, then present all ten documents and every analyze block together. Set every completed stage `done` but `locked: no` — nothing the user has not seen gets locked. Markers accumulate during the run; the final review runs Step 4.5 over all of them first, then gates each stage in order under the same open-marker rule.
 
 **`--fast` does not override a `kill`.** If stage 0 returns `kill`, stop there and report it even in fast mode. Running six more stages on an idea the brief just killed is precisely the waste stage 0 exists to prevent. A `needs-clarification` verdict stops fast mode too — it means the brief could not answer its own questions, and everything downstream would inherit the guesswork.
 
 ## Step 6 — Maintain mode
 
-All nine `done`, milestone plans written, and invoked again: the docs stop being a deliverable and become a claim about reality. Check the claim.
+All ten `done`, milestone plans written, and invoked again: the docs stop being a deliverable and become a claim about reality. Check the claim.
 
-1. **Reconcile** each document against current behavior — the code as it stands, shipped behavior, the roadmap against what actually released, milestones against what main actually delivers, competitors re-checked if the research is over 90 days old. A release that has shipped means the next release's ten milestones get re-cut against what it proved.
+1. **Reconcile** each document against current behavior — the code as it stands, shipped behavior, the roadmap against what actually released, milestones against what main actually delivers, competitors re-checked if the research is over 90 days old. A release that has shipped means the next release's ten milestones get re-cut against what it proved, and stage 9 proves that release's `## Later releases` rows. `docs/environment.md` is re-probed every time: a row whose probe stopped passing (an expired token, a destroyed guest) is drift, and its act goes back on the operator list. A plan that parked on a wall the document does not list is drift too, and the row is added.
 2. **Report drift** as a list: the document, the stale claim, and what is true now. Append to the state file's drift log with the date.
 3. **Fix on request.** Maintain mode reports; it rewrites a locked document only when the user says to. Unlocking is explicit.
 4. Nothing drifted → `docs already true — no changes` and touch nothing.
@@ -202,6 +211,8 @@ product: newproduct  ·  brownfield  ·  gate on
   2 prd            in-progress  —
   3 features       pending      —
   …
+  9 environment    pending      —
+ 10 plans          pending      —
 open clarifications: 2   ·   next: finish stage 2 (prd)
 ```
 
@@ -211,10 +222,11 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 2. **Order is the product, not bureaucracy.** Each stage consumes its predecessors; skipping one means the skipped reasoning remains an assumption, and the analyze pass will say so.
 3. **`[NEEDS CLARIFICATION]` over a plausible guess**, always — and every marker is put to the user before the gate, one question each. Approval with a marker still open exists only as an explicit, recorded override.
 4. **A locked document needs an explicit unlock.** The user approved that text; do not quietly improve it.
-5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW. Stage 8 is order.**
+5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW. Stage 8 is order. Stage 9 is proof.**
 6. **Traceability is enforced, not decorative.** Every requirement names its feature and its release. Orphans are reported as defects.
-7. **This family stops at documents.** It does not implement, and no stage writes an iterate plan. Stage 8 shapes each milestone so `$ip` can take it as-is, and the plans step hands them over: typing `$product` past stage 8, or `$product-iteratemilestones` directly, is the user's move to `$ip`.
+7. **This family writes no product code and no plan of its own.** Stage 9 provisions guests and probes credentials, because a wall a plan finds parks the chain, but it writes no feature. Stage 8 shapes each milestone so `$ip` can take it as-is, and the plans step hands them over: typing `$product` past stage 9, or `$product-iteratemilestones` directly, is the user's move to `$ip`.
 8. **`docs/` is the home**, alongside the code, in whatever repo `$product` runs in. Never a parallel doc tree beside a live one.
 9. **`$user-docs` is downstream and separate** — it documents how to operate what shipped. Never edit end-user docs from here.
 10. **Every document states the current decision, never its history.** A revision rewrites the affected text to the new truth. Nothing in it says "revised", "previously", "now" or "changed from". The state file's stage notes and drift log are the record of what changed and why.
 11. **Where the product runs is izmachine's question, never a stage's decision.** `$izmachine` supplies macOS, Linux and Windows guests on whatever hosts are registered, so every operating system the product targets can be built and tested from the first commit, and the OS is not a release axis. A feature ships on every target OS in the release it is placed in. No stage orders operating systems, splits a feature by OS, or places one OS in a later release, whatever the evidence says about which OS its users run: that evidence shapes defaults and design emphasis, never placement. The team's own machines are never a reason ("the founder's pilot hardware is macOS" is not evidence). Only the user's own words can stage an OS. A stage that needs to know whether an OS can be built or tested asks izmachine (`izmachine remote list --format json`, `izmachine up <key> --dry-run --format json`) and writes its answer, never an assumption.
+12. **Every human gate is torn down before the first plan launches.** Stage 9 puts every one the roadmap needs — a guest of each OS, version and architecture, each credential, each live-only proof — on one operator list, and the plans step stages the chain head only when stage 9 is `done`. A plan that parks on a wall the list never carried is a stage 9 defect, not an executor finding.

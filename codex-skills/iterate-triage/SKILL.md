@@ -1,6 +1,6 @@
 ---
 name: "iterate-triage"
-description: "Use when the status line shows a feature branch instead of \"main ✔\", when a plan looks stuck, or when you've been away and don't remember where you left off."
+description: "Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, with the one act that clears each. Use when the status line shows a feature branch instead of \"main ✔\", when a plan looks stuck, or when you've been away and don't remember where you left off."
 ---
 
 
@@ -9,12 +9,6 @@ description: "Use when the status line shows a feature branch instead of \"main 
 # $iterate-triage — what happened here, and what gets me back to main
 
 **Version:** iterate family 5.22.0
-
-## What this skill does
-
-<!-- The startup description stays concise; detailed routing lives in the skill body. -->
-
-Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, with the one act that clears each.
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -26,7 +20,7 @@ lines, and then fixes what it can.
 
 ## Usage
 
-Argument: [fix all [<plan>]]. `$1` is its first word; `$ARGUMENTS` is the whole thing.
+Argument: "[fix all [<plan>]]". `$1` is its first word; `$ARGUMENTS` is the whole thing.
 
 <!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
 
@@ -35,8 +29,12 @@ Argument: [fix all [<plan>]]. `$1` is its first word; `$ARGUMENTS` is the whole 
 Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
 
 - `$feature-branch` — ported.
+- `$ip` — ported.
 - `$iterate` — ported.
 - `$iterate-conductor` — ported.
+- `$iterate-planner` — ported.
+- `$iterate-release` — ported.
+- `$mailbox` — ported.
 
 **Reaching triage at all is itself a finding.** `$iterate` is supposed to land
 an all-green plan on the default branch by itself — commit, PR, merge, delete
@@ -135,6 +133,10 @@ Read, in order: the current branch and whether the tree is dirty; every
 | `phase: executing`, `running:` heartbeat fresh (<90s) | **A run is live right now.** Report the step count and leave it alone. Do not touch the branch, the plan, or the tree. |
 | `phase: executing`, no fresh heartbeat, all steps done, all validations green, not merged | **The merge never happened.** This is the failure case — finish it (see below). |
 | `phase: executing`, `status: blocked-on-operator` / `awaiting-human-gate` | **Blocked on you.** Each blocker is a problem; plan its `Fix` down to one human act before you answer. |
+| `status: blocked-on-operator` on a purchase, subscription, token or licence key the plan's `Cost:` line did **not** approve (an approved one missing its credential is an ordinary access blocker — handle it as one) | **Planning defect, not a blocker on you.** The executor should never have parked here (`$iterate` rule 29). `Fix` is never "buy X": it is `fix problem N`, a re-plan through `$iterate-planner` that takes the free path, and the plan is marked `unblocked` with the reason. |
+| `status: blocked-on-operator` on notarization, a notary credential or an Apple agreement, in a plan **without** `mode: release` | **Planning defect, not a blocker on you.** Only a release plan notarizes (`$iterate` rule 34). `Fix` is `fix problem N`: mark the release half `[RELEASE → $iterate-release]`, clear the status, and `$iterate <name>` lands the rest. |
+| `mode: release`, `phase: executing`, stopped mid-run | **A release stopped part way.** Say which of tag-pushed and published happened. `Fix` is `$iterate <name>`, typed — the conductor never resumes a release. |
+| `status: blocked-on-operator` whose reason is a design decision or contract expansion the executor could have made (extend vs withdraw, which approach, what a flag means) | **Executor defect, not a blocker on you.** The executor should never have parked here (`$iterate` rule 33). `Fix` is `fix problem N`: record the decision as extend in the plan's Decisions log, set `status: unblocked`, and `$iterate <name>` continues. |
 | `phase: executing`, stopped mid-run, no terminal status | **Died mid-run** (session killed, context ran out, cron lost). Commit anything loose; the `Fix` is `$iterate <name>` — one command. |
 | Feature branch with no matching plan | **Orphan branch.** Say whose it looks like from the name and what it carries that main lacks. `Fix` is one script to land it and one to drop it; the human runs the one they mean. Never delete unasked. |
 | `status: paused` (magenta) | Not broken — a human stopped it with `$iterate pause`. `broken: 0`; say the step it stopped at and that `$iterate resume <name>` continues. Commit loose work as always. |
