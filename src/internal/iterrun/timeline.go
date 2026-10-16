@@ -1151,6 +1151,15 @@ func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
 // or one whose teams ran on another machine. A nil *PlanTokens renders
 // exactly the page that shipped before.
 func RenderTimelineHTMLWithTokens(rows []Row, plan PlanSummary, homeURL string, tokens *PlanTokens) string {
+	return renderTimelinePage(rows, plan, homeURL, tokens, "")
+}
+
+// RenderTimelineWithChrome embeds trusted application navigation above the complete timeline.
+func RenderTimelineWithChrome(rows []Row, plan PlanSummary, homeURL string, tokens *PlanTokens, chrome string) string {
+	return renderTimelinePage(rows, plan, homeURL, tokens, chrome)
+}
+
+func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *PlanTokens, chrome string) string {
 	planName := plan.Name
 	title := "iterate-run timeline"
 	if planName != "" {
@@ -1177,7 +1186,7 @@ func RenderTimelineHTMLWithTokens(rows []Row, plan PlanSummary, homeURL string, 
 		header += `<div class="goal"><div class="goal-label">Goal</div><p>` + html.EscapeString(plan.GoalFull) + `</p></div>`
 	}
 	if len(rows) == 0 {
-		return timelineHead(title) + header + `<p class="empty">no activity recorded yet</p></div>`
+		return timelinePageHead(title, chrome) + header + `<p class="empty">no activity recorded yet</p></div>`
 	}
 
 	var minT, maxT time.Time
@@ -1248,7 +1257,7 @@ func RenderTimelineHTMLWithTokens(rows []Row, plan PlanSummary, homeURL string, 
 	sort.Slice(gapCallouts, func(i, j int) bool { return gapCallouts[i].g.dur() > gapCallouts[j].g.dur() })
 
 	var b strings.Builder
-	b.WriteString(timelineHead(title))
+	b.WriteString(timelinePageHead(title, chrome))
 	b.WriteString(header)
 	if hasActivity {
 		fmt.Fprintf(&b, `<div class="sub">%s &rarr; %s (%s of recorded activity)</div>`+"\n",
@@ -1326,7 +1335,11 @@ func RenderTimelineHTMLWithTokens(rows []Row, plan PlanSummary, homeURL string, 
 
 	b.WriteString(`<div class="stats">`)
 	fmt.Fprintf(&b, `<div class="stat s-good"><div class="n">%d</div><div class="l">done</div></div>`, done)
-	fmt.Fprintf(&b, `<div class="stat s-warn"><div class="n">%d</div><div class="l">running</div></div>`, running)
+	runningLabel := "running"
+	if plan.Archived {
+		runningLabel = "recorded open"
+	}
+	fmt.Fprintf(&b, `<div class="stat s-warn"><div class="n">%d</div><div class="l">%s</div></div>`, running, runningLabel)
 	fmt.Fprintf(&b, `<div class="stat"><div class="n">%d</div><div class="l">queued</div></div>`, queued)
 	fmt.Fprintf(&b, `<div class="stat s-bad"><div class="n">%d</div><div class="l">severe gap%s</div></div>`, severeGaps, plural(severeGaps))
 	b.WriteString(`</div>`)
@@ -1385,7 +1398,11 @@ func RenderTimelineHTMLWithTokens(rows []Row, plan PlanSummary, homeURL string, 
 		b.WriteString(`</div>`)
 	}
 
-	b.WriteString(`<div class="legend"><span><span class="sw" style="background:var(--busy)"></span>confirmed activity</span><span><span class="sw sw-open"></span>still running</span><span><span class="sw" style="background:var(--danger)"></span>severe gap (5m+)</span><span>unmarked gaps under 5m are normal think-time</span></div>`)
+	openLabel := "still running"
+	if plan.Archived {
+		openLabel = "open at last recorded observation"
+	}
+	b.WriteString(`<div class="legend"><span><span class="sw" style="background:var(--busy)"></span>confirmed activity</span><span><span class="sw sw-open"></span>` + openLabel + `</span><span><span class="sw" style="background:var(--danger)"></span>severe gap (5m+)</span><span>unmarked gaps under 5m are normal think-time</span></div>`)
 
 	if len(gapCallouts) > 0 {
 		b.WriteString(`<h2>Where the time actually went</h2><div class="gaplist">`)
@@ -1898,6 +1915,13 @@ func statusPill(status string, hasActivity bool) (class, label string) {
 	default:
 		return "p-queued", status
 	}
+}
+
+func timelinePageHead(title, chrome string) string {
+	if chrome == "" {
+		return timelineHead(title)
+	}
+	return timelineHeadCSS(title) + tokenPanelCSS + `</style><meta name="viewport" content="width=device-width,initial-scale=1"><style>.conductor-detail-header,.conductor-detail-nav{max-width:1000px;margin:0 auto 20px;overflow-wrap:anywhere}.conductor-detail-header{display:flex;justify-content:space-between}.conductor-detail-header a,.conductor-detail-nav a{color:var(--accent)}.conductor-detail-nav{font-size:14px;line-height:1.8}.conductor-detail-nav p{font-size:12px;margin:2px 0;color:var(--text-dim)}body{overflow-x:hidden}</style></head><body>` + chrome + `<div>`
 }
 
 func timelineHead(title string) string {

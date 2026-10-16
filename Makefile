@@ -1,7 +1,7 @@
 # Makefile for claudecodetricks
 # Robust build system with versioning, testing, and installation
 
-.DEFAULT_GOAL := build
+.DEFAULT_GOAL := help
 SHELL := /bin/bash
 
 # ==================================================================================== #
@@ -209,11 +209,15 @@ $(DOC_GUARD_BIN): $(wildcard $(CMD_DIR)/doc-guard/*.go) $(wildcard $(INTERNAL_DI
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/doc-guard
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) doc-guard → $@"
 
-$(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(wildcard $(INTERNAL_DIR)/iterrun/*.go)
+$(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(shell find $(INTERNAL_DIR)/iterrun $(INTERNAL_DIR)/conductor -type f 2>/dev/null)
 	$(Q)echo -e "$(COLOR_BLUE)→ Building iterate-run...$(COLOR_RESET)"
 	$(Q)mkdir -p $(TOOLS_BIN_DIR)
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/iterate-run
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) iterate-run → $@"
+
+.PHONY: build-conductor
+build-conductor: check-tools  ## Compile the shared conductor packages
+	$(Q)cd $(SRC_DIR) && $(GO) build ./internal/conductor/...
 
 $(TESTMASTER_BIN): $(wildcard $(CMD_DIR)/testmaster/*.go) $(wildcard $(INTERNAL_DIR)/testmaster/*.go)
 	$(Q)echo -e "$(COLOR_BLUE)→ Building testmaster...$(COLOR_RESET)"
@@ -378,7 +382,27 @@ uninstall:  ## Remove installed hooks and tools
 # target below fails with a clear message on non-macOS rather than half
 # installing, since launchd is not portable.
 
-serve-install: install  ## Load the always-on dashboard as a launchd agent (RunAtLoad + KeepAlive)
+.PHONY: install-conductor install-conductor-skills conductor-acceptance conductor-migrate conductor-skill-test conductor-cover-case
+install-conductor: $(ITERATE_RUN_BIN)  ## Atomically install iterate-run, preserving a rollback binary
+	$(Q)./makehelp.sh install-conductor "$(ITERATE_RUN_BIN)" "$(TOOLS_INSTALL_DIR)"
+
+install-conductor-skills:  ## Install the iterate family and its protected Codex clients
+	$(Q)./makehelp.sh install-conductor-skills
+
+conductor-acceptance: build  ## Run bounded conductor acceptance through TESTMASTER
+	$(Q)./makehelp.sh conductor-acceptance
+
+conductor-skill-test: $(ITERATE_RUN_BIN)  ## Exercise thin conductor clients against isolated state
+	$(Q)python3 skills/iterate-conductor/tests/control_test.py
+
+conductor-cover-case:  ## Measure one registered Go case (COVER_PKG, COVER_TEST, COVER_FILE)
+	$(Q)test -n "$(COVER_PKG)" -a -n "$(COVER_TEST)" -a -n "$(COVER_FILE)"
+	$(Q)$(GOTEST) "$(COVER_PKG)" -run '^$(COVER_TEST)$$' -count=1 -coverpkg=./src/internal/conductor/...,./src/internal/iterrun,./src/cmd/iterate-run -coverprofile="$(COVER_FILE)"
+
+conductor-migrate: $(ITERATE_RUN_BIN)  ## Preview legacy conductor import (ARGS=--apply commits it)
+	$(Q)$(ITERATE_RUN_BIN) conductor migrate --legacy $(ARGS)
+
+serve-install: install-conductor  ## Install or reuse the managed dashboard on localhost:8420
 	$(Q)./makehelp.sh serve-install "$(TOOLS_INSTALL_DIR)/iterate-run" "$(ITERATE_SERVE_PORT)"
 
 serve-uninstall:  ## Unload and remove the dashboard launchd agent
@@ -441,7 +465,7 @@ deps-update:  ## Update all dependencies
 # INSTALLATION TARGETS
 # ==================================================================================== #
 
-run: build  ## Run the iterate dashboard on a free port and print its URL (ARGS="..." to pass arguments)
+run: build  ## Run or reuse the shared dashboard on localhost:8420 (ARGS overrides)
 	$(Q)./makehelp.sh run "$(ITERATE_RUN_BIN)" $(ARGS)
 
 watch:  ## Watch for changes and rebuild (requires fswatch or inotifywait)

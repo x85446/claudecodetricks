@@ -1,6 +1,7 @@
 package iterrun
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"html"
@@ -14,26 +15,12 @@ import (
 	"time"
 )
 
-// Serve starts the read-only dashboard: every known project's plans, tabbed
-// by project plus an "All" overview, each plan linking to its live
-// timeline. Deliberately read-only — no delete button here. Purge is a
-// terminal command (see purge.go) precisely because a stray click on a
-// page anyone on the machine can reach is not where a destructive action
-// belongs.
-//
-// versionLine is the exact string `iterate-run version` prints (e.g.
-// "iterate-run 1.2.3 (commit abc123, built 2026-09-10T12:00:00Z)") — it is
-// echoed verbatim from /healthz so "is the dashboard up, and which build"
-// is answerable by one curl rather than by comparing two commands' output
-// by eye.
-//
-// addr is resolved via net.Listen rather than handed straight to
-// http.ListenAndServe so that "--port 0" (an ephemeral port) can be
-// reported back to the caller: ln.Addr() gives the port the kernel
-// actually picked, which is printed before serving starts.
+// Serve hosts the project dashboard, Conductor controls, and full plan timelines on one listener.
 func Serve(addr, versionLine string) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleIndex)
+	mux.HandleFunc("/", conductorShell)
+	registerConductorWeb(mux)
+	registerConductorAPI(mux)
 	mux.HandleFunc("/plan", handlePlan)
 	mux.HandleFunc("/archive", handleArchive)
 	mux.HandleFunc("/healthz", handleHealthz(versionLine))
@@ -43,7 +30,16 @@ func Serve(addr, versionLine string) error {
 		return err
 	}
 	fmt.Printf("iterate-run dashboard: http://%s\n", ln.Addr().String())
-	return http.Serve(ln, mux)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go conductorWakeLoop(ctx, NewConductorService(""), StartConductorWorker)
+	return http.Serve(ln, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !conductorLocalHost(r.Host) {
+			http.Error(w, "localhost Host required", http.StatusForbidden)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	}))
 }
 
 // handleHealthz answers "is the dashboard up" for a script rather than a
@@ -407,9 +403,16 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 	proj := r.URL.Query().Get("project")
 	name := r.URL.Query().Get("name")
 	if proj == "" || name == "" {
-		http.Error(w, "missing project or name", http.StatusBadRequest)
+		conductorDetailError(w, r, http.StatusBadRequest, "Missing project or plan name")
 		return
 	}
+
+	initialProject, initialErr := safeDetailIdentity(proj, name, "plans")
+	if initialErr != nil && (initialProject == "" || !errors.Is(initialErr, fs.ErrNotExist)) {
+		conductorDetailError(w, r, http.StatusNotFound, initialErr.Error())
+		return
+	}
+	proj = initialProject
 
 	// A plan's own page keeps working after /iterate archives it. Without
 	// this, the moment a run finished its page silently degraded to a
@@ -444,6 +447,12 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	canonical, identityErr := safeDetailIdentity(proj, name, "plans")
+	if identityErr != nil {
+		conductorDetailError(w, r, http.StatusNotFound, identityErr.Error())
+		return
+	}
+	proj = canonical
 	rows, err := BuildRowsFromFilesystem(name, proj, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -452,7 +461,8 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 
 	plan, err := GetPlanSummary(proj, name)
 	if err != nil {
-		plan = PlanSummary{Name: name, ProjectDir: proj}
+		conductorDetailError(w, r, http.StatusNotFound, err.Error())
+		return
 	}
 	planStarted, _ := plan.EffectiveStart()
 
@@ -465,7 +475,7 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(RenderTimelineHTMLWithTokens(rows, plan, "/", tokens)))
+	_, _ = w.Write([]byte(RenderTimelineWithChrome(rows, plan, "/project?project="+url.QueryEscape(proj)+"&tab=plans", tokens, conductorDetailHeader(proj, plan.Name, r.URL.RequestURI()))))
 }
 
 // handleArchive is handlePlan's counterpart for a finished/given-up run —
@@ -478,10 +488,16 @@ func handleArchive(w http.ResponseWriter, r *http.Request) {
 	proj := r.URL.Query().Get("project")
 	file := r.URL.Query().Get("file")
 	if proj == "" || file == "" {
-		http.Error(w, "missing project or file", http.StatusBadRequest)
+		conductorDetailError(w, r, http.StatusBadRequest, "Missing project or archive filename")
 		return
 	}
 
+	canonical, identityErr := safeDetailIdentity(proj, file, "archive")
+	if identityErr != nil {
+		conductorDetailError(w, r, http.StatusNotFound, identityErr.Error())
+		return
+	}
+	proj = canonical
 	plan, err := GetArchivedPlanSummary(proj, file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -504,7 +520,7 @@ func handleArchive(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(RenderTimelineHTMLWithTokens(rows, plan, "/", tokens)))
+	_, _ = w.Write([]byte(RenderTimelineWithChrome(rows, plan, "/project?project="+url.QueryEscape(proj)+"&tab=plans", tokens, conductorDetailHeader(proj, plan.Name, r.URL.RequestURI()))))
 }
 
 func dashboardHead(title string) string {

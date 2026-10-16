@@ -19,6 +19,10 @@ var (
 )
 
 func main() {
+	if args, ok := conductorInvocation(os.Args[1:]); ok {
+		conductorCmd(args)
+		return
+	}
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(2)
@@ -57,10 +61,11 @@ func usage() {
 Usage:
   iterate-run run --plan <name> [--team <name>] --unit <name> -- <command> [args...]
   iterate-run status
+  iterate-run conductor --help       (revisioned scheduler, project and subscription controls)
   iterate-run hook pre|post          (wired into PreToolUse/PostToolUse in settings.json, not run by hand)
   iterate-run timeline [--plan <name>] [--home <dir>] [scan-dir...]
   iterate-run tokens [--plan <name>]  (token spend by lane, tool and wake-up; defaults to this project's current plan)
-  iterate-run serve [--port N]       (dashboard at http://localhost:N, default 8420; --port 0 picks an ephemeral port and prints it; GET /healthz for a liveness check)
+  iterate-run serve [--port 8420]    (unified dashboard at http://localhost:8420; GET /healthz reports build identity)
   iterate-run purge --plan <name> | --all-completed [--yes] [--force]
   iterate-run name next               (claims this project's next codename, in its own a-z sequence)
   iterate-run name peek               (this project's next letter and the word it would get, claiming neither)
@@ -68,8 +73,8 @@ Usage:
   iterate-run name depth              (word-pool depth per letter and namespace)
   iterate-run nightly install [--every 10m]      (LaunchAgent com.x85446.iterate-nightly ticks enrolled projects' staged plans)
   iterate-run nightly uninstall | on | off        (remove the agent; flip the global switch)
-  iterate-run nightly enroll [dir] | withdraw [dir]   (tick-source: launchd in the project's conductor.md)
-  iterate-run nightly status | tick [--dry-run]  (one fact per line; a tick launches claude -p "/iterate-conductor run" per project)
+  iterate-run nightly enroll [dir] | withdraw [dir]   (register disabled projects in conductor; withdraw disables admission)
+  iterate-run nightly status | tick [--dry-run]  (one fact per line; ticks start detached binary conductor workers)
   iterate-run version`)
 }
 

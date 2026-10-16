@@ -6,11 +6,7 @@ set -euo pipefail
 # ============================================================================
 # The Makefile defines WHAT; this script implements HOW for anything too
 # complex for an inline recipe (OS branching, plist templating, multi-step
-# launchctl sequences). Currently covers the two always-on launchd daemons
-# from the axolotl plan: the iterate-run dashboard server and its keep-alive
-# Chrome tab. Every other Makefile target still inlines its own shell — this
-# file is not (yet) a full 2-layer migration of the whole Makefile, just the
-# delegate for the targets that need one.
+# launchctl sequences), scoped binary installation and conductor acceptance.
 # ============================================================================
 
 UID_DOMAIN="gui/$(id -u)"
@@ -36,8 +32,7 @@ require_macos() {
 bootstrap_with_retry() {
     local domain="$1" plist="$2" label="$3" out rc
     for attempt in 1 2 3 4 5; do
-        out=$(launchctl bootstrap "$domain" "$plist" 2>&1)
-        rc=$?
+        if out=$(launchctl bootstrap "$domain" "$plist" 2>&1); then rc=0; else rc=$?; fi
         if [[ $rc -eq 0 ]]; then
             return 0
         fi
@@ -66,7 +61,27 @@ cmd_serve_install() {
         echo "error: $bin not found or not executable — run 'make install' first" >&2
         exit 1
     fi
+    if [[ "$port" != "8420" ]]; then
+        echo "error: the shared dashboard uses port 8420; no alternate application server is installed" >&2
+        return 1
+    fi
+    local listener managed_pid
+    listener="$(lsof -nP -t -iTCP:8420 -sTCP:LISTEN 2>/dev/null || true)"
+    managed_pid="$(launchctl print "$UID_DOMAIN/$SERVE_LABEL" 2>/dev/null | awk '/^[[:space:]]*pid = / {print $3}' || true)"
+    if [[ -n "$listener" && "$listener" != "$managed_pid" ]]; then
+        echo "error: port 8420 belongs to another process ($listener); stop that service yourself before make serve-install" >&2
+        return 1
+    fi
+    local expected health prior_plist
+    expected="ok $("$bin" version)"
+    health="$(curl --noproxy '*' --silent --fail --max-time 2 http://localhost:8420/healthz 2>/dev/null || true)"
+    if [[ -n "$managed_pid" && "$health" == "$expected" ]]; then
+        echo "iterate-run dashboard ready: http://localhost:8420/ (managed build already current)"
+        return 0
+    fi
     mkdir -p "$HOME/Library/LaunchAgents" "$LOG_DIR"
+    prior_plist="$SERVE_PLIST.previous"
+    if [[ -f "$SERVE_PLIST" ]]; then cp -p "$SERVE_PLIST" "$prior_plist"; fi
 
     cat > "$SERVE_PLIST" <<PLISTEOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -83,6 +98,10 @@ cmd_serve_install() {
     </array>
     <key>RunAtLoad</key><true/>
     <key>KeepAlive</key><true/>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key><string>$HOME/go/bin:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
     <key>StandardOutPath</key><string>$LOG_DIR/serve.log</string>
     <key>StandardErrorPath</key><string>$LOG_DIR/serve.log</string>
 </dict>
@@ -90,10 +109,78 @@ cmd_serve_install() {
 PLISTEOF
 
     launchctl bootout "$UID_DOMAIN/$SERVE_LABEL" 2>/dev/null || true
-    bootstrap_with_retry "$UID_DOMAIN" "$SERVE_PLIST" "$SERVE_LABEL"
+    # Wait for the old registration to disappear before publishing its successor.
+    for attempt in {1..20}; do
+        if ! launchctl print "$UID_DOMAIN/$SERVE_LABEL" >/dev/null 2>&1; then break; fi
+        sleep 0.1
+    done
+    if ! bootstrap_with_retry "$UID_DOMAIN" "$SERVE_PLIST" "$SERVE_LABEL"; then
+        if [[ -f "$prior_plist" ]]; then
+            cp -p "$prior_plist" "$SERVE_PLIST"
+            bootstrap_with_retry "$UID_DOMAIN" "$SERVE_PLIST" "$SERVE_LABEL" || true
+        fi
+        return 1
+    fi
     launchctl enable "$UID_DOMAIN/$SERVE_LABEL" 2>/dev/null || true
+    local ready=false
+    for attempt in {1..30}; do
+        health="$(curl --noproxy '*' --silent --fail --max-time 1 http://localhost:8420/healthz 2>/dev/null || true)"
+        if [[ "$health" == "$expected" ]]; then ready=true; break; fi
+        if ! launchctl print "$UID_DOMAIN/$SERVE_LABEL" >/dev/null 2>&1; then
+            bootstrap_with_retry "$UID_DOMAIN" "$SERVE_PLIST" "$SERVE_LABEL" || true
+        fi
+        sleep 0.5
+    done
+    if [[ "$ready" != true ]]; then
+        echo "error: managed dashboard did not report the intended build; inspect $LOG_DIR/serve.log" >&2
+        if [[ -f "$bin.previous" && -f "$prior_plist" ]]; then
+            launchctl bootout "$UID_DOMAIN/$SERVE_LABEL" 2>/dev/null || true
+            local rollback
+            rollback="$(mktemp "$(dirname "$bin")/.iterate-rollback.XXXXXX")"
+            cp -p "$bin.previous" "$rollback"
+            mv -f "$rollback" "$bin"
+            cp -p "$prior_plist" "$SERVE_PLIST"
+            bootstrap_with_retry "$UID_DOMAIN" "$SERVE_PLIST" "$SERVE_LABEL" || true
+            echo "Restored the preserved binary and service definition." >&2
+        fi
+        return 1
+    fi
     printf 'armed: %s\n  plist: %s\n  binds: localhost:%s\n  logs:  %s/serve.log\n' \
         "$SERVE_LABEL" "$SERVE_PLIST" "$port" "$LOG_DIR"
+}
+
+# Atomic replacement keeps a running worker's executable inode intact.
+cmd_install_conductor() {
+    local source="$1" destination="$2" temporary
+    mkdir -p "$destination"
+    temporary="$(mktemp "$destination/.iterate-run.XXXXXX")"
+    if ! cp "$source" "$temporary" || ! chmod 755 "$temporary"; then rm -f "$temporary"; return 1; fi
+    if command -v codesign >/dev/null 2>&1; then
+        if ! codesign --force --sign - "$temporary"; then rm -f "$temporary"; return 1; fi
+    fi
+    if [[ -f "$destination/iterate-run" ]] && cmp -s "$temporary" "$destination/iterate-run"; then
+        rm -f "$temporary"
+        "$destination/iterate-run" version
+        return 0
+    fi
+    if [[ -f "$destination/iterate-run" ]]; then cp -p "$destination/iterate-run" "$destination/iterate-run.previous"; fi
+    mv -f "$temporary" "$destination/iterate-run"
+    "$destination/iterate-run" version
+}
+
+cmd_conductor_acceptance() {
+    testmaster suite discover
+    testmaster suite run 'conductor.*' 'budget.*' 'provider.*' '*TestConductor*' '*TestTickDisabledAndDryRun' '*TestEnrollWithdrawRoundTrip'
+}
+
+cmd_install_conductor_skills() {
+    local names=() name
+    while IFS= read -r name; do names+=("$name"); done < <(awk -F '\t' '$4 == "iterate" {print $1}' skills/skillmap.tsv)
+    skills/skillctl family iterate
+    skills/skillctl install "${names[@]}"
+    for name in "${names[@]}"; do
+        skills/skill-2-codex/scripts/sync-all.sh --only "$name" --install --quiet
+    done
 }
 
 cmd_serve_uninstall() {
@@ -178,11 +265,7 @@ cmd_chrome_status() {
 # run — the headline thing this repo does
 # ---------------------------------------------------------------------------
 
-# `make run` serves the iterate dashboard. It binds --port 0 rather than the
-# default 8420 on purpose: the always-on launchd agent installed by
-# `make serve-install` already holds 8420, and a run target that dies on
-# "address already in use" the moment the daemon is working is a bad first
-# impression. Port 0 lets the kernel pick, and serve prints the URL.
+# `make run` reuses the shared dashboard or starts it on its fixed port.
 cmd_run() {
     local bin="$1"; shift
     if [[ ! -x "$bin" ]]; then
@@ -192,7 +275,21 @@ cmd_run() {
     if [[ $# -gt 0 ]]; then
         exec "$bin" "$@"
     fi
-    exec "$bin" serve --port 0
+    local health expected
+    expected="ok $("$bin" version)"
+    if health="$(curl --noproxy '*' --fail --silent --max-time 2 http://localhost:8420/healthz 2>/dev/null)"; then
+        if [[ "$health" != "ok iterate-run "* ]]; then
+            echo "error: port 8420 serves another application; no second server was started" >&2
+            return 1
+        fi
+        if [[ "$health" != "$expected" ]]; then
+            echo "Existing dashboard build: ${health#ok }" >&2
+            echo "Run make serve-install to deploy this build to the managed service." >&2
+        fi
+        echo "iterate-run dashboard ready: http://localhost:8420/ (existing service)"
+        return 0
+    fi
+    exec "$bin" serve --port 8420
 }
 
 # ---------------------------------------------------------------------------
@@ -201,14 +298,17 @@ cmd_run() {
 
 case "${1:-}" in
     run)               shift; cmd_run "$@" ;;
+    install-conductor) shift; cmd_install_conductor "$@" ;;
+    conductor-acceptance) shift; cmd_conductor_acceptance "$@" ;;
     serve-install)     shift; cmd_serve_install "$@" ;;
+    install-conductor-skills) cmd_install_conductor_skills ;;
     serve-uninstall)   shift; cmd_serve_uninstall "$@" ;;
     serve-status)      shift; cmd_serve_status "$@" ;;
     chrome-install)    shift; cmd_chrome_install "$@" ;;
     chrome-uninstall)  shift; cmd_chrome_uninstall "$@" ;;
     chrome-status)     shift; cmd_chrome_status "$@" ;;
     *)
-        echo "Usage: $0 {run|serve-install|serve-uninstall|serve-status|chrome-install|chrome-uninstall|chrome-status}" >&2
+        echo "Usage: $0 {run|install-conductor|conductor-acceptance|serve-install|serve-uninstall|serve-status|chrome-install|chrome-uninstall|chrome-status}" >&2
         exit 1
         ;;
 esac
