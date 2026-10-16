@@ -95,3 +95,4 @@ Brownfield adds a `Status` column: `built` · `partial` · `none`.
 5. **Table stakes are all Must**, by definition — and "table stakes" means a `table-stakes` row in `competitive_features.md`, computed from competitor coverage, not a phrase from the prose. If one isn't `Must`, either the matrix is wrong (re-crawl) or we've chosen not to compete — and that belongs in the PRD's non-goals, not quietly in this table.
 6. **Do not draw release lines here.** Vertical priority is this stage; horizontal release slices are stage 4.
 7. **Report an over-full Must column** rather than recording it silently.
+8. **One feature, every OS.** A feature is never split by operating system ("install on macOS", "install on Linux"): the OS is not a feature boundary or a priority (`/product` rule 11). An OS-specific behavior the product genuinely needs, such as a Windows credential store, is a requirement under the feature, not a feature of its own.

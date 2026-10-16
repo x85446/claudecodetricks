@@ -24,6 +24,7 @@ sized so that `$ip` can turn it into one plan.
 Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
 
 - `$ip` — ported.
+- `$izmachine` — ported.
 - `$product` — ported.
 
 **The rule that makes a milestone real:** it is a thin vertical slice, never a
@@ -45,9 +46,11 @@ one part) applied a second time, inside each release.
 
 2. **Cut v1 into ten.**
    - **M1-01 is the walking skeleton**: the thinnest path through the v1
-     journey that runs end to end on the real stack. That might be one
-     platform, one hard-coded document, and one command. Its job is to prove
-     the containers connect before anything is deepened.
+     journey that runs end to end on the real stack, on every target OS
+     (each on its own `$izmachine` guest), with one hard-coded document and
+     one command. Its job is to prove the containers connect, everywhere the
+     product runs, before anything is deepened. No later milestone is one
+     OS's port of another's work (`$product` rule 11).
    - **M1-02 to M1-09 each deepen the skeleton** by one capability the
      release's end-to-end check needs. Order them by **risk first, then
      dependency**. The thing most likely to force a redesign goes as early as
