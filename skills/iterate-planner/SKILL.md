@@ -3,7 +3,7 @@ name: iterate-planner
 description: "The planning half of the iterate stack. Formalizes a task into paired 1a-task / 1b-validation format BEFORE autonomous execution, consulting the project oracle to bake in known checklists, gotchas, and deployment rituals. Names each plan's feature branch but never creates it — planning stays on your current branch, so the status line reads main until execution starts; plans are flat by default (teamify on request), can be staged for the nightly tick, and end with three standing finishers (Makefile, TESTMASTER, user-docs). Plans are saved and codenamed under ./.claude/iterate/plans/. Never executes — the user runs /iterate for that."
 when_to_use: "Triggers on \"/iterate-planner\" or its alias \"/ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\", \"publish\" / \"show plan\", \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch unmerged), \"roll <name>\" (unfinished steps to a new plan, same branch), \"notes-to-plan\", \"plan the inbox\" (turns /mailbox messages into a plan). Staging for the nightly tick: \"stage <name>\", \"approve <name>\", \"queue <name>\", \"unstage <name>\". Teaming: \"team this\", \"teamify\", \"team up the plan\"; reverse with \"flat\", \"flatify\", \"un-team\". Also the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip tests/docs/makefile\") suppressing the standing finishers for that plan."
 argument-hint: "<optional context, e.g. \"restate the plan from above\", \"plan: 1. do X, 2. validate Y\", \"stage <name>\" to approve a plan for the nightly tick, or \"teamify\" / \"flat\" to team or un-team the current plan>"
-version: 5.17.0
+version: 5.18.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
@@ -124,7 +124,7 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 4. **add-to-named** — `add to "<name>" that <thing>`, "to `<name>` add `<thing>`": open `plans/<name>.md`, append the new Step + an inferred Validation, set `current` = `<name>`, re-print that plan. Then **stop**.
 
-4.5. **stage / unstage** — `$1` matches "stage `<name>`", "approve `<name>`", "queue `<name>`" (named, else current): the user is approving the plan's content as it stands for **unattended launch** by the nightly tick (`iterate-run nightly`) and the conductor. Resolve the plan; if `phase: executing` → refuse in one line, "`<name>` is executing — staging is for a plan that has not started", file untouched. Otherwise write `status: queued: <UTC now> by /ip stage` into the key block (directly below `phase:`; replace an existing `status: queued` line), leave everything else byte-identical, and reply exactly: `staged <name> — launches on the next nightly tick, or now with /iterate <name>`. No oracle or preflight re-run and no reprint: the plan was approved as printed, and a reprint invites the edit that un-approves it. The status line shows a staged plan **orange**; `list` marks it `(queued)`. "unstage `<name>`" removes the line and replies `unstaged <name>`. Then **stop**.
+4.5. **stage / unstage** — `$1` matches "stage `<name>`", "approve `<name>`", "queue `<name>`" (named, else current): the user is approving the plan's content as it stands for **unattended launch** by the nightly tick (`iterate-run nightly`) and the conductor. Resolve the plan; if `phase: executing` → refuse in one line, "`<name>` is executing — staging is for a plan that has not started", file untouched. If it carries `mode: release` → refuse in one line, "`<name>` is a release — it runs only with a typed /iterate <name>", file untouched. Otherwise write `status: queued: <UTC now> by /ip stage` into the key block (directly below `phase:`; replace an existing `status: queued` line), leave everything else byte-identical, and reply exactly: `staged <name> — launches on the next nightly tick, or now with /iterate <name>`. No oracle or preflight re-run and no reprint: the plan was approved as printed, and a reprint invites the edit that un-approves it. The status line shows a staged plan **orange**; `list` marks it `(queued)`. "unstage `<name>`" removes the line and replies `unstaged <name>`. Then **stop**.
 
 5. **teamify** — `$1` matches a teamify trigger phrase ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", optionally "teamify `<name>`"): resolve the target plan (named, else current), run the Teamify procedure (see "Teamify procedure" below) over its full Steps list, write the `## Teams` table and set `teamed: true`, re-print the plan including the Teams table. Then **stop**. This is the only operation that does a full from-scratch reclustering — never run it implicitly as part of any other op. (A teamify trigger phrase inside a creation request does the same at creation time — see Step 6.)
 
@@ -148,6 +148,10 @@ If a current plan exists and the user just describes more work, **add it to the 
      - `reply: wanted` adds one last step after the standing finishers: **"Reply to `<sender>`"**, `skill: mailbox`, which runs `/mailbox reply <id>` with the outcome. The outcome is what changed, the commit or PR, and how each Done-when check passed, shaped by the message's `## Reply with` when it has one. Its validation is that the reply file exists in the sender's inbox and that the message reads `status: done (plan: <name>)`. A blocked ending still sends this reply, saying what landed and what is parked.
 
      Provenance cites the source: `Message from <sender> (<id>): <the one-line title>`. After writing the plan, mark each consumed message with `python3 ~/.claude/skills/mailbox/scripts/mbx.py msg status <id> "consumed (plan: <name>)"`, which also releases mailbox's claim. Messages stay in `inbox/` as the record of where the plan came from.
+
+8.7. **release** — two forms.
+   - `$1` asks for a production release without a brief ("plan the release", "cut a release", "ship v1.2", "notarize and publish", "release v2"): invoke the Skill tool with `iterate-release` and the version if `$1` named one. Then **stop** — the release skill gathers the facts and calls back with a brief.
+   - `$1` starts with `release brief` (sent by `/iterate-release`): a NEW-plan creation that proceeds exactly as op 9 (name from `iterate-run name next`, branch `release/v<X.Y.Z>`, oracle merge, access preflight; flat), with two extra keys below `phase:` — `mode: release` and `version: <X.Y.Z>`. The brief's numbered release steps become the Steps in its order; its `credentials:` lines become the access preflight's dependencies and `Access:`/`Cost:` constraints; its `decisions:` lines bind as Constraints quoting the user. The three standing finishers run inside the release-commit step, before the tag, never after the publish. Never staged (op 4.5).
 
 9. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below — the plan is written flat unless `$1` carries a teamify trigger phrase, see Step 6 "Write the plan file", and the feature branch is named per "One plan = one feature branch" above).
 
@@ -389,6 +393,16 @@ An iterate session implements a large block of code and proves it with fast and 
 
 Confirmed live (exonet `dipper`, 2026-10-07): the planner made a 24-hour live observation and a 24-hour soak the plan's acceptance, and the finished code sat unmerged on them until the user ordered the merge.
 
+### 5.11. Release work belongs to release plans (mandatory scan, every plan)
+
+Notarizing, stapling, pushing a version tag and publishing to users happen in a `mode: release` plan and nowhere else, because those are the steps that need the release credentials and reach other people's machines. A plan without `mode: release`:
+
+- **may build release tooling** — a `release-*` make target, packaging scripts, signing. Its validations stop at signing: `codesign --verify --deep --strict`, `pkgutil --check-signature`, `signtool verify`, `gpg --verify`, and a dry run of any target that would submit or publish. The first release plan to run a target is what validates its submit and publish halves.
+- **never** has a step or validation that calls Apple's notary service (`notarytool submit|history|info|log`, `stapler`), assesses a download as notarized (`spctl --assess` on a quarantined artifact), pushes a `v*` tag, or publishes, and never has an `Access:` constraint on the notary profile. A request for any of those routes to `/iterate-release` (op 8.7).
+- names the notarytool profile, wherever a target needs one, as **`notary`** — one per team, shared by every project, recorded in `/accounts`. Never a per-project profile.
+
+A milestone or request whose exit is "a notarized installer" splits: an ordinary plan builds the pipeline and proves it signs; the release plan notarizes and ships.
+
 ### 6. Write the plan file
 
 **On a brand-new plan** (op 9, or the first-plan path of op 10) — after Steps 1-5 above have produced the full Goal/Steps/Validation/Constraints — do two things before writing:
@@ -414,6 +428,8 @@ harness: claude-code         # which harness's planner produced this file — cl
 teamed: false               # set true only after a teamify pass writes ## Teams
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo); created via /feature-branch at plan creation, merged+deleted by /iterate only on all-green
 human-gate: <step N>           # only when Step 5.5 found a terminal human-decision step; /iterate ends in success-with-handoff there, not "blocked"
+mode: release                  # only on a plan written from an /iterate-release brief (op 8.7): the one plan that may notarize, staple, tag a version or publish; never staged, never run by the conductor or the nightly tick
+version: <X.Y.Z>               # release plans only — the version the user confirmed
 
 ## Goal
 <one sentence>
@@ -646,6 +662,8 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 32. **Staging is a human act, and refinement spends it.** Only `stage`/`approve`/`queue` (op 4.5) writes `status: queued`; every op that changes the plan removes it and says so. Never stage a plan on your own initiative, never leave a queued line on a plan you just changed, and never refuse to stage a planned plan — the line is the user's authorization for an unattended launch, and nothing else is.
 
 33. **A contract expansion is written as the step, with its consumers — never as a choice.** A step that touches a shared contract other code consumes (an API, an event, an RPC method, a schema, a flag under a parity rule across CLI, TUI and MCP) names every consumer in its Na, carries one validation clause per consumer in its Nb, and adds a Constraint: `Parity: <contract> — consumers <list>; expansion is executor work, never a gate`. A step shaped "decide whether to extend X or withdraw Y" is rewritten as "extend X" — the same rewrite rule 10 applies to halt-steps — because the executor answers extend-or-withdraw with extend anyway (`/iterate` rule 33), and a plan that phrases it as a choice invites a park.
+
+34. **Only a release plan notarizes, staples, tags a version or publishes** (§5.11). Every other plan stops at signing, never preflights the notary profile, and names it `notary` when a target needs it. Release requests go to `/iterate-release`; a `mode: release` plan is never staged.
 
 ## Examples
 

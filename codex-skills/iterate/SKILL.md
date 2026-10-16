@@ -7,7 +7,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.17.0
+**Version:** iterate family 5.18.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -671,6 +671,8 @@ cannot* — a credential, a physical action, a decision only they can make.
 29. **Visual verification runs in a subagent, and the image never comes back.** A screenshot is the single most expensive thing that can enter a context: 100–160k tokens, and — because every request re-sends the whole conversation — it is paid again on every later request in that lane. Measured on plan galago: twelve screenshots were 26.6% of the entire run's token cost, and the most expensive was read once and rode along for 177 requests. Spawn a `sonnet` subagent with one instruction — *look at `<file>` and answer `<the exact question>`* — and keep only its prose answer. Crop to the region in question before capturing. When the question is numeric, **measure it instead**. None of this skips a check; only the artifact stops being permanent.
 
 30. **The coordinator's own model is a recommendation, never something to switch mid-run.** A skill cannot change the model of the session running it, so if this run is on a lower tier than coordination wants, say so once in the Status/Log and carry on. Never claim to have switched, never spawn a subagent to "be the coordinator", and never stop over it.
+
+31. **Release work runs only in a release plan, and there it is authorized.** A `mode: release` plan (written by `$iterate-release`) runs only from a typed `$iterate <name>`; the conductor and the nightly tick never run it. That typed command authorizes everything the plan names — the `v*` tag push, `make release-publish`, notary submission with profile `notary`. A notarization rejection is executor work: read `xcrun notarytool log <id> --keychain-profile notary`, fix, rebuild, resubmit. A pushed tag is never moved. **In any other plan**, a step that would notarize, staple, push a version tag or publish is a planning defect: do the build and signing half, mark the rest `[RELEASE → $iterate-release]`, log it, and continue — never `blocked-on-operator` on notarization, a notary credential or an Apple agreement.
 
 ## Example trigger
 

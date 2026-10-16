@@ -7,7 +7,7 @@ description: "Never executes — the user runs $iterate for that. Triggers on \"
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
 
-**Version:** iterate family 5.17.0
+**Version:** iterate family 5.18.0
 
 ## What this skill does
 
@@ -183,6 +183,8 @@ If a current plan exists and the user just describes more work, **add it to the 
      - `reply: wanted` adds one last step after the standing finishers: **"Reply to `<sender>`"**, `skill: mailbox`, which runs `$mailbox reply <id>` with the outcome. The outcome is what changed, the commit or PR, and how each Done-when check passed, shaped by the message's `## Reply with` when it has one. Its validation is that the reply file exists in the sender's inbox and that the message reads `status: done (plan: <name>)`. A blocked ending still sends this reply, saying what landed and what is parked.
 
      Provenance cites the source: `Message from <sender> (<id>): <the one-line title>`. After writing the plan, mark each consumed message with `python3 ~/.claude/skills/mailbox/scripts/mbx.py msg status <id> "consumed (plan: <name>)"`, which also releases mailbox's claim. Messages stay in `inbox/` as the record of where the plan came from.
+
+8.7. **release** — `$1` asks for a production release ("plan the release", "cut a release", "ship v1.2", "notarize and publish") without a brief: invoke `$iterate-release` with the version if one was named, then **stop**. `$1` starts with `release brief` (sent by `$iterate-release`): a NEW-plan creation exactly as op 9 (branch `release/v<X.Y.Z>`), with `mode: release` and `version: <X.Y.Z>` below `phase:`; the brief's release steps become the Steps in order, its `credentials:` lines the access preflight and `Access:`/`Cost:` constraints, its `decisions:` lines Constraints quoting the user. The standing finishers run inside the release-commit step, before the tag. A release plan is never staged.
 
 9. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below — this includes the now-default auto-Teamify pass unless `$1` also carries a flat trigger phrase, see Step 6 "Write the plan file", and the feature-branch creation per "One plan = one feature branch" above).
 
@@ -415,6 +417,10 @@ An iterate session implements a large block of code and proves it with fast and 
 4. **A drifted slow case is not this plan's gate.** The FFIV sweep and the test finisher cover fast and standard. A slow case the plan's work drifts stays drifted for the nightly run. The plan neither runs it nor parks on it, and its ending names it.
 
 Confirmed live (exonet `dipper`, 2026-10-07): the planner made a 24-hour live observation and a 24-hour soak the plan's acceptance, and the finished code sat unmerged on them until the user ordered the merge.
+
+### 5.11. Release work belongs to release plans (mandatory scan, every plan)
+
+Notarizing, stapling, pushing a version tag and publishing happen in a `mode: release` plan and nowhere else. Any other plan may build release tooling and sign, with validations that stop at signing (`codesign --verify --deep --strict`, `pkgutil --check-signature`, `signtool verify`, `gpg --verify`, a dry run of any submit or publish target). It never calls the notary service (`notarytool`, `stapler`), assesses a quarantined download as notarized, pushes a `v*` tag or publishes, and never preflights the notary profile. Wherever a target needs the profile, it is **`notary`**, one per team for every project. Release requests route to `$iterate-release` (op 8.7).
 
 ### 6. Write the plan file
 
@@ -667,6 +673,8 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
     **The orchestrator's own model is not settable from here.** A skill cannot change the model of the session running it. `fable` is a recommendation to the operator — start the session on it before `$iterate` — and the plan records it, nothing more. Do not write a step that claims to switch the coordinator's model; it cannot.
 
 31. **A team is one tightly-defined task with a named deliverable, not a topic.** "Parse the failing suite output and report which cases regressed, as a list of case ids" is a team. "Help with testing" is not. Narrowness is what makes the tier assignment meaningful in the first place — a vague team drifts into work its tier was not chosen for, and a `sonnet` team asked to refactor is a worse outcome than never having split.
+
+32. **Only a release plan notarizes, staples, tags a version or publishes** (§5.11). Every other plan stops at signing and names the notary profile `notary`.
 
     It is also the cheap shape: a subagent's context dies when it returns, so everything it read — the 400 KB log, the screenshot, the whole vendored file — never reaches the coordinator's context, where it would otherwise be re-sent on every later request for the rest of the run.
 

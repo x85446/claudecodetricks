@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, with the one act that clears each. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: "[fix all [<plan>]]"
-version: 5.17.0
+version: 5.18.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -110,6 +110,8 @@ Read, in order: the current branch and whether the tree is dirty; every
 | `phase: executing`, no fresh heartbeat, all steps done, all validations green, not merged | **The merge never happened.** This is the failure case — finish it (see below). |
 | `phase: executing`, `status: blocked-on-operator` / `awaiting-human-gate` | **Blocked on you.** Each blocker is a problem; plan its `Fix` down to one human act before you answer. |
 | `status: blocked-on-operator` on a purchase, subscription, token or licence key the plan's `Cost:` line did **not** approve (an approved one missing its credential is an ordinary access blocker — handle it as one) | **Planning defect, not a blocker on you.** The executor should never have parked here (`/iterate` rule 29). `Fix` is never "buy X": it is `fix problem N`, a re-plan through `/iterate-planner` that takes the free path, and the plan is marked `unblocked` with the reason. |
+| `status: blocked-on-operator` on notarization, a notary credential or an Apple agreement, in a plan **without** `mode: release` | **Planning defect, not a blocker on you.** Only a release plan notarizes (`/iterate` rule 34). `Fix` is `fix problem N`: mark the release half `[RELEASE → /iterate-release]`, clear the status, and `/iterate <name>` lands the rest. |
+| `mode: release`, `phase: executing`, stopped mid-run | **A release stopped part way.** Say which of tag-pushed and published happened. `Fix` is `/iterate <name>`, typed — the conductor never resumes a release. |
 | `status: blocked-on-operator` whose reason is a design decision or contract expansion the executor could have made (extend vs withdraw, which approach, what a flag means) | **Executor defect, not a blocker on you.** The executor should never have parked here (`/iterate` rule 33). `Fix` is `fix problem N`: record the decision as extend in the plan's Decisions log, set `status: unblocked`, and `/iterate <name>` continues. |
 | `phase: executing`, stopped mid-run, no terminal status | **Died mid-run** (session killed, context ran out, cron lost). Commit anything loose; the `Fix` is `/iterate <name>` — one command. |
 | Feature branch with no matching plan | **Orphan branch.** Say whose it looks like from the name and what it carries that main lacks. `Fix` is one script to land it and one to drop it; the human runs the one they mean. Never delete unasked. |
