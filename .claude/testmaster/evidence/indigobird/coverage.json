@@ -1,0 +1,1932 @@
+{
+  "method": "Per-test Go coverage minus an initialization-only profile; paths are measured, not inferred. External CLI child binaries are not instrumented by their parent test profile.",
+  "reproduce": "make conductor-cover-case COVER_PKG=PACKAGE COVER_TEST=TEST COVER_FILE=PROFILE",
+  "profiles": {
+    "budget.TestIndigobirdBudgetBands": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 83,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "04d7b20def60923813f83cbf493782787e741116da652f24e795bb0a67d88299"
+    },
+    "budget.TestIndigobirdDST": {
+      "covers": [
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 45,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "401184c2f702321e0e78fda87c8c7337650cc0275bc513ac84b19bb18ea3a367"
+    },
+    "budget.TestIndigobirdExplicitEndAndEpoch": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 148,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "5eb530bf9c6689d08610ce241ad5475e3c8157ac8c35088f0afcb788605962df"
+    },
+    "budget.TestIndigobirdOverdriveLifecycle": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 162,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "8ce42e640f4ab7c69d4ebfd95345460288be0b73e427fa6ff12cb22610d96335"
+    },
+    "budget.TestIndigobirdOverdriveTargets": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 153,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "548aaa9e53bc588bb5304c5280f4a6deea5e730cd882cf9a6a9e57fe17245319"
+    },
+    "budget.TestIndigobirdOverdriveToggleResume": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 143,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "33190b6464dfbdce079211844941fc68c72bcbab10c05e2afc9bae10ebe668e4"
+    },
+    "budget.TestIndigobirdPowerbarGeometry": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 147,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "084fa8ae7da475bffa9170df74dfa19d542b91c8aa9c5b7cd66e71b05850e580"
+    },
+    "budget.TestIndigobirdProviderHardBlock": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 142,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "24152274e1944fed485036480dd98e2215c0b8611f7bee99d937033093ec0aa7"
+    },
+    "budget.TestIndigobirdRecurrence": {
+      "covers": [
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 52,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "b65dc672ba93ac3d057d07276f99da46ace48e0d9b214493c1113f84acfcd197"
+    },
+    "budget.TestIndigobirdResetRelative": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 30,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "d278d010e69226e4e3702f1b79a333ffc7f3326fd38f1b562809e73dd8e48377"
+    },
+    "budget.TestIndigobirdUnsupportedShortPool": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 65,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "6d7752d4b40761f5a6001384aa3c119b272278f4021337f076505493c2d663ba"
+    },
+    "budget.TestIndigobirdUsageGates": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 84,
+      "pkg": "./src/internal/conductor/budget",
+      "profile_sha256": "4cc36429e94aceab089733291429d23e4358dad50298c42e65cbd735f7994374"
+    },
+    "conductor.TestIndigobirdAdmission": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 404,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "598d39c0485382f1041b5201739a7773d505b37f6e3320fbcf3961dee8837455"
+    },
+    "conductor.TestIndigobirdBoundedIntake": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/intake.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 568,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "e018ff8b345c924001a3ca3485c45ab8987118f03f17687608809829157b935c"
+    },
+    "conductor.TestIndigobirdClaudeHookStreamDedupe": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 312,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "d684c12bd2c38c40ae59aeb4d65e5f5f56210e64ae3975081aaac7ebeecdd467"
+    },
+    "conductor.TestIndigobirdConfigReferences": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/model/model.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 222,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "882712b5daa282d19c72e0d3344f12a85f866352f10768e29f3a8d3eb65a784d"
+    },
+    "conductor.TestIndigobirdConfiguration": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 216,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "3f4b68a3815c8344342d76bbc9abd976a45b4c9284d1c677bf2336ff69217460"
+    },
+    "conductor.TestIndigobirdDrainAndPoolIdentity": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 642,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "4d58af08c04b3c2abdcf0acfbf840ff7158b8e41110e354e3cdfd2412524727c"
+    },
+    "conductor.TestIndigobirdEventRedactionAndRecovery": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 265,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "a6e65012833805fdf9437f0c73418f4e6503783f1cb3743527f1a3f31acec07b"
+    },
+    "conductor.TestIndigobirdFairProjects": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 527,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "a41d8762f2b981cf31ad5db6c3dd66c6a090d4824e34108479ade4d7131aacc3"
+    },
+    "conductor.TestIndigobirdGenericDiagnostics": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 532,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "9cdd3e11344b9bbae6ef6c9b3dbfde48de36c5e7c536e991bd0e2df4f3201613"
+    },
+    "conductor.TestIndigobirdIdleAndIntakeDedupe": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 302,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "fd80a35348d046f37da4406b559e36dd4fa6bb6e0c68bf6658209944caf68a37"
+    },
+    "conductor.TestIndigobirdInterruptAndConcurrency": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 665,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "9c2af0015b60b56a4443d74347e02cb655d4fa515dfbb2126a68ac6a4bfd429d"
+    },
+    "conductor.TestIndigobirdInvalidResults": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 530,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "b1689d2685f99b5dcc84c8f488471ff567f5ba5db14a420894980429804846c0"
+    },
+    "conductor.TestIndigobirdLifecycleAndDraft": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 419,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "b6ee735af68eca93e4a7a242eaadf4d9bbbd14ec1212e3a53f8868f03fc25f71"
+    },
+    "conductor.TestIndigobirdMigration": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 255,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "b822ae36273970f16a6cffb0d2330c72146675a9a8aa5f5ba2701287a902fc27"
+    },
+    "conductor.TestIndigobirdMissingExecutableFallback": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 361,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "76fa8bfa92768580a8da4ced7262a7da91f619602ed151e3db1222c47eb2abf9"
+    },
+    "conductor.TestIndigobirdOnePlan": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 637,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "6a9e3228ff83e6796cf0645f54f6c2477fd5fd04eef681b3a20b66718498f545"
+    },
+    "conductor.TestIndigobirdOrphanIsolation": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 538,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "02a0418e9297d9943920bbaaccd915937691cf4323f8d40425d33b5d7e0821d9"
+    },
+    "conductor.TestIndigobirdOwnedDescendantCleanup": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 548,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "36de798460f6885a9c6be920bd2c3f4846ea3fc6d63d23a4fbf3638e0d09b70b"
+    },
+    "conductor.TestIndigobirdPartialDelivery": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 534,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "1c16bc9cbb8c7a0c1d6725917eb0e0fe3a3b00baf773875088f31c56b3f216fb"
+    },
+    "conductor.TestIndigobirdRecovery": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 533,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "c4125f59467db2b246f85437ae8a93e5a7b54b93d1e4c81b30902e77168e9dcc"
+    },
+    "conductor.TestIndigobirdRetryParking": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 540,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "c5aa05872b17f7ba9b39af6940351614dfc9fec7bdbc881525b3b351573329d2"
+    },
+    "conductor.TestIndigobirdSampleEpochAndDaySeven": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 321,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "18071030041ed742cb3ac5b192547afcfc926f361081dc492c07118ec6a84abb"
+    },
+    "conductor.TestIndigobirdStorageFailure": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 228,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "3df06fde92043edd5886ee08b5619abaea352992a737b02bee855126688aa735"
+    },
+    "conductor.TestIndigobirdStreamDrain": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 599,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "67cf41ce92652332d58539d4b6956dcb90abcdae3ae32f4f3c44ed00ae0e448f"
+    },
+    "conductor.TestIndigobirdSupervisor": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 549,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "cefd6dfc3a3d374276ab7cf2ab84364b7c1dd7732c585234d10270aaefcac8d7"
+    },
+    "conductor.TestIndigobirdWatchAndFreshness": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 553,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "9115276d8dd6bf13e661c01c7bc2461796df01545cd2f9c39023cfbb37e88750"
+    },
+    "conductor.TestIndigobirdWindowEndModes": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 662,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "bdf55488e07f9013eefdd24e43804a7f34495582e19039e3708dd2ce316f37bb"
+    },
+    "iterate-run.TestConductorCLIAtomicJSONWorkflow": {
+      "covers": [
+        "src/cmd/iterate-run/conductor_cmd.go",
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 305,
+      "pkg": "./src/cmd/iterate-run",
+      "profile_sha256": "10c48aaf82ec8fff16ae029c3f070da52152974bf40d8ba327be7100a565a495"
+    },
+    "iterate-run.TestConductorCLIBinaryEntrypoint": {
+      "covers": [],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 0,
+      "pkg": "./src/cmd/iterate-run",
+      "profile_sha256": "9cf2e6b337d3a9c0b308157ecae7d310459cf2ac40fe87a0aa076e768ed3afc1"
+    },
+    "iterate-run.TestConductorCLIErrorsAndHelp": {
+      "covers": [
+        "src/cmd/iterate-run/conductor_cmd.go",
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 112,
+      "pkg": "./src/cmd/iterate-run",
+      "profile_sha256": "e80f0437f4ca6ab2d7ec26bbe55c031352be98556e933b5006f4cf2f6989639d"
+    },
+    "iterate-run.TestConductorCLIInterspersedFlags": {
+      "covers": [
+        "src/cmd/iterate-run/conductor_cmd.go",
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 98,
+      "pkg": "./src/cmd/iterate-run",
+      "profile_sha256": "f55c5e73b67d8294350c8ce1fe6894960e1005d80fd05beca36606c6eb85f173"
+    },
+    "iterate-run.TestConductorCLIProjectQueue": {
+      "covers": [
+        "src/cmd/iterate-run/conductor_cmd.go",
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 459,
+      "pkg": "./src/cmd/iterate-run",
+      "profile_sha256": "e1cc61ce792438adfe4fe2a83ca0ee64025ce4aaaec5bdaa5dcbd579c5c019f7"
+    },
+    "iterrun.TestConductorAPIPrivateRunProjection": {
+      "covers": [
+        "src/internal/conductor/model/model.go",
+        "src/internal/iterrun/conductor_api.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 2,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "8b713493173f867a726cbb3ec48756079bbdb10869974e7421c5de819b1140cb"
+    },
+    "iterrun.TestConductorAPIRevisionSecurity": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 207,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "a03252b0ea0451121e86fbd3e181491b260cc49c5e1235dd6cd74c6c75e4a1a5"
+    },
+    "iterrun.TestConductorAPISimulationPure": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 346,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "36cba11293918e1631aab89cdde9773f93781b0493b254abc250708371045281"
+    },
+    "iterrun.TestConductorDetailIdentityAndMissingSource": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/conductor_web.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/projects.go",
+        "src/internal/iterrun/serve.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 228,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "1dbe6ba8f946dcda444efabf92535a694aa34f41ac800e14bde19a3214371649"
+    },
+    "iterrun.TestConductorIntegrationCumulativeBandsAndSampleIsolation": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/watch.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 533,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "6ea83ca67d937d6b4a714e61fab2ee7a3f267616222c8db1dc4c035e23240abd"
+    },
+    "iterrun.TestConductorIntegrationNamedPolicyScopeAndSharedPool": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/watch.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 535,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "b9186a1daaeb11efcdc146cbaddc14c4aa881436ba5ded76f34aac5d775da632"
+    },
+    "iterrun.TestConductorIntegrationOverdriveGeometryAndAvailability": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/watch.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 633,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "24f46719fd01ad508a3e0da2a832711134065955b09de832424d5f865cdaa0dc"
+    },
+    "iterrun.TestConductorLegacyImportLiveOwnerAndPartialBackup": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor.go",
+        "src/internal/iterrun/conductor_legacy.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/nightly.go",
+        "src/internal/iterrun/projects.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 297,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "212ee90b7a77d1689c30063d789279a6e024a5e3be36793cad0306eba35f3260"
+    },
+    "iterrun.TestConductorLegacyImportPreviewApplyIdempotence": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor.go",
+        "src/internal/iterrun/conductor_legacy.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/nightly.go",
+        "src/internal/iterrun/projects.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 301,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "fb53d1b7fe252dbfb7106a18f0a7ea34d9d58b7dba1ba1e728090f9b8e235fe6"
+    },
+    "iterrun.TestConductorOwnedHookObservation": {
+      "covers": [
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/hookcmd.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/projects.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 149,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "72a7a40de3ad7375b3ab312b23d9a88a219d98e25fe7c33c1f625c800dc9e6de"
+    },
+    "iterrun.TestConductorQueueWakeAfterClosedWindow": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/conductor_worker.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 467,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "3d02f50cb57e61300ef3bcbe39fe2b40a677daebb085204762aa475b31e6c12f"
+    },
+    "iterrun.TestConductorResourceAtomicOnboarding": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 228,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "18b66015772e02b060b367e9ea252220f0d7282a7b1a34626c07a65d46a9d9e2"
+    },
+    "iterrun.TestConductorResourceReferenceDrafts": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 254,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "9aa109be08c6129fb83bacb48c340a641a2c5453d20d1bfc2dc2462cff980dc3"
+    },
+    "iterrun.TestConductorSourceDependencyCheckpoint": {
+      "covers": [
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 86,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "71c3e7a7094365b3233b268bc0628ddfc9fd515f8ba39789ec238386d8b4c5e0"
+    },
+    "iterrun.TestConductorSourceIdentityAndArchive": {
+      "covers": [
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 187,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "0588d45899b201cb8f369dc6138005f173a4ca1d039260b286f28bb520aa9e81"
+    },
+    "iterrun.TestConductorSourceIntakeProvenance": {
+      "covers": [
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/plans.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 91,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "4e16a40d42bebde410439c30ae1d968c3f983478d9ad26ea64fb134b17098851"
+    },
+    "iterrun.TestConductorSourceOwnTrail": {
+      "covers": [
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 139,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "393d9a6d9fd6211781bb0d47977e190444d97c86bce1bc80f6d5516e574df493"
+    },
+    "iterrun.TestConductorSourceReleaseNextClaim": {
+      "covers": [
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 114,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "7ebd28c578e9cd4414ed6fbc3db5c7e10c092ee2dc1cc4058ecc84e06f5a636d"
+    },
+    "iterrun.TestConductorUnenrolledQueueDiscovery": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/conductor_web.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/projects.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 361,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "6567adae98e5d01a504a5cb62562f5127af8387b77a686813564bc20bbf40bc6"
+    },
+    "iterrun.TestConductorUnifiedDetailPreservesTimeline": {
+      "covers": [
+        "src/internal/iterrun/conductor_web.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/serve.go",
+        "src/internal/iterrun/timeline.go",
+        "src/internal/iterrun/tokens_html.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 168,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "f9fe001b1a8f8a0f8ad2c4e6a9ecac1d5001ce82a76b9f5d3ef82088cf3018d3"
+    },
+    "provider.TestAgentPromptFileTransport": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 41,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "d186f2fd154f332d7fb100116099ec4de218c9bec6b3bf71e975380266020d7b"
+    },
+    "provider.TestAuthenticatedAllowanceNormalization": {
+      "covers": [
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/provider/usage.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 45,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "0b1d54471fe4d8b08460f2e4d63a37306f4199f61710f2403e40d7b614e3a4be"
+    },
+    "provider.TestClaudeCollectorAuthenticContract": {
+      "covers": [
+        "src/internal/conductor/provider/usage.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 11,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "4e9cd2c376dc578e01015a9b4583f118fe4f851cd5784660bead16aa0090009b"
+    },
+    "provider.TestCodexFinalResultTransport": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 6,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "ccc8cc8dffc7d515434a6b2b15505714edff3589f5c9d3e53e00c93cd1361367"
+    },
+    "provider.TestCompileLiteralExecutor": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 32,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "fd1d4ce4af196beb066b89c2ef302bbbcbc3cda39e17263156569f288603cae1"
+    },
+    "provider.TestCustomResultContract": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 29,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "7939a4ed1f20d164fa2ece96e72e40a701aebcd45beaf852022b0c7adc59e37a"
+    },
+    "provider.TestFragmentedProviderStreams": {
+      "covers": [
+        "src/internal/conductor/provider/decode.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 55,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "9b213dd708f5b91001d591548cf6d4047d39db829e7816e4b7db9c28a97c81ac"
+    },
+    "provider.TestMalformedStreamDrain": {
+      "covers": [
+        "src/internal/conductor/provider/decode.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 37,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "61f1f05495d3300c2a5e073b53fd6300ff998a7a9b3942d5955c77384e9e3a97"
+    },
+    "provider.TestProviderEmbargoPreservesUsage": {
+      "covers": [
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/provider/usage.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 23,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "d28948e92da9f7a78b6ce7f6f52151a83612b4889053d7731ae1202c084f2762"
+    },
+    "provider.TestReadinessTemplates": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 17,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "19cf3e61c100e7f8f49f90e5ccfa8254d4383eec8296d9c0820ff7201f9a4e59"
+    },
+    "provider.TestReservedTransport": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 22,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "08f01bc9692bf5c5f8722554d88cb2e89659d703f53b5c2c7cf6d5f9133b0df6"
+    },
+    "provider.TestSubscriptionEnvironment": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 5,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "8b601f4fa1296000b5a08c0641add11e7bd7d812dc2d4942b93db60977d35e7d"
+    },
+    "provider.TestTerminalIsNotAssignmentSuccess": {
+      "covers": [
+        "src/internal/conductor/provider/decode.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 38,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "91a2be8e86f29da632760a22a2707fbb639cbe3a9024f387c930150bdaa07007"
+    },
+    "provider.TestUsageCommandScope": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/usage.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 21,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "353cdabd508a0f0a5eaeec8392bba8a0cbcc6b62d6ceb968951e48d5216c45f5"
+    },
+    "conductor.TestIndigobirdCheckpointProfileHandoff": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 571,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "3b2f90ff72c0edc293af4dffef8a01ebb4b03db95b6463e95f208e4a3fc072cf"
+    },
+    "conductor.TestIndigobirdDSTOccurrenceRestart": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 639,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "dbc5b80cffabb2dfca8a27fa702080da5d9b261b7fb0056241b698f8d9129de3"
+    },
+    "conductor.TestIndigobirdDisableAndKillSafety": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 731,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "f898d838169f9f99cfbc1ac09f12a68fa8a5000841dd07dfb715b24b3046dfb0"
+    },
+    "conductor.TestIndigobirdFinishPlanHardGates": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 672,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "329718f28459ffc32fbe1ead2c4312b75c95bc6914364925949da29b088db1a0"
+    },
+    "conductor.TestIndigobirdInFlightCheckpointWindow": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 697,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "929ed9087645c547c9f820b451248548166facd4074072af2b881f2badb306b0"
+    },
+    "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 263,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "9a3388a7e53e9330a453050a7cadef772dc8d208f8db26f3a47de9bbb3f37b79"
+    },
+    "conductor.TestIndigobirdMixedQueuePriority": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 569,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "143b5b5dfa5574858b64c55b5ec69af90253211b77925499618f33a5376d7a43"
+    },
+    "conductor.TestIndigobirdNoProgressTimeout": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 579,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "645b184d8dbd26afde80bf32441e46fd3b28e5bd0b37e3a276d652dd0dca1cef"
+    },
+    "conductor.TestIndigobirdOnePlanRetryPark": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 677,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "9eb7ec460d7382662dd7bb7d319cb1f3f126f3bd08529b8cee5bc7063a8af880"
+    },
+    "conductor.TestIndigobirdSeparateProcessLease": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 242,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "e4bd46bfbd1e7b9c5d9bef7338210338f19681262b7fa00f5effbb82e728aa77"
+    },
+    "iterate-run.TestConductorCLIHTTPSharedDefinitions": {
+      "covers": [
+        "src/cmd/iterate-run/conductor_cmd.go",
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/model/model.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 340,
+      "pkg": "./src/cmd/iterate-run",
+      "profile_sha256": "91f75d5fab24dcab4591cfbbd2b3a85fbe4f174e8ff1c24b502e83011d2cb80e"
+    },
+    "iterrun.TestConductorAPICumulativeDraftSamples": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/watch.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 487,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "cf100c62c4823289c32f78bc89764f490ea397e893b16bc16d9dad17af3e1144"
+    },
+    "iterrun.TestConductorAPIOverdriveWindowSamples": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/model/model.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/watch.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 646,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "39e8774c862e32eb6f8da40b81ad985d8388da9adf579a07e96ae808a2806f50"
+    },
+    "iterrun.TestConductorAPIReferenceIntegrity": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 301,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "f78845f24b784cb60a2a772a59833a6817bc5548f32a1bc79523bd5af5344aaa"
+    },
+    "iterrun.TestConductorAPIResourceLifecycle": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 455,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "85a46e7c889b0b8a4968c0eb0f001d68a1e754549b5ed8d131a5ea79be90edeb"
+    },
+    "iterrun.TestConductorAPIWindowControlsPersistence": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 315,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "c0da050086a884f7b2115dcc8ff8aec73df41e054a054bfeddc61fa0e66aad11"
+    },
+    "iterrun.TestConductorScheduleOnlyNarrows": {
+      "covers": [
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 52,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "296b2436d9f768f56a602ea8ebfb95a3d47f2a2151ce3dcaa447c480af762869"
+    },
+    "iterrun.TestConductorSourceTypedPlanExclusion": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 367,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "24e41a59d5543ff14df0bb373bf10ab57fa012f0a90c1d82ac3e1265ce65c843"
+    },
+    "iterrun.TestConductorStatusLineNoTrigger": {
+      "covers": [
+        "src/internal/iterrun/conductor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 27,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "a5528e2c7973be54604d7983f56a2678d0237f02aaff4e634575cbb827cc98f8"
+    },
+    "iterrun.TestConductorStatusLineNotEnabledHidden": {
+      "covers": [
+        "src/internal/iterrun/conductor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 25,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "203284d94f231b7c059444d4b0f427a8e019400119c72235f1d95dafad120abc"
+    },
+    "iterrun.TestConductorStatusLineStoodDown": {
+      "covers": [
+        "src/internal/iterrun/conductor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 26,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "f20de9f12ff6c7ee1f3363178f56cd094494103f86e4dc81238099b38f2fe201"
+    },
+    "iterrun.TestConductorStatusLineWorkingShowsNextTickMinutes": {
+      "covers": [
+        "src/internal/iterrun/conductor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 31,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "5d44479f95fbfe2eb3f54a1a5555f3612e5bd764ab41d0f3f1df1e1d518caa0d"
+    },
+    "iterrun.TestReadConductorStateMissingFile": {
+      "covers": [
+        "src/internal/iterrun/conductor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 2,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "4958efc29852d65e28cd61699cb35bf9561618000b5bb65e4b0d321bb3036fba"
+    },
+    "provider.TestCompilePromptSeparator": {
+      "covers": [
+        "src/internal/conductor/provider/compile.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 27,
+      "pkg": "./src/internal/conductor/provider",
+      "profile_sha256": "9086958e394c2d296798d41653299c5ebaf055b5fbc69e78ec29fcdd26030448"
+    },
+    "conductor.TestIndigobirdCrossBandFallbackAndShortRecovery": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 674,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "ce3328bf5f8313db82580c36cff0562b8139d608be439b8aeb88a5af8da5a1f4"
+    },
+    "conductor.TestIndigobirdDistinctRuleWindows": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 642,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "fb41250d10ac2db076b3cfcb0ff098b76aa47d4f12f9040e4292c1b2406acf47"
+    },
+    "conductor.TestIndigobirdOverdriveCheckpointRetirement": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 713,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "86f09803f8d27e90093105cbc16d958518b85a5a08285acebe16bd5adf3baf3f"
+    },
+    "conductor.TestIndigobirdOverdriveProjectScope": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 690,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "0f40da221016418a16940bcda2f43a9cc73874e7e82e26933d84a7893cce8719"
+    },
+    "conductor.TestIndigobirdOverdriveTickMatrix": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 684,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "cb30ec69936f9c3f5feae3c5dd394b20b69513835c6a2c7db6f4d43d08503c8e"
+    },
+    "conductor.TestIndigobirdResetMetadataPrecedence": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 606,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "b0847ac297d3e6f43da68e9c59c01e0c235019ad3806eb2d624dc0312b3546a9"
+    },
+    "conductor.TestIndigobirdRuleOverlapSelection": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 632,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "cc2b4a8c8d21131e8f77f4e8352298bda0b0b4539dd02a4195a7a1a896a4e758"
+    },
+    "conductor.TestIndigobirdSampleQueueOverride": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 377,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "ec2f9e7b9c944c96a673ece2e547ad96bf7316d72c8cd2f216d9b69fba7af468"
+    },
+    "conductor.TestIndigobirdSharedPoolAdmission": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/control.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 621,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "d754334fe9dfab74eafb846e94f3bb1afbcf0479f83e4cf5a1226e1a62ae1224"
+    },
+    "conductor.TestIndigobirdUnapprovedPlanGates": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go",
+        "src/internal/conductor/watch.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 404,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "29a4d5ba6b7d6b6a531a531c4de54bd577d48112d17d444e0918d70e5882d35e"
+    },
+    "conductor.TestIndigobirdUnorderedOverdriveSelection": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 642,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "5202ba9f61a680742e533eaee4b7aaedd9f46df6746eda5881d931e3d997d9a9"
+    },
+    "iterate-run.TestConductorCLISixColorCases": {
+      "covers": [],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 0,
+      "pkg": "./src/cmd/iterate-run",
+      "profile_sha256": "535e57f65b5513a02a906142ac05a12c8860cf5062b77f43f73194b7a531f74f"
+    },
+    "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 295,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "1981d7163f9830e746b2c9d845a1f005e25d9f2b75ec74f387406243bb595248"
+    },
+    "iterrun.TestConductorAPIInvalidFoldersAndReadiness": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_resource.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 262,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "012d565fe33ae34ee123555aad1c75bb5a04d84b4b4efba86a2883cd23c6f84c"
+    },
+    "iterrun.TestConductorAPICursorExpiryRecovery": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/model/model.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 160,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "667fce54da1b846a7cd6b0fe8546a314b13abb53000c837637f134b8d5e3d107"
+    },
+    "conductor.TestIndigobirdOverdriveConversion": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/conversion.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 339,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "e34c56b785b2a0bfbe40e5bc57f14b1342d53601ae16c7115338d8aa710d23dc"
+    },
+    "conductor.TestIndigobirdOverdriveConversionRefusesLossySchedule": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/conversion.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 267,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "f6f50ef00d28254adee31305c62623f33427fdbbe33f738a3e6b80f414a2346e"
+    },
+    "iterate-run.TestConductorCLIConversionReadOnly": {
+      "covers": [
+        "src/cmd/iterate-run/conductor_cmd.go",
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/conversion.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 303,
+      "pkg": "./src/cmd/iterate-run",
+      "profile_sha256": "14c142274875a5d7cf361922e35f0ae7b04101486138d1ea806b42ddaa59205a"
+    },
+    "iterrun.TestConductorAPIVisibilityAndConversion": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/conversion.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/model/model.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/simulate.go",
+        "src/internal/conductor/watch.go",
+        "src/internal/iterrun/conductor_api.go",
+        "src/internal/iterrun/conductor_source.go",
+        "src/internal/iterrun/conductor_visibility.go",
+        "src/internal/iterrun/events.go",
+        "src/internal/iterrun/heartbeat.go",
+        "src/internal/iterrun/plans.go",
+        "src/internal/iterrun/schedule.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 491,
+      "pkg": "./src/internal/iterrun",
+      "profile_sha256": "cbd350f81b90e690f03e8efe9f8049f3915e0ab9b1591ccf457ba17dcaedc0d3"
+    },
+    "conductor.TestIndigobirdBoundedContractExpansion": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/events.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/provider/decode.go",
+        "src/internal/conductor/service.go",
+        "src/internal/conductor/supervisor.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 559,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "9ca626132ae6a9223ce0a06d27bc0eb283a73c5285bcfface40751939bbf1687"
+    },
+    "conductor.TestIndigobirdNextResetOpportunity": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/opportunity.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 339,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "1ea84c0c6411957a1be23813d2e4572f206f79bea0a5e6c33b26300940dcefc1"
+    },
+    "conductor.TestIndigobirdNextScheduleIntersection": {
+      "covers": [
+        "src/internal/conductor/budget/evaluate.go",
+        "src/internal/conductor/budget/preview.go",
+        "src/internal/conductor/budget/recurrence.go",
+        "src/internal/conductor/config.go",
+        "src/internal/conductor/evaluate.go",
+        "src/internal/conductor/lock_unix.go",
+        "src/internal/conductor/opportunity.go",
+        "src/internal/conductor/provider/compile.go",
+        "src/internal/conductor/service.go"
+      ],
+      "covers_source": "coverage",
+      "blocks_excluding_init": 353,
+      "pkg": "./src/internal/conductor",
+      "profile_sha256": "c2e2abfd77c35d23ec4f7443aa355fe75c993af302da53e88ca4414ab1e33ad9"
+    }
+  }
+}
