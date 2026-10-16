@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the engineering spec — sta
 
 # $product-engineering — stage 7: enough to start building
 
-**Version:** product family 1.3.0
+**Version:** product family 1.4.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -19,6 +19,7 @@ The last HOW stage. Where the architecture says *what shape*, this says *what ex
 
 Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
 
+- `$accounts` — ported.
 - `$dev-makefiles` — ported.
 - `$ip` — ported.
 - `$product` — ported.
@@ -116,7 +117,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 ## Rules
 
 1. **Exact versions, never ranges.** "^18" is not a decision; it's deferring one into someone's lockfile.
-2. **Every stack entry restates its License and Cost verdict**, and flags drift from stage 6. The standing default holds: free and permissive, and anything else is the user's explicit call.
+2. **Every stack entry restates its License and Cost verdict**, and flags drift from stage 6. The standing default holds: free and permissive, and anything else is the user's explicit call. A dependency stage 6 left unruled goes to `$accounts` before it goes to the user: a membership the user already holds is `Cost: held — <program>`, not a question.
 3. **Interface specs are real signatures** with their error cases. A description of an endpoint is not an endpoint.
 4. **Every budget has a number, a probe and a breach action.** Unmeasured budgets are the most common way a performance requirement dies.
 5. **Build work goes through make targets** per `$dev-makefiles` — never ad-hoc shell in the spec.

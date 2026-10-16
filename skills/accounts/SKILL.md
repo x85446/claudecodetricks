@@ -1,6 +1,6 @@
 ---
 name: accounts
-description: "**Always invoke for any connectivity or account-access question.** Use whenever the user asks about reaching a machine, logging into a service, getting credentials, or any flavor of \"do I have access to X\" — SSH hosts, machines, GitHub/GitLab orgs and repos, API tokens, cloud accounts (AWS/GCP/Cloudflare), URLs/dashboards. Trigger phrases include \"can I reach X\", \"how do I connect to Y\", \"log into github/gitlab\", \"do we have AWS creds\", \"what's the staging URL\", \"what hosts can I reach in this project\", \"what does this project use\", \"set up access to <thing>\". Also use when the user *shares* new access info (\"you can ssh to xyz\", \"the AWS account is 12345\", \"the stripe key is at ~/.ssh/foo.key\", \"the staging URL is …\"). Also use for auth status for gh/glab/cloudflare, or `/accounts`. **Use IMMEDIATELY on any SSH auth failure** — \"permission denied (publickey)\", \"too many authentication failures\", \"load key ... invalid format\", \"could not open a connection to your authentication agent\", agent has no identities, ssh hangs on password prompt, can't ssh into a host that worked yesterday. The dominant cause on this setup is KeePassXC being locked (which empties ssh-agent) — this skill checks for that BEFORE any config diagnosis."
+description: "**Always invoke for any connectivity or account-access question.** Use whenever the user asks about reaching a machine, logging into a service, getting credentials, or any flavor of \"do I have access to X\" — SSH hosts, machines, GitHub/GitLab orgs and repos, API tokens, cloud accounts (AWS/GCP/Cloudflare), URLs/dashboards. Trigger phrases include \"can I reach X\", \"how do I connect to Y\", \"log into github/gitlab\", \"do we have AWS creds\", \"what's the staging URL\", \"what hosts can I reach in this project\", \"what does this project use\", \"set up access to <thing>\". Also use when the user *shares* new access info (\"you can ssh to xyz\", \"the AWS account is 12345\", \"the stripe key is at ~/.ssh/foo.key\", \"the staging URL is …\"). Also use for paid memberships and subscriptions the user already holds — \"do I have an Apple developer account\", \"do we already pay for X\" — and before any stage rules a dependency paid. Also use for auth status for gh/glab/cloudflare, or `/accounts`. **Use IMMEDIATELY on any SSH auth failure** — \"permission denied (publickey)\", \"too many authentication failures\", \"load key ... invalid format\", \"could not open a connection to your authentication agent\", agent has no identities, ssh hangs on password prompt, can't ssh into a host that worked yesterday. The dominant cause on this setup is KeePassXC being locked (which empties ssh-agent) — this skill checks for that BEFORE any config diagnosis."
 argument-hint: <show|where|remember|check> [args]
 ---
 
@@ -49,6 +49,7 @@ The skill always **inventories every relevant source**, not just the two store f
    - SSH hosts: list `~/.ssh/config.d/*` (one file per site; each `Host <name>` block is one node). Cross-reference the matching site/banner in the [[ssh-config]] skill if needed.
    - CLI auth state on demand: `gh auth status`, `glab auth status`, `curl ... cloudflare verify` — only when the question touches these.
    - Token files: list `ls -1 ~/.ssh/*.key 2>/dev/null` (just names, never contents).
+   - Apple Developer Program: `security find-identity -v -p codesigning` — a `Developer ID Application: <name> (<TEAMID>)` identity means the membership is held. Only when the question touches signing, notarization or Apple distribution.
 5. Merge: project entries override global-store entries on the same key. Global-store entries override raw global-source data on the same key (so a curated entry beats a discovered one).
 6. Answer the user's question. For single-item lookups, label the source: `from project`, `from global`, or `from <source-file>` (e.g. `from ~/.ssh/config.d/df-austin`).
 
@@ -98,6 +99,10 @@ Both stores share these sections; the project store also has an optional `## Use
 
 - **<service>** — id `<id>`, name `<friendly-name>`[, notes: <free-form>]
 
+## Memberships / Subscriptions
+
+- **<program>** — held by `<holder>`, id `<team/account id>`, covers: <the capabilities it enables>[, renews: <YYYY-MM>][, notes: <free-form>]
+
 ## URLs / Dashboards
 
 - **<name>** — `<url>`[, notes: <free-form>]
@@ -129,6 +134,27 @@ This means:
 
 Only write a **full entry** in the project store when the access is genuinely project-specific and not in any global source (e.g. a per-project Stripe key that lives in the project's secrets, not in `~/.ssh/`).
 
+## Held entitlements — the answer to a cost question
+
+The free-and-permissive default makes every paid dependency a question for the user. A membership the user already pays for is not a purchase, so it is not that question. Any stage about to rule a dependency paid (`/product-architecture`, `/product-engineering`, `/iterate-planner`) asks this skill first: "is `<program>` held?"
+
+1. Look under `## Memberships / Subscriptions` in both stores, then run the live inventory source for that program (the Apple Developer Program has `security find-identity`; anything else has only the stores).
+2. Answer in one line: `held — <program>, <holder> (<id>), from <store or source>` or `not held`.
+3. **Held** → the caller records `Cost: held — <program> (<id>), per /accounts` and adopts it with no question. The credential still goes through the caller's access preflight.
+4. **Not held** → the caller asks the user, as its own rule says.
+5. A live source finds a membership neither store records → record it in the global store and tell the user in one line.
+
+## Apple signing and notarization
+
+The Apple Developer Program enables two separate credentials. Report each one:
+
+| Capability | Check | Held signal |
+|---|---|---|
+| Signing | `security find-identity -v -p codesigning` | a `Developer ID Application: … (<TEAMID>)` line |
+| Notarization | `xcrun notarytool history --keychain-profile <profile>` | exit 0 |
+
+Without a stored notarytool profile, notarization needs one created once with `xcrun notarytool store-credentials <profile> --apple-id <id> --team-id <TEAMID>`, which prompts for an app-specific password. Creating it is the user's act. Record the profile name, never the password.
+
 ## `check [service]` — read-only CLI state
 
 Useful for the "do I currently have working auth" question. Not for fixing broken auth — this skill doesn't guide token creation.
@@ -139,8 +165,9 @@ Useful for the "do I currently have working auth" question. Not for fixing broke
 | `gitlab` | `glab auth status` | exit 0 |
 | `cloudflare` | `curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify` | `"success":true` |
 | `ssh` | `ssh-add -l` | exit 0 with at least one key listed |
+| `apple` | `security find-identity -v -p codesigning` | a `Developer ID Application` identity listed |
 
-If `service` is omitted, run all four. Print one short table — never the token values, just OK / MISSING / EXPIRED / NO_CLI / AGENT_EMPTY / NO_AGENT per service.
+If `service` is omitted, run all five. Print one short table — never the token values, just OK / MISSING / EXPIRED / NO_CLI / AGENT_EMPTY / NO_AGENT per service.
 
 When auth is broken: report the state, point to the relevant dashboard, and stop. Token creation belongs to a separate, future skill.
 

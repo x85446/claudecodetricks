@@ -7,7 +7,7 @@ description: "Never executes — the user runs $iterate for that. Triggers on \"
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
 
-**Version:** iterate family 5.16.0
+**Version:** iterate family 5.17.0
 
 ## What this skill does
 
@@ -337,11 +337,13 @@ Before writing any step that adopts a dependency, a service, or a fixture, answe
 
 If the answer is still "paid" or "copyleft", **that is a decision, not a default**: surface it as a `human-gate` step (5.5) or send the user to `$ibs`, with the three answers attached. Never let it in silently, and never let cost or a licence appear for the first time in an executor log.
 
+**Held is not paid.** Before putting a paid option to the user, ask `$accounts` whether the user already holds it (its "Held entitlements" section). A membership the user already pays for is no new spend, so it is no question: the plan writes `Cost: held — <program> (<id>), per $accounts`, and the credential goes through the access preflight like any other.
+
 Every plan that adopts anything emits the markers, same pattern as `Access:` and `Timing:`:
 
 ```
 - License: <dep> — <SPDX id>; <linked | run as a service | build-time only>
-- Cost: none — <the free/self-hosted path taken>   (or: <amount>, authorized by <the user's own words>)
+- Cost: none — <the free/self-hosted path taken>   (or: held — <program> (<id>), per $accounts; or: <amount>, authorized by <the user's own words>)
 ```
 
 Worked example, from the substitution test above: "JMAP verified against Fastmail" is paid *and* the wrong question. The permissive answers are **Apache James (Apache-2.0)** and **Cyrus (BSD)** — Cyrus being what Fastmail itself runs, so it is also the highest-fidelity target. **Stalwart is AGPL-3.0** (dual-licensed with a proprietary enterprise edition): fine to run unmodified in a test container, still not the one to reach for first when two permissive servers speak the same RFC. Reach for the permissive one first, every time.
@@ -647,7 +649,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 27.6. **Every plan is scanned for testable requirements, and the user's own words become the test cases.** Step 5.9 runs on every plan: behavioral statements go to `$testmaster-derive`, whose derived cases (negative, every-path, restore-state, interrupted) land in the plan's validations and in the catalog. A stated behavior that ships with no case for it is the gap this closes — and an `AMBIGUOUS` case is resolved by the planner as a logged `Decision:` constraint, never bounced back as a question.
 27.7. **A nonzero `could effect` always FFIVs.** If `$testmaster-catalog impact` says this plan can put existing cases into drift, the plan carries the step that sweeps them (Step 7's testmaster block) — never merely reports the number. The sweep targets the *derived* drifted set after execution, not the predicted count. An `unknown` count (unadopted project, no `covers` recorded) is treated as nonzero: it means the blast radius is unmeasured, not empty, and the plan gets a `$testmaster-adopt` step before the sweep.
 27.8. **No long-running test unless the user asked.** No step, validation or derived case needs longer than the standard tier's 2 minutes: soaks, endurance runs, observation windows and slow-tier cases are bounded or listed as `not built` on the `Long tests:` line, and a drifted slow case waits for the nightly. Only the user's own words, quoted on that line, authorize one. See Step 5.10.
-28. **Free and permissive by default — a paid service or a copyleft dependency is the user's decision, never the plan's assumption.** Name the free/permissive equivalent, say what the alternative does that it can't, and say whether the obligation actually attaches (linking vs. running a container); if it still wins, route it through a `human-gate` step or `$ibs` with those three answers attached. Emit `License:` and `Cost:` constraints for everything a plan adopts. See "The free-and-permissive default" above.
+28. **Free and permissive by default — a paid service or a copyleft dependency is the user's decision, never the plan's assumption.** Name the free/permissive equivalent, say what the alternative does that it can't, and say whether the obligation actually attaches (linking vs. running a container); if it still wins, route it through a `human-gate` step or `$ibs` with those three answers attached. Emit `License:` and `Cost:` constraints for everything a plan adopts. A membership `$accounts` reports held is `Cost: held` and is never asked. See "The free-and-permissive default" above.
 
 29. **Write Steps and Validation as checkboxes — `- [ ] N. <text>` — in the plan FILE.** The file is a state machine, and the checkbox is the only place in it where progress can live: `$iterate` checks a step off when its validation passes, and `$iterate-triage`, the conductor and the dashboard all read those boxes to answer "where is this plan". A plain `N.` list gives them nowhere to look, which is why a parallel prose channel (`Status / Log` "step N done:") had to exist at all. This is the FILE format only — the chat reprint stays paired `1a`/`1b` (see "Output format" above), and the two are not in tension: one is state, the other is presentation. Confirmed live: two writers of this same file disagreed on this line for months, leaving 31 of 136 plan files with no Requirements row on the dashboard and 8 more showing only some of their steps.
 

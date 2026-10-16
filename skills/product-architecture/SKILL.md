@@ -1,7 +1,7 @@
 ---
 name: product-architecture
 description: "PRODUCT child (invoked via /product): the architecture — quality attributes, C4 views, crosscutting concerns and an ADR log, with a License and Cost verdict on every dependency it adopts."
-version: 1.3.0
+version: 1.4.0
 ---
 
 # /product-architecture — stage 6: the shape, and why it's that shape
@@ -36,9 +36,11 @@ The document's job is not to describe a structure. It is to make the **quality a
 - **Permitted:** MIT, BSD, Apache-2.0, ISC, MPL-2.0.
 - **Not by default:** GPL, LGPL, AGPL, SSPL — and no paid service, subscription or metered account.
 
-To adopt anything outside that, the ADR must name the free equivalent, say specifically what it cannot do, and say whether the obligation even attaches — *linking a library is not the same as running a container*, and that distinction decides most copyleft questions correctly. A paid or copyleft choice is then the user's decision to make at the gate, never a default this stage takes quietly.
+**Held is not paid.** Before ruling anything paid, ask `/accounts` whether the user already holds it (its "Held entitlements" section). A held membership costs nothing new: the table records `Cost: held — <program> (<id>), per /accounts`, the ADR names it, and no question goes to the gate. Only a paid dependency nobody holds is a decision.
 
-Every dependency in the table carries a `License:` and a `Cost:` value. `Cost: free` is a claim; check it.
+To adopt anything else outside that, the ADR must name the free equivalent, say specifically what it cannot do, and say whether the obligation even attaches — *linking a library is not the same as running a container*, and that distinction decides most copyleft questions correctly. A paid or copyleft choice is then the user's decision to make at the gate, never a default this stage takes quietly.
+
+Every dependency in the table carries a `License:` and a `Cost:` value: `free`, `held — <program>`, or an amount. `Cost: free` is a claim; check it.
 
 ## Output — `docs/architecture.md`
 
@@ -120,7 +122,7 @@ C4Container
 2. **Every structural choice traces to a ranked attribute or an ADR.** Structure without a reason is structure nobody can safely change.
 3. **C4 stops when it stops earning its keep.** A component diagram of something obvious is noise. Context and container are almost always worth it; code-level diagrams essentially never are here.
 4. **Every dependency carries License and Cost.** No exceptions, including transitive dependencies you are knowingly pulling in.
-5. **Copyleft or paid requires a written argument** naming the free equivalent and what it can't do — and it goes to the user at the gate as a decision, not into the doc as a fait accompli.
+5. **Copyleft or paid requires a written argument** naming the free equivalent and what it can't do — and it goes to the user at the gate as a decision, not into the doc as a fait accompli. A membership `/accounts` reports held is `Cost: held` and is never asked.
 6. **ADRs record alternatives.** "We chose X" without "instead of Y, because Z" is not a decision record.
 7. **Brownfield documents what is, before proposing what should be** — and marks every proposal clearly as a proposal.
 8. **No screen design.** Platform and constraints here; `/uxmaster` owns the interface.

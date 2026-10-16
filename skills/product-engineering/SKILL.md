@@ -1,7 +1,7 @@
 ---
 name: product-engineering
 description: "PRODUCT child (invoked via /product): the engineering spec — stack and versions, interface contracts, performance budgets, and the build, test and deploy story, specific enough to start work against."
-version: 1.3.0
+version: 1.4.0
 ---
 
 # /product-engineering — stage 7: enough to start building
@@ -97,7 +97,7 @@ The last HOW stage. Where the architecture says *what shape*, this says *what ex
 ## Rules
 
 1. **Exact versions, never ranges.** "^18" is not a decision; it's deferring one into someone's lockfile.
-2. **Every stack entry restates its License and Cost verdict**, and flags drift from stage 6. The standing default holds: free and permissive, and anything else is the user's explicit call.
+2. **Every stack entry restates its License and Cost verdict**, and flags drift from stage 6. The standing default holds: free and permissive, and anything else is the user's explicit call. A dependency stage 6 left unruled goes to `/accounts` before it goes to the user: a membership the user already holds is `Cost: held — <program>`, not a question.
 3. **Interface specs are real signatures** with their error cases. A description of an endpoint is not an endpoint.
 4. **Every budget has a number, a probe and a breach action.** Unmeasured budgets are the most common way a performance requirement dies.
 5. **Build work goes through make targets** per `/dev-makefiles` — never ad-hoc shell in the spec.
