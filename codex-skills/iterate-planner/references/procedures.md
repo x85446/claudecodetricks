@@ -96,6 +96,54 @@ The user wants the unfinished work to continue as a fresh plan without losing th
    Type $iterate (or $iterate <new>) to resume execution.
    ```
 
+## Release candidate procedure (op 8.8 — the ledger of live-only proofs)
+
+Some proofs only the real thing gives: a provider revoking a real token, a sign-in at a real consent screen, an install on a customer's OS. Running them in the default suite strands the next run or needs a human, so the suite carries a stand-in and the real proof waits for the release candidate. The ledger is where that waiting work lives, so it is run before a version ships instead of forgotten.
+
+**The ledger** is `./.claude/iterate/release-candidate.md`, project state beside plans, notes and inbox (doc-guard skips it). Created on the first `track` with this shape:
+
+```markdown
+# Release candidate
+
+Live-only proofs, stood in for until the release candidate. `$ip rc plan`
+turns the open items into one plan; `$iterate-release` refuses while any is
+open or planned.
+
+## Tasks
+- [ ] RC-01 · <imperative task> · open
+  - Stand-in: <what fakes it now: path:line, test id, env var — or "none yet">
+  - Needs: <the live resource or human act the real run uses>
+  - Source: <who asked, UTC date, and the plan or inbox message it came from>
+
+## Requirements
+- RC-01 · WHEN <trigger>, <system> SHALL <observable outcome>. · Traces: <R-NN from docs/requirements.md, or none>
+```
+
+A task and its requirement share one `RC-NN`, the same pairing as a plan's Step and Validation: the task is what the RC plan does, the requirement is what its validation observes. Ids increase and are never reused. The status at the end of the task line is one of `open`, `planned (plan: <name>)`, `done (<plan> <sha12> <UTC>)`, `dropped (<why>)`; done and dropped items stay as the record, with the box checked.
+
+**track** (`release candidate task to track: <x>` and its synonyms):
+
+1. Read `<x>` with everything in context: the conversation, the current plan, an inbox message it cites. From them fill the four fields — the task, the stand-in, what the real run needs, and the requirement in EARS form (`WHEN … SHALL …`, observable, one outcome). Write `Inferred:` before any field the context does not state; never ask.
+2. When an open or planned item already covers the same proof, refine that item in place and say so; never add a second.
+3. When `docs/requirements.md` holds the `R-NN` this proves, write it in `Traces:`.
+4. Append the pair under the next `RC-NN`, creating the file when absent. No plan is touched, so nothing is unstaged.
+5. Reply in one line: `tracked RC-NN — <task>; runs in the release-candidate plan ($ip rc plan)`.
+
+**list**: one line per item not done or dropped, `RC-NN · <status> · <task>`, then `N open, M planned`. A `planned (plan: <name>)` item whose plan is absent from `plans/` reads `open (plan <name> archived)`. With nothing listed, print `release candidate: nothing open`. Read-only.
+
+**plan**:
+
+1. With no open item, print `release candidate: nothing open` and stop. With a `mode: rc` plan already in `plans/`, print `rc plan <name> is open — run $iterate <name>` and stop: one release-candidate plan at a time.
+2. Create the plan as op 9 (name from `iterate-run name next`, feature branch, oracle merge, access preflight; flat), with `mode: rc` below `phase:`. Its Goal names the RC ids it covers.
+3. Each open item, oldest first (an archived plan's leftovers included), becomes one Step and its paired Validation:
+   - **Na**: the task, run against the live resource through an opt-in switch (an env var or a make target), building that switch when it does not exist. The stand-in stays and the default suite keeps using it, because a live-only proof in the default suite is the defect this ledger exists to avoid.
+   - **Nb**: the requirement, observed against the live resource — the command and the output that proves it, never the stand-in's.
+   - Each `Needs:` line becomes an access-preflight dependency and an `Access:` constraint. A human act (a consent screen, a sign-in) is an ordinary step here, since the plan runs from a typed `$iterate`: the operator is present.
+4. One last step before the standing finishers: **"Close the RC items"**, `skill: none` — set each covered item whose validation passed to `done (<plan> <sha12> <UTC>)` with its box checked, and each that did not back to `open`. Its validation: no ledger line still reads `planned (plan: <name>)`.
+5. Set every covered item to `planned (plan: <name>)`, then print the plan as usual. The plan is never staged (op 4.5): the conductor and the nightly tick skip `mode: rc`.
+
+**drop** (`drop RC-NN <why>`): set `dropped (<why>)` and check the box. Reply `dropped RC-NN`. A `<why>` is required: `drop RC-NN needs a reason` otherwise.
+
 ## FFIV macro expansion (Find, Fix, Iterate, Verify)
 
 **FFIV = Find, Fix, Iterate, Verify** — a quality sweep over a scope, hunting everything sweep-findable: mistakes (bugs, broken flows, errors, inconsistencies) AND UX/UI enhancement opportunities. When the planning request or an added step contains "FFIV" (any case — "FFIV the dashboard", "$ip FFIV", "add FFIV for the settings page"), expand it into these four paired steps scoped to what was named (unscoped = the whole project's user-facing surface):

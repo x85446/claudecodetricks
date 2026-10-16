@@ -25,6 +25,7 @@ Check, and stop with one line naming the first that fails:
 - On the default branch (`git rev-parse --abbrev-ref HEAD` is `main`/`master`), up to date with its remote (`git fetch` then `git status -sb` shows no `behind`).
 - No tracked changes outside `.claude/` (`git status --porcelain -- . ':!.claude'`).
 - No plan in `./.claude/iterate/plans/` is `phase: executing`, and no other `mode: release` plan is open. One release at a time: a second would race the first for the tag.
+- No release-candidate item is `open` or `planned` in `./.claude/iterate/release-candidate.md` (absent file passes). Fails → `release candidate: N items open — /ip rc plan, then /iterate <name>`. Those items are proofs the suite stands in for, and a version ships only after they ran against the real thing (`/iterate-planner` op 8.8).
 
 The test gate is the plan's own first real step, not a planning-time run — planning stays cheap and the gate runs against the exact commit being released.
 

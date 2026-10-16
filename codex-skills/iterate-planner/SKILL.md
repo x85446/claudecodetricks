@@ -1,6 +1,6 @@
 ---
 name: "iterate-planner"
-description: "Never executes — the user runs $iterate for that. Triggers on \"$iterate-planner\" or its alias \"$ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\" (git + plans snapshot), \"publish\" / \"show plan\" (re-render read-only), \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch left unmerged), \"roll <name>\" (carry unfinished steps to a new plan, same branch), \"turn these notes into a plan\" / \"notes-to-plan\", \"plan the inbox\" (turns $mailbox messages into a plan). Teaming: \"team this\", \"teamify\", \"team up the plan\", \"reorganize into teams\"; reverse with \"flat\", \"flatify\", \"un-team\", \"remove teams\". Also recognizes the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps over a named scope, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip the pre-baked steps\", \"skip tests/docs/makefile\") which suppresses the standing end-of-plan finishers for that plan."
+description: "Never executes — the user runs $iterate for that. Triggers on \"$iterate-planner\" or its alias \"$ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\", \"publish\" / \"show plan\", \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch left unmerged), \"roll <name>\" (carry unfinished steps to a new plan, same branch), \"turn these notes into a plan\" / \"notes-to-plan\", \"plan the inbox\" (turns $mailbox messages into a plan). Release candidate: \"release candidate task to track: <x>\", \"rc list\", \"rc plan\". Teaming: \"team this\", \"teamify\", \"team up the plan\", \"reorganize into teams\"; reverse with \"flat\", \"flatify\", \"un-team\", \"remove teams\". Also recognizes the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps over a named scope, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip tests/docs/makefile\") which suppresses the standing end-of-plan finishers for that plan."
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -190,6 +190,14 @@ If a current plan exists and the user just describes more work, **add it to the 
 
 8.7. **release** — `$1` asks for a production release ("plan the release", "cut a release", "ship v1.2", "notarize and publish") without a brief: invoke `$iterate-release` with the version if one was named, then **stop**. `$1` starts with `release brief` (sent by `$iterate-release`): a NEW-plan creation exactly as op 9 (branch `release/v<X.Y.Z>`), with `mode: release` and `version: <X.Y.Z>` below `phase:`; the brief's release steps become the Steps in order, its `credentials:` lines the access preflight and `Access:`/`Cost:` constraints, its `decisions:` lines Constraints quoting the user. The standing finishers run inside the release-commit step, before the tag. A release plan is never staged.
 
+8.8. **release candidate** — the ledger of work that is stood in for (a stub, a mock, a skipped case) until the release candidate, because only a live account, a real provider or a human at a consent screen proves it. It lives at `./.claude/iterate/release-candidate.md`: a Tasks list and a Requirements list, paired by `RC-NN`. Four verbs; the full procedure is the Release candidate procedure in [procedures.md](references/procedures.md).
+   - **track** — "release candidate task to track: `<x>`", "track for the release candidate: `<x>`", "defer `<x>` to the release candidate", "rc track `<x>`": append one task and its requirement. Touches no plan. Replies in one line.
+   - **list** — "release candidate", "show the release candidate", "rc list": one line per item not done. Read-only.
+   - **plan** — "release candidate plan", "plan the release candidate", "rc plan": a NEW-plan creation as op 9 with `mode: rc`, one step per open item. Never staged; it runs from a typed `$iterate <name>`, where the operator is present for the sign-ins and live-account acts its items need.
+   - **drop** — "drop RC-NN `<why>`": closes an item as `dropped (<why>)`.
+
+   `$iterate-release` refuses to plan while any item is open or planned, so everything tracked here is proven against the real thing before a version ships.
+
 9. **new plan** — `$1` contains "new plan" / "create a new plan" / "start a new/separate/fresh plan": create a new plan with a name from `iterate-run name next`, set it current, write and print it (proceed through the Steps below — this includes the now-default auto-Teamify pass unless `$1` also carries a flat trigger phrase, see Step 6 "Write the plan file", and the feature-branch creation per "One plan = one feature branch" above).
 
 9.5. **`skip` is a modifier, never an op.** If `$1` contains a skip trigger, strip it from the request text, set the suppression per Step 5.8, and route the *remainder* through the ops above (a bare `skip` with nothing left routes to op 10). Never treat `skip` as the plan's subject matter.
@@ -204,9 +212,9 @@ For ops 3–6 and 9–10, run the oracle merge (Step 4) AND the access preflight
 
 **FFIV = Find, Fix, Iterate, Verify** — a quality sweep hunting mistakes AND UX/UI enhancement opportunities over a named scope (unscoped = the whole user-facing surface). When "FFIV" appears in the request or an added step (any case), expand it into the four paired steps defined in [procedures.md](references/procedures.md), which also holds the standing finding rules. Find is tagged `[skill: $uxmaster]` for UI scopes; FFIV never displaces the standing finishers.
 
-### On-demand procedures — status, flatify, close, roll (see procedures.md)
+### On-demand procedures — status, flatify, close, roll, release candidate (see procedures.md)
 
-The full procedures for **status** (op 0.5), **flatify** (op 6), **close** (op 7), and **roll-forward** (op 8) live in [procedures.md](references/procedures.md). When one of those ops fires, read that file and follow its matching section exactly — the router summaries above are routing hints, not the procedure. Everything else in this file (Teamify, auto-classify, the plan-write steps) stays inline because it runs on ordinary plan creation.
+The full procedures for **status** (op 0.5), **flatify** (op 6), **close** (op 7), **roll-forward** (op 8), and **release candidate** (op 8.8) live in [procedures.md](references/procedures.md). When one of those ops fires, read that file and follow its matching section exactly — the router summaries above are routing hints, not the procedure. Everything else in this file (Teamify, auto-classify, the plan-write steps) stays inline because it runs on ordinary plan creation.
 
 ### Teamify procedure (op 5 — full reclustering)
 
@@ -307,7 +315,18 @@ A requirement that names a *vendor* is not automatically a dependency on that ve
 
 The IMAP call was right and nothing separated the two but a proper noun the roadmap document happened to use. Four validations went out written against `api.fastmail.com`, a twelve-plan queue was gated behind them, and the run ended on a paid account nobody had — to exercise an open RFC (8620/8621) that three open-source servers implement and docker starts in a minute. **A vendor name in a source document is a default, not a constraint.** When you inherit one, inherit the standard and pick the implementation yourself; write the validation against the local server and let the vendor be a bonus. Say so in the step's provenance (`Inferred: JMAP is RFC 8620 — local Stalwart is a creation step, not a Fastmail dependency`) so the substitution is visible rather than silent.
 
-1. **Scan for access dependencies** — anything later steps need reachable that isn't already local/guaranteed: SSH hosts / remote machine names (`ssh <host>`, "on <host>", VM/container targets reached via a remote), API keys / access keys / tokens / credentials / secrets, gated URLs (dashboards, APIs requiring login), cloud accounts (AWS/GCP/Cloudflare/etc.), git remotes or GitHub/GitLab orgs+repos not already known-accessible, database connection targets.
+**Second, the placement test — where a thing runs is izmachine's decision, never the plan's.**
+
+A step that needs a machine (a Linux, Windows or macOS box, a clean guest for an install check, a VM or container to build, test or run a service on) states what it needs and lets `izmachine` choose the host. That need is a **creation step** tagged `[skill: $izmachine]`, and it is not an access dependency:
+
+- **Na** names the machine by need: kind (`vm` or container), OS and version, and arch or class only when the work requires them. `$izmachine` keeps it as a `[machine.<key>]` definition in the project's `.iz` with a `needs` directive.
+- **Nb** is `izmachine up <key> --dry-run --format json` succeeding, with `resolution.remote` reported, then the real command the later steps run inside the guest.
+- **A host name is never the plan's to choose.** A host or provider named by a source document, an earlier plan, the oracle or memory (`cypressLinux`, a particular remote, "the Mac mini") is a default, not a constraint: drop it and write the need. Only the user's own words naming a place make it `remote = "<name>"`, and only then does that remote go through the access scan below.
+- **Hardware at hand is never a reason.** izmachine supplies macOS, Linux and Windows guests on whatever hosts are registered. A step is never cut, deferred or moved to another plan because the current machine runs a different OS.
+
+Record the placement in the step's provenance (`Inferred: Windows 11 guest — izmachine places it; no host named`) so it is visible rather than silent.
+
+1. **Scan for access dependencies** — anything later steps need reachable that isn't already local/guaranteed: SSH hosts / remote machine names the user named (`ssh <host>`, "on <host>"; a VM or container is the placement test's, above), API keys / access keys / tokens / credentials / secrets, gated URLs (dashboards, APIs requiring login), cloud accounts (AWS/GCP/Cloudflare/etc.), git remotes or GitHub/GitLab orgs+repos not already known-accessible, database connection targets.
 2. **For each dependency found, identify the SPECIFIC capability later steps actually need** — not bare reachability. "Can ssh to cypressLinux" is not the requirement; "can ssh to cypressLinux AND run `incus` there AND read a target VM's build status" is. Bare-connectivity checks miss exactly the failure mode this step exists to catch.
 3. **Dedupe** — one verification step per distinct target+capability, even if several later steps reference it.
 4. **Write one verification Step+Validation pair per dependency, tagged `[skill: $accounts]`** (the `accounts` skill already owns SSH/credential/cloud-account access diagnosis and repair — don't reinvent it here):
@@ -360,7 +379,7 @@ The available-skills list is already in context (descriptions are always loaded)
 
 1. Match the step's actual work against the available skills. If one applies, append the tag to the step line: `[skill: $dev-makefiles]` — or `[skill: /auditor → /importer-fix]` for read-then-write pairs. The tag is a binding instruction to `$iterate`, not a suggestion.
 2. If no skill fits, tag `[skill: none — <two-word reason>]` (e.g. `[skill: none — plain edit]`). Explicit, so the user can see the gap rather than wonder.
-3. Match on the work's NATURE, not its noun: a step that builds/compiles → `$dev-makefiles`; touches SSH/creds/remotes → `$accounts`; branch/PR work → `$feature-branch`; a domain skill's subject → that skill. When a step's wording is ambiguous, read the candidate skill's description once and decide — don't tag speculatively.
+3. Match on the work's NATURE, not its noun: a step that builds/compiles → `$dev-makefiles`; touches SSH/creds/remotes → `$accounts`; branch/PR work → `$feature-branch`; needs a machine (a VM, a container, a clean guest, a box of another OS) → `$izmachine`; a domain skill's subject → that skill. `$incus` is for work on Incus itself (its hosts, clusters, networks), never for getting a machine. When a step's wording is ambiguous, read the candidate skill's description once and decide — don't tag speculatively.
 4. Applies equally to steps added later (op 4/10 adds, auto-classify time) — one cheap judgment per new step, same as team classification.
 
 This exists because plans reliably bypassed installed skills: executors built software with ad-hoc shell instead of the Makefile skill, because nothing at planning time forced the lookup. The tag converts an always-loaded description into an explicit instruction at the moment of action.
@@ -680,7 +699,11 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 
 32. **Only a release plan notarizes, staples, tags a version or publishes** (§5.11). Every other plan stops at signing and names the notary profile `notary`.
 
+33. **A stand-in for a live-only proof is tracked for the release candidate.** When a step replaces something only the real thing proves (a live account, a real provider's endpoint, a human at a consent screen) with a stub, a mock or a skipped case, the same step tracks it with op 8.8 and its validation names the `RC-NN`. The default suite then never touches the live resource, and the real proof still runs before a version ships. A `mode: rc` plan is never staged.
+
     It is also the cheap shape: a subagent's context dies when it returns, so everything it read — the 400 KB log, the screenshot, the whole vendored file — never reaches the coordinator's context, where it would otherwise be re-sent on every later request for the rest of the run.
+
+34. **Where a thing runs is izmachine's call.** A step that needs a machine writes the need (kind, OS, version) and is tagged `[skill: $izmachine]`; izmachine picks the host from the project's `.iz`. The plan names a host only when the user's own words named it, and never cuts, defers or splits work because the current machine runs another OS (Step 5, the placement test).
 
 ## Examples
 
