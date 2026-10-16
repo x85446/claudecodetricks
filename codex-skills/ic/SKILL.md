@@ -3,7 +3,7 @@ name: ic
 description: Alias for $iterate-conductor; controls the binary conductor with the same request and scope.
 ---
 
-**Version:** iterate family 5.20.0
+**Version:** iterate family 5.21.0
 
 # $ic — conductor alias
 
