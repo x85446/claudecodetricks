@@ -7,7 +7,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.18.0
+**Version:** iterate family 5.20.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -512,6 +512,8 @@ If any check fails:
 - **Then ASK the user directly in the conversation, not only in a markdown file.** This is the second sanctioned exception to "never ask" (alongside entry rule 5's plan picker), and it's principled: autonomy is over by definition at a human gate, so interrupting is the job. Ask the gate's actual question(s) — or, when the gate is a decision *session* too big for one prompt (like a 21-item agenda), ask the meta-question: point at the prepared agenda file and offer "start the session now / I'll come back later". If the user answers now, work the decisions conversationally, record them into the gate's artifacts, then re-run full Validation → normal success path (including the merge flow). If they defer (or the question times out unanswered), leave the awaiting state — the plan resumes when they type `$iterate` again.
 - Report shape: 2-3 lines of what's done + `awaiting human gate: <what>` + where the prepared material lives + the ⚠ branch-not-merged line.
 
+**Before declaring any machine wall: run the placement test.** A step that needs a machine gets it from `$izmachine`, which chooses the host from the need in the project's `.iz` (kind, OS, version). When a step or validation names a host (`ssh cypressLinux`, "the Windows guest on <host>") and that host is unreachable, full, or lacks the provider, the host is not the requirement unless the user's own words named it: write or reuse a `needs` definition through `$izmachine`, let it place the guest, run the step's assertions **unchanged** in the new guest, and log the move (`step 4: izmachine placed win11-test on <remote> — cypressLinux unreachable, same assertions`). A machine of another OS is never a wall either: izmachine supplies macOS, Linux and Windows guests, so "needs a Windows machine" is a creation step, not an operator ask. The executor never picks a host by itself.
+
 **On stuck (5-cycle cap hit AND every other outcome also stuck — genuinely no forward motion possible), OR every validation is met except one clause that only a human can clear** (billing, an external approval, physical/credential access no agent has — a wall, not a failing check — and the plan did NOT mark it as a `human-gate`, else use the human-gate path above):
 - Set `running: false`. Update the plan file: mark which steps completed, which validation checks pass, which fail and why.
 - **Stop every `scratch` resource** still running (see "Running resources"); list what was stopped and any `deliverable` left up. A parked plan must not keep the machine busy.
@@ -675,6 +677,8 @@ cannot* — a credential, a physical action, a decision only they can make.
 31. **Release work runs only in a release plan, and there it is authorized.** A `mode: release` plan (written by `$iterate-release`) runs only from a typed `$iterate <name>`; the conductor and the nightly tick never run it. That typed command authorizes everything the plan names — the `v*` tag push, `make release-publish`, notary submission with profile `notary`. A notarization rejection is executor work: read `xcrun notarytool log <id> --keychain-profile notary`, fix, rebuild, resubmit. A pushed tag is never moved. **In any other plan**, a step that would notarize, staple, push a version tag or publish is a planning defect: do the build and signing half, mark the rest `[RELEASE → $iterate-release]`, log it, and continue — never `blocked-on-operator` on notarization, a notary credential or an Apple agreement.
 
 32. **A release-candidate plan runs live, and only when typed.** A `mode: rc` plan (written by `$ip rc plan`) runs only from a typed `$iterate <name>`; the conductor and the nightly tick never run it. That typed command authorizes the live-account acts its steps name — revoking a real token, a real provider sign-in, the operator at a consent screen, which is a step here and never a park. Each step runs the real proof through an opt-in switch and leaves the default suite's stand-in in place. The plan's "Close the RC items" step writes each item's outcome back to `./.claude/iterate/release-candidate.md`; a blocked ending sets the items it did not prove back to `open`.
+
+33. **Where a thing runs is izmachine's call.** Every machine a step needs comes from `$izmachine` with a `needs` directive in the project's `.iz`; izmachine picks the host. A host named by a plan, the oracle or memory is a default the executor drops when it fails (the placement test above), and only a host the user named is held to. Another OS is never a wall, and work is never deferred because the current machine cannot run it.
 
 ## Example trigger
 
