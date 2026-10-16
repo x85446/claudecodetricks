@@ -104,5 +104,5 @@ The last HOW stage. Where the architecture says *what shape*, this says *what ex
 5. **Build work goes through make targets** per `/dev-makefiles` — never ad-hoc shell in the spec.
 6. **Every v1 requirement maps to at least one test case.** Report the unmapped ones; that list is the real coverage gap.
 7. **Specify v1 in full; sketch v2 and v3 only where they constrain a v1 decision.** Detail beyond the committed release ages into fiction.
-8. **Machines are needs, not hosts.** The spec says what each environment needs and leaves placement to `/izmachine`. A supported OS is tested on its own guest; no platform goes untested because the team lacks that hardware.
+8. **Machines are needs, not hosts, and every target OS is tested.** The spec says what each environment needs and leaves placement to `/izmachine`. Every tier that touches the platform (install, integration, UI) runs on a guest of each target OS, from the first milestone. No OS waits for a later release because the team lacks that hardware.
 9. **It does not start building.** Stage 8 (`/product-milestones`) orders the work into milestones; the family ends with documents, and `/ip` turns a milestone into an executable plan when the user decides to.

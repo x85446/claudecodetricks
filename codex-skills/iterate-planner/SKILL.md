@@ -322,7 +322,7 @@ A step that needs a machine (a Linux, Windows or macOS box, a clean guest for an
 - **Na** names the machine by need: kind (`vm` or container), OS and version, and arch or class only when the work requires them. `$izmachine` keeps it as a `[machine.<key>]` definition in the project's `.iz` with a `needs` directive.
 - **Nb** is `izmachine up <key> --dry-run --format json` succeeding, with `resolution.remote` reported, then the real command the later steps run inside the guest.
 - **A host name is never the plan's to choose.** A host or provider named by a source document, an earlier plan, the oracle or memory (`cypressLinux`, a particular remote, "the Mac mini") is a default, not a constraint: drop it and write the need. Only the user's own words naming a place make it `remote = "<name>"`, and only then does that remote go through the access scan below.
-- **Hardware at hand is never a reason.** izmachine supplies macOS, Linux and Windows guests on whatever hosts are registered. A step is never cut, deferred or moved to another plan because the current machine runs a different OS.
+- **Hardware at hand is never a reason.** izmachine supplies macOS, Linux and Windows guests on whatever hosts are registered. A step is never cut, deferred or moved to another plan because the current machine runs a different OS, and a plan whose product targets several operating systems validates platform-touching work on a guest of each.
 
 Record the placement in the step's provenance (`Inferred: Windows 11 guest — izmachine places it; no host named`) so it is visible rather than silent.
 
