@@ -3,7 +3,7 @@ name: iterate-conductor
 description: Works the whole plan queue unattended. When started, sweeps every unarchived iterate plan in this project, drives each to completion via /iterate, clears blockers by escalating to different approaches, and parks whatever it genuinely cannot solve as a blocked plan you unblock from a second session while it keeps working the rest. Also imports open GitHub/GitLab issues as plans. Controlled with start/stop/pause/resume/run/status/kill/schedule; runs on its own cron tick while enabled.
 argument-hint: start | stop | pause | resume | run | status | kill | schedule <rule>
 disable-model-invocation: true
-version: 5.18.0
+version: 5.19.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -285,10 +285,11 @@ One tick. Do these in order and stop at the first that applies.
       unapproved, and launching it unattended is the conductor spending what
       nobody authorized. The orange letter is the approval.
 
-   Skip `mode: release` plans entirely and always, in every one of the three
-   classes: a release publishes to users, so it runs only from a typed
-   `/iterate <name>`. A stalled release plan is reported in the sweep log,
-   never triaged or resumed from here.
+   Skip `mode: release` and `mode: rc` plans entirely and always, in every
+   one of the three classes: a release publishes to users and a release
+   candidate acts on live accounts with the operator present, so both run
+   only from a typed `/iterate <name>`. A stalled one is reported in the
+   sweep log, never triaged or resumed from here.
 
    Skip `status: blocked-on-operator` / `awaiting-human-gate` (red) entirely,
    except for the one cheap re-test per completed cycle described below. Skip

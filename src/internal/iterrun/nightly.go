@@ -146,14 +146,15 @@ func (d TickDecision) String() string {
 // unattended: a queued plan, an unblocked one, or an executing one whose
 // run died (its heartbeat is stale — the caller has already checked that).
 // A bare planned plan is never startable unattended; a blocked or paused
-// one is waiting on a human, and a release plan waits for a typed /iterate.
+// one is waiting on a human, and a release or release-candidate plan waits
+// for a typed /iterate.
 func hasStartablePlan(dir string) bool {
 	plans, err := ListPlans(dir)
 	if err != nil {
 		return false
 	}
 	for _, p := range plans {
-		if p.Release {
+		if p.TypedOnly {
 			continue
 		}
 		switch p.StateLabel() {

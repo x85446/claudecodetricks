@@ -149,6 +149,16 @@ func TestDecideProjectSkipsReleasePlans(t *testing.T) {
 	if d := decideProject(mkNightlyProject(t, home, "re", enrolledConductor, executing), mondayNight, live); d.Launch || d.Reason != "nothing queued" {
 		t.Errorf("stale executing release: %s; want skip: nothing queued", d)
 	}
+	// A release-candidate plan acts on live accounts with the operator
+	// present: queued or stalled, it waits for a typed /iterate too.
+	rc := strings.Replace(queuedPlan, "running: false", "running: false\nmode: rc", 1)
+	if d := decideProject(mkNightlyProject(t, home, "cq", enrolledConductor, rc), mondayNight, live); d.Launch || d.Reason != "nothing queued" {
+		t.Errorf("queued release candidate: %s; want skip: nothing queued", d)
+	}
+	rcExecuting := strings.Replace(plannedPlan, "phase: planned", "phase: executing\nmode: rc", 1)
+	if d := decideProject(mkNightlyProject(t, home, "ce", enrolledConductor, rcExecuting), mondayNight, live); d.Launch || d.Reason != "nothing queued" {
+		t.Errorf("stale executing release candidate: %s; want skip: nothing queued", d)
+	}
 	// "mode: release" inside body prose is not the key.
 	prose := strings.Replace(queuedPlan, "## Goal\nq\n", "## Goal\nq\n\nthe key is mode: release\n", 1)
 	if d := decideProject(mkNightlyProject(t, home, "rp", enrolledConductor, prose), mondayNight, live); !d.Launch {
