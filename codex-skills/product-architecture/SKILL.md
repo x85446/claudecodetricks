@@ -134,3 +134,4 @@ C4Container
 7. **Brownfield documents what is, before proposing what should be** — and marks every proposal clearly as a proposal.
 8. **No screen design.** Platform and constraints here; `$uxmaster` owns the interface.
 9. **Don't specify the build.** Stack versions, toolchain, CI, deployment and test strategy are stage 7.
+10. **Every target OS from the first release.** Containers and stack choices run on every operating system the product targets (`$product` rule 11). A choice that runs on only one names its cross-platform equivalent and what that equivalent cannot do, and is the user's call at the gate, the same as a paid or copyleft dependency.
