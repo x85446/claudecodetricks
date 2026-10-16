@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, with the one act that clears each. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: "[fix all [<plan>]]"
-version: 5.21.0
+version: 5.22.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -99,7 +99,7 @@ numbers. Nothing before, between, or after.
 
 Read, in order: the current branch and whether the tree is dirty; every
 `./.claude/iterate/plans/*.md` frontmatter; `./.claude/iterate/current`;
-`./.claude/iterate/conductor.md` if it exists; and every
+`iterate-run conductor status --json` and project-scoped explain output; and every
 `./.claude/iterate/inbox/*.md` key block. Then match the first case that fits.
 
 | State | Verdict and action |
@@ -170,18 +170,9 @@ does and what it costs if wrong, and run it on their word. A human who has to
 execute a fix triage could have executed has been made to do the work twice —
 once deciding, once typing.
 
-## Called by the conductor — `fix all [<plan>]`
+## Bounded conductor diagnosis
 
-`/iterate-conductor` runs triage with `fix all <plan>` on a plan whose run
-stopped before it finished, before handing it to `/iterate` again. Starting the
-conductor is the consent: read the state as usual, scoped to that plan, its
-branch and loose work, then run every route that would have been a `fix problem
-N` line without waiting for the word. Two kinds still wait for a human and stay
-in the answer as written: a route that rewrites history or discards work
-(force-push, hard reset, branch delete, rebase onto a moved main), and every
-`launch problem N` or clipboard script. Mark a plan `status: unblocked` when
-its blocker is cleared. Answer in the usual shape: it lands in the conductor's
-sweep log.
+A binary supervisor diagnosis supplies assignment identity, scope and a result destination. Inspect only its named blocker and return evidence using that result contract. Do not resume whole-plan execution, create a timer, write runtime/lease state or clear an operator pause. The supervisor owns retries, parking and subsequent admission. Existing consent does not authorize destructive history rewrites, unavailable credentials or external messages beyond the assignment.
 
 ## Running a fix
 
@@ -227,18 +218,12 @@ Only mark it when the blocker is actually gone — verify it, don't take "should
 be fine" for an answer. A plan wrongly marked cyan goes straight back into the
 queue to fail on the same wall.
 
-**Then check that something is still ticking.** A conductor whose whole queue
-was red stands its own cron down (`stood-down:` in `conductor.md`) — cyan is
-exactly the event it was waiting for, and it has no tick left to notice it with.
-Re-arm it with `/iterate-conductor start` and say you did. Otherwise the plan
-you just cleared sits cyan in front of a conductor that will never look again,
-which is the same stall you were called in to fix, wearing a friendlier colour.
+**Check binary status after unblocking.** Read `iterate-run conductor explain --project ID --json` and report its actual waiting reason. Existing enabled rules reconsider staged/unblocked work through the binary worker. Resume a paused project only when the user requests it, using its current revision; never arm a skill cron or silently override an operator stop.
 
 ### Unblocking while the conductor is running something else
 
 This is the normal case, not an edge case: the conductor works K while you sit
-in a second session clearing J. **The concurrency lock is per-plan**, so two
-sessions on two different plans is not a conflict.
+in a second session clearing J. **The conductor owns one project lease across plans and subscriptions.** Inspect binary status before editing. Independent read-only diagnosis is safe; code changes require a separate worktree and explicit ownership, without bypassing the active project lease.
 
 **But the working tree is shared, and the conductor has K's branch checked out.**
 

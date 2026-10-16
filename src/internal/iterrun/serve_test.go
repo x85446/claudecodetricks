@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 )
 
 // TestLiveBadgePrioritizesBlockedOverEverything confirms Blocked() wins
@@ -227,7 +229,18 @@ sweeps: 3
 }
 
 func TestPlanRouteFollowsAPlanIntoTheArchive(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("ITERATE_CONDUCTOR_DIR", t.TempDir())
 	proj := t.TempDir()
+	service := NewConductorService("")
+	config, err := service.Config()
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Projects = []model.Project{{ID: "archive-fixture", Name: "Archive fixture", Path: proj}}
+	if _, err = service.Apply(config.Revision, config); err != nil {
+		t.Fatal(err)
+	}
 	plans := filepath.Join(proj, ".claude", "iterate", "plans")
 	arch := filepath.Join(proj, ".claude", "iterate", "archive")
 	for _, d := range []string{plans, arch} {

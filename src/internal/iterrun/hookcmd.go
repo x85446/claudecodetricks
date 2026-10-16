@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 )
 
 // hookInput mirrors the JSON Claude Code sends to PreToolUse/PostToolUse
@@ -96,6 +99,7 @@ func HandleHook(phase string, r io.Reader) {
 	}
 
 	_ = AppendEvent(e)
+	observeConductorHook(phase, in)
 
 	// Resolve agent_id -> team label the moment a dispatch confirms it,
 	// so subsequent events from that agent_id render under a real name.
@@ -114,6 +118,23 @@ func HandleHook(phase string, r io.Reader) {
 			_ = PushPendingSpawnLabel(in.SessionID, label)
 		}
 	}
+}
+
+// observeConductorHook binds an owned child's hook to its existing assignment.
+// Hooks carry tool identities, never independent completion or allowance authority.
+func observeConductorHook(phase string, in hookInput) {
+	dir, assignment := os.Getenv("ITERATE_CONDUCTOR_DIR"), os.Getenv("ITERATE_CONDUCTOR_ASSIGNMENT_ID")
+	if dir == "" || assignment == "" || in.ToolUseID == "" || (phase != "pre" && phase != "post") {
+		return
+	}
+	stage := "start"
+	if phase == "post" {
+		stage = "end"
+	}
+	_ = NewConductorService(dir).Observe(assignment, model.Event{
+		Kind: "tool", ProviderID: "tool:" + in.ToolUseID + ":" + stage,
+		SessionID: in.SessionID, Message: "Tool: " + in.ToolName,
+	})
 }
 
 // handleCodexSubagentStart claims this session's oldest queued spawn label

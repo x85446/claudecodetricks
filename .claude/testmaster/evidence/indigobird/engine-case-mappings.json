@@ -1,0 +1,1040 @@
+{
+  "scope": "engine supporting assertions only; no blanket acceptance",
+  "mappings": [
+    {
+      "case": "indigobird-authority-conflict",
+      "tests": [
+        "conductor.TestIndigobirdConfiguration"
+      ],
+      "assertions": "Two independent Service instances save the same revision; stale writer fails and committed setting survives restart.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-authority-atomic",
+      "tests": [
+        "conductor.TestIndigobirdConfiguration",
+        "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite"
+      ],
+      "assertions": "Failed reference validation leaves config bytes unchanged; abandoned replacement temp file is ignored. Deterministic replacement failure leaves the prior complete config bytes untouched; restart ignores an abandoned partial temporary document and successfully commits once.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-authority-shared",
+      "tests": [
+        "conductor.TestIndigobirdConfiguration"
+      ],
+      "assertions": "Service instances read identical committed revision.",
+      "remaining": "CLI/web/skill combined flow belongs to integration acceptance.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-authority-no-ai",
+      "tests": [
+        "conductor.TestIndigobirdIdleAndIntakeDedupe",
+        "conductor.TestIndigobirdLifecycleAndDraft"
+      ],
+      "assertions": "Empty and paused ticks return no assignment; sample queue does not persist.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-projects-enabled",
+      "tests": [
+        "conductor.TestIndigobirdSupervisor"
+      ],
+      "assertions": "Real fixture child executes one bounded pair with valid evidence per tick.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-projects-disabled",
+      "tests": [
+        "conductor.TestIndigobirdAdmission",
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Disabled project preserves queue and has no eligible candidate. Disabled project is tested during an active unmet overdrive with red weekly usage; no assignment or checkpoint starts.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-projects-queue",
+      "tests": [
+        "conductor.TestIndigobirdFairProjects",
+        "conductor.TestIndigobirdMixedQueuePriority",
+        "iterrun.TestConductorSourceTypedPlanExclusion"
+      ],
+      "assertions": "Three canonical projects rotate without starvation. Mixed source plans select unblocked, executing, oldest queued, then recent queued; drafts, completed and typed-only release/RC plans are excluded.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-projects-lock",
+      "tests": [
+        "conductor.TestIndigobirdInterruptAndConcurrency",
+        "conductor.TestIndigobirdSeparateProcessLease"
+      ],
+      "assertions": "Concurrent tick against active real child cannot claim second assignment. Two independent OS workers race behind a barrier; exactly one launches and owns a real child, the other returns no assignment.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-schedule-allow",
+      "tests": [
+        "conductor.TestIndigobirdOnePlan",
+        "conductor.TestIndigobirdDrainAndPoolIdentity"
+      ],
+      "assertions": "Real ticks inside scheduled window claim and execute plans.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-schedule-deny",
+      "tests": [
+        "conductor.TestIndigobirdWindowEndModes",
+        "conductor.TestIndigobirdDistinctRuleWindows",
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Closed scheduled window prevents subsequent checkpoint admission. Actual exclusive-end dispatch is refused; non-soft gate cases expose explanatory candidate reason.",
+      "remaining": "Legacy deny-rule next-open presentation is handled by existing schedule/portal acceptance.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-execution-boundary",
+      "tests": [
+        "conductor.TestIndigobirdSupervisor"
+      ],
+      "assertions": "Three ticks perform pair1, pair2, typed delivery; checkpoint count equals two.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-execution-crash",
+      "tests": [
+        "conductor.TestIndigobirdRecovery",
+        "conductor.TestIndigobirdOrphanIsolation"
+      ],
+      "assertions": "Dead worker valid result reconciles once; live orphan remains owned and unrelated project proceeds.",
+      "remaining": "Actual worker OS kill at every persistence boundary and worktree/commit inspection remain integration evidence.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-execution-duplicate",
+      "tests": [
+        "conductor.TestIndigobirdRecovery",
+        "iterrun.TestConductorSourceDependencyCheckpoint",
+        "iterrun.TestConductorSourceIdentityAndArchive"
+      ],
+      "assertions": "Repeated result/checkpoint/archive does not repeat source mutation.",
+      "remaining": "Actual external forge side-effect replay requires live/isolated-forge evidence.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-execution-invalid-result",
+      "tests": [
+        "conductor.TestIndigobirdInvalidResults"
+      ],
+      "assertions": "Missing or mismatched results produce retry with zero checked pairs.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-execution-controls",
+      "tests": [
+        "conductor.TestIndigobirdLifecycleAndDraft",
+        "conductor.TestIndigobirdInterruptAndConcurrency",
+        "conductor.TestIndigobirdOwnedDescendantCleanup",
+        "conductor.TestIndigobirdDisableAndKillSafety"
+      ],
+      "assertions": "Pause/resume revision gates, scheduled owned interruption and descendant cleanup execute through service. Public project stop/pause preserve an in-flight valid checkpoint and gate successors; public kill terminates only owned child/tree while an unrelated sentinel survives and edited bytes remain.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-execution-recovery",
+      "tests": [
+        "conductor.TestIndigobirdRetryParking",
+        "conductor.TestIndigobirdWatchAndFreshness",
+        "conductor.TestIndigobirdNoProgressTimeout"
+      ],
+      "assertions": "Five failures park alpha once; beta advances; stale collector evidence does not launch. Injected-clock 60-second no-progress deadline kills real sleeping child, parks after one attempt, prevents repeated launches and retains one detailed notice.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-execution-completion",
+      "tests": [
+        "conductor.TestIndigobirdSupervisor",
+        "conductor.TestIndigobirdPartialDelivery",
+        "iterrun.TestConductorSourceIdentityAndArchive"
+      ],
+      "assertions": "Full delivery archives only completed pairs; partial result creates separate delivery assignment then parks unfinished work.",
+      "remaining": "Actual Git/forge landing verification belongs to coordinator delivery proof.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-stream-drain",
+      "tests": [
+        "conductor.TestIndigobirdStreamDrain"
+      ],
+      "assertions": "Real process emits 1500 simultaneous stdout/stderr records; durable cursor records and completion survive bounded storage backpressure.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-stream-persistence",
+      "tests": [
+        "conductor.TestIndigobirdEventRedactionAndRecovery",
+        "conductor.TestIndigobirdRecovery"
+      ],
+      "assertions": "New Service rebuilds uncheckpointed event index and deduplicates stable event; checkpoint replay is idempotent. Fresh Service reconstructs durable event index and deduplicates replay; committed event progress remains authoritative.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-stream-dedupe",
+      "tests": [
+        "conductor.TestIndigobirdClaudeHookStreamDedupe",
+        "iterrun.TestConductorOwnedHookObservation"
+      ],
+      "assertions": "Hook-first Claude tool IDs merge with actual stream Decode; assistant tokens survive; cumulative/delta observations do not add twice.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-stream-failure",
+      "tests": [
+        "conductor.TestIndigobirdStorageFailure",
+        "conductor.TestIndigobirdInvalidResults",
+        "conductor.TestIndigobirdInterruptAndConcurrency"
+      ],
+      "assertions": "Unwritable event destination errors; absent result cannot complete; interrupted child releases ownership after cleanup.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-stream-authority",
+      "tests": [
+        "conductor.TestIndigobirdInvalidResults"
+      ],
+      "assertions": "Exit-zero fixture without result leaves task incomplete.",
+      "remaining": "Browser display of activity-before-result is separate UI proof.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-stream-accounting",
+      "tests": [
+        "conductor.TestIndigobirdClaudeHookStreamDedupe",
+        "conductor.TestIndigobirdWatchAndFreshness"
+      ],
+      "assertions": "Execution token totals remain separate and failed allowance refresh blocks next admission.",
+      "remaining": "Live UI source/freshness/reset labels are separate UI proof.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-queue-empty",
+      "tests": [
+        "conductor.TestIndigobirdIdleAndIntakeDedupe",
+        "conductor.TestIndigobirdLifecycleAndDraft",
+        "conductor.TestIndigobirdMixedQueuePriority"
+      ],
+      "assertions": "Empty queue returns zero; sample-only plan is never saved. After staged work completes, drafts/completed/release plans leave depth zero.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-queue-disabled",
+      "tests": [
+        "conductor.TestIndigobirdAdmission"
+      ],
+      "assertions": "Disabled project retains depth two and cannot select a row.",
+      "remaining": "UI/CLI filter reconciliation belongs to controls.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-queue-transitions",
+      "tests": [
+        "conductor.TestIndigobirdSupervisor",
+        "conductor.TestIndigobirdDrainAndPoolIdentity"
+      ],
+      "assertions": "Validated plan completion removes one plan rather than one task from depth; draining all plans reaches zero.",
+      "remaining": "Failure/requeue count matrix across UI and CLI remains integration proof.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-project-rules-queue",
+      "tests": [
+        "conductor.TestIndigobirdDrainAndPoolIdentity",
+        "conductor.TestIndigobirdWatchAndFreshness"
+      ],
+      "assertions": "Scheduled drain executes both plans; stood-down idle queue reactivates on new staged work.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-project-rules-persistence",
+      "tests": [
+        "conductor.TestIndigobirdConfiguration"
+      ],
+      "assertions": "Configuration revisions and full rule definitions survive reload; invalid edit is atomic.",
+      "remaining": "In-flight rule edits/snapshot comparison not independently exercised.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-rule-overdrive-contradiction",
+      "tests": [
+        "conductor.TestIndigobirdConfigReferences"
+      ],
+      "assertions": "Only-overdrive without honor fails public Apply atomically.",
+      "remaining": "UI valid-combination behavior belongs to controls.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-ordered-profiles-order",
+      "tests": [
+        "conductor.TestIndigobirdAdmission",
+        "conductor.TestIndigobirdMissingExecutableFallback",
+        "conductor.TestIndigobirdCrossBandFallbackAndShortRecovery"
+      ],
+      "assertions": "First cumulative-band eligible row and installed executable fallback win. Three independent fixture subscriptions execute first-eligible saved row after restart, falling through first Yellow and second Red and returning to first Green; same literal fixture executor isolates policy from live-provider variability.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-ordered-profiles-contention",
+      "tests": [
+        "conductor.TestIndigobirdInterruptAndConcurrency",
+        "conductor.TestIndigobirdOrphanIsolation",
+        "conductor.TestIndigobirdSeparateProcessLease",
+        "conductor.TestIndigobirdCheckpointProfileHandoff",
+        "conductor.TestIndigobirdRecovery"
+      ],
+      "assertions": "One project lease blocks concurrent Service admission; orphan owner is retained. Two distinct OS worker processes race admission behind a barrier; exactly one owns the running child, the other returns without assignment, public kill cleans ownership. Restarted service reconciles interrupted original sequence before fallback and hands off completed checkpoints. Collective process-race, dead-owner result replay and interrupted-sequence reconciliation tests cover exclusive admission and recovery before handoff.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-window-controls-drain",
+      "tests": [
+        "conductor.TestIndigobirdDrainAndPoolIdentity",
+        "conductor.TestIndigobirdWindowEndModes",
+        "conductor.TestIndigobirdDistinctRuleWindows",
+        "budget.TestIndigobirdRecurrence"
+      ],
+      "assertions": "Open drain queue executes two plans; closed checkpoint window prevents further pair. Real routing works before close and rejects at exact exclusive end; shared recurrence tests assert midnight/overnight boundaries. Full open-window multi-plan drain is independently exercised.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-window-controls-one-plan",
+      "tests": [
+        "conductor.TestIndigobirdOnePlan",
+        "conductor.TestIndigobirdDSTOccurrenceRestart",
+        "conductor.TestIndigobirdOnePlanRetryPark"
+      ],
+      "assertions": "Completing first plan consumes occurrence slot; second plan never starts. Restart each pair/delivery in repeated Sunday hour; second local 01:15 retains completed claim and next Sunday permits beta. Both open one-plan retries and closed finish-plan continuation retain alpha through five attempts and parking; restarted ticks cannot claim beta.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-window-controls-checkpoint",
+      "tests": [
+        "conductor.TestIndigobirdWindowEndModes",
+        "conductor.TestIndigobirdInFlightCheckpointWindow"
+      ],
+      "assertions": "Closed finish_checkpoint occurrence cannot start another pair. A real waiting child crosses the closing time, remains alive with its original snapshot, records one valid checkpoint after release, and restarted tick cannot launch a successor.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-window-controls-finish-plan",
+      "tests": [
+        "conductor.TestIndigobirdWindowEndModes",
+        "conductor.TestIndigobirdFinishPlanHardGates",
+        "conductor.TestIndigobirdOnePlanRetryPark"
+      ],
+      "assertions": "After end, claimed alpha completes remaining pair/delivery; beta does not start. Ten continuation gates are exercised after the first pair: global/project pause and disable, subscription/rule disable, weekly/short exhaustion, project window and deleted rule; restart remains denied. Closed finish-plan continuation parks after bounded retries and never admits another queued plan.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-window-controls-interrupt",
+      "tests": [
+        "conductor.TestIndigobirdInterruptAndConcurrency",
+        "conductor.TestIndigobirdOwnedDescendantCleanup",
+        "conductor.TestIndigobirdDisableAndKillSafety",
+        "conductor.TestIndigobirdStreamDrain"
+      ],
+      "assertions": "Injected closing time interrupts owned real process; descendants are cleaned and no false checkpoint appears. Closing-time interruption terminates real owned process tree; unrelated sentinel survives, uncommitted bytes remain, checkpoint stays incomplete and original sequence requires diagnosis. Stream-drain fixture independently verifies both pipes persist through completion.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-window-controls-recovery",
+      "tests": [
+        "conductor.TestIndigobirdRecovery"
+      ],
+      "assertions": "Duplicate persisted result converges without repeating checkpoint.",
+      "remaining": "Crash between close-action writes and process signaling is not injected.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-design-sync-used-migration",
+      "tests": [
+        "conductor.TestIndigobirdMigration",
+        "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite"
+      ],
+      "assertions": "Legacy40remaining becomes60used, recognized prefix extracts once, repeated migration preserves revision. Remaining targets 0/40/39 become used100/60/61 once; mixed enable flags and completed occurrence bytes survive a failed replacement, orphan partial temp, repeated migration and Service reload.",
+      "remaining": "Exact migrated fixture reload through CLI/web remains integration acceptance.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-settings-sequence-fixed-prefix",
+      "tests": [
+        "conductor.TestIndigobirdConfigReferences"
+      ],
+      "assertions": "Subscription rename and suffix derive full name; referenced sequence deletion is rejected.",
+      "remaining": "UI prefix control, blank suffix and duplicate sequence interaction belong to controls.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-settings-sequence-restore",
+      "tests": [
+        "conductor.TestIndigobirdMigration",
+        "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite"
+      ],
+      "assertions": "Recognized legacy prefix is extracted once without duplicate prefix after reload. Recognized full prefix extracts once; existing suffix and otherwise-custom name remain intact. Stable sequence IDs/references validate after failed replacement and repeated migration.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-window-controls-occurrence",
+      "tests": [
+        "conductor.TestIndigobirdDSTOccurrenceRestart"
+      ],
+      "assertions": "Public Service Tick persists one-plan occurrence through separate Service instances, first and second DST fall-back 01:15, completion and following weekly occurrence. Exactly one durable occurrence exists during repeated hour; a second exists next week.",
+      "remaining": "CLI/HTTP adapters and overnight start-day semantics remain independent integration acceptance.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-project-rules-checkpoint",
+      "tests": [
+        "conductor.TestIndigobirdInFlightCheckpointWindow",
+        "conductor.TestIndigobirdCheckpointProfileHandoff"
+      ],
+      "assertions": "Active sequence snapshot survives priority edit and closing boundary; validated checkpoint is recorded once, then next assignment re-evaluates saved priority after completed or reconciled interrupted work.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-projects-disable-active",
+      "tests": [
+        "conductor.TestIndigobirdDisableAndKillSafety"
+      ],
+      "assertions": "Public project stop while a real checkpoint is active leaves the child alive, records its valid checkpoint, then prevents successor admission; edited file survives.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-schedule-restart",
+      "tests": [
+        "conductor.TestIndigobirdDSTOccurrenceRestart"
+      ],
+      "assertions": "Fresh Service instance starts inside the open occurrence, executes one bounded assignment per tick and preserves occurrence identity through repeated restarts; no missed-tick backlog is dispatched.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-profiles-snapshot",
+      "tests": [
+        "conductor.TestIndigobirdInFlightCheckpointWindow",
+        "conductor.TestIndigobirdCheckpointProfileHandoff"
+      ],
+      "assertions": "Active assignment retains original sequence/config revision while routing selection changes; following assignment uses saved selection.",
+      "remaining": "Direct model/permission flag edit while running remains provider/UI integration acceptance.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-bands-windows",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix",
+        "conductor.TestIndigobirdCrossBandFallbackAndShortRecovery"
+      ],
+      "assertions": "Actual Tick refuses weekly-eligible overdrive when short allowance is100%; fresh short usage0 resumes a real useful checkpoint.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-bands-reset",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "Trusted allowance epoch and interval change retires the persisted old override; zero usage correction does not revive it or reuse pre-reset allowance.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-bands-pool",
+      "tests": [
+        "conductor.TestIndigobirdSharedPoolAdmission"
+      ],
+      "assertions": "Two subscriptions and projects share one account pool. While first real child runs, second TickProject returns account_busy; changing second to an independent pool allows work without affecting first.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-engine-policy-shared",
+      "tests": [
+        "conductor.TestIndigobirdSharedPoolAdmission"
+      ],
+      "assertions": "Distinct subscription aliases and projects sharing authenticated account/pool cannot allocate two assignments at concurrency1; independent pool proceeds while owner stays active.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-engine-policy-negative",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Disabled subscription/window and unknown weekly allowance fail closed even with matching configured overdrive and red usage.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-engine-policy-interrupt",
+      "tests": [
+        "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite"
+      ],
+      "assertions": "Failed replacement preserves the complete committed bytes containing Universal and all subscription window identities; orphan partial document is ignored and restart validates one revision.",
+      "remaining": "Current-schema edited-policy fault and UI reload are not independently combined.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-overdrive-no-work",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Active capacity window with empty source queue performs no assignment or checkpoint.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-on",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Honoring green-only rules execute actual fixture checkpoints at yellow50 and red80 under100-used override.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-off",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Disabled account window does not launch red work despite honor=true.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-outside",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Red green-only rule outside configured occurrence launches nothing.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-exhaustion",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Active100-used target cannot launch at weekly100 or short100; normal below-limit cases execute.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-freshness",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Active window with stale or absent weekly observation launches nothing and yields an explanatory candidate reason.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-end-time",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "An active checkpoint may complete after window is edited to exclusive end; no overdrive-only successor is admitted after restart.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-end-reset",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "Trusted reset/epoch changes while a child runs permit that checkpoint to finish, retire prior override, and prevent successor admission.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-execution-cross-band",
+      "tests": [
+        "conductor.TestIndigobirdCrossBandFallbackAndShortRecovery"
+      ],
+      "assertions": "After each real checkpoint, current usage refreshes: first subscription Green, then Yellow, then second Red cause fallback through three saved rows; return to first Green resumes first priority after Service restart.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-queue-mixed",
+      "tests": [
+        "conductor.TestIndigobirdMixedQueuePriority",
+        "iterrun.TestConductorSourceTypedPlanExclusion"
+      ],
+      "assertions": "Drafts/completed/typed-only plans are excluded; actual staged/unblocked/executing work has exact waiting depth and selected identities.",
+      "remaining": "Multiple automations and manually-running breakdown are covered separately; UI badges need integration evidence.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-project-rules-negative",
+      "tests": [
+        "conductor.TestIndigobirdFinishPlanHardGates",
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Closed project/automation windows, disabled project and disabled rule prevent actual Tick admission without consuming a checkpoint.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-project-rules-green",
+      "tests": [
+        "conductor.TestIndigobirdCrossBandFallbackAndShortRecovery"
+      ],
+      "assertions": "Three saved Green-only rows re-evaluate after each real assignment. Yellow/Red first choices yield to next Green, and restored Green resumes first choice.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-project-rules-short-window",
+      "tests": [
+        "conductor.TestIndigobirdCrossBandFallbackAndShortRecovery"
+      ],
+      "assertions": "During active overdrive, exhausted short allowance prevents real dispatch; fresh short allowance resumes a useful queued pair without fallback or artificial work.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-project-rules-rollover",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "Active overdrive checkpoint retirement covers exclusive end, trusted new epoch, disable, delete and target completion; restarted ticks cannot carry override forward.",
+      "remaining": "Stale reset-only telemetry is checked by budget layer rather than another child-process fixture.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-overdrive-targets-negative",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Disabled or outside engine window does not override red Green-only work; queued work is not executed.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-targets-zero",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix",
+        "budget.TestIndigobirdOverdriveTargets"
+      ],
+      "assertions": "100%-used override funds eligible work below exhaustion; weekly100 and short100 remain hard stops.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-targets-forty",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Real Tick launches at59% against60 target and denies at60/61 in overdrive-only mode.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-targets-normal",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "At61% after60-used target, explicit normal Red row launches with OverdriveActive=false; target is not a reserve.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-targets-manual-reset",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "Fresh trusted epoch while checkpoint runs retires the old persisted override; completion is allowed but successor and correction replay are denied. No reset redemption operation occurs.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-targets-restore",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement",
+        "conductor.TestIndigobirdDSTOccurrenceRestart",
+        "budget.TestIndigobirdOverdriveTargets"
+      ],
+      "assertions": "Target completion persists across Service restart and downward-used correction; later independent occurrences remain supported by recurrence tests.",
+      "remaining": "Later overdrive occurrence with completed target is not combined in same public Tick fixture.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-overdrive-targets-interrupted",
+      "tests": [
+        "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite",
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "Atomic migration fault preserves identities/flags and used ceilings; target completion survives restart and usage correction.",
+      "remaining": "Interrupted current-schema window edit/completion write is not separately fault-injected.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-overdrive-targets-overshoot",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "Checkpoint admitted at10% with60-used target finishes after observed usage61%; subsequent override-only Tick is denied and target remains retired.",
+      "remaining": "Observed-usage explanation in web display belongs to UI acceptance.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-rule-overdrive-honor",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Actual Green-only dispatch honors active override in Yellow/Red; outside window no override dispatch occurs.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-rule-overdrive-optout",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Explicit honor=false permits actual Green checkpoint but refuses Yellow and Red even when account override is active.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-rule-overdrive-only",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix",
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "Anytime overdrive-only rules dispatch only inside an active unmet engine window; before/after, at target and post-retirement Tick do not launch.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-rule-overdrive-completion",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "A waiting real child completes valid checkpoint while target, exclusive end, trusted reset, disable and deletion retire its override in separate cases. Fresh Service admits no successor, including normal-green usage correction.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-rule-overdrive-hard-gates",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Active honoring override cannot bypass closed project window, disabled project, short/weekly exhaustion, stale observation or unknown allowance; no denied case runs a checkpoint.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-rule-overdrive-state",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveTickMatrix",
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement"
+      ],
+      "assertions": "Honor opt-out and only flags survive Apply and fresh Service reload; each saved combination drives actual Tick behavior. Saved explicit honor/optout/only choices survive fresh Service instances and drive actual work; active snapshot is immutable across saved window edits.",
+      "remaining": "UI cancellation and explicit legacy honor/only migration combinations remain integration acceptance.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-window-controls-gates",
+      "tests": [
+        "conductor.TestIndigobirdFinishPlanHardGates"
+      ],
+      "assertions": "Ten hard gates revoke finish-plan continuation after window closure: global/project pause/disable, subscription/rule disable, project window, weekly/short exhaustion and deleted rule. Restart remains denied.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-automation-sample-gates",
+      "tests": [
+        "conductor.TestIndigobirdSampleQueueOverride"
+      ],
+      "assertions": "Explicit queued=true/busy=false produces selectable sample-plan when real source contains only completed/running/blocked/draft items; ordinary live evaluation remains denied and source/runtime bytes stay unchanged.",
+      "remaining": "All frontend switches and independent account-state control combinations belong to UI acceptance.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-project-rules-routing",
+      "tests": [
+        "conductor.TestIndigobirdDistinctRuleWindows"
+      ],
+      "assertions": "Two scheduled rules use distinct subscriptions/windows; first real pair selects early account, next pair selects late account after restart, preserving pair advancement.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-project-rules-overlap",
+      "tests": [
+        "conductor.TestIndigobirdRuleOverlapSelection",
+        "conductor.TestIndigobirdSeparateProcessLease"
+      ],
+      "assertions": "Separate actual cases select overlapping rule by explicit priority, nearest trusted reset and stable rule ID. A simultaneous Service tick cannot dispatch a second assignment while selected child owns the project; separate OS lease race is independently verified.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-ordered-profiles-overdrive",
+      "tests": [
+        "conductor.TestIndigobirdUnorderedOverdriveSelection",
+        "budget.TestIndigobirdOverdriveTargets"
+      ],
+      "assertions": "Unordered participant input selects nearest trusted reset, ranks estimated reset behind trusted reset, alternates equal trusted resets fairly across Service restarts and switches accounts as their own windows open/close. Budget target tests cover overlapping highest unmet targets.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-engine-policy-metadata",
+      "tests": [
+        "conductor.TestIndigobirdResetMetadataPrecedence",
+        "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore"
+      ],
+      "assertions": "API stores/reloads custom tier/reset text. Actual Tick ignores typical soon reset when live trusted reset is later, rejects estimated near reset, and dispatches only after live trusted reset enters reset-relative window.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-project-rules-scope",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveProjectScope",
+        "conductor.TestIndigobirdSharedPoolAdmission",
+        "conductor.TestIndigobirdOverdriveTickMatrix"
+      ],
+      "assertions": "Two honoring project rules sharing one engine execute under its active override; closed project window and other engine stay gated. Actual shared-pool contention and hard-quota matrix prove non-soft gates remain enforced.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-targets-scope",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveProjectScope"
+      ],
+      "assertions": "Multiple project rules inherit only their common engine override; closed project and separate red engine do not launch. A shared Universal edit then allows normal work without a fabricated override.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-scope",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveProjectScope",
+        "conductor.TestIndigobirdSharedPoolAdmission"
+      ],
+      "assertions": "Subscription override is inherited only by eligible honoring project rules for that engine; project window and shared-pool limits remain gates.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-projects-approval",
+      "tests": [
+        "conductor.TestIndigobirdUnapprovedPlanGates"
+      ],
+      "assertions": "Enabled project with real executor configured and fresh account evidence has only draft/paused/operator-blocked plans. Actual Tick does not launch; blocked candidates explain plan_blocked and draft is excluded.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-overdrive-custom-interrupted",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveCheckpointRetirement",
+        "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite"
+      ],
+      "assertions": "While actual checkpoint runs, disable/delete/end edits commit but its original enabled window/end snapshot remains intact. Next admission uses committed retirement, and atomic replacement fault preserves prior rules/identities.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-engines-interrupt",
+      "tests": [
+        "conductor.TestIndigobirdConfiguration",
+        "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite"
+      ],
+      "assertions": "Configuration replacement failure retains prior complete bytes, partial abandoned temp is ignored, restart validates stable engine/sequence references and one committed revision.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-ordered-profiles-schedule",
+      "tests": [
+        "conductor.TestIndigobirdDistinctRuleWindows"
+      ],
+      "assertions": "Same saved sequence selection is blocked at exclusive scheduled end, then executes under keep_working with no time window. Distinct scheduled profiles route correctly inside their windows.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-engine-policy-isolation",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveProjectScope",
+        "iterrun.TestConductorIntegrationNamedPolicyScopeAndSharedPool"
+      ],
+      "assertions": "Universal thresholds are referenced independently by two pools; one subscription override funds only its project rules. Editing Universal allows other engine normal work while per-subscription override enable and pools remain distinct. Named-policy HTTP fixture verifies policy assignment isolation.",
+      "remaining": "",
+      "status": "supported"
+    },
+    {
+      "case": "indigobird-account-preview-hours",
+      "tests": [
+        "conductor.TestIndigobirdOverdriveConversion",
+        "conductor.TestIndigobirdOverdriveConversionRefusesLossySchedule"
+      ],
+      "assertions": "Public service previews two subscriptions with identical midnight civil definitions and different trusted reset instants, derives independent offsets, preserves UTC and spring/fall DST occurrence start/end, leaves config/runtime bytes untouched, saves/reloads stable window IDs/targets/sequence references, guards stale revision, rejects stale/untrusted reset evidence and lossy ordinary-end/multiple-day/multiweek conversion. Existing reset-relative definitions retain their offsets.",
+      "remaining": "Native editor open/convert/save/reload and transport are controls/UX acceptance. Current schema owns overdrive windows per subscription; no shared overdrive definition or shared reference exists to split. Fixed-hour future starts follow future trusted reset instants, not guaranteed civil-midnight identity across DST/reset changes.",
+      "status": "partial"
+    },
+    {
+      "case": "indigobird-web-visibility",
+      "tests": [
+        "conductor.TestIndigobirdNextScheduleIntersection",
+        "conductor.TestIndigobirdNextResetOpportunity"
+      ],
+      "assertions": "Read-only public Service previews exact automation/project schedule intersection; exclusive-end touching windows have no opening; multiweek recurrence outside fourteen-day horizon stays unknown; overnight spring DST resolves to first real civil instant; trusted reset-relative automation/project intervals intersect exactly; untrusted or exhausted override evidence does not invent a timestamp. Preview preserves config/runtime bytes and labels separate queue/budget/ownership conditions.",
+      "remaining": "HTTP/native display of state, effective sequence, usage evidence and schedule timestamp belongs to controls/UX acceptance.",
+      "status": "partial"
+    }
+  ],
+  "unmapped_cases": [
+    "indigobird-authority-thin-skill",
+    "indigobird-schedule-overnight",
+    "indigobird-schedule-timezone",
+    "indigobird-profiles-dispatch",
+    "indigobird-profiles-unsupported",
+    "indigobird-profiles-permissions",
+    "indigobird-profiles-injection",
+    "indigobird-bands-curve",
+    "indigobird-bands-matrix",
+    "indigobird-bands-stale",
+    "indigobird-bands-separate",
+    "indigobird-overdrive-examples",
+    "indigobird-overdrive-overlap",
+    "indigobird-web-flows",
+    "indigobird-web-errors",
+    "indigobird-web-read-safety",
+    "indigobird-web-visibility",
+    "indigobird-web-migration",
+    "indigobird-stream-decode",
+    "indigobird-stream-malformed",
+    "indigobird-stream-terminal",
+    "indigobird-stream-browser",
+    "indigobird-stream-reconnect",
+    "indigobird-editable-profiles-defaults",
+    "indigobird-editable-profiles-argv",
+    "indigobird-editable-profiles-custom-values",
+    "indigobird-editable-profiles-conflict",
+    "indigobird-editable-profiles-references",
+    "indigobird-editable-profiles-interrupted",
+    "indigobird-overdrive-custom-crud",
+    "indigobird-overdrive-custom-disabled",
+    "indigobird-overdrive-custom-overlap",
+    "indigobird-remaining-both",
+    "indigobird-remaining-edges",
+    "indigobird-remaining-unknown",
+    "indigobird-remaining-eligibility",
+    "indigobird-engines-catalog",
+    "indigobird-engines-unavailable",
+    "indigobird-engines-references",
+    "indigobird-engines-restore",
+    "indigobird-recurrence-selected",
+    "indigobird-recurrence-negative",
+    "indigobird-recurrence-overnight",
+    "indigobird-recurrence-restore",
+    "indigobird-band-simulator-boundaries",
+    "indigobird-band-simulator-isolation",
+    "indigobird-band-simulator-short-window",
+    "indigobird-band-simulator-restore",
+    "indigobird-plan-navigation-drilldown",
+    "indigobird-plan-navigation-empty",
+    "indigobird-plan-navigation-refresh",
+    "indigobird-project-rules-reset",
+    "indigobird-project-rules-migration",
+    "indigobird-project-rules-skill",
+    "indigobird-overdrive-targets-overlap",
+    "indigobird-overdrive-targets-clamp",
+    "indigobird-overdrive-targets-skill",
+    "indigobird-project-navigation-onboarding",
+    "indigobird-project-navigation-invalid-folder",
+    "indigobird-project-navigation-duplicate-folder",
+    "indigobird-project-navigation-cancel",
+    "indigobird-project-navigation-navigation",
+    "indigobird-project-navigation-single-editor",
+    "indigobird-project-navigation-sample-time",
+    "indigobird-project-navigation-responsive",
+    "indigobird-rule-overdrive-skill",
+    "indigobird-account-preview-hours",
+    "indigobird-account-preview-ownership",
+    "indigobird-account-preview-fractional",
+    "indigobird-account-preview-presentation",
+    "indigobird-account-preview-limits",
+    "indigobird-account-preview-restore",
+    "indigobird-account-preview-motion",
+    "indigobird-ordered-profiles-bands",
+    "indigobird-ordered-profiles-red",
+    "indigobird-ordered-profiles-editing",
+    "indigobird-ordered-profiles-skill",
+    "indigobird-automation-sample-ordered",
+    "indigobird-automation-sample-time",
+    "indigobird-automation-sample-overdrive",
+    "indigobird-automation-sample-isolation",
+    "indigobird-automation-sample-shared",
+    "indigobird-automation-sample-colors",
+    "indigobird-overdrive-bar-boundary",
+    "indigobird-overdrive-bar-normal",
+    "indigobird-window-controls-persistence",
+    "indigobird-design-sync-tester-clock",
+    "indigobird-design-sync-window-availability",
+    "indigobird-design-sync-policy-summary",
+    "indigobird-settings-hierarchy",
+    "indigobird-settings-universal",
+    "indigobird-settings-migration",
+    "indigobird-settings-sequence-scope",
+    "indigobird-settings-dialog-save",
+    "indigobird-settings-dialog-discard",
+    "indigobird-settings-dialog-history",
+    "indigobird-settings-dialog-nested",
+    "indigobird-settings-dialog-delete",
+    "indigobird-single-server-start",
+    "indigobird-single-server-collision",
+    "indigobird-single-server-recovery",
+    "indigobird-unified-detail",
+    "indigobird-unified-archive",
+    "indigobird-unified-identity",
+    "indigobird-unified-errors",
+    "indigobird-unified-history",
+    "indigobird-unified-live",
+    "indigobird-compact-rows",
+    "indigobird-compact-actions"
+  ]
+}

@@ -5,8 +5,8 @@
 #   contract-1  /iterate rule 33 exists and answers extend-or-withdraw with extend
 #   contract-2  /iterate's On-stuck operator-only list names no decision, and the
 #               landing test's Fails paragraph makes clauses 3 and 4 work
-#   contract-3  the conductor ladder has a parity row that ends in continue, and
-#               no "needs a human decision" row
+#   contract-3  the conductor client delegates lifecycle and returns after
+#               one bounded assignment; the runtime test covers repair policy
 #   contract-4  triage has the Executor-defect row with `fix problem N`
 #   contract-5  every family member carries the family version and its
 #               installed copy matches the source
@@ -56,12 +56,12 @@ else
 fi
 
 # contract-3
-ladder=$(awk '/^\| Blocker \| Escalation ladder \|/{on=1} on && /^$/{exit} on' "$SK/iterate-conductor/SKILL.md")
-if printf '%s\n' "$ladder" | grep -i 'parity' | grep -q 'continue' \
+if grep -q 'The binary owns worker wakeups and lifecycle' "$SK/iterate-conductor/SKILL.md" \
+   && grep -q 'return after that bounded work' "$SK/iterate-conductor/SKILL.md" \
    && ! grep -q 'needs a human decision' "$SK/iterate-conductor/SKILL.md"; then
     pass contract-3
 else
-    fail contract-3 "no parity row ending in continue, or a 'needs a human decision' row remains"
+    fail contract-3 "conductor must delegate lifecycle and preserve bounded assignment scope"
 fi
 
 # contract-4

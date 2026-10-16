@@ -3,13 +3,24 @@ name: iterate
 description: Use when given a multi-step task with validation criteria and asked to execute autonomously until done. The skill does NOT ask the user clarifying questions mid-run; it picks the most reasonable interpretation, executes, validates, loops, solves its own blockers, and only returns control when validation passes or the run is truly stuck. When the plan is teamed (see /iterate-planner's teamify), dispatches one subagent per independent team to run concurrently instead of working the Steps list serially. Runs on the plan's own feature branch (via the feature-branch skill) and, on all-green completion, automatically opens the PR, merges to the default branch, and deletes the branch; any other ending leaves the branch unmerged and says so. Re-invokable — running `/iterate` again resumes from the saved state file. Triggers on "/iterate", "iterate until done", "keep going until X", "work this until validation passes".
 argument-hint: "<task + how to validate> | <plan> | pause [<plan>] | resume [<plan>] | version"
 disable-model-invocation: true
-version: 5.21.0
+version: 5.22.0
 ---
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # /iterate — Run a task to completion without interrupting the user
 
 The user invoked this skill because they're tired of being interrupted by clarifying questions. The whole point: **make the call yourself, log it, continue**. Only return control when the validation criteria they provided are all green, or when you've truly exhausted reasonable attempts.
+
+## Binary-owned assignment entry
+
+Before the interactive entry decisions, check whether the supervisor supplied a versioned assignment with assignment/run/project/plan/step/source-digest identity and a result destination. Such a request uses this bounded path instead of the whole-plan loop below:
+
+1. Read the supplied task and validation, preserve every identity field, and work only that pair or the explicitly typed diagnosis, intake or delivery task. Read referenced skills needed for that work.
+2. Preserve the supervisor's working directory, branch/worktree ownership and launch snapshot. Do not create a loop/timer, invoke conductor start/tick, dispatch another pair, change queue/config/lease state, clear staging, or check plan boxes. The binary owns admission and checkpoint writes.
+3. Verify the assigned result and write the exact supplied JSON result contract to its destination. Set `task_complete` and `validation_met` truthfully, with concrete evidence. Use `completed` only when both are true; otherwise use `retry`, `blocked`, `partial` or `interrupted` and an actionable blocker. Preserve identity and source digest unchanged.
+4. Return after this assignment. A successful pair is not whole-plan completion. Merge, publish, archive and external delivery require an explicit delivery assignment or the direct human whole-plan workflow. The supervisor validates the result before advancement.
+
+For a direct human whole-plan invocation, first inspect `iterate-run conductor status --json` for the canonical project. An existing conductor owner prevents concurrent edits: report the owned assignment, or honor an explicit pause/kill request through the binary before continuing. A stale ownership claim requires binary reconciliation, not manual lease deletion.
 
 ## Named plans & state files (this is how resumption works)
 
@@ -54,11 +65,7 @@ stop.
      cancel comes back "not found", the loop was armed by another session and
      cannot be killed from here — leave the field and say so. Its ticks are
      no-ops while paused (0.5), which is safe, just not silent.
-   - **If the conductor is driving this plan** (`conductor.md` has
-     `enabled: true` and `current:` naming it), set `paused: true` there too
-     and log it in both files. A paused plan under a running conductor is
-     indistinguishable from a stalled one: the plan box would park it as
-     blocked within 45 minutes. `resume` clears both.
+   - If binary status identifies a conductor-owned assignment, use its project ID and current config revision with `iterate-run conductor pause --project ID --revision N --json`. Do not edit conductor state files or clean up resources owned by that assignment; the supervisor drains its checkpoint.
    - **Stop what the plan left running** — every entry in `## Running
      resources` still up, then the leak sweep — exactly as "Running resources"
      describes. This is the half of pause that gives the machine back: a
@@ -72,7 +79,7 @@ stop.
      same line plus `resume with /iterate resume`.
 
    **`resume`** — remove `status: paused`, log `resumed by operator`, clear the
-   conductor's `paused:` if the pause log line says it set it, then continue
+   conductor project through revision-checked `iterate-run conductor resume` if this operator pause stopped it; if the binary owns it, return to its supervisor. Otherwise continue
    exactly as `/iterate <name>` does on an executing plan: re-check the branch,
    **start every resource pause stopped** (the `paused-by: pause` entries, in
    order, each verified up before the next), re-arm the loop, record the new
@@ -165,7 +172,8 @@ Rules:
 API errors, transient stalls, or a killed session will silently end a turn. (A context *compaction* is different — the turn continues; see "Surviving an auto-compact" below.) The skill survives this by piggybacking on `/loop`, which fires `/iterate` on a fixed cadence.
 
 - **On a fresh task or first execution of a `phase: planned` plan — flat or teamed** (you just wrote/transitioned the state file): invoke `/loop 1m /iterate` as your *first* action (or an equivalent cron/scheduled trigger firing at most every 1 minute, if that's what the harness offers instead of `/loop`). **1 minute is the maximum interval, for flat plans and teamed plans alike — never stretch it wider.** The subsequent firings have no `$1`, so they read the state file and continue. **Record exactly what you armed in the plan frontmatter**: `loop-mechanism: /loop` or `loop-mechanism: cron <job-id>` (e.g. `cron f560eb36`) — cancellation later must target this exact mechanism, and "whatever I armed" must be readable from the file, not remembered.
-- **`loop-mechanism: external` — an OS timer drives this plan, not this session.** `/iterate-conductor run` writes it into the plan it dispatches when the conductor itself was launched by the nightly launchd tick (`tick-source: launchd` in `conductor.md`, armed by `iterate-run nightly`). When the plan file carries it on entry: **arm nothing**, and at every terminal exit **cancel nothing and keep the field** — the next OS tick is what resumes an executing plan, and clearing it would make that tick think a loop had to be re-armed. Every other instruction in this section is a no-op for such a plan. The field exists because nothing armed inside a `claude -p` turn — `/loop` or cron — outlives that turn. **The turn is the run.** A `claude -p` turn that ends with a step unchecked ends the run, and the next tick is ten minutes away, so work step after step, validation after validation, inside this one turn until the plan reaches a terminal state: merged all-green, blocked, giveup, or a human gate. A step boundary, a team merge or a long build is never a place to end the turn; compaction carries the context. A tick resumes the plan only when a turn died. Confirmed live (filemaster dorado, 2026-10-13): each tick ran one step and ended its turn "not terminal", so a 20-step plan advanced one step per tick.
+- **`loop-mechanism: external`** identifies an external binary wakeup. Arm and cancel no session timer. A supervisor assignment follows the bounded entry above and returns its result; the binary decides subsequent work. A direct human whole-plan invocation follows its explicit scope without claiming the external scheduler's ownership.
+
 - **On a teamed plan, treat the automatic background-completion notification as a bonus, not a replacement for tight polling.** In principle a dispatched team notifies you the moment it finishes, but that path can have its own latency or go missing depending on what's actually running the loop (a scheduled/cron trigger isn't always able to react to a notification the instant it arrives the way an interactive session can) — a 1-minute poll is what actually guarantees no long idle gap regardless of whether the notification landed cleanly. A heartbeat tick that finds nothing new costs nothing; a missed notification with a wide poll interval costs real wall-clock time doing nothing. When in doubt, poll tighter, not looser.
 - **On every terminal exit (full success, 5-cycle giveup, blocked-on-operator, human-gate) — cancel the EXACT mechanism you armed, then VERIFY it's dead.** Read `loop-mechanism:` from the plan file and cancel that specific thing: `/loop` (no args) for a /loop; `CronDelete <job-id>` for a cron; `external` — nothing, and leave the field (see above). **These are different loop types and the wrong cancel silently does nothing**: the dynamic-loop stop explicitly does NOT stop a recurring cron — its result message even says so. Confirmed live (civet, 2026-08-21): the executor armed `CronCreate` job f560eb36, canceled via the /loop path, got back "a recurring cron is NOT stopped by this call — cancel it with CronDelete", didn't follow up, and the cron fired `/iterate` once a minute for 13+ hours against an already-blocked plan. **Verification is mandatory, not optional**: read the cancel result — if it says "NOT stopped", not found, or names a different mechanism, the loop is still live; cancel the right one before doing anything else. Then clear `loop-mechanism:` from the plan file so a later resume knows nothing is armed. On success: archive after. On giveup/blocked: leave the state file for inspection.
 - **When the loop fires and a run is already in progress**: see the lock section below — the second run exits immediately.
@@ -258,7 +266,7 @@ Every plan produces two changelog entries in the project root — the git-worthy
 
 **Drafting (during execution — coordinator only, never teams):** every time you check off a step or merge a team's `TEAM DONE`, append one line to the plan file's `## Changelog draft` section while context is hot: `- [added|changed|fixed|removed|security|internal] <what changed, product-level phrasing> (step N)`. One line per real change — skip steps that produced no change (pure verification, research recorded elsewhere). This is cheap, crash-safe raw material, not published prose.
 
-**Publishing (once, in Step 5's success path, BEFORE `/feature-branch finish`) — a real final sweep, not a copy-paste of the draft.** The draft is a mid-flight journal: a feature that took three attempts, got reworked, or was partially rolled back has three-plus lines describing states that no longer exist. Two mandatory passes over it:
+**Publishing (once, in Step 5's success path, BEFORE `/feature-branch finish`) — a real final sweep, not a copy-paste of the draft.** The draft is a working journal and can contain several intermediate descriptions of one feature. Two mandatory passes produce the final account:
 
 1. **Consolidate — describe what LANDED, not the journey.** Group draft lines by the actual feature/fix they belong to (not by step number — one feature often spans several steps and re-attempts). Each group becomes ONE line describing the final, as-merged state. Lines describing superseded intermediate states, reverted work, or fix-of-my-own-earlier-line are folded away entirely — the reader gets the net change, never the churn. (Rewrites that ship nothing net = no line.)
 2. **Validate — every published claim must be true of the final tree.** For each consolidated line, confirm it's backed by a green validation (or directly observable in the final state: file exists, endpoint responds, behavior demonstrated). A draft line whose feature was later cut, disabled, or left broken does NOT publish — drafts record intent at check-off time; only the sweep confirms survival. When in doubt, re-check the thing itself, not the draft.
@@ -405,7 +413,7 @@ executor-version: <version>    # this skill's own frontmatter `version:` — sta
 harness: claude-code           # this direct fresh-task path has no planner run — you're creating the plan file yourself, on Claude Code, so stamp it here. On a plan transitioning from `phase: planned`, this field already exists (written by whichever harness's planner created it) — leave it exactly as found, same as `branch:` and `planner-version:`; never overwrite it with the executor's own harness.
 running: <UTC timestamp>       # heartbeat — update at every step boundary
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo) — see "Feature branch" above
-loop-mechanism: cron <job-id>  # or "/loop" — EXACTLY what the auto-resume armed; cancellation targets this; cleared on verified cancel. "external" = an OS timer (nightly tick → conductor run) drives the plan: never armed, never cancelled, never cleared here
+loop-mechanism: cron <job-id>  # or "/loop" — EXACTLY what the auto-resume armed; cancellation targets this; cleared on verified cancel. "external" = a binary scheduler drives the plan; this skill owns no timer
 status: paused: <UTC> at step <n>/<m>  # set by `/iterate pause`; no-arg ticks exit; cleared by `/iterate resume` or an explicit `/iterate <name>`
 human-gate: <step N>           # only when the plan marks a terminal human-decision step (written by /iterate-planner) — see Step 5's human-gate path
 
@@ -598,10 +606,10 @@ So, the moment you notice the context was compacted — a summary in place of th
 history, or simply that you cannot recall the last few steps in detail:
 
 1. **Re-read the plan file before doing anything else.** Not to "check", but
-   because it is now your only accurate account of where the run is. Never
+   because it is your accurate account of where the run is. Never
    reconstruct progress from the summary; a summary is lossy exactly where step
    numbers and validation outcomes live.
-2. **Re-read this skill if the rules are no longer in context.** A compacted run
+2. **Re-read this skill if the rules are absent from context.** A compacted run
    that has forgotten its own contract is how a plan gets a cheerful wrap-up at
    step 7 of 22.
 3. **Resume, do not restart.** A checked-off step is done — do not redo it,
@@ -646,7 +654,7 @@ re-runnable, and gate every delete on its own check passing. That is normal
 engineering, not a workaround.
 
 **What is never a blocker:** your own caution, a large number, a resource you
-created but no longer remember creating, or an operation you have already
+created but cannot recall creating, or an operation you have already
 performed once in this plan. Blocked means *a human must supply something you
 cannot* — a secret, a physical action, an external party's act. A choice inside
 the repository is never that (rule 33).
@@ -703,7 +711,7 @@ Before treating a wall as a purchase, ask `/accounts` whether the user already h
 
 31. **The coordinator's own model is a recommendation, never something to switch mid-run.** Coordination — merging a team's log, judging "done", picking a different approach after a blocker — is the `fable` tier's work. But a skill cannot change the model of the session running it, so if this run is on a lower tier, say so once in the Status/Log and carry on. Never claim to have switched, never dispatch a subagent to "be the coordinator", and never stop over it.
 
-32. **Pause is a human verb.** Only `/iterate pause` (entry 0.2) and `/iterate-conductor pause|kill` write `status: paused`. The executor never ends a turn on "needs your go-ahead", "I'll pause the plan here", "let me know when", "only runs on your say-so", or an `Ask:` block, and never cancels its loop before one of the four terminal exits — all-green, human-gate, blocked-on-operator after the ladder is exhausted on something only a human can *supply*, 5-cycle giveup. **Machine time is never a reason to stop**: VM hours, a long build, a long-running test the plan's `Long tests:` line authorizes. `/iterate` is the go-ahead and the plan's `Cost:` line is the only cost authority. A long-running test nobody asked for is never a reason to stop either, because it is not run at all: a drifted slow case waits for the nightly and the plan finishes on its fast and standard cases. Confirmed live (caterpillar, 2026-10-04): 16 of 17 steps green, parked on "the last step needs the slow test tier, which only runs on your say-so … Ask: run /testmaster run slow, then /iterate caterpillar", and the green work sat unmerged for the 8 hours the operator was away, on a tier that was never the plan's gate. A `status: paused` with no `paused by operator` log line is a self-pause defect; the conductor logs it, clears it, and resumes the plan.
+32. **Pause is a human verb.** Only `/iterate pause` (entry 0.2) and `/iterate-conductor pause|kill` write `status: paused`. The executor never ends a turn on "needs your go-ahead", "I'll pause the plan here", "let me know when", "only runs on your say-so", or an `Ask:` block, and never cancels its loop before one of the four terminal exits — all-green, human-gate, blocked-on-operator after the ladder is exhausted on something only a human can *supply*, 5-cycle giveup. **Machine time is never a reason to stop**: VM hours, a long build, a long-running test the plan's `Long tests:` line authorizes. `/iterate` is the go-ahead and the plan's `Cost:` line is the only cost authority. A long-running test nobody asked for is never a reason to stop either, because it is not run at all: a drifted slow case waits for the nightly and the plan finishes on its fast and standard cases. Confirmed live (caterpillar, 2026-10-04): 16 of 17 steps green, parked on "the last step needs the slow test tier, which only runs on your say-so … Ask: run /testmaster run slow, then /iterate caterpillar", and the green work sat unmerged for the 8 hours the operator was away, on a tier that was never the plan's gate. A binary-owned pause remains authoritative; report inconsistent plan metadata through conductor status and diagnosis rather than clearing its state from a skill.
 
 33. **A contract expansion is a step, never an operator decision.** When a step's implementation needs a shared contract extended — an API, an event, an RPC method, a schema, a flag — and other consumers must follow it (a parity rule across CLI, TUI and MCP), the executor extends the contract, updates every consumer, re-runs their validations, fixes what regresses, and continues. "Extend or withdraw" is always answered **extend**: withdrawing a plan's deliverable is never the executor's call. **The same holds for what the run finds on the way.** A defect in the plan's own deliverable, or a regression this plan's work caused anywhere, is fixed in this run with a validation added for it — never routed to notes or to a later plan. Going back into old code and re-running earlier plans' validations is in scope. Pre-existing breakage the plan neither caused nor needs stays rule 15's flag-and-continue. Confirmed live (symmail `tern`, 2026-10-04): 25 commits green, parked on "extend symapi or withdraw --no-browser", five defects routed to notes and none absorbed — every one of them was that run's work.
 

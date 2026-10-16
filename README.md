@@ -193,51 +193,36 @@ Suggested commit:
 Create commit now? (y/N)
 ```
 
-## Iterate Dashboard
+## Iterate Dashboard and Conductor
 
-The dashboard shows every iterate plan across all your projects on one page: which are running, which are blocked, which finished, and how long each took.
+The dashboard and Conductor share **http://localhost:8420/**. All projects shows canonical project folders, queue counts and admission reasons. Each project opens Plans, Automations and Activity. Plans retains Queued, Active and Archived filters and the full goal, requirements, timeline, logs and evidence for each plan.
 
-### See it now
+### Open the dashboard
 
 ```bash
 make run
 ```
 
-This builds and starts the dashboard on a free port, printing its URL:
-
-```
-iterate-run dashboard: http://127.0.0.1:50425
-```
-
-Press `Ctrl-C` to stop. Use this when you just want to look at something once.
+This builds the application and reuses the managed dashboard on port 8420, or starts that port in the foreground when it is free. An occupied port produces an ownership error; startup does not select another port. A stale installed service reports its build so you can perform a deliberate handover.
 
 ### Keep it running
 
-To have the dashboard always available at the same address, install it as a background service:
+```bash
+make serve-install     # atomically install and hand over the managed 8420 service
+make serve-status
+make serve-uninstall
+```
+
+The macOS service starts at login and restarts after a failure. Repeated installation verifies the intended build and one listener. The installer preserves a rollback binary and service definition. Check the active build with:
 
 ```bash
-make serve-install     # starts it now, and again at every login
-make serve-status      # is it running?
-make serve-uninstall   # stop it for good
+curl http://localhost:8420/healthz
+iterate-run version
 ```
 
-Once installed it serves at **http://localhost:8420** and restarts itself if it ever dies. Check it without opening a browser:
+Logs live in `~/Library/Logs/iterate-run/serve.log`. The server revisits enabled queues every 30 seconds; detached binary workers own assignments independently of the browser and web-service lifetime. Disabled Conductor configuration launches nothing.
 
-```bash
-curl localhost:8420/healthz
-# ok iterate-run iterate-v3.3 (commit 81f75486, built 2026-09-11_01:59:29)
-```
-
-`make serve-status` reports the service state and its process id:
-
-```
-plist:   /Users/travis/Library/LaunchAgents/com.x85446.iterate-run-serve.plist
-	state = running
-	pid = 47913
-	last exit code = (never exited)
-```
-
-Logs go to `~/Library/Logs/iterate-run/serve.log`.
+Global **Settings** contains AI Subscriptions, Named Power Bands and Named Time Windows. Each subscription owns Named Launch Sequences and overdrive windows. Project automations choose ordered maximum bands, recurring windows, or subscription overdrive. The [Conductor guide](docs/conductor.md) covers setup, used-percentage targets, simulators and checkpoint recovery.
 
 ### Keep it on screen
 
@@ -261,14 +246,11 @@ Both services are macOS only. On other systems the commands stop with a clear me
 
 ### What the dashboard shows
 
-Each plan card carries:
+Compact plan rows show status, actual AI assignment, plan name, goal and recorded timing. An unassigned plan stays unassigned. Queue links select the exact counted plans, with waiting and running work reported separately. Each worktree retains its full canonical identity.
 
-- **Which assistant produced it** — a badge reading `claude-code` or `codex`. Plans made before this was recorded show `unknown` rather than guessing.
-- **The right command to run it** — `/iterate <name>` for Claude Code plans, `$iterate <name>` for Codex ones. A project holding both shows both, labelled.
-- **The version** that produced it, read from whichever marker the plan carries.
-- **When the work actually happened** — the activity timelines carry hash marks on your own clock: hour numbers for a run of a few hours, `HH:MM` for a short one, dates for a long one. A bar under the `15` mark means that work ran at 3pm, so the chart can be read against your day rather than only against itself.
-- **Conductor state per project** — whether the unattended runner is working, watching, or stood down, and when it next checks. A conductor that is switched on but has nothing to trigger it reads `NO TRIGGER`, so a runner that will never actually fire cannot look healthy. A project enrolled in the nightly tick reads `tick launchd` instead.
-- **A `queued` badge** on a plan you have staged for the nightly tick (see below), distinct from `planned`: planned means written, queued means approved to run while you are away.
+Opening a plan preserves its full requirements, coordinator/team timeline, activity and available evidence. Existing `/plan?project=…&name=…` and `/archive?project=…&file=…` bookmarks enter this same project workspace. Archived open observations describe historical records, not a presently running process.
+
+Activity updates every three seconds while the page is visible. Durable events survive reloads and reconnects; configuration drafts retain their values while read-only state refreshes. Session token totals remain separate from subscription allowance percentages.
 
 ### What a run cost in tokens
 
@@ -321,53 +303,26 @@ The Claude Code status line carries the same states as one letter per plan after
 
 The icon itself lights up as `⚡` while a run is live. The last letter is always dim: it is the letter the *next* plan will get, so the segment is never empty — an empty segment means the status line itself is broken, not that there are no plans. `⏰` after the letters means this project is enrolled in the nightly tick; `⏰ off` means the tick is installed but switched off. Orange and dark green need a 256-colour terminal; on a 16-colour one they appear as bright yellow and plain green.
 
-### Run staged plans overnight
+### Run staged plans unattended
 
-The nightly tick runs plans you have approved while you are away from the keyboard. It is a macOS launch agent that wakes every ten minutes, looks at every enrolled project, and starts an unattended run wherever one is due.
+Stage approved work with `/ip stage <name>` in Claude Code or `$ip stage <name>` in Codex. A queued plan is eligible only when its project, automation, subscription, budget, schedule and ownership checks permit an assignment. Editing approved requirements removes staging. Release and release-candidate plans require a direct human invocation.
 
-Install it once:
+Configure a project through the dashboard or the conductor skill. **Keep it working** selects the first eligible launch sequence in your ordered list. **Run on a schedule** adds a named recurring window and closing behavior. **Follow subscription overdrive** uses the selected subscriptions' own enabled windows. Registration starts disabled.
 
-```bash
-make nightly-install          # or: iterate-run nightly install [--every 10m]
-```
-
-Enroll a project (run inside it), then approve the plan you want it to run:
+The optional macOS nightly timer calls the same binary scheduler:
 
 ```bash
-iterate-run nightly enroll    # this project's plans may run unattended
-/ip stage <name>              # in Claude Code: approve the plan as it stands
-```
-
-A staged plan turns orange in the status line and `queued` on the dashboard. The next tick inside the project's launch window starts it; `/iterate <name>` starts it right now instead. Editing a staged plan unstages it — the approval covered the plan as you read it — so stage it again when you are happy with the change.
-
-Each tick skips a project when the tick is switched off, the project's conductor is disabled or paused, nothing is queued, a session is already live there, the previous overnight run is still going, or the current time is outside the project's launch schedule. `iterate-run nightly tick --dry-run` (or `make nightly-tick`) prints exactly what the next tick would do and why:
-
-```
-would launch /Users/you/workspace/project-a
-project-b: skip: nothing queued
-project-c: skip: outside launch-schedule (no allow rule matches), next window 2026-10-05 22:00
-```
-
-Everyday controls:
-
-```bash
-make nightly-status            # installed? switched on? each enrolled project's last run
-iterate-run nightly off        # pause every project's overnight runs
+make nightly-install
+iterate-run nightly tick --dry-run
+iterate-run nightly status
+iterate-run nightly off
 iterate-run nightly on
-iterate-run nightly withdraw   # this project ticks on its own again
-make nightly-uninstall         # remove the launch agent
+make nightly-uninstall
 ```
 
-`iterate-run nightly status` prints one fact per line:
+`nightly off` disables that optional timer's admissions. Global Conductor Stop controls the shared scheduler, including the dashboard wake loop. `nightly enroll` registers a disabled canonical project; `nightly withdraw` disables it while preserving its queue and definitions. Tick and dashboard workers share project/account leases.
 
-```
-installed	/Users/you/Library/LaunchAgents/com.x85446.iterate-nightly.plist	every 10m0s	loaded
-enabled	true
-project	/Users/you/workspace/project-a	launched 2026-10-05T03:20:00Z exit 0	now
-```
-
-Results land under `~/.claude/log/iterate-nightly/`: one folder per project holding each run's output, and a `status.txt` with one line per event (`project-a: launched …`, `project-b: skip: live`, `disabled`). The tick needs a macOS login session, because it uses the same sign-in as your interactive Claude Code; it runs a missed interval when the machine wakes.
-
+Preview imported settings with `make conductor-migrate`. Review ownership and ambiguous scheduling notes before applying with `make conductor-migrate ARGS=--apply`. Import preserves source files and protected backups, and it never invents authenticated accounts or enables ambiguous overdrive rules.
 
 ## Development
 

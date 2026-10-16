@@ -2,6 +2,7 @@ package iterrun
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -211,14 +212,11 @@ func TestDecideProjectSchedules(t *testing.T) {
 	}
 }
 
-// TESTMASTER: id=iterrun.TestTickDisabledAndDryRun tier=? parallel=yes
+// TESTMASTER: id=iterrun.TestTickDisabledAndDryRun tier=? parallel=no
 func TestTickDisabledAndDryRun(t *testing.T) {
 	home := nightlyHome(t)
-	launch := mkNightlyProject(t, home, "a-launch", enrolledConductor, queuedPlan)
-	idle := mkNightlyProject(t, home, "b-idle", enrolledConductor, plannedPlan)
-	mkNightlyProject(t, home, "c-unenrolled", plainConductor, queuedPlan)
-
-	// tick-3: the global switch off → one line, nothing decided.
+	t.Setenv("ITERATE_CONDUCTOR_DIR", filepath.Join(home, "conductor"))
+	mkNightlyProject(t, home, "queued", enrolledConductor, queuedPlan)
 	if err := SaveNightlyConfig(NightlyConfig{Enabled: false}); err != nil {
 		t.Fatal(err)
 	}
@@ -227,10 +225,8 @@ func TestTickDisabledAndDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	if buf.String() != "disabled\n" {
-		t.Errorf("tick-3 dry-run = %q, want \"disabled\\n\"", buf.String())
+		t.Fatalf("disabled: %q", buf.String())
 	}
-
-	// Switch on: enrolled projects are decided, unenrolled ones are not mentioned.
 	if err := SaveNightlyConfig(NightlyConfig{Enabled: true}); err != nil {
 		t.Fatal(err)
 	}
@@ -238,70 +234,84 @@ func TestTickDisabledAndDryRun(t *testing.T) {
 	if err := Tick(&buf, true); err != nil {
 		t.Fatal(err)
 	}
-	out := buf.String()
-	if !strings.Contains(out, "would launch "+launch+"\n") {
-		t.Errorf("dry-run missing the launch line:\n%s", out)
+	if !strings.Contains(buf.String(), "configuration required") {
+		t.Fatalf("unimported configuration must not dispatch: %q", buf.String())
 	}
-	if !strings.Contains(out, filepath.Base(idle)+": skip: nothing queued") {
-		t.Errorf("dry-run missing the idle skip:\n%s", out)
+	service := NewConductorService("")
+	if _, err := ImportLegacyConductor(service, nil, true); err != nil {
+		t.Fatal(err)
 	}
-	if strings.Contains(out, "c-unenrolled") {
-		t.Errorf("dry-run mentions an unenrolled project:\n%s", out)
+	buf.Reset()
+	if err := Tick(&buf, true); err != nil {
+		t.Fatal(err)
+	}
+	var decision struct {
+		State  string `json:"state"`
+		Queues []struct {
+			Depth int `json:"depth"`
+		} `json:"queues"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &decision); err != nil {
+		t.Fatal(err)
+	}
+	if decision.State != "stood_down" || len(decision.Queues) != 1 || decision.Queues[0].Depth != 1 {
+		t.Fatalf("shared decision: %s", buf.Bytes())
 	}
 	if _, err := os.Stat(filepath.Join(NightlyLogDir(), "status.txt")); !os.IsNotExist(err) {
-		t.Error("a dry run wrote status.txt; it must only print")
+		t.Fatal("dry-run wrote status log")
 	}
 }
 
-// TESTMASTER: id=iterrun.TestEnrollWithdrawRoundTrip tier=? parallel=yes
+// TESTMASTER: id=iterrun.TestEnrollWithdrawRoundTrip tier=? parallel=no
 func TestEnrollWithdrawRoundTrip(t *testing.T) {
 	home := nightlyHome(t)
+	t.Setenv("ITERATE_CONDUCTOR_DIR", filepath.Join(home, "conductor"))
 	dir := filepath.Join(home, "ws", "fresh")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}
 	if err := Enroll(dir); err != nil {
 		t.Fatal(err)
 	}
-	cs, ok := ReadConductorState(dir)
-	if !ok || !cs.Enabled || cs.TickSource != "launchd" {
-		t.Errorf("after Enroll on a project with no conductor.md: ok=%v %+v; want enabled, tick-source launchd", ok, cs)
-	}
-	known, _ := ListProjects()
-	if len(known) != 1 {
-		t.Errorf("Enroll did not register the project: %v", known)
-	}
-
-	// Existing conductor.md: other keys survive, the key is inserted once.
-	path := filepath.Join(dir, ".claude", "iterate", "conductor.md")
-	if err := os.WriteFile(path, []byte(plainConductor+"\n# Conductor\n\n## Sweep log\n- [2026-10-01T00:00Z] swept\n"), 0o644); err != nil {
+	service := NewConductorService("")
+	cfg, err := service.Config()
+	if err != nil {
 		t.Fatal(err)
 	}
+	if len(cfg.Projects) != 1 || cfg.Projects[0].Enabled {
+		t.Fatalf("registration must be disabled: %+v", cfg.Projects)
+	}
+	files, err := os.ReadDir(dir)
+	if err != nil || len(files) != 0 {
+		t.Fatalf("registration changed repository: %v %v", files, err)
+	}
+	known, _ := ListProjects()
+	if len(known) != 0 {
+		t.Fatalf("legacy plan discovery must not invent a plans directory: %v", known)
+	}
+	rev := cfg.Revision
 	for i := 0; i < 2; i++ {
 		if err := Enroll(dir); err != nil {
 			t.Fatal(err)
 		}
 	}
-	data, _ := os.ReadFile(path)
-	if c := strings.Count(string(data), "tick-source: launchd"); c != 1 {
-		t.Errorf("tick-source lines = %d, want exactly 1:\n%s", c, data)
+	cfg, err = service.Config()
+	if err != nil || cfg.Revision != rev {
+		t.Fatalf("duplicate enrollment wrote state: %+v %v", cfg, err)
 	}
-	cs, _ = ReadConductorState(dir)
-	if cs.Cron != "abc123" || cs.TickSource != "launchd" || !strings.Contains(string(data), "## Sweep log") {
-		t.Errorf("Enroll disturbed other content: %+v\n%s", cs, data)
-	}
-
-	if err := Withdraw(dir); err != nil {
+	cfg.Projects[0].Enabled = true
+	if _, err = service.Apply(cfg.Revision, cfg); err != nil {
 		t.Fatal(err)
 	}
-	cs, _ = ReadConductorState(dir)
-	data, _ = os.ReadFile(path)
-	if cs.TickSource != "" || strings.Contains(string(data), "tick-source") || cs.Cron != "abc123" {
-		t.Errorf("after Withdraw: %+v\n%s", cs, data)
+	if err = Withdraw(dir); err != nil {
+		t.Fatal(err)
 	}
-	// Withdrawing a project with no conductor.md is a no-op, not an error.
-	if err := Withdraw(filepath.Join(home, "ws", "none")); err != nil {
-		t.Errorf("Withdraw on a bare dir: %v", err)
+	cfg, err = service.Config()
+	if err != nil || cfg.Projects[0].Enabled {
+		t.Fatalf("withdraw failed: %+v %v", cfg, err)
+	}
+	if err = Withdraw(filepath.Join(home, "absent")); err != nil {
+		t.Fatal(err)
 	}
 }
 

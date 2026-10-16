@@ -1,198 +1,103 @@
-# The conductor
+# Conductor
 
-The conductor (`/iterate-conductor`, alias `/ic`) works a project's queue of
-iterate plans while nobody is at the keyboard. `/iterate` runs one plan. The
-conductor decides which plan runs next, hands it to `/iterate`, deals with how
-it ended, and moves on, until nothing is left that a machine can advance.
+Conductor processes queued plans through configured AI launch sequences. The `iterate-run` binary owns scheduling, allowance checks, exclusive project ownership, execution and progress capture. The web dashboard, CLI and conductor skills control the same configuration.
 
-It supervises and never executes steps itself. Every step is written, tested
-and committed by `/iterate`, under its own rules.
+Open **http://localhost:8420/**. All projects leads to each project's **Plans**, **Automations** and **Activity** tabs. Queued, Active and Archived filters stay inside Plans. Queue counts link to the exact project queue; plan and archive links preserve full goals, requirements, timelines and evidence. Existing `/plan?project=…&name=…` and `/archive?project=…&file=…` bookmarks open inside the project workspace. An archive describes recorded history, not a current process.
 
-## The pieces
+## Set up a project
 
-| Piece | What it is |
+1. Choose **Add project** and select its existing folder. Registration starts disabled and leaves repository files alone. Each worktree has its own canonical identity, even when names match.
+2. Open **Settings → AI Subscriptions**. Choose or add the CLI/account you use. Set its name, executable, subscription tier, typical weekly reset and Named Power Band. Account binding and fresh provider telemetry establish actual allowance; a suggested template or estimated reset does not establish readiness.
+3. Add a **Named Launch Sequence** under that subscription. Its name combines the subscription prefix and your suffix, such as `Codex · build`. Select model, reasoning and permission preset, or enter literal CLI arguments. **Effective command** shows the compiled launch. Presets such as YOLO remain editable; unsupported or conflicting transport arguments produce a validation error.
+4. In the project's **Automations**, create the desired behavior and enable it when ready. Enable the project and start Conductor to permit admissions. A staged plan is still subject to account availability, schedule, budget and ownership gates.
+
+Use `/ip stage <plan>` in Claude or `$ip stage <plan>` in Codex to approve a saved plan for unattended execution. Editing its approved requirements removes staging. Release and release-candidate plans require a direct human iterate invocation.
+
+## Choose an automation
+
+| Mode | Behavior |
 |---|---|
-| A plan | `.claude/iterate/plans/<name>.md`, written by `/ip` |
-| Approval | `status: queued` in the plan, written by `/ip stage <name>`. The conductor never starts an unstaged plan. |
-| Conductor state | `.claude/iterate/conductor.md`: on/off, paused, current plan, tick state, and the sweep log |
-| The tick | What wakes the conductor: the launchd job, a cron the conductor armed, or nothing (Codex) |
-| `/iterate` | Executes the chosen plan |
-| `/iterate-triage` | Diagnoses a stopped or blocked plan and clears what a machine can |
-| Launch policy | `.claude/iterate/policy.md`, written by `/iterate-rules`: the hours any run may start |
+| Keep it working | Try launch sequences in your order whenever work is eligible. |
+| Run on a schedule | Try the same ordered choices inside a named time window. |
+| Follow subscription overdrive | Use participating sequences only while their subscriptions have active overdrive. |
 
-## What wakes it
+Each normal row has a **maximum band**: Green only, Green + Yellow, or Green + Yellow + Red. A Yellow row also accepts Green. The first eligible row wins. Repeated sequences allow choices such as Claude Green, Codex Green, Claude Yellow, Codex Red. Every row still respects hard quota, fresh telemetry and exclusive project ownership.
 
-**launchd (the normal case).** A project enrolled with
-`iterate-run nightly enroll <dir>` carries `tick-source: launchd` in its
-`conductor.md`. The LaunchAgent `com.x85446.iterate-nightly` then starts the
-conductor there, headless, whenever the project has work and nothing else is
-running. The name says nightly, but it runs at every hour the project's
-schedules allow, and a project with no `policy.md` allows every hour.
+Normal automations honor their selected maximum bands. The advanced **Honor subscription overdrive** switch permits subscription overdrive to relax soft bands for that automation. **Only during subscription overdrive** also requires honor and waits outside active overdrive. Follow subscription overdrive sets both and uses an unordered participant list; overlapping eligible subscriptions prefer the soonest trusted reset, with fair tie handling.
 
-**A cron it arms itself.** In an interactive Claude session on a project that
-is not enrolled, `/ic start` arms a 5-minute cron that fires `/iterate-conductor`
-in that session. It lives only as long as the session does.
+One assignment runs per project. Conductor reevaluates choices between bounded task/validation checkpoints, so another AI cannot start the same project while an assignment owns it. Changing an automation affects subsequent admission; an active assignment retains its launch snapshot.
 
-**Nothing (Codex).** Codex cannot schedule itself, so `$ic start` and `$ic run`
-are one sweep each. Codex `$ic` can enroll a project, after which launchd starts
-`claude -p` runs there, not Codex ones.
+## Time windows and closing behavior
 
-## One cycle under launchd
+Named Time Windows use selected weekdays, start/end, timezone and repeat interval. Recurrence has no expiry date. An overnight window belongs to its starting day: Monday 22:00–06:00 includes Tuesday morning. Equal start/end covers a full day; 00:00–23:59 closes at 23:59. A project-wide time window further restricts its automations; Anytime adds no restriction.
 
-1. **Every 600 seconds** macOS runs `iterate-run nightly tick`, as
-   `~/Library/LaunchAgents/com.x85446.iterate-nightly.plist` instructs.
-2. **The tick reads the master switch**, `~/.claude/iterate-run/nightly.json`.
-   Off, it logs `disabled` and exits.
-3. **It lists the enrolled projects**: every project iterate-run knows whose
-   `conductor.md` says `tick-source: launchd`.
-4. **For each project it asks, in order**, and the first "no" skips the
-   project until the next tick:
-   1. Is the conductor enabled and not paused?
-   2. Is a plan queued, unblocked, or mid-run?
-   3. Is the last run finished? (the project's lock is free)
-   4. Is nobody else working here? (no heartbeat stamped in the last 15
-      minutes, `ITERATE_LIVE_SECS`, after the last run finished)
-   5. Is the current time inside `policy.md`'s launch-schedule and `conductor.md`'s
-      conductor-schedule?
-5. **It starts a detached runner and exits.** The runner takes the project's
-   lock and runs
-   `claude -p "/iterate-conductor run" --permission-mode auto --output-format json`
-   in the project directory. There is no window. The lock is an OS file lock,
-   so a killed run never leaves it held.
-6. **The conductor sweeps once** (next section) and hands one plan to
-   `/iterate`, marking it `loop-mechanism: external` so `/iterate` arms no
-   timer of its own.
-7. **`/iterate` works the plan to its ending in that one turn**: checks out
-   the plan's branch, then for each step writes the code, runs its validation
-   and commits.
-8. **The conductor logs the result** in the sweep log and exits. The runner
-   records the exit code and finish time and releases the lock.
-9. **The next tick** finds the lock free and starts the next run.
+Scheduled automations have two independent choices:
 
-## The sweep
-
-Each run is one sweep, and the sweep stops at the first case that applies:
-
-1. **Disabled or paused, nothing current** → exit without a word.
-2. **Outside the permitted hours** → exit. Both schedules must allow it. The
-   conductor-schedule can only narrow the launch-schedule, never widen it.
-3. **The current plan is still executing** → under launchd its run ended short
-   of finishing it, so the conductor runs `/iterate-triage fix all <plan>` and
-   then `/iterate <plan>` again.
-4. **The current plan ended** → handle the ending (below), then continue.
-5. **A plan is startable** → pick one and hand it to `/iterate`.
-6. **Nothing startable** → import open forge issues as a plan, or wind down.
-
-**Which plan goes next:**
-
-1. `status: unblocked` (cyan): a blocker someone just cleared.
-2. `phase: executing`: work already begun.
-3. `status: queued` (orange): the oldest staged plan.
-
-Red plans (`blocked-on-operator`, `awaiting-human-gate`) and `status: paused`
-plans are skipped.
-
-## How a plan ends
-
-| Ending | What happens |
+| Setting | Options |
 |---|---|
-| All green | `/iterate` opens a PR, merges it to main, deletes the branch and archives the plan. |
-| Blocked on one feature | `/iterate` runs the landing test: the green work merges, and only the blocked steps roll to a new plan, parked red. |
-| Blocked | The conductor runs `/iterate-triage fix all <plan>` once per blocked state. If that clears it, the plan goes straight back to `/iterate`. If not, it climbs the escalation ladder. |
-| Stalled | 45 minutes with no step checked off and no commit (`plan-box:`) counts as blocked. A plan that keeps advancing is never boxed. |
-| Needs a secret, physical access or an outside party | Parked red at once, and the conductor takes the next plan in the same sweep. |
+| During the window | **Keep processing queued plans** or **Run one plan** |
+| When the window ends | **Finish current checkpoint**, **Finish current plan**, or **Stop immediately** |
 
-The **escalation ladder** tries a different approach each rung, never the same
-one again:
+Finish current checkpoint is the default. Finish current plan continues only the plan already claimed in that occurrence, while budgets, quota, enablement, project limits and ownership still permit it. Run one plan keeps its claim across retries and restarts; parking does not free a second slot. Stop immediately interrupts the owned process tree and can leave unfinished edits. It records resumable state rather than success.
 
-- **Access:** substitute a local conformant server, self-heal credentials, retry once.
-- **Missing dependency:** install it (free and permissively licensed), rebuild, retry.
-- **Merge conflict:** rebase.
-- **A design choice inside the repo:** make it and log it.
+## Named Power Bands and overdrive
 
-A wall that only a purchase would clear is never a park. The executor takes the
-strongest free path and records the gap.
+Settings contains AI Subscriptions, Named Power Bands and Named Time Windows. **Universal power band** is editable and is the default. Each subscription selects exactly one named definition. Editing a shared definition affects its assigned subscriptions; their usage, resets and overdrive remain independent unless they share an actual allowance pool. Referenced definitions require reassignment before deletion.
 
-## Unblocking a red plan
+Bars increase from **0% used** to **100% used**. The black marker shows current use; ordinary bands use dark green, orange and red. Numeric remaining capacity and independent weekly/short-window reset clocks provide context. Missing or unsupported telemetry stays explicit.
 
-Open a second session in the same project and run `/iterate-triage`. It names
-what the plan waits on, clears what it can, and marks the plan
-`status: unblocked` (cyan). The conductor takes cyan plans first.
+Each subscription owns any number of enabled overdrive windows. A window starts on selected weekly days/time or a number of hours before a trusted reset, and ends at its target, scheduled boundary or reset. Its target is **weekly percentage used**. A 60% target permits soft-band bypass while use is below 60%; 100% permits consumption until hard exhaustion. Bright green covers exactly the active used target; any ordinary green allowance beyond that remains dark green.
 
-The working tree is shared with a running conductor, so the second session
-never switches branches. Environment fixes (credentials, permissions, a
-setting) need no branch. Code on the parked plan's branch goes in a
-`git worktree`.
+For a saved weekly window, changing **Start relative to** to **Hours before trusted reset** previews an equivalent offset from fresh, account-bound reset evidence. The preview preserves that allowance interval’s exact start/end and window identity. Multiple-day, multiweek or independently ending windows stay weekly when one offset cannot represent them. Future local start times follow the trusted reset and hour offset, including daylight-saving or provider reset changes.
 
-## Winding down
+Overdrive does not choose a project. A participating project automation supplies eligible queued work. It never bypasses hard provider limits, freshness, project schedules, disabled state, staging or locks. At target/end/reset, overdrive-only automations wait; ordinary honoring automations return to normal bands. Targets do not reserve a balance or guarantee an exact percentage at completion.
 
-The conductor's tick has three states:
+For example, a Codex subscription can have Saturday 00:00 → 100% used, Monday 00:00 → 100% used with an explicit Tuesday boundary, and Thursday 16:00 → 60% used. A Filemaster Follow subscription overdrive automation simply participates through a Codex launch sequence. Actual reset evidence governs reset-ended windows; Conductor does not redeem reset tokens.
 
-| State | Tick | When |
-|---|---|---|
-| `working` | 5 minutes | Something is running or startable |
-| `watching` | 60 minutes | Nothing startable, but something may change by itself (a host returns, an issue is filed) |
-| `stood-down` | none | Every remaining blocker needs a human, or watching ran 12 ticks with no change |
+## Try a configuration
 
-Standing down sends one push notification naming what the operator must supply.
-Under launchd the OS timer keeps firing, but the tick skips a project with
-nothing startable, and staging or unblocking a plan starts it again.
+Automation and budget testers call the same evaluator as admission. Samples do not save settings or launch work. Keep it working needs no day/hour unless a project-wide time window applies. Scheduled testing supplies time in the window's timezone. Overdrive testing offers only available enabled windows across participating subscriptions, uses one common sample instant and lets you vary weekly use.
 
-## Controls
+Each tester has one results table. Only the selected eligible row receives a light-green highlight and a single Would launch label; other rows explain why they wait. Disabled or deleted windows cannot become available merely by selecting a sample.
 
-| Scope | Command | Effect |
-|---|---|---|
-| Machine | `iterate-run nightly off` / `on` | Ticks start nothing; a run in progress finishes |
-| Machine | `iterate-run nightly uninstall` / `install --every 10m` | Removes or arms the LaunchAgent |
-| Machine | `iterate-run nightly tick --dry-run` | Prints what the next tick would do |
-| Project | `iterate-run nightly enroll <dir>` / `withdraw <dir>` | Adds or drops the project from the tick |
-| Project | `/iterate-rules <rule in plain words>` | Limits the hours any run may start |
-| Project | `/ic pause` / `/ic resume` | Pause finishes the current plan and holds the queue; resume picks it back up |
-| Project | `/ic stop` | Finishes the current plan, then turns the conductor off |
-| Project | `/ic kill` | Halts now, stops the plan's scratch VMs and containers, turns the conductor off |
-| Project | `/ic run` | One sweep now |
-| Project | `/ic status` | Current plan, queue, blocked plans |
-| Plan | `/ip stage <plan>` / `/ip unstage <plan>` | Approves or withdraws a plan for unattended launch |
-| Plan | `/iterate pause <plan>` | Parks one plan; only `/iterate resume` unparks it |
-| A run | `kill <pid>` | Ends a `claude -p` run; the next tick triages and resumes its plan |
+Settings editors use draft dialogs. Save validates and commits; Cancel, Close and Escape discard the draft. Duplicate and Delete use link styling, while Edit and Add use buttons. Dialogs preserve background scroll and return focus to their origin. Browser Back/Forward and the Settings return control preserve project context.
 
-## Watching it
+## CLI and skills
 
-| Question | Where |
-|---|---|
-| Is a run going now? | `iterate-run nightly status` |
-| What each tick decided | `tail -f ~/.claude/log/iterate-nightly/status.txt` |
-| The processes | `ps -axo pid,lstart,command \| grep 'claude -p'` |
-| What each run did | `## Sweep log` in `.claude/iterate/conductor.md` |
-| Every plan's state | `iterate-run status`, run in the project |
-| A run's final output | `~/.claude/log/iterate-nightly/<project>/<UTC stamp>.json` |
-| A run as it happens | the newest `.jsonl` in `~/.claude/projects/<project slug>/` |
-| Dashboard | `iterate-run serve`, then http://localhost:8420 |
+`/iterate-conductor` or `/ic` in Claude, and `$iterate-conductor` or `$ic` in Codex, translate requests into binary commands. For example: “Keep Filemaster working with Claude Green, then Codex Yellow,” or “Run one plan on weeknights and finish the current checkpoint when the window closes.” Repeating a named request reuses its stable definitions. A preview request does not enable or dispatch it.
 
-In the iTerm2 status bar, ⏰ marks an enrolled project and each plan is one
-letter. Orange is queued, green is running, red is waiting on you, and cyan is
-unblocked.
-
-## Files
-
-| File | Holds |
-|---|---|
-| `~/Library/LaunchAgents/com.x85446.iterate-nightly.plist` | The 600-second timer |
-| `~/.claude/iterate-run/nightly.json` | The master switch |
-| `~/.claude/iterate-run/projects.json` | Every project iterate-run knows |
-| `~/.claude/iterate-run/nightly/<project>.lock` | Held while a run is going |
-| `~/.claude/iterate-run/nightly/<project>.json` | The last run: launched, finished, exit code |
-| `~/.claude/log/iterate-nightly/status.txt` | One line per tick decision and per run |
-| `<project>/.claude/iterate/conductor.md` | Conductor state and sweep log |
-| `<project>/.claude/iterate/policy.md` | Launch schedule and launch keyword |
-| `<project>/.claude/iterate/plans/<name>.md` | Each plan, with its status |
-
-## Running it from Codex
-
-The headless Codex equivalent of one launchd run:
-
-```bash
-codex exec -C <project> --approve-for-me --json '$iterate-conductor run'
+```sh
+iterate-run conductor status --json
+iterate-run conductor project list --json
+iterate-run conductor explain --project PROJECT_ID --json
+iterate-run conductor config show --json
+iterate-run conductor sequence preview SEQUENCE_ID --subscription SUBSCRIPTION_ID --json
+iterate-run conductor overdrive-conversion --subscription SUBSCRIPTION_ID --id WINDOW_ID --json
+iterate-run conductor run list --project PROJECT_ID --json
+iterate-run conductor event list --run RUN_ID --json
 ```
 
-To watch a sweep interactively: `cd <project> && codex '$iterate-conductor run'`.
+Writes require the current configuration revision:
+
+```sh
+iterate-run conductor config validate --file draft.json --json
+iterate-run conductor config apply --file draft.json --revision REVISION --dry-run --json
+iterate-run conductor config apply --file draft.json --revision REVISION --json
+iterate-run conductor start --project PROJECT_ID --revision REVISION --json
+```
+
+A revision conflict preserves the concurrent edit. Read the current configuration, merge the intended fields and validate again. Full configuration applies commit related definitions atomically. `--store DIR` or `ITERATE_CONDUCTOR_DIR` selects an isolated store; the default is `~/.claude/iterate/conductor`. Skills never edit that store directly or run a second scheduler.
+
+**Start/resume** enable admission and launch a binary worker. **Pause/stop** finish the active checkpoint and prevent subsequent admission. **Kill** interrupts only owned work. **Tick** attempts one admission; status/explain/simulate and dry-run do not launch. Project-scoped controls do not silently enable a stopped global conductor.
+
+JSON commands return one envelope with revision and data or a structured error. Exit codes are 0 for success/read-only waiting, 1 for operation failure, 2 for invalid usage, 3 for revision conflict and 4 for gated or unavailable dispatch. `iterate-run conductor --help` lists resources and flags.
+
+## Live progress and recovery
+
+Project views and plan timelines share launch visibility: the effective sequence, usage age, admission reason and next opportunity. An enabled schedule supplies its next opening within a fourteen-day preview horizon; an unknown quota recovery, missing queue/telemetry condition or stopped conductor remains explicit. Active assignments show their saved launch sequence rather than a later configuration edit.
+
+The binary drains child stdout and stderr, stores protected logs, and normalizes activity into durable events. The portal polls those events and state; closing or disconnecting the browser does not stop execution. Reconnection resumes from a cursor. Execution-token totals describe the run, while account allowance comes from authenticated provider telemetry.
+
+Each assignment contains one task/validation pair or a typed diagnosis, intake or delivery request. Only a matching validated result with concrete evidence advances its checkpoint. Exit zero alone is insufficient. Recovery checks process identity and durable ownership before resuming; ambiguous delivery remains visible for reconciliation. Paused, parked, exhausted and unavailable states include reasons rather than claiming completion.
+
+`iterate-run conductor migrate --legacy --json` previews registered project settings. `--apply` commits the import with protected backups. Migration preserves existing definitions and flags, reports settings needing review and leaves ambiguous ownership paused. The dashboard and conductor share the single server on port 8420. The managed installer uses macOS launchd. Process supervision uses Unix ownership primitives; unsupported platforms fail closed.

@@ -186,7 +186,7 @@ Only when this loop has run does the gate open.
 
 All nine `done`, milestone plans written, and invoked again: the docs stop being a deliverable and become a claim about reality. Check the claim.
 
-1. **Reconcile** each document against what is now true — the code as it stands, shipped behavior, the roadmap against what actually released, milestones against what main actually delivers, competitors re-checked if the research is over 90 days old. A release that has shipped means the next release's ten milestones get re-cut against what it proved.
+1. **Reconcile** each document against current behavior — the code as it stands, shipped behavior, the roadmap against what actually released, milestones against what main actually delivers, competitors re-checked if the research is over 90 days old. A release that has shipped means the next release's ten milestones get re-cut against what it proved.
 2. **Report drift** as a list: the document, the stale claim, and what is true now. Append to the state file's drift log with the date.
 3. **Fix on request.** Maintain mode reports; it rewrites a locked document only when the user says to. Unlocking is explicit.
 4. Nothing drifted → `docs already true — no changes` and touch nothing.
@@ -208,7 +208,7 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 ## Rules
 
 1. **The meta never writes a stage document.** It routes, gates, and keeps state.
-2. **Order is the product, not bureaucracy.** Each stage consumes its predecessors; skipping one means the skipped reasoning is now an assumption, and the analyze pass will say so.
+2. **Order is the product, not bureaucracy.** Each stage consumes its predecessors; skipping one means the skipped reasoning remains an assumption, and the analyze pass will say so.
 3. **`[NEEDS CLARIFICATION]` over a plausible guess**, always — and every marker is put to the user before the gate, one question each. Approval with a marker still open exists only as an explicit, recorded override.
 4. **A locked document needs an explicit unlock.** The user approved that text; do not quietly improve it.
 5. **Stages 0–4 are WHAT/WHY. Stage 5 is testable behavior. Stages 6–7 are HOW. Stage 8 is order.**

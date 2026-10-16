@@ -1,6 +1,7 @@
 package iterrun
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,27 +12,14 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/x85446/claudecodetricks/src/internal/conductor"
+	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 )
 
-// Package iterrun, nightly: the launchd-driven tick that runs enrolled
-// projects' staged plans while nobody is at the keyboard.
-//
-// The design is stateless on purpose. A LaunchAgent fires `iterate-run
-// nightly tick` every few minutes; each tick walks the registered projects
-// and, for every one that is enrolled, allowed by its schedules, and not
-// already being driven, spawns one detached `claude -p "/iterate-conductor
-// run"` in that project. The conductor does the rest — picks the queued
-// plan, lets /iterate drive it, handles the ending — and the next tick
-// resumes whatever is still executing. Nothing here remembers a run
-// between ticks except the files the run itself leaves behind: the plan,
-// its heartbeat, the per-project lock, and the result JSON.
-//
-// launchd, never cron: the gui domain has the user's Keychain (claude's
-// OAuth token lives there), runs a missed interval on wake, and needs no
-// Full Disk Access grant for ~/workspace. ProcessType is Standard, not
-// Background — confirmed live: under Background the Bun runtime logged 44s
-// of event-loop stalls, the Keychain read timed out, and claude fell back
-// to a stale credentials file and reported "OAuth session expired".
+// The launchd timer calls the shared binary supervisor. Detached workers own
+// bounded assignments independently of the timer and web process lifetimes.
+// launchd supplies the GUI user's Keychain and a provider-capable PATH.
 
 const (
 	NightlyLabel        = "com.x85446.iterate-nightly"
@@ -39,10 +27,6 @@ const (
 	nightlyLiveSecsEnv  = "ITERATE_LIVE_SECS"
 	nightlyDefaultLive  = 900 * time.Second
 )
-
-// conductorPrompt is what every child runs. Never `--bare`: the hooks are
-// what stamp the heartbeat the next tick reads.
-var conductorArgs = []string{"-p", "/iterate-conductor run", "--permission-mode", "auto", "--output-format", "json"}
 
 // NightlyConfig is ~/.claude/iterate-run/nightly.json — the global switch.
 type NightlyConfig struct {
@@ -242,11 +226,18 @@ func ownTrail(dir string, beat time.Time) bool {
 // (flock), released by the OS the moment that child exits or dies, so a
 // killed run never leaves a stale lock behind.
 func nightlyLockHeld(dir string) bool {
-	unlock, err := tryNightlyLock(dir)
+	f, err := os.OpenFile(nightlyLockPath(dir), os.O_RDWR, 0)
+	if os.IsNotExist(err) {
+		return false
+	}
 	if err != nil {
 		return true
 	}
-	unlock()
+	defer f.Close()
+	if err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		return true
+	}
+	_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
 	return false
 }
 
@@ -296,13 +287,9 @@ func enrolledProjects() []string {
 	return out
 }
 
-// Tick is `iterate-run nightly tick [--dry-run]`. It decides every enrolled
-// project, launches a detached runner for each launchable one, and exits —
-// it never waits on a child, so launchd's next interval fires on time even
-// while one project's run takes hours. Output is machine-first: one line
-// per enrolled project, nothing when there is nothing to say.
+// Tick evaluates the shared configuration and starts at most one detached
+// binary worker. The supervisor resolves every project and allowance lease.
 func Tick(w io.Writer, dryRun bool) error {
-	now := time.Now()
 	if !LoadNightlyConfig().Enabled {
 		if dryRun {
 			fmt.Fprintln(w, "disabled")
@@ -311,49 +298,39 @@ func Tick(w io.Writer, dryRun bool) error {
 		}
 		return nil
 	}
-	live := liveWindow()
-	self, err := os.Executable()
+	s := NewConductorService("")
+	if _, err := os.Stat(filepath.Join(s.Dir, "config.json")); os.IsNotExist(err) {
+		fmt.Fprintln(w, "conductor configuration required; preview with iterate-run conductor migrate --legacy")
+		return nil
+	} else if err != nil {
+		return err
+	}
+	decision, err := s.Status(context.Background())
 	if err != nil {
 		return err
 	}
-	for _, dir := range enrolledProjects() {
-		d := decideProject(dir, now, live)
-		if dryRun {
-			if d.Launch {
-				fmt.Fprintf(w, "would launch %s\n", dir)
-			} else {
-				fmt.Fprintln(w, d.String())
-			}
-			continue
-		}
-		if !d.Launch {
-			appendStatus(d.String())
-			continue
-		}
-		if err := spawnRunner(self, dir); err != nil {
-			appendStatus(filepath.Base(dir) + ": launch failed: " + err.Error())
-			continue
-		}
-		appendStatus(filepath.Base(dir) + ": launched")
+	if dryRun {
+		return json.NewEncoder(w).Encode(decision)
 	}
+	cfg, err := s.Config()
+	if err != nil {
+		return err
+	}
+	if !cfg.Enabled || cfg.Paused {
+		appendStatus("conductor disabled or paused")
+		return nil
+	}
+	// A worker also refreshes telemetry before deciding admission. A stale
+	// snapshot cannot prevent the next authentic observation from being read.
+	if len(cfg.Projects) == 0 {
+		return nil
+	}
+	pid, err := StartConductorWorker(s.Dir, "")
+	if err != nil {
+		return err
+	}
+	appendStatus(fmt.Sprintf("binary worker %d", pid))
 	return nil
-}
-
-// spawnRunner starts `iterate-run nightly run-one <dir>` in its own
-// session so the tick can exit while the conductor keeps running.
-func spawnRunner(self, dir string) error {
-	cmd := exec.Command(self, "nightly", "run-one", dir)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	devnull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
-	if err != nil {
-		return err
-	}
-	defer devnull.Close()
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = devnull, devnull, devnull
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	return cmd.Process.Release()
 }
 
 // LastRun is the per-project record `nightly status` reads.
@@ -386,105 +363,78 @@ func loadLastRun(dir string) (LastRun, bool) {
 	return lr, true
 }
 
-// RunOne is the detached runner: take the project's lock, spawn the
-// conductor, wait, record. A lock already held means a sibling runner won
-// the race — exit quietly, that is the normal outcome of two ticks
-// overlapping.
+// RunOne preserves the scheduled entrypoint and delegates a configured
+// project's bounded work to the same supervisor used by CLI and web clients.
 func RunOne(dir string) error {
-	unlock, err := tryNightlyLock(dir)
-	if err != nil {
-		return nil
-	}
-	defer unlock()
-	claude, err := exec.LookPath("claude")
-	if err != nil {
-		appendStatus(filepath.Base(dir) + ": launch failed: claude not on PATH")
-		return err
-	}
-	stamp := time.Now().UTC()
-	logDir := filepath.Join(NightlyLogDir(), projectKeyName(dir))
-	if err := os.MkdirAll(logDir, 0o755); err != nil {
-		return err
-	}
-	outPath := filepath.Join(logDir, stamp.Format("20060102T150405Z")+".json")
-	errPath := strings.TrimSuffix(outPath, ".json") + ".err"
-	out, err := os.Create(outPath)
+	canonical, err := conductor.Canonical(dir)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-	errf, err := os.Create(errPath)
+	s := NewConductorService("")
+	cfg, err := s.Config()
 	if err != nil {
 		return err
 	}
-	defer errf.Close()
-
-	lr := LastRun{Dir: dir, Launched: stamp.Format(time.RFC3339), Result: outPath}
-	saveLastRun(lr)
-
-	cmd := exec.Command(claude, conductorArgs...)
-	cmd.Dir = dir
-	cmd.Stdout, cmd.Stderr = out, errf
-	cmd.Stdin = nil
-	runErr := cmd.Run()
-	code := 0
-	if runErr != nil {
-		code = -1
-		if ee, ok := runErr.(*exec.ExitError); ok {
-			code = ee.ExitCode()
+	for _, p := range cfg.Projects {
+		if p.Path == canonical {
+			_, err = s.TickProject(context.Background(), p.ID)
+			return err
 		}
 	}
-	lr.Exit = &code
-	lr.Finished = time.Now().UTC().Format(time.RFC3339)
-	if data, err := os.ReadFile(outPath); err == nil {
-		var res struct {
-			IsError bool `json:"is_error"`
-		}
-		if json.Unmarshal(data, &res) == nil {
-			lr.IsError = &res.IsError
-		}
-	}
-	saveLastRun(lr)
-	appendStatus(fmt.Sprintf("%s: launched %s → exit %d (%s)", filepath.Base(dir), lr.Launched, code, time.Since(stamp).Round(time.Second)))
-	return runErr
+	return fmt.Errorf("project is not configured; use conductor project add or conductor migrate --legacy")
 }
 
-// Enroll marks a project as ticked by launchd: `tick-source: launchd` in
-// its conductor.md frontmatter, the file created with `enabled: true`
-// when absent. Also registers the project so the tick can find it.
+// Enroll registers a disabled project without creating repository files.
+// Account bindings and automations remain explicit configuration choices.
 func Enroll(dir string) error {
-	abs, err := filepath.Abs(dir)
+	canonical, err := conductor.Canonical(dir)
 	if err != nil {
 		return err
 	}
-	it := filepath.Join(abs, ".claude", "iterate")
-	if err := os.MkdirAll(filepath.Join(it, "plans"), 0o755); err != nil {
+	s := NewConductorService("")
+	cfg, err := s.Config()
+	if err != nil {
 		return err
 	}
-	RegisterProject(abs)
-	path := filepath.Join(it, "conductor.md")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		body := "---\nenabled: true\npaused: false\ncron:\ntick-source: launchd\ncurrent:\ntick: working\n---\n\n# Conductor — " + filepath.Base(abs) +
-			"\n\nEnrolled in the nightly launchd tick by `iterate-run nightly enroll` on " + time.Now().UTC().Format("2006-01-02") + ".\n\n## Sweep log\n"
-		return os.WriteFile(path, []byte(body), 0o644)
+	for _, p := range cfg.Projects {
+		if p.Path == canonical {
+			return nil
+		}
 	}
-	return os.WriteFile(path, []byte(setFrontmatterKey(string(data), "tick-source", "launchd")), 0o644)
+	cfg.Projects = append(cfg.Projects, model.Project{ID: legacyID(canonical), Name: filepath.Base(canonical), Path: canonical})
+	_, err = s.Apply(cfg.Revision, cfg)
+	if err != nil {
+		return err
+	}
+	RegisterProject(canonical)
+	return nil
 }
 
-// Withdraw removes the project's `tick-source:` line; the conductor goes
-// back to ticking itself (or to nothing, if it was never started).
+// Withdraw disables a registered project while retaining its queue and rules.
 func Withdraw(dir string) error {
-	abs, err := filepath.Abs(dir)
+	canonical, err := conductor.Canonical(dir)
+	if os.IsNotExist(err) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(abs, ".claude", "iterate", "conductor.md")
-	data, err := os.ReadFile(path)
+	s := NewConductorService("")
+	cfg, err := s.Config()
 	if err != nil {
-		return nil
+		return err
 	}
-	return os.WriteFile(path, []byte(setFrontmatterKey(string(data), "tick-source", "")), 0o644)
+	for i, p := range cfg.Projects {
+		if p.Path == canonical {
+			if !p.Enabled {
+				return nil
+			}
+			cfg.Projects[i].Enabled = false
+			_, err = s.Apply(cfg.Revision, cfg)
+			return err
+		}
+	}
+	return nil
 }
 
 // setFrontmatterKey sets (or, with an empty value, removes) one `key:` line
@@ -651,25 +601,14 @@ func Status(w io.Writer) {
 		fmt.Fprintf(w, "installed\t%s\tevery %s\t%s\n", NightlyPlistPath(), every, loaded)
 	}
 	fmt.Fprintf(w, "enabled\t%v\n", cfg.Enabled)
-	now := time.Now()
-	for _, dir := range enrolledProjects() {
-		last := "never"
-		if lr, ok := loadLastRun(dir); ok {
-			last = "launched " + lr.Launched
-			if lr.Exit != nil {
-				last += fmt.Sprintf(" exit %d", *lr.Exit)
-			} else {
-				last += " running"
-			}
-		}
-		d := decideProject(dir, now, liveWindow())
-		next := "now"
-		if !d.Launch {
-			next = d.Reason
-			if !d.Next.IsZero() {
-				next += " until " + d.Next.Local().Format("2006-01-02 15:04")
-			}
-		}
-		fmt.Fprintf(w, "project\t%s\t%s\t%s\n", dir, last, next)
+	s := NewConductorService("")
+	decision, err := s.Status(context.Background())
+	if err != nil {
+		fmt.Fprintf(w, "conductor error\t%s\n", err)
+		return
+	}
+	fmt.Fprintf(w, "conductor\t%s\trevision %d\n", decision.State, decision.Revision)
+	for _, q := range decision.Queues {
+		fmt.Fprintf(w, "project\t%s\tqueued %d\tready %d\twaiting %d\trunning %d\n", q.ProjectID, q.Depth, q.Ready, q.Waiting, q.Running)
 	}
 }

@@ -1,0 +1,439 @@
+{
+  "schema_version": 1,
+  "scope": "Exact transport/evaluation assertions; no blanket browser completion",
+  "new_test_batch": {
+    "timestamp": "2026-10-16T21:16:01Z",
+    "passed": 6,
+    "failed": 0,
+    "milliseconds": 1591,
+    "history": ".claude/testmaster/history.jsonl"
+  },
+  "cases": [
+    {
+      "case_id": "indigobird-authority-shared",
+      "tests": [
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "CLI writes read through HTTP and HTTP writes read through CLI with identical stable identities and revisions.",
+      "remaining_clauses": "Skill and same-context admission decision parity."
+    },
+    {
+      "case_id": "indigobird-authority-conflict",
+      "tests": [
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions",
+        "iterrun.TestConductorAPIRevisionSecurity"
+      ],
+      "coverage": "complete",
+      "covered_clauses": "Stale CLI/HTTP writes reject without replacing committed content.",
+      "remaining_clauses": ""
+    },
+    {
+      "case_id": "indigobird-editable-profiles-defaults",
+      "tests": [
+        "iterrun.TestConductorAPIResourceLifecycle",
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Preset and sequence CRUD, duplicate and reopened service retain definitions.",
+      "remaining_clauses": "Shipped YOLO edit and explicit initialization through browser."
+    },
+    {
+      "case_id": "indigobird-editable-profiles-argv",
+      "tests": [
+        "iterrun.TestConductorAPIResourceLifecycle",
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Custom model/reasoning and ordered literal repeated argv survive save; CLI preview preserves spaces and shell syntax as data.",
+      "remaining_clauses": "Actual recording executor and native editor."
+    },
+    {
+      "case_id": "indigobird-editable-profiles-custom-values",
+      "tests": [
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Custom model and reasoning reach preview without fallback.",
+      "remaining_clauses": "Provider dispatch and native selection."
+    },
+    {
+      "case_id": "indigobird-editable-profiles-references",
+      "tests": [
+        "iterrun.TestConductorAPIReferenceIntegrity"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Referenced preset, sequence and subscription deletion rejects atomically.",
+      "remaining_clauses": "Active assignment snapshot and subsequent revision dispatch."
+    },
+    {
+      "case_id": "indigobird-editable-profiles-interrupted",
+      "tests": [
+        "iterrun.TestConductorResourceReferenceDrafts"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Dry-run and unknown field failures preserve saved definition.",
+      "remaining_clauses": "Polling, native Cancel, interrupted filesystem write."
+    },
+    {
+      "case_id": "indigobird-overdrive-custom-crud",
+      "tests": [
+        "iterrun.TestConductorAPIResourceLifecycle"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "HTTP window CRUD/duplicate, stable identity and restart; subscription duplicate remaps window IDs.",
+      "remaining_clauses": "Native and direct CLI overdrive mutation; four simultaneous custom windows."
+    },
+    {
+      "case_id": "indigobird-overdrive-custom-disabled",
+      "tests": [
+        "iterrun.TestConductorAPIOverdriveWindowSamples"
+      ],
+      "coverage": "complete",
+      "covered_clauses": "Disabled matching higher-target window cannot appear or affect active target.",
+      "remaining_clauses": ""
+    },
+    {
+      "case_id": "indigobird-engines-catalog",
+      "tests": [
+        "iterrun.TestConductorAPIResourceLifecycle",
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "HTTP subscription lifecycle and scoped argv definitions; CLI lists all eight resource types.",
+      "remaining_clauses": "Arbitrary custom CLI contract and native creation."
+    },
+    {
+      "case_id": "indigobird-engines-references",
+      "tests": [
+        "iterrun.TestConductorAPIReferenceIntegrity"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Referenced subscription deletion rejects without writes.",
+      "remaining_clauses": "Disable admission, active snapshots and queue preservation."
+    },
+    {
+      "case_id": "indigobird-engines-restore",
+      "tests": [
+        "iterrun.TestConductorAPIResourceLifecycle",
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Reopened service retains custom names, arguments, IDs and references.",
+      "remaining_clauses": "Explicit initialization preservation."
+    },
+    {
+      "case_id": "indigobird-settings-universal",
+      "tests": [
+        "iterrun.TestConductorAPIResourceLifecycle",
+        "iterrun.TestConductorAPIReferenceIntegrity"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "New subscription defaults to Universal; custom policy CRUD; referenced deletion and atomic reassignment.",
+      "remaining_clauses": "Shared policy evaluation and native selector."
+    },
+    {
+      "case_id": "indigobird-settings-sequence-fixed-prefix",
+      "tests": [
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions",
+        "iterrun.TestConductorAPIResourceLifecycle"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Parent rename and suffix edit derive full name, stable IDs and parent-scoped duplicates.",
+      "remaining_clauses": "Blank suffix validation and every native label."
+    },
+    {
+      "case_id": "indigobird-settings-sequence-scope",
+      "tests": [
+        "iterrun.TestConductorAPIResourceLifecycle"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Subscription duplicates remap child IDs and local preset references.",
+      "remaining_clauses": "Two-owner rename isolation, immutable native prefix and active snapshots."
+    },
+    {
+      "case_id": "indigobird-settings-dialog-delete",
+      "tests": [
+        "iterrun.TestConductorAPIReferenceIntegrity"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "All referenced definition deletions reject atomically; full-document reassignment/removal succeeds.",
+      "remaining_clauses": "Native confirmation, focus and errors."
+    },
+    {
+      "case_id": "indigobird-window-controls-persistence",
+      "tests": [
+        "iterrun.TestConductorAPIWindowControlsPersistence",
+        "iterate-run.TestConductorCLIHTTPSharedDefinitions"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "All six run/end combinations persist after reload; defaults, invalid enums, contradictory policy, dry-run and revision conflicts verified.",
+      "remaining_clauses": "Native Cancel, occurrence claims, migration and direct CLI scheduling mutation."
+    },
+    {
+      "case_id": "indigobird-ordered-profiles-bands",
+      "tests": [
+        "iterrun.TestConductorAPICumulativeDraftSamples"
+      ],
+      "coverage": "complete",
+      "covered_clauses": "Full 3x3 cumulative matrix; repeated sequence rows distinct; first eligible row wins.",
+      "remaining_clauses": ""
+    },
+    {
+      "case_id": "indigobird-ordered-profiles-red",
+      "tests": [
+        "iterrun.TestConductorAPICumulativeDraftSamples"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Explicit Red row wins and unavailable second account falls back to it.",
+      "remaining_clauses": "Actual tick and weekly/short exhaustion matrix."
+    },
+    {
+      "case_id": "indigobird-ordered-profiles-editing",
+      "tests": [
+        "iterrun.TestConductorAPIResourceLifecycle",
+        "iterrun.TestConductorAPIReferenceIntegrity"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Automation CRUD and duplication with fresh entry IDs; referenced sequence deletion rejects.",
+      "remaining_clauses": "Native reorder/remove/Cancel and enabled empty list rejection."
+    },
+    {
+      "case_id": "indigobird-automation-sample-ordered",
+      "tests": [
+        "iterrun.TestConductorAPICumulativeDraftSamples"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Unsaved single-row matrix and three-row Red/Green example selects second Yellow-maximum row.",
+      "remaining_clauses": "Unsaved reorder/remove/add interaction and skipped-row wording."
+    },
+    {
+      "case_id": "indigobird-automation-sample-gates",
+      "tests": [
+        "iterrun.TestConductorAPICumulativeDraftSamples"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Stale/blocked/exhausted samples fall back without ownership.",
+      "remaining_clauses": "Project busy, queue empty and all unavailable paths."
+    },
+    {
+      "case_id": "indigobird-automation-sample-overdrive",
+      "tests": [
+        "iterrun.TestConductorAPIOverdriveWindowSamples"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Combined profile options, two timezones at one instant, earliest reset, 59/60/61/100 used boundaries, disabled-target exclusion, Outside wait and saved enable protection.",
+      "remaining_clauses": "Native slider/bar, selected-window deletion and all active overlap combinations."
+    },
+    {
+      "case_id": "indigobird-automation-sample-isolation",
+      "tests": [
+        "iterrun.TestConductorAPICumulativeDraftSamples",
+        "iterrun.TestConductorAPIOverdriveWindowSamples",
+        "iterrun.TestConductorAPISimulationPure"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Configuration bytes and runtime unchanged after draft/overdrive samples; no lease creation.",
+      "remaining_clauses": "Native sampling followed by Save automation."
+    },
+    {
+      "case_id": "indigobird-design-sync-window-availability",
+      "tests": [
+        "iterrun.TestConductorAPIOverdriveWindowSamples"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Saved account/master/window switches determine available options and effective target.",
+      "remaining_clauses": "Delete selected window and return from Settings preserving draft."
+    },
+    {
+      "case_id": "indigobird-design-sync-policy-summary",
+      "tests": [
+        "iterrun.TestConductorAPIWindowControlsPersistence",
+        "iterrun.TestConductorAPICumulativeDraftSamples",
+        "iterrun.TestConductorAPIOverdriveWindowSamples"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Defaults, cumulative selection, used target boundaries and run/end persistence through server.",
+      "remaining_clauses": "Native summary wording and single winner; runtime closure and skill parity."
+    },
+    {
+      "case_id": "indigobird-overdrive-targets-forty",
+      "tests": [
+        "iterrun.TestConductorAPIOverdriveWindowSamples"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "60-percent used ceiling admits at59 and waits at60/61/100.",
+      "remaining_clauses": "Live assignment and resumption of normal policy."
+    },
+    {
+      "case_id": "indigobird-project-navigation-onboarding",
+      "tests": [
+        "iterrun.TestConductorResourceAtomicOnboarding"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Canonical existing folder registers disabled with no project file mutation.",
+      "remaining_clauses": "Native picker and workspace navigation."
+    },
+    {
+      "case_id": "indigobird-project-navigation-duplicate-folder",
+      "tests": [
+        "iterrun.TestConductorResourceAtomicOnboarding"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Duplicate path rejects without revision change.",
+      "remaining_clauses": "Native error and symlink-alias submission."
+    },
+    {
+      "case_id": "indigobird-web-read-safety",
+      "tests": [
+        "iterrun.TestConductorAPISimulationPure"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Read endpoints and evaluation do not write config or acquire runtime lease.",
+      "remaining_clauses": "Every browser route and process sentinel."
+    },
+    {
+      "case_id": "indigobird-unified-detail",
+      "tests": [
+        "iterrun.TestConductorUnifiedDetailPreservesTimeline"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Real goal, requirements, timeline and evidence retained.",
+      "remaining_clauses": "Native link matrix and live streaming."
+    },
+    {
+      "case_id": "indigobird-unified-archive",
+      "tests": [
+        "iterrun.TestConductorUnifiedDetailPreservesTimeline"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Full archived timeline preserved with historical labels.",
+      "remaining_clauses": "Native bookmark/filter journey."
+    },
+    {
+      "case_id": "indigobird-unified-identity",
+      "tests": [
+        "iterrun.TestConductorDetailIdentityAndMissingSource"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Canonical source validation rejects malformed names and traversal.",
+      "remaining_clauses": "Same-named cross-project native journey."
+    },
+    {
+      "case_id": "indigobird-projects-queue",
+      "tests": [
+        "iterrun.TestConductorUnenrolledQueueDiscovery",
+        "iterate-run.TestConductorCLIProjectQueue"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Unenrolled queue derives from real source without config changes; CLI returns actual queued plan.",
+      "remaining_clauses": "All live transitions and native filters."
+    },
+    {
+      "case_id": "indigobird-project-navigation-invalid-folder",
+      "tests": [
+        "iterrun.TestConductorAPIInvalidFoldersAndReadiness"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Missing, blank, non-directory and permission-denied paths reject with project.path error and no config/repository mutation.",
+      "remaining_clauses": "Native presentation remains UI evidence."
+    },
+    {
+      "case_id": "indigobird-profiles-unsupported",
+      "tests": [
+        "iterrun.TestConductorAPIInvalidFoldersAndReadiness"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Custom adapter structured model capability rejects concretely without fallback; missing CLI/readiness and nonexistent reference do not invent support.",
+      "remaining_clauses": "Provider-specific model availability remains determined by actual provider response."
+    },
+    {
+      "case_id": "indigobird-engines-unavailable",
+      "tests": [
+        "iterrun.TestConductorAPIInvalidFoldersAndReadiness"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Read-only absent executable probe reports no installed/stream/result capability; missing subscription/sequence references return404 without fallback.",
+      "remaining_clauses": "Service ready-alternative selection is covered by engine assertion."
+    },
+    {
+      "case_id": "indigobird-web-errors",
+      "tests": [
+        "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore",
+        "iterrun.TestConductorAPIRevisionSecurity"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Invalid schedules, curves and target blanks/negative/above100 return precise fields and preserve saved bytes; stale revisions reject atomically.",
+      "remaining_clauses": "Native dirty-field retention uses independent UX evidence."
+    },
+    {
+      "case_id": "indigobird-recurrence-restore",
+      "tests": [
+        "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Custom weekday set, cadence, anchor, timezone and overnight times survive service restart; valid dry-run does not change committed settings.",
+      "remaining_clauses": "Native Cancel is covered separately."
+    },
+    {
+      "case_id": "indigobird-engine-policy-metadata",
+      "tests": [
+        "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Custom tier text and typical weekly reset persist through reload.",
+      "remaining_clauses": "Trusted live reset precedence is engine/provider evidence."
+    },
+    {
+      "case_id": "indigobird-overdrive-targets-clamp",
+      "tests": [
+        "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore"
+      ],
+      "coverage": "partial",
+      "covered_clauses": "Blank, negative and above100 targets fail field validation atomically.",
+      "remaining_clauses": "Zero/100 boundary admission is budget and sample evidence; native input validity is UX evidence."
+    }
+  ],
+  "additional_test_batch": {
+    "timestamp": "2026-10-16T21:26:28Z",
+    "passed": 5,
+    "failed": 0,
+    "milliseconds": 1619,
+    "new_tests": 3,
+    "affected_regressions": 2
+  },
+  "cli_contract_evidence": {
+    "tests": [
+      "iterate-run.TestConductorCLIInterspersedFlags",
+      "iterate-run.TestConductorCLISixColorCases"
+    ],
+    "assertions": "Three applicable flag positions; actual built-binary pipe/PTY six-case color precedence; forced-color JSON remains plain. Main help names disabled binary registration."
+  },
+  "final_transport_batch": {
+    "at": "2026-10-16T21:43:06Z",
+    "passed": 2,
+    "failed": 0,
+    "batch_ms": 1735,
+    "tests": [
+      "iterrun.TestConductorAPIVisibilityAndConversion",
+      "iterate-run.TestConductorCLIConversionReadOnly"
+    ]
+  },
+  "cursor_batch": {
+    "at": "2026-10-16T21:36:21Z",
+    "passed": 2,
+    "failed": 0,
+    "batch_ms": 978
+  },
+  "final_projection_batch": {
+    "at": "2026-10-16T21:50:35Z",
+    "passed": 3,
+    "failed": 0,
+    "batch_ms": 792,
+    "tests": [
+      "iterrun.TestConductorAPIVisibilityAndConversion",
+      "iterate-run.TestConductorCLIConversionReadOnly",
+      "TestPlanRouteFollowsAPlanIntoTheArchive"
+    ]
+  }
+}

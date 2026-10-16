@@ -2,6 +2,19 @@
 
 What changed, for people who use this.
 
+## 2026-10-16 — One place to schedule and follow AI work
+
+**New**
+- Open `http://localhost:8420` to browse projects, queued plans, complete timelines and live AI activity in one site.
+- Choose named launch sequences in priority order, the budget bands each permits, and recurring hours. Run continuously, process one plan per window, or follow a subscription’s overdrive windows.
+- Manage AI Subscriptions, shared named power bands and named time windows in Settings. Overdrive targets express percentage used: 100% uses available allowance before exhaustion; 60% stops the override at 60% used.
+- Preview scheduling and budget decisions with read-only simulators. Compact rows, consistent actions and draft dialogs keep navigation and edits predictable.
+
+**Improved**
+- The binary owns scheduling, provider streams, exclusive plan ownership and checkpoint recovery. Claude and Codex skills control that same configuration.
+- Window endings can finish the current checkpoint, finish the claimed plan while other gates permit, or interrupt the owned process. Fresh allowance data and hard provider limits remain mandatory.
+- Installation reuses one managed webserver on port 8420, preserves rollback files and refuses to displace an unrelated service.
+
 ## 2026-10-13 — The test runner works on Windows
 
 **New**

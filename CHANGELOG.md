@@ -3,6 +3,21 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [indigobird] - 2026-10-16
+
+### Added
+- Binary-owned conductor in `iterate-run`: revisioned configuration, canonical project queues, exclusive assignments, durable provider streams and checkpoint recovery.
+- One project workspace on `http://localhost:8420` for Plans, Automations, Activity and the complete plan/archive timeline, including existing bookmarks.
+- AI Subscriptions with named launch sequences, literal permission presets, authentic allowance telemetry and configurable CLI adapters. Codex and Claude execute bounded assignments through their installed CLIs.
+- Named power bands and subscription overdrive windows with percentage-used targets, cumulative ordered profile preferences, and read-only simulators using the admission evaluator.
+- Recurring project automations with queue draining or one plan per occurrence, plus finish-checkpoint, finish-plan and owned-process interruption at window end.
+- Revision-checked CLI and HTTP controls, conservative legacy import, and an idempotent managed-service installer that rejects unrelated port ownership and preserves rollback artifacts.
+
+### Changed
+- Conductor, iterate, rules, triage and planner skills delegate orchestration to the binary. Iterate family 5.22.0 carries aligned Claude and Codex clients.
+- The nightly scheduler calls the shared binary supervisor; project registration remains disabled until configured.
+- Settings and collections use compact rows, consistent link actions, draft dialogs, stable navigation and accessible sample power bars.
+
 ## [hoatzin] - 2026-10-13
 
 ### Added
