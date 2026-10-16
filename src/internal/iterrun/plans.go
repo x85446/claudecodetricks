@@ -20,7 +20,11 @@ type PlanSummary struct {
 	Status      string // freeform "status:" frontmatter line — "blocked-on-operator: <reason>" is the one standardized value the dashboard specifically surfaces; anything else is just carried through unused
 	NextAttempt string // the "> **Next attempt ...**" blockquote banner at the top of the file, if present — the coordinator's own exact instructions for clearing a blocked-on-operator state
 	Teamed      bool
-	Started     string
+	// Release is true for a plan written by /iterate-release ("mode: release").
+	// A release publishes to users, so it runs only when a human types
+	// /iterate: the nightly tick never counts one as startable.
+	Release bool
+	Started string
 	// Executing is this plan's own declared "Executing:" value — when THIS
 	// execution attempt actually began (set once, at the moment /iterate
 	// transitions the plan from phase: planned to phase: executing; never
@@ -200,6 +204,7 @@ var (
 	reExecuting        = regexp.MustCompile(`^Executing:\s*(.+)$`)
 	reFinished         = regexp.MustCompile(`^Finished:\s*(.+)$`)
 	reTeamed           = regexp.MustCompile(`^teamed:\s*true\s*$`)
+	reReleaseMode      = regexp.MustCompile(`^mode:\s*release\s*$`)
 	reStatus           = regexp.MustCompile(`^status:\s*(.+)$`)
 	reLeadingTimestamp = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2})(Z)?)?`)
 	reHarness          = regexp.MustCompile(`^harness:\s*(.*)$`)
@@ -372,6 +377,9 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		}
 		if reTeamed.MatchString(line) {
 			ps.Teamed = true
+		}
+		if reReleaseMode.MatchString(line) {
+			ps.Release = true
 		}
 		if m := reHarness.FindStringSubmatch(line); m != nil {
 			ps.Harness = strings.TrimSpace(m[1])

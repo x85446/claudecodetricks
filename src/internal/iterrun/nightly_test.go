@@ -134,6 +134,28 @@ func TestDecideProjectSkipOrder(t *testing.T) {
 	}
 }
 
+// TESTMASTER: id=iterrun.TestDecideProjectSkipsReleasePlans tier=? parallel=yes
+func TestDecideProjectSkipsReleasePlans(t *testing.T) {
+	home := nightlyHome(t)
+	live := 15 * time.Minute
+
+	// A queued release plan is never launched unattended.
+	queued := strings.Replace(queuedPlan, "running: false", "running: false\nmode: release", 1)
+	if d := decideProject(mkNightlyProject(t, home, "rq", enrolledConductor, queued), mondayNight, live); d.Launch || d.Reason != "nothing queued" {
+		t.Errorf("queued release: %s; want skip: nothing queued", d)
+	}
+	// Nor is an executing one whose run died: a human resumes it.
+	executing := strings.Replace(plannedPlan, "phase: planned", "phase: executing\nmode: release", 1)
+	if d := decideProject(mkNightlyProject(t, home, "re", enrolledConductor, executing), mondayNight, live); d.Launch || d.Reason != "nothing queued" {
+		t.Errorf("stale executing release: %s; want skip: nothing queued", d)
+	}
+	// "mode: release" inside body prose is not the key.
+	prose := strings.Replace(queuedPlan, "## Goal\nq\n", "## Goal\nq\n\nthe key is mode: release\n", 1)
+	if d := decideProject(mkNightlyProject(t, home, "rp", enrolledConductor, prose), mondayNight, live); !d.Launch {
+		t.Errorf("prose mention: %s; want launch", d)
+	}
+}
+
 // TESTMASTER: id=iterrun.TestDecideProjectSchedules tier=? parallel=yes
 func TestDecideProjectSchedules(t *testing.T) {
 	home := nightlyHome(t)

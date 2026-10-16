@@ -8,7 +8,7 @@ description: "Works the whole plan queue unattended. When started, sweeps every 
 
 # $iterate-conductor — keep the whole queue moving
 
-**Version:** iterate family 5.17.0
+**Version:** iterate family 5.18.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -312,6 +312,9 @@ One tick. Do these in order and stop at the first that applies.
       oldest `Started:` first. **Never a bare `phase: planned`**: unstaged is
       unapproved, and launching it unattended is the conductor spending what
       nobody authorized. The orange letter is the approval.
+
+   Skip `mode: release` plans entirely and always: a release runs only from a
+   typed `$iterate <name>`.
 
    Skip `status: blocked-on-operator` / `awaiting-human-gate` (red) entirely,
    except for the one cheap re-test per completed cycle described below. Skip
