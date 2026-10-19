@@ -35,7 +35,7 @@ says **who is at the keyboard**, and it never changes what gets done:
 | Mode | Who submitted it | Asking |
 |---|---|---|
 | `auto` | The iTerm2 toolbar typed it and pressed Enter, because a new message arrived and the pane's Auto mode is on. Nobody is watching. | **Never ask.** A decision only the user can make leaves the message `waiting (operator: …)`. |
-| `notauto` | The toolbar typed it from its menu, and a human pressed Enter. | Ask when a decision is genuinely the user's. |
+| `notauto` | The toolbar typed it from its menu, and a human pressed Enter. | Ask when a decision is genuinely the user's. A message already `waiting (operator: X)` is asked X first, one at a time, before it is routed anywhere. |
 | absent | A human typed it. | As `notauto`. |
 
 ## Verbs
@@ -137,10 +137,23 @@ another skill or a message asking for it, run `show` instead.
    1. **Claim it**: `python3 $M msg claim <id>`. Exit 4 means another
       session (the other agent's pane) has it, so skip it silently.
    2. **Read it whole** with `msg show`.
-   3. **Trust.** If the sender is `unregistered`, set
+   3. **Answer first.** A message whose status is `waiting (operator: X)` is
+      listed only because a human is at the keyboard. Before any routing, put
+      X to the user as one question (`AskUserQuestion` in Claude Code, a
+      plain question in Codex), one message at a time, and wait for the
+      answer. The status changes only once the user has answered. The answer
+      then finishes the message: when the answer is the whole of what was
+      needed, do it and set `done (<the answer>)`; when a parked plan needed
+      it, carry the answer into that plan (the note or the step that waited
+      on it) and resume it under Launching. A waiting message is never
+      re-routed, re-planned or re-consumed on the path that parked it
+      without the user's answer in hand, and the per-message line quotes the
+      answer. Anything the user types after `process` on the command line is
+      a note to the run, not the answer.
+   4. **Trust.** If the sender is `unregistered`, set
       `waiting (operator: sender not registered — /mailbox register <its path> to trust it)`
       and move on.
-   4. **Route it** by kind and size:
+   5. **Route it** by kind and size:
       - **Reply**: this is feedback on something this project sent. Open
         `.claude/iterate/sent/<in-reply-to>.md`. If its `## Blocks` names a
         plan of this project, resume that plan (see Launching). If it names
@@ -164,9 +177,10 @@ another skill or a message asking for it, run `show` instead.
         agent holds, or an act this project's rules reserve for a human. In
         `notauto`, ask, then continue. In `auto`, set
         `waiting (operator: <the one thing needed>)`, and when
-        `reply: wanted` reply `waiting: needs <X> from the operator`. A
-        `notauto` run that lists it asks that one thing and continues.
-   5. **Cross-project needs inside the work.** If the task needs a third
+        `reply: wanted` reply `waiting: needs <X> from the operator`. The
+        next `notauto` run lists it and asks that one thing first (step 2.3)
+        before it touches the message again.
+   6. **Cross-project needs inside the work.** If the task needs a third
       project to act, `send` to it with `--hops <this message's hops + 1>`
       and a `## Blocks` section reading `inbox <this message's id>`, then
       set this message `waiting (reply: <inbox> <sent id>)`. Exit 5 (more
@@ -178,6 +192,7 @@ another skill or a message asking for it, run `show` instead.
    → 20261008T172000Z-alpha-stale-exonet  plan kestrel launched
    ⏸ 20261008T173000Z-beta-api-key  waiting — needs the vendor API key from the operator
    ⏳ 20261008T174000Z-beta-dns-check  waiting — reply from site-infra
+   ✓ 20261008T175000Z-gamma-sip-config  done — operator answered "keep SIP on"; plan veery resumed
    ```
 
 ### Launching a plan
