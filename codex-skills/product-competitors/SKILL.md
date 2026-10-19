@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): knows the market — deep-cr
 
 # $product-competitors — know the market
 
-**Version:** product family 1.5.0
+**Version:** product family 1.6.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

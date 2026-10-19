@@ -9,7 +9,7 @@ description: "PRODUCT — the product-definition meta: staged brief, competitors
 
 # $product — idea to engineering-ready definition
 
-**Version:** product family 1.5.0
+**Version:** product family 1.6.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -230,3 +230,4 @@ open clarifications: 2   ·   next: finish stage 2 (prd)
 10. **Every document states the current decision, never its history.** A revision rewrites the affected text to the new truth. Nothing in it says "revised", "previously", "now" or "changed from". The state file's stage notes and drift log are the record of what changed and why.
 11. **Where the product runs is izmachine's question, never a stage's decision.** `$izmachine` supplies macOS, Linux and Windows guests on whatever hosts are registered, so every operating system the product targets can be built and tested from the first commit, and the OS is not a release axis. A feature ships on every target OS in the release it is placed in. No stage orders operating systems, splits a feature by OS, or places one OS in a later release, whatever the evidence says about which OS its users run: that evidence shapes defaults and design emphasis, never placement. The team's own machines are never a reason ("the founder's pilot hardware is macOS" is not evidence). Only the user's own words can stage an OS. A stage that needs to know whether an OS can be built or tested asks izmachine (`izmachine remote list --format json`, `izmachine up <key> --dry-run --format json`) and writes its answer, never an assumption.
 12. **Every human gate is torn down before the first plan launches.** Stage 9 puts every one the roadmap needs — a guest of each OS, version and architecture, each credential, each live-only proof — on one operator list, and the plans step stages the chain head only when stage 9 is `done`. A plan that parks on a wall the list never carried is a stage 9 defect, not an executor finding.
+13. **A desktop OS permission is granted once, never per build.** When the product holds an OS permission (on macOS: Full Disk Access, Accessibility, Screen Recording), stage 7 gives its holder a stable code identity — a signed bundle with a fixed id and a Developer ID requirement, never a bare ad-hoc-signed binary — and stage 9 bakes the grant into the golden image against that identity. The human grants it once at provisioning, and no plan re-prompts. A grant that reappears every rebuild is the ad-hoc-identity defect, caught at stage 7.
