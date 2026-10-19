@@ -58,3 +58,7 @@ __pycache__/
 # Mailbox messages are local state too; /mailbox never commits them.
 .claude/iterate/inbox/
 .claude/iterate/sent/
+# Live run records (pid, heartbeat) of tests a plan launches, and the HTML
+# previews a design pass renders: per-machine scratch, never the record.
+.claude/iterate/registry/
+.claude/iterate/previews/
