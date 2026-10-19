@@ -141,6 +141,7 @@ func TestIndigobirdConfiguration(t *testing.T) {
 	other := NewService(s.Dir, s.Source)
 	next := c
 	next.Projects[0].Name = "edited"
+	next.Projects[0].Tags = []string{" Work ", "work", "", "priority"}
 	saved, e := other.Apply(c.Revision, next)
 	if e != nil {
 		t.Fatal(e)
@@ -151,6 +152,18 @@ func TestIndigobirdConfiguration(t *testing.T) {
 	reloaded, e := s.Config()
 	if e != nil || reloaded.Revision != saved.Revision || reloaded.Projects[0].Name != "edited" {
 		t.Fatal(reloaded, e)
+	}
+	if strings.Join(reloaded.Projects[0].Tags, ",") != "work,priority" {
+		t.Fatalf("project tags did not survive save/reload: %v", reloaded.Projects[0].Tags)
+	}
+	reloaded.Projects[0].Tags = nil
+	reloaded, e = other.Apply(reloaded.Revision, reloaded)
+	if e != nil {
+		t.Fatal(e)
+	}
+	reloaded, e = s.Config()
+	if e != nil || len(reloaded.Projects[0].Tags) != 0 || reloaded.Projects[0].Name != "edited" {
+		t.Fatalf("clearing tags must preserve the project: %v %v", reloaded.Projects, e)
 	}
 	before, _ := os.ReadFile(filepath.Join(s.Dir, "config.json"))
 	bad := reloaded
@@ -1469,6 +1482,11 @@ func TestIndigobirdMixedQueuePriority(t *testing.T) {
 	}
 	if _, e = s.TickProject(context.Background(), c.Projects[0].ID); e != nil {
 		t.Fatal(e)
+	}
+	src.plans = append(src.plans, Plan{Name: "human-owned", State: "executing", Running: true})
+	d, e = s.Evaluate(context.Background(), EvaluateRequest{})
+	if e != nil || len(d.Queues) != 1 || d.Queues[0].Running != 1 || strings.Join(d.Queues[0].RunningPlans, ",") != "human-owned" || d.Queues[0].Depth != 0 {
+		t.Fatalf("running filter must identify exactly the counted plan: %+v %v", d.Queues, e)
 	}
 }
 

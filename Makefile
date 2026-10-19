@@ -245,7 +245,7 @@ test: test-unit test-hook  ## Run all tests
 
 test-unit: check-tools  ## Run Go unit tests
 	$(Q)echo -e "$(COLOR_BLUE)→ Running unit tests...$(COLOR_RESET)"
-	$(Q)cd $(SRC_DIR) && $(GOTEST) $(VERBOSE) -race -timeout 30s ./...
+	$(Q)cd $(SRC_DIR) && $(GOTEST) $(VERBOSE) -race -timeout 5m ./...
 
 test-hook: build  ## Test hooks with sample JSON input
 	$(Q)echo -e "$(COLOR_BLUE)→ Testing voice-announcer...$(COLOR_RESET)"

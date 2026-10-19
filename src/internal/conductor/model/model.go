@@ -30,18 +30,19 @@ type Config struct {
 }
 
 type Project struct {
-	ID                string `json:"id"`
-	Name              string `json:"name"`
-	Path              string `json:"path"`
-	Enabled           bool   `json:"enabled"`
-	Paused            bool   `json:"paused"`
-	WindowID          string `json:"window_id,omitempty"`
-	MaxAttempts       int    `json:"max_attempts"`
-	NoProgressSeconds int    `json:"no_progress_seconds"`
-	PlanCapSeconds    int    `json:"plan_cap_seconds,omitempty"`
-	WatchBound        int    `json:"watch_bound"`
-	IntakeEnabled     bool   `json:"intake_enabled"`
-	MaxImport         int    `json:"max_import"`
+	Tags              []string `json:"tags,omitempty"`
+	ID                string   `json:"id"`
+	Name              string   `json:"name"`
+	Path              string   `json:"path"`
+	Enabled           bool     `json:"enabled"`
+	Paused            bool     `json:"paused"`
+	WindowID          string   `json:"window_id,omitempty"`
+	MaxAttempts       int      `json:"max_attempts"`
+	NoProgressSeconds int      `json:"no_progress_seconds"`
+	PlanCapSeconds    int      `json:"plan_cap_seconds,omitempty"`
+	WatchBound        int      `json:"watch_bound"`
+	IntakeEnabled     bool     `json:"intake_enabled"`
+	MaxImport         int      `json:"max_import"`
 }
 
 type Subscription struct {

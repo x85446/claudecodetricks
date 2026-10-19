@@ -60,6 +60,16 @@ func normalize(c *model.Config) {
 	}
 	for i := range c.Projects {
 		p := &c.Projects[i]
+		tags := []string{}
+		seen := map[string]bool{}
+		for _, tag := range p.Tags {
+			tag = strings.ToLower(strings.TrimSpace(tag))
+			if tag != "" && !seen[tag] {
+				tags = append(tags, tag)
+				seen[tag] = true
+			}
+		}
+		p.Tags = tags
 		if p.MaxAttempts == 0 {
 			p.MaxAttempts = 5
 		}
