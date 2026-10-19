@@ -813,8 +813,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestConductorStatusLineNoTrigger",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": "iterrun.TestConductorStatusLineNoTrigger",
           "validity": "valid"
         },
@@ -824,8 +824,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestConductorStatusLineNotEnabledHidden",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": "iterrun.TestConductorStatusLineNotEnabledHidden",
           "validity": "valid"
         },
@@ -835,8 +835,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestConductorStatusLineStoodDown",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": "iterrun.TestConductorStatusLineStoodDown",
           "validity": "valid"
         },
@@ -846,8 +846,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestConductorStatusLineWorkingShowsNextTickMinutes",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": "iterrun.TestConductorStatusLineWorkingShowsNextTickMinutes",
           "validity": "valid"
         },
@@ -1289,7 +1289,7 @@
       ],
       "id": "req-plan-item-formats",
       "source": "user",
-      "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" \u2014 the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams."
+      "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" — the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams."
     },
     {
       "cases": [
@@ -1594,8 +1594,8 @@
           "covers_source": "manual",
           "given": "launch-schedule allows 22:00-06:00, conductor-schedule allows 00:00-23:59",
           "id": "sch-7",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "source": "plan:flamingo",
           "test": "iterrun.TestConductorScheduleOnlyNarrows",
           "then": "refused by launch-schedule: the conductor schedule cannot widen",
@@ -1610,8 +1610,8 @@
           "covers_source": "manual",
           "given": "launch-schedule allows 22:00-06:00, conductor-schedule allows 23:00-02:00",
           "id": "sch-8",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "source": "plan:flamingo",
           "test": "iterrun.TestConductorScheduleOnlyNarrows",
           "then": "refused by conductor-schedule: it narrowed",
@@ -1702,7 +1702,7 @@
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "evidence": "claude -p \"/ip add to otter \u2026\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged \u2014 re-stage with /ip stage otter\"",
+          "evidence": "claude -p \"/ip add to otter …\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged — re-stage with /ip stage otter\"",
           "given": "a queued plan",
           "id": "st-4",
           "last_validated_commit": "b49945e6",
@@ -1824,7 +1824,7 @@
           "id": "np-2",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "it proceeds \u2014 the plan's Cost: line is the authority \u2014 and the transcript contains no 'go-ahead', 'pause the plan' or 'let me know when' text",
+          "then": "it proceeds — the plan's Cost: line is the authority — and the transcript contains no 'go-ahead', 'pause the plan' or 'let me know when' text",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -1842,7 +1842,7 @@
           "id": "np-3",
           "last_validated_commit": "wt",
           "source": "plan:flamingo",
-          "then": "a 'paused by operator' line from /iterate pause or /ic pause accompanies it \u2014 a pause with no human command behind it is a defect",
+          "then": "a 'paused by operator' line from /iterate pause or /ic pause accompanies it — a pause with no human command behind it is a defect",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T04:16:44Z",
@@ -1859,7 +1859,7 @@
           "id": "np-4",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "the same turn writes one of the four terminal endings (all-green, human-gate, blocked-on-operator after the ladder, giveup) or records a human pause/kill \u2014 never 'awaiting go-ahead'",
+          "then": "the same turn writes one of the four terminal endings (all-green, human-gate, blocked-on-operator after the ladder, giveup) or records a human pause/kill — never 'awaiting go-ahead'",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -1871,12 +1871,12 @@
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, \u26a0 branch-not-merged line",
+          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, ⚠ branch-not-merged line",
           "given": "a plan with human-gate: N and every other validation green",
           "id": "np-5",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "success-with-handoff fires exactly as before \u2014 the one designed stop is unchanged",
+          "then": "success-with-handoff fires exactly as before — the one designed stop is unchanged",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -2047,7 +2047,7 @@
           "last_validated_commit": "05cc3e50",
           "source": "plan:gaur",
           "test": "tutorial.box-test",
-          "then": "a closed frame shows the (no tutorials yet \u2026) placeholder row",
+          "then": "a closed frame shows the (no tutorials yet …) placeholder row",
           "tier": "fast",
           "validity": "valid",
           "when": "the menu renders"
@@ -2603,7 +2603,7 @@
         }
       ],
       "id": "req-hoatzin-win-tree",
-      "requirement": "native Windows process-tree cancellation \u2014 a timeout or an interrupt kills everything the test spawned, not just the first process (kingtut inbox 20261013T051222Z)",
+      "requirement": "native Windows process-tree cancellation — a timeout or an interrupt kills everything the test spawned, not just the first process (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -2746,7 +2746,7 @@
         }
       ],
       "id": "req-hoatzin-win-lock",
-      "requirement": "an exclusive kernel-backed project run lock \u2014 two testmaster runs in one project never interleave registry writes, and the lock is released when the holder exits however it exits (kingtut inbox 20261013T051222Z)",
+      "requirement": "an exclusive kernel-backed project run lock — two testmaster runs in one project never interleave registry writes, and the lock is released when the holder exits however it exits (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -2879,7 +2879,7 @@
         }
       ],
       "id": "req-hoatzin-win-shell",
-      "requirement": "compatible shell invocation \u2014 shell-kind tests run under a Windows-capable shell instead of assuming /bin/sh, and runner set shell still overrides it (kingtut inbox 20261013T051222Z)",
+      "requirement": "compatible shell invocation — shell-kind tests run under a Windows-capable shell instead of assuming /bin/sh, and runner set shell still overrides it (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -3687,8 +3687,8 @@
           "covers_source": "coverage",
           "given": "a profile asks for an unsupported model or capability",
           "id": "indigobird-profiles-unsupported",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIInvalidFoldersAndReadiness"
           ],
@@ -5116,8 +5116,8 @@
           "covers_source": "coverage",
           "given": "invalid schedules, curves or stale revisions are submitted",
           "id": "indigobird-web-errors",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore",
             "iterrun.TestConductorAPIRevisionSecurity"
@@ -5162,8 +5162,8 @@
           "covers_source": "coverage",
           "given": "the local web service exposes controls",
           "id": "indigobird-web-read-safety",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPISimulationPure"
           ],
@@ -5277,8 +5277,8 @@
           "covers_source": "coverage",
           "given": "existing projects, plans and an active runner exist",
           "id": "indigobird-web-migration",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorLegacyImportLiveOwnerAndPartialBackup",
             "iterrun.TestConductorLegacyImportPreviewApplyIdempotence"
@@ -5689,8 +5689,8 @@
           ],
           "given": "the browser disconnects, a cursor expires or the HTTP service restarts while execution continues",
           "id": "indigobird-stream-reconnect",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPICursorExpiryRecovery"
           ],
@@ -5965,8 +5965,8 @@
           "covers_source": "coverage",
           "given": "a project references an edited named preset",
           "id": "indigobird-editable-profiles-references",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIReferenceIntegrity"
           ],
@@ -6003,8 +6003,8 @@
           "covers_source": "coverage",
           "given": "an existing saved profile and dirty UI edits",
           "id": "indigobird-editable-profiles-interrupted",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorResourceReferenceDrafts"
           ],
@@ -6056,8 +6056,8 @@
           "covers_source": "coverage",
           "given": "zero, one or four custom rules for an account",
           "id": "indigobird-overdrive-custom-crud",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIResourceLifecycle"
           ],
@@ -6246,8 +6246,8 @@
           "covers_source": "coverage",
           "given": "staged ready and waiting plans, a running plan, drafts and completed plans",
           "id": "indigobird-queue-mixed",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "conductor.TestIndigobirdMixedQueuePriority",
             "iterrun.TestConductorSourceTypedPlanExclusion"
@@ -6685,8 +6685,8 @@
           "covers_source": "coverage",
           "given": "profiles/projects reference an engine",
           "id": "indigobird-engines-references",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIReferenceIntegrity"
           ],
@@ -6876,7 +6876,7 @@
             "src/internal/conductor/budget/recurrence.go"
           ],
           "covers_source": "coverage",
-          "given": "selected Friday 22:00\u201306:00 in an IANA timezone",
+          "given": "selected Friday 22:00–06:00 in an IANA timezone",
           "id": "indigobird-recurrence-overnight",
           "last_validated": "2026-10-16T21:57:26Z",
           "last_validated_commit": "05cc3e50",
@@ -6918,8 +6918,8 @@
           "covers_source": "coverage",
           "given": "custom weekdays and cadence saved",
           "id": "indigobird-recurrence-restore",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore"
           ],
@@ -7259,8 +7259,8 @@
           "covers_source": "coverage",
           "given": "live usage and queued work exist",
           "id": "indigobird-band-simulator-isolation",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPICumulativeDraftSamples",
             "iterrun.TestConductorAPISimulationPure"
@@ -7898,8 +7898,8 @@
           "covers_source": "coverage",
           "given": "multiple rules and window references exist",
           "id": "indigobird-project-rules-persistence",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "conductor.TestIndigobirdConfiguration"
           ],
@@ -7941,8 +7941,8 @@
           "covers_source": "coverage",
           "given": "legacy single-profile project and provider-only overdrive exist",
           "id": "indigobird-project-rules-migration",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorLegacyImportPreviewApplyIdempotence"
           ],
@@ -8601,8 +8601,8 @@
           "covers_source": "coverage",
           "given": "valid existing project directory",
           "id": "indigobird-project-navigation-onboarding",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorResourceAtomicOnboarding"
           ],
@@ -8640,8 +8640,8 @@
           "covers_source": "coverage",
           "given": "missing or inaccessible directory",
           "id": "indigobird-project-navigation-invalid-folder",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIInvalidFoldersAndReadiness"
           ],
@@ -8678,8 +8678,8 @@
           "covers_source": "coverage",
           "given": "registered directory and an alias or trailing-slash variant",
           "id": "indigobird-project-navigation-duplicate-folder",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorResourceAtomicOnboarding"
           ],
@@ -9448,8 +9448,8 @@
           "covers_source": "coverage",
           "given": "sample override on at target or 100% weekly used",
           "id": "indigobird-account-preview-limits",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIOverdriveWindowSamples",
             "iterrun.TestConductorIntegrationOverdriveGeometryAndAvailability"
@@ -9609,8 +9609,8 @@
           "covers_source": "coverage",
           "given": "Codex green, Claude green, Claude yellow, Codex red",
           "id": "indigobird-ordered-profiles-bands",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPICumulativeDraftSamples",
             "iterrun.TestConductorIntegrationCumulativeBandsAndSampleIsolation"
@@ -9656,8 +9656,8 @@
           "covers_source": "coverage",
           "given": "account defaults disallow Red but automation explicitly lists Codex Red",
           "id": "indigobird-ordered-profiles-red",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPICumulativeDraftSamples"
           ],
@@ -9754,8 +9754,8 @@
           "covers_source": "coverage",
           "given": "saved ordered entries",
           "id": "indigobird-ordered-profiles-editing",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIReferenceIntegrity",
             "iterrun.TestConductorAPIResourceLifecycle"
@@ -9971,8 +9971,8 @@
           "evidence": ".claude/testmaster/evidence/indigobird/verification.md",
           "given": "unsaved ordered profile/band draft",
           "id": "indigobird-automation-sample-ordered",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPICumulativeDraftSamples"
           ],
@@ -10110,8 +10110,8 @@
           "covers_source": "coverage",
           "given": "participating accounts with configured windows and targets",
           "id": "indigobird-automation-sample-overdrive",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIOverdriveWindowSamples"
           ],
@@ -10160,8 +10160,8 @@
           "covers_source": "coverage",
           "given": "saved account state and unsaved automation draft",
           "id": "indigobird-automation-sample-isolation",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPICumulativeDraftSamples",
             "iterrun.TestConductorAPIOverdriveWindowSamples",
@@ -10208,8 +10208,8 @@
           "covers_source": "coverage",
           "given": "several profiles share an account/allowance pool",
           "id": "indigobird-automation-sample-shared",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorIntegrationNamedPolicyScopeAndSharedPool"
           ],
@@ -10888,8 +10888,8 @@
           "covers_source": "coverage",
           "given": "participating profiles with enabled/disabled accounts, overdrive masters and windows",
           "id": "indigobird-design-sync-window-availability",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIOverdriveWindowSamples",
             "iterrun.TestConductorIntegrationOverdriveGeometryAndAvailability"
@@ -10939,8 +10939,8 @@
           "covers_source": "coverage",
           "given": "three automation modes with cumulative choices and all run/end options",
           "id": "indigobird-design-sync-policy-summary",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPICumulativeDraftSamples",
             "iterrun.TestConductorAPIOverdriveWindowSamples",
@@ -11030,8 +11030,8 @@
           "covers_source": "coverage",
           "given": "editable Universal and custom named power bands, two independent subscriptions and one shared-pool pair",
           "id": "indigobird-settings-universal",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIReferenceIntegrity",
             "iterrun.TestConductorAPIResourceLifecycle",
@@ -11200,8 +11200,8 @@
           "covers_source": "coverage",
           "given": "two subscriptions with distinct sequences and identical suffixes",
           "id": "indigobird-settings-sequence-scope",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIResourceLifecycle"
           ],
@@ -11398,8 +11398,8 @@
           "evidence": ".claude/testmaster/evidence/indigobird/verification.md",
           "given": "referenced definitions and a final subscription",
           "id": "indigobird-settings-dialog-delete",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorAPIReferenceIntegrity"
           ],
@@ -11541,8 +11541,8 @@
           "covers_source": "coverage",
           "given": "a project has queued and active plans",
           "id": "indigobird-unified-detail",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorUnifiedDetailPreservesTimeline"
           ],
@@ -11586,8 +11586,8 @@
           ],
           "given": "a project has the gar archive fixture with existing timeline data",
           "id": "indigobird-unified-archive",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorUnifiedDetailPreservesTimeline"
           ],
@@ -11596,7 +11596,7 @@
           "validity": "valid",
           "verified_at": "2026-10-16T21:50:35Z",
           "verified_by": "Scoped root live-provider and route evidence; exact assertions in acceptance_evidence",
-          "when": "open Plans \u2192 Archived \u2192 gar, then directly open and reload its encoded /archive bookmark"
+          "when": "open Plans → Archived → gar, then directly open and reload its encoded /archive bookmark"
         },
         {
           "acceptance_evidence": [
@@ -11630,8 +11630,8 @@
           "covers_source": "coverage",
           "given": "distinct canonical worktree paths share project basename and plan name",
           "id": "indigobird-unified-identity",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorDetailIdentityAndMissingSource"
           ],
@@ -11681,8 +11681,8 @@
           ],
           "given": "a detail target is missing, deleted, malformed or outside the allowed archive path",
           "id": "indigobird-unified-errors",
-          "last_validated": "2026-10-16T21:57:26Z",
-          "last_validated_commit": "05cc3e50",
+          "last_validated": "2026-10-16T22:13:53Z",
+          "last_validated_commit": "88e7cfa1",
           "test": [
             "iterrun.TestConductorDetailIdentityAndMissingSource"
           ],

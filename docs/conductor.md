@@ -2,7 +2,11 @@
 
 Conductor processes queued plans through configured AI launch sequences. The `iterate-run` binary owns scheduling, allowance checks, exclusive project ownership, execution and progress capture. The web dashboard, CLI and conductor skills control the same configuration.
 
-Open **http://localhost:8420/**. All projects leads to each project's **Plans**, **Automations** and **Activity** tabs. Queued, Active and Archived filters stay inside Plans. Queue counts link to the exact project queue; plan and archive links preserve full goals, requirements, timelines and evidence. Existing `/plan?project=…&name=…` and `/archive?project=…&file=…` bookmarks open inside the project workspace. An archive describes recorded history, not a current process.
+Open **http://localhost:8420/**. All projects leads to each project's **Plans**, **Automations** and **Activity** tabs. All, Draft, Queued, Running, Blocked and Archived filters stay inside Plans. All includes every state, with blocked plans first. Draft means awaiting staging; Queued means approved or resumable work waiting for admission; Running identifies a live owner. Blocked includes operator gates and paused work, with the explanation under **Why blocked**. Queue counts link to the exact project queue; plan and archive links preserve full goals, requirements, timelines and evidence. Existing `/plan?project=…&name=…` and `/archive?project=…&file=…` bookmarks open inside the project workspace. An archive describes recorded history, not a current process.
+
+A blocked plan does not stop the whole project queue. Conductor skips that plan and can admit another eligible queued plan. Dependencies written only in plan prose are not automatic cross-plan launch gates; keep dependent work unstaged or explicitly blocked until its prerequisite clears. Dependencies between teams inside a plan govern checkpoint selection.
+
+The All projects table sorts by its column headers. **Configure** or **Edit** opens project settings, where **Tags** accepts comma-separated labels. Tags use lowercase and combine duplicates. Select tag buttons above the table to match any selected tag; **Clear filters** restores all projects. Sorting and tag selections persist in the URL.
 
 ## Set up a project
 

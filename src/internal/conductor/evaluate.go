@@ -36,13 +36,14 @@ type Candidate struct {
 	Occurrence   *model.Occurrence    `json:"occurrence,omitempty"`
 }
 type Queue struct {
-	ProjectID string `json:"project_id"`
-	Plans     []Plan `json:"plans"`
-	Depth     int    `json:"depth"`
-	Ready     int    `json:"ready"`
-	Waiting   int    `json:"waiting"`
-	Running   int    `json:"running"`
-	Error     string `json:"error,omitempty"`
+	RunningPlans []string `json:"running_plans"`
+	ProjectID    string   `json:"project_id"`
+	Plans        []Plan   `json:"plans"`
+	Depth        int      `json:"depth"`
+	Ready        int      `json:"ready"`
+	Waiting      int      `json:"waiting"`
+	Running      int      `json:"running"`
+	Error        string   `json:"error,omitempty"`
 }
 type Decision struct {
 	Revision        int64              `json:"revision"`
@@ -200,6 +201,7 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 			if l.Assignment.ProjectPath == p.Path {
 				busy = true
 				q.Running++
+				q.RunningPlans = append(q.RunningPlans, l.Assignment.Plan)
 			}
 		}
 		for _, pl := range plans {
@@ -227,6 +229,7 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 					}
 				}
 				if !owned {
+					q.RunningPlans = append(q.RunningPlans, pl.Name)
 					q.Running++
 				}
 				continue
