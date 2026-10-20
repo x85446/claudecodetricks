@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the environment the build ru
 
 # $product-environment — stage 9: tear down the human gates
 
-**Version:** product family 1.6.0
+**Version:** product family 1.7.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -38,7 +38,9 @@ The worst case this stage exists for: several operating systems at several versi
    - `docs/milestones.md` — which milestone first touches each need.
    - `./.iz`, `.claude/data/accounts.md` and `$accounts show` — what the project already has.
 
-2. **Inventory the needs** into three classes. Every row carries its release and the first milestone that uses it.
+2. **Qualify.** Invoke explicit `$name` invocation with `product-environment-qualify`. It walks the operator's decision tree of qualifying questions (`questions.md` beside that skill, edited by the operator only), answers each from the inputs of step 1, and returns the `## Qualifying questions` section: every obligation the chosen branches impose on every environment, each with its probe and status. The section goes into `docs/environment.md` directly under the header line, before `## Machines`. An `operator:` obligation joins `## Operator acts`; a `gap:` obligation is an engineering gap reported for the user to unlock; an `unmet:` obligation is step 4's work on that guest; a `[NEEDS CLARIFICATION]` question is asked at the gate as a choice, and the obligations beneath it stay `pending clarification` until it is answered. The obligations shape the rows below: under OBL-A every guest's provisioning installs the signed permission-holder and its grants; under OBL-B it turns SIP off and runs the grant command.
+
+3. **Inventory the needs** into three classes. Every row carries its release and the first milestone that uses it.
 
    | Class | One row per | Established by |
    |---|---|---|
@@ -50,20 +52,21 @@ The worst case this stage exists for: several operating systems at several versi
 
    **Every release is inventoried; v1 is proven.** The chain runs all thirty milestones unattended, so v2 and v3 needs are listed under `## Later releases` with the status `later — v2`. They are proven when that release's milestones are re-cut in maintain mode.
 
-3. **Establish each need** — one subagent per class, in parallel, each returning one line per row: `<class>\t<need>\t<status>\t<proof or act>`.
+4. **Establish each need** — one subagent per class, in parallel, each returning one line per row: `<class>\t<need>\t<status>\t<proof or act>`.
    - **Machines.** Write or reuse a `[machine.<key>]` definition in `./.iz` with a `needs` directive (kind, os, osversion, and arch when the row has one), and its toolchains in the `[[provision]]` list. A host appears only when the user's own words named one. `izmachine validate --format json`, then `izmachine up <key> --dry-run --format json`; `resolution.remote` is the placement. `izmachine up <key> --format json`, then the **smoke proof** inside the guest: brownfield, the project's own build and fast tier (`izmachine ssh <key> -- make check`); greenfield, the pinned stack's version command and a hello-world build in its language. On a macOS guest, the OS permissions the product's permission-holders need (Full Disk Access, Accessibility, Screen Recording) are granted to their stable identity and baked in before the snapshot, so every guest and the plan that brings it up starts pre-authorized and nothing re-prompts; a holder engineering left ad-hoc-signed cannot be pre-authorized and is reported as an engineering gap. A green proof is snapshotted as the clean base (`izmachine direct snapshot create <guest> clean --provider <p> --format json`) and the guest is stopped; plans bring it up. The real Mac is granted once, as one operator act listed like any other. No registered host can place the row → `operator:` with the one act (register a host that can, add the image, or drop the version from the platform statement). A toolchain that needs a vendor account to download is an Access row too.
    - **Access.** `$accounts` first: held or not, and where the credential lives — a file path, an env var name, a keychain item, a profile name, never a value. Then the real end-to-end probe of the capability the milestones use: `gh auth status`, the vendor API's whoami call, `security find-identity -v -p codesigning`, `xcrun notarytool history --keychain-profile notary`, the project's own `make probe-<vendor>`. Green → `ready` with the probe and its date. Not green and `$accounts` can self-heal (an agent emptied by a locked KeePassXC, a refreshable token) → heal, re-probe. Otherwise → `operator: <the one act>`: create the OAuth client, publish it to production, store the notary profile, authorize a key. A paid need nobody holds is the free-and-permissive question, asked at this gate as a choice (free path, held, or the user's words authorizing it) and never left for a plan. Each ready credential's location is recorded as a pointer under `## Used by this project` in `.claude/data/accounts.md`; the gate is the confirmation `$accounts` asks for.
    - **Substituted** rows: stand the local server up through the project's make target or fixture (`$dev-makefiles` adds the target when there is none), run the probe, record it.
    - **Live-only proofs**: `$ip release candidate task to track: <what only the real thing proves>` for each row; record the `RC-NN`.
 
-4. **Write `docs/environment.md`** (format below), then **analyze** — the meta's Step 4 plus:
+5. **Write `docs/environment.md`** (format below), then **analyze** — the meta's Step 4 plus:
    - **Coverage** — every OS, version and architecture in the platform statement has a Machines row; every `[machine.<key>]` in engineering's Machines section has one; every vendor named in requirements, features or architecture has an Access row; every Deploy environment has the machine or access it runs on.
    - **Placement** — no row names a host the user did not name; every definition in `./.iz` carries `needs` or a user-named `remote`.
    - **Secrets** — no value anywhere in the document: a token, a password, a key body, a client secret. Locations only.
    - **Acts** — every `operator:` row is exactly one act and names its first milestone; `## Operator acts` matches the rows, ordered by that milestone.
    - **Proof** — every `ready` row has a probe command and a date. A row with neither is `unproven`, never `ready`.
+   - **Qualified** — every obligation under `## Qualifying questions` is `ready`, `operator:` (and on the acts list), `gap:` (and reported) or `pending clarification` (and the question is open at the gate); none is `unproven`, and none is `unmet` on a guest this run provisioned.
 
-5. **The gate is readiness.** Present the three tables' counts and `## Operator acts`. The stage is `done` when that list is empty. The user may approve with acts open; the meta records `override: N acts`, and the chain then parks on each act when a plan reaches it, which is the user's call. Re-running `$product environment` re-probes every row, and acts the operator did drop off the list by themselves.
+6. **The gate is readiness.** Present the three tables' counts, the qualifying obligations and `## Operator acts`. The stage is `done` when that list is empty and every qualifying obligation is `ready`. The user may approve with acts open; the meta records `override: N acts`, and the chain then parks on each act when a plan reaches it, which is the user's call. Re-running `$product environment` re-probes every row, and acts the operator did drop off the list by themselves.
 
 ## Output — `docs/environment.md`
 
@@ -71,6 +74,9 @@ The worst case this stage exists for: several operating systems at several versi
 # <Product> — Environment
 
 **Date:** <YYYY-MM-DD>  ·  **Proven through:** v1  ·  **Operator acts open:** <N>
+
+## Qualifying questions
+<the section `product-environment-qualify` returns: the question table and one obligation table per branch taken>
 
 ## Machines
 | Key | Need | Serves | First | Placement | Proof | Status |
@@ -119,4 +125,5 @@ Ordered by the first milestone that needs them. One act each; `$product environm
 8. **Guests are deliverables, not scratch.** Each is snapshotted `clean` and stopped; plans bring them up with `izmachine up <key>` and roll back to `clean` for an install check. The stage leaves no guest running.
 9. **It writes `docs/environment.md`, `./.iz`, pointers in `.claude/data/accounts.md` and the release-candidate ledger, and nothing else.** No product code, no plan, no edit to a locked document: a gap in `docs/engineering.md` (an unnamed OS version, a missing deploy environment) is reported for the user to unlock.
 10. **Re-running re-probes.** Credentials expire and guests get destroyed, so every invocation runs every probe again, and maintain mode reports each row whose probe stopped passing as drift, with its act back on the list.
-11. **macOS permissions are provisioned, not prompted.** Every OS permission the product needs is granted to its stable-identity permission-holder in the golden image and baked into the `clean` snapshot, so guests and the plans that bring them up start pre-authorized. The real Mac's grant is one operator act, listed once. A permission-holder with no stable code identity cannot be pre-authorized; that is an engineering gap reported back (`docs/engineering.md` rule 9), never a grant repeated each build.
+11. **macOS permissions are provisioned, not prompted.** Every OS permission the product needs is granted to its stable-identity permission-holder in the golden image and baked into the `clean` snapshot, so guests and the plans that bring them up start pre-authorized. The real Mac's grant is one operator act, listed once. A permission-holder with no stable code identity cannot be pre-authorized; that is an engineering gap reported back (`docs/engineering.md` rule 9), never a grant repeated each build. Under the qualifying tree's OBL-B (no official identity) the grant is instead a command the AI runs after every build in SIP-off guests, and an ad-hoc holder is the expected state, not a gap.
+12. **The qualifying tree is the operator's.** Step 2 walks `questions.md` in `product-environment-qualify`; nothing in this family adds, removes or rewords a question. A question the stage wished it had is reported under `## Calls made` as `question missing: <what was wanted>`.
