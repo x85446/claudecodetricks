@@ -142,6 +142,7 @@ product-brief	userglobal	self	product
 product-competitors	userglobal,imarketing	self	product
 product-engineering	userglobal	self	product
 product-environment	userglobal	self	product
+product-environment-qualify	userglobal	self	product
 product-features	userglobal	self	product
 product-iteratemilestones	userglobal	self	product
 product-milestones	userglobal	self	product
