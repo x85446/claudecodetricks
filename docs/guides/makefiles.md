@@ -1,6 +1,6 @@
 # Makefile Guide
 
-This guide covers the 2-layer Makefile system used in this project. Part 1 describes universal principles applicable to any project. Part 2 applies these principles to Warden specifically.
+This guide covers the 2-layer Makefile system used in this project. Part 1 describes universal principles applicable to any project. Part 2 applies them to a worked example: a Go CLI that ships a daemon.
 
 ---
 
@@ -215,7 +215,7 @@ complex-target:  ## What this target does
 
 ---
 
-# Part 2: Warden Application
+# Part 2: Worked Example — a Go CLI that ships a daemon
 
 ## Target Reference
 
@@ -223,9 +223,9 @@ complex-target:  ## What this target does
 |----------|--------|-------------|
 | **General** | `help` | Display organized help message |
 | | `prereqs` | Check/install prerequisites (OS-aware) |
-| **Build** | `build` | Build CLI + hostserver (debug mode) |
+| **Build** | `build` | Build CLI + daemon (debug mode) |
 | | `build-production` | Cross-compile release binaries (stripped) |
-| | `build-daemons` | Build hostserver + cellserver for all platforms |
+| | `build-daemons` | Build the daemon for all platforms |
 | | `proto` | Generate Go code from protobuf definitions |
 | **Test** | `test` | Run all tests (unit + integration + e2e) |
 | | `test-unit` | Unit tests only (fast, no external deps) |
@@ -259,13 +259,13 @@ Two install modes serve different purposes. `make install` is an alias for `make
 Creates **symlinks** pointing to binaries in the build output directory:
 
 ```
-~/.local/bin/warden → <project>/bin/warden-darwin-arm64
+~/.local/bin/<cli> → <project>/bin/<cli>-darwin-arm64
 ```
 
 **Benefits:**
 - Rebuild without reinstall (`make build` updates the binary, symlink still works)
 - Only re-run `make install-dev` when adding new outputs (new binary, new completions)
-- Easy to identify: `ls -la ~/.local/bin/warden` shows it's a symlink
+- Easy to identify: `ls -la ~/.local/bin/<cli>` shows it's a symlink
 
 **When to use:** Daily development, testing local changes.
 
@@ -274,7 +274,7 @@ Creates **symlinks** pointing to binaries in the build output directory:
 **Copies** actual binaries into place, overwriting any symlinks:
 
 ```
-~/.local/bin/warden    (actual file, not symlink)
+~/.local/bin/<cli>     (actual file, not symlink)
 ```
 
 **Benefits:**
@@ -296,23 +296,23 @@ Creates **symlinks** pointing to binaries in the build output directory:
 
 See [guide-install.md](guide-install.md) for full details on file locations and layout.
 
-## Delegated to `warden` CLI
+## Delegated to the CLI
 
 These operations belong in the CLI, not the Makefile:
 
 ```bash
 # Daemon lifecycle
-warden daemon status              # Show daemon status
-warden daemon start               # Start daemon
-warden daemon stop                # Stop daemon
-warden daemon restart             # Restart daemon
-warden daemon logs                # View logs
-warden daemon logs -f             # Follow logs
-warden daemon install             # Register as system service
-warden daemon uninstall           # Remove system service
+<cli> daemon status              # Show daemon status
+<cli> daemon start               # Start daemon
+<cli> daemon stop                # Stop daemon
+<cli> daemon restart             # Restart daemon
+<cli> daemon logs                # View logs
+<cli> daemon logs -f             # Follow logs
+<cli> daemon install             # Register as system service
+<cli> daemon uninstall           # Remove system service
 
 # Information
-warden version                    # Show version info
+<cli> version                    # Show version info
 ```
 
 ## makehelp.sh Functions
@@ -321,11 +321,9 @@ warden version                    # Show version info
 |----------|---------|
 | `cmd_prereqs` | OS-aware prerequisite checking (Go, Docker, lint tools) |
 | `cmd_build_production` | Cross-platform production builds with proper LDFLAGS |
-| `cmd_build_daemons` | Multi-platform daemon builds (CGO handling for clipboard) |
+| `cmd_build_daemons` | Multi-platform daemon builds (CGO handling) |
 | `cmd_install_completions` | Shell completion installation (bash, zsh, fish) |
 | `cmd_uninstall_completions` | Shell completion removal |
-| `cmd_install_cellserver` | Install cellserver payloads to share directory |
-| `cmd_install_snippets` | Install snippet templates to share directory |
 
 ## Common Workflows
 
@@ -334,8 +332,8 @@ warden version                    # Show version info
 make prereqs          # Check environment
 make build            # Build debug binaries
 make install          # Install to ~/.local/bin (symlinks)
-warden daemon install # Register hostserver service
-warden daemon start   # Start hostserver
+<cli> daemon install  # Register the daemon as a service
+<cli> daemon start    # Start the daemon
 ```
 
 ### Daily development
