@@ -525,4 +525,4 @@ target-name:  ## Short description  # Help text for this target
 
 ## See Also
 
-- `REFERENCE.md` — Install modes explained, optional targets, Warden application example
+- `REFERENCE.md` — Install modes explained, optional targets, worked application example

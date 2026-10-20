@@ -1,6 +1,6 @@
 # Makefile Reference
 
-Detailed patterns, optional targets, and the Warden application of the 2-layer Makefile system.
+Detailed patterns, optional targets, and a worked application of the 2-layer Makefile system.
 
 ## Install Modes Explained
 
@@ -181,7 +181,7 @@ cmd_uninstall_completions() {
 | Development workflow      |                          |
 | Cleanup                   |                          |
 
-## Warden Application Example
+## Worked Example: a Go CLI that ships a daemon
 
 ### Full Target Reference
 
@@ -189,7 +189,7 @@ cmd_uninstall_completions() {
 |-----------------|-----------------------|---------------------------------------|
 | **General**     | `help`                | Display organized help message        |
 |                 | `prereqs`             | Check/install prerequisites (OS-aware)|
-| **Build**       | `build`               | Build CLI + hostserver (debug mode)   |
+| **Build**       | `build`               | Build CLI + daemon (debug mode)   |
 |                 | `build-production`    | Cross-compile release binaries        |
 |                 | `build-daemons`       | Build daemons for all platforms       |
 |                 | `proto`               | Generate Go code from protobuf        |
@@ -223,8 +223,8 @@ cmd_uninstall_completions() {
 make prereqs          # Check environment
 make build            # Build debug binaries
 make install          # Install to ~/.local/bin (symlinks)
-warden daemon install # Register hostserver service
-warden daemon start   # Start hostserver
+<cli> daemon install  # Register the daemon as a service
+<cli> daemon start    # Start the daemon
 ```
 
 **Daily development:**
@@ -251,20 +251,20 @@ make build-production # Cross-compile for all platforms
 
 ```bash
 # Daemon lifecycle
-warden daemon status              # Show daemon status
-warden daemon start               # Start daemon
-warden daemon stop                # Stop daemon
-warden daemon restart             # Restart daemon
-warden daemon logs                # View logs
-warden daemon logs -f             # Follow logs
-warden daemon install             # Register as system service
-warden daemon uninstall           # Remove system service
+<cli> daemon status              # Show daemon status
+<cli> daemon start               # Start daemon
+<cli> daemon stop                # Stop daemon
+<cli> daemon restart             # Restart daemon
+<cli> daemon logs                # View logs
+<cli> daemon logs -f             # Follow logs
+<cli> daemon install             # Register as system service
+<cli> daemon uninstall           # Remove system service
 
 # Information
-warden version                    # Show version info
+<cli> version                    # Show version info
 ```
 
-### makehelp.sh Functions (Warden)
+### makehelp.sh Functions (example)
 
 | Function                   | Purpose                                        |
 |----------------------------|------------------------------------------------|
@@ -273,5 +273,3 @@ warden version                    # Show version info
 | `cmd_build_daemons`        | Multi-platform daemon builds (CGO handling)    |
 | `cmd_install_completions`  | Shell completion installation (bash, zsh, fish)|
 | `cmd_uninstall_completions`| Shell completion removal                       |
-| `cmd_install_cellserver`   | Install cellserver payloads to share directory |
-| `cmd_install_snippets`     | Install snippet templates to share directory   |

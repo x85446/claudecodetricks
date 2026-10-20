@@ -23,7 +23,6 @@ IMYRIPLAY=~/workspace/izuma/myriplay/.claude/skills
 TAXES="$HOME/Library/CloudStorage/GoogleDrive-travis.mccollum@gmail.com/My Drive/TRAVIS_Taxes/.claude/skills"
 CCTRICKS=~/workspace/x85446/claudecodetricks/.claude/skills
 PMT=~/workspace/x85446/personal-mac-tools/.claude/skills
-WARDEN=~/workspace/x85446/warden/.claude/skills
 FINANCE=~/workspace/x85446/financeSheets/.claude/skills
 PERSONALDB=~/workspace/x85446/financeSheets/personaldb/.claude/skills
 GRAVHL=~/workspace/gravhl/backend/.claude/skills
@@ -41,7 +40,6 @@ ALL_TARGETS=(
     "$IMYRIPLAY"
     "$TAXES"
     "$CCTRICKS"
-    "$WARDEN"
     "$FINANCE"
     "$PERSONALDB"
     "$GRAVHL"

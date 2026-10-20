@@ -175,11 +175,7 @@ if [ -n "$WEEK_PCT" ] && [ -n "$WEEK_RESETS" ]; then
   WEEK_INFO="📅 ${WEEK_COLOR}${WEEK_BAR}${RESET} ${WEEK_PCT}% | -${WEEK_RESET_STR}"
 fi
 
-if [[ "$HOST" == warden* ]]; then
-  HOST_ICON="⛓️"
-else
-  HOST_ICON="🖥️"
-fi
+HOST_ICON="🖥️"
 
 echo -e "📁 ${DIR##*/} | ${MAGENTA}${HOST_ICON} ${HOST}${RESET} | ${CYAN}[$MODEL]${RESET}"
 COST_FMT=$(printf '$%.2f' "$COST")

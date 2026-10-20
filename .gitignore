@@ -36,11 +36,6 @@ Thumbs.db
 .env
 .env.local
 
-# Warden local configuration
-.warden.local/
-.warden/.env
-.warden.bak/
-.warden/warden-cellserver
 temp/
 
 # Rust (skills-tui)
