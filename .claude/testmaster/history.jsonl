@@ -6375,3 +6375,13 @@
 {"id":"iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
 {"id":"iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
 {"batch":"5 patterns","failed":0,"missing":0,"ms":793,"not_run":0,"passed":8,"runner":"testmaster","skipped":0,"ts":"2026-10-21T18:17:41Z"}
+{"id":"iterrun.TestConductorManualReleaseHandoff","ms":160,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"id":"iterrun.TestConductorSourceDependencyCheckpoint","ms":140,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"id":"iterrun.TestConductorSourceIdentityAndArchive","ms":50,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"id":"iterrun.TestConductorSourceIntakeProvenance","ms":20,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"id":"iterrun.TestConductorSourceMalformedPlanAdmission","ms":40,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"id":"iterrun.TestConductorSourceOwnTrail","ms":70,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"id":"iterrun.TestConductorSourceParkedInterruption","ms":70,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"id":"iterrun.TestConductorSourceReleaseNextClaim","ms":220,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"id":"iterrun.TestConductorSourceTypedPlanExclusion","ms":40,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:21:03Z"}
+{"batch":"iterrun.TestConductorSource*+iterrun.TestConductorManualReleaseHandoff","failed":0,"missing":0,"ms":1448,"not_run":0,"passed":9,"runner":"testmaster","skipped":0,"ts":"2026-10-21T18:21:03Z"}

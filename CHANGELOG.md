@@ -17,6 +17,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
 - Conductor CLI skill guidance describes named rules and local attachments; focused settings verification runs through TESTMASTER.
 
 ### Fixed
+- Conductor accepts numbered and checkbox task/validation pairs, resolves team dependencies by column heading, and reports malformed plans as blocked before dispatch.
 - Plan detail timelines label recorded spans and open rows as history, so blocked or idle plans do not imply a live executor.
 - Explicit CLI release returns unblocked plans to Conductor; ownership labels distinguish live CLI and automated assignments, and parked failures retain visible blockers.
 - Plan pages place project navigation and plan identity above bounded, scrollable Conductor activity; canonical project discovery combines directory aliases.
