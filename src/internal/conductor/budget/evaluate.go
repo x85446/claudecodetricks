@@ -47,6 +47,20 @@ func ValidatePolicy(p model.PowerBand) error {
 	if !percent(p.ShortGreen) || !percent(p.ShortRed) || p.ShortGreen > p.ShortRed {
 		return fmt.Errorf("short-window thresholds must be ordered percentages")
 	}
+	if len(p.ShortGreenCurve) != 0 || len(p.ShortRedCurve) != 0 {
+		if len(p.ShortGreenCurve) != 6 || len(p.ShortRedCurve) != 6 {
+			return fmt.Errorf("five-hour curves require six values for hours 0 through 5")
+		}
+		for i, g := range p.ShortGreenCurve {
+			r := p.ShortRedCurve[i]
+			if !percent(g) || !percent(r) || g > r {
+				return fmt.Errorf("hour %d thresholds must be ordered percentages", i)
+			}
+			if i > 0 && (g < p.ShortGreenCurve[i-1] || r < p.ShortRedCurve[i-1]) {
+				return fmt.Errorf("five-hour curves must be nondecreasing")
+			}
+		}
+	}
 	if len(p.AllowedBands) == 0 {
 		return fmt.Errorf("select at least one fallback allowed band")
 	}
@@ -60,10 +74,10 @@ func ValidatePolicy(p model.PowerBand) error {
 	return nil
 }
 func interpolate(curve []float64, day float64) float64 {
-	day = math.Max(0, math.Min(7, day))
+	day = math.Max(0, math.Min(float64(len(curve)-1), day))
 	i := int(day)
-	if i == 7 {
-		return curve[7]
+	if i == len(curve)-1 {
+		return curve[i]
 	}
 	return curve[i] + (curve[i+1]-curve[i])*(day-float64(i))
 }
@@ -173,7 +187,14 @@ func Evaluate(p model.PowerBand, s model.Subscription, u model.Usage, now time.T
 	d.GreenEnd, d.RedStart = Thresholds(p, day)
 	d.WeeklyBand = weeklyBand(weekly, d.GreenEnd, d.RedStart)
 	if u.Short != nil {
-		d.ShortBand = shortBand(short, p.ShortGreen, p.ShortRed)
+		hour := 0.0
+		if !u.Short.StartsAt.IsZero() {
+			hour = now.Sub(u.Short.StartsAt).Hours()
+		} else if !ConstantShort(p) {
+			return reject(d, "short_unknown", "Five-hour pacing requires a reported window start")
+		}
+		green, red := ShortThresholds(p, hour)
+		d.ShortBand = shortBand(short, green, red)
 	}
 	d.Band = d.WeeklyBand
 	if rank(d.ShortBand) > rank(d.Band) {

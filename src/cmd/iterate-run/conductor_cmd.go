@@ -360,7 +360,7 @@ func runConductorCLI(args []string, input io.Reader, output, diagnostics io.Writ
 	case "templates":
 		data = provider.Templates()
 	default:
-		allowed := map[string]bool{"project": true, "subscription": true, "sequence": true, "preset": true, "power-band": true, "time-window": true, "overdrive": true, "automation": true}
+		allowed := map[string]bool{"project": true, "subscription": true, "sequence": true, "preset": true, "power-band": true, "time-window": true, "overdrive": true, "automation": true, "automation-attachment": true}
 		if !allowed[verb] {
 			err = fmt.Errorf("unknown conductor command %q; use --help", verb)
 			code = 2
@@ -481,7 +481,7 @@ Usage: iterate-run [global flags] conductor <noun> <verb> [ID] [flags anywhere]
        iterate-run conductor <status|explain|simulate|tick|start|stop|pause|resume|kill>
 
 Resources: project, subscription, sequence, preset, power-band, time-window,
-           overdrive, automation
+           overdrive, automation, automation-attachment
 Actions:   list, show, create, edit, duplicate, delete
 Other:     config show|validate|apply; usage show|refresh; run list;
            event list --run ID; templates; migrate; completion bash|zsh|fish
@@ -517,7 +517,7 @@ conflict, 4 unavailable. -- terminates option parsing.`)
 	}
 }
 func conductorCompletion(out, diag io.Writer, shell string) int {
-	words := "conductor status explain simulate overdrive-conversion tick start stop pause resume kill migrate project subscription sequence preset power-band time-window overdrive automation usage run event config list show create edit duplicate delete apply validate refresh templates"
+	words := "conductor status explain simulate overdrive-conversion tick start stop pause resume kill migrate project subscription sequence preset power-band time-window overdrive automation automation-attachment usage run event config list show create edit duplicate delete apply validate refresh templates"
 	switch shell {
 	case "bash":
 		fmt.Fprintf(out, "complete -W '%s' iterate-run\n", words)

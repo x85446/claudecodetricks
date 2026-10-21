@@ -53,7 +53,9 @@ Read [configuration.md](references/configuration.md) for schedule, launch sequen
 4. For an authorized configuration request, `config apply --file DRAFT --revision N --json` commits atomically. On exit 3, reread, merge only the requested changes and retry once; a second conflict is reported without overwriting concurrent edits. A real configuration change does not imply permission to run a tick unless requested.
 5. Reread config and explain. Summarize the selected launch sequences, cumulative bands, days/hours/timezone, run limit, closing action and affected shared-subscription automations. Delete the temporary draft.
 
-Registration uses `project create --path ABSOLUTE_PATH --revision N --json` and starts disabled. Resolve its returned ID before configuration. Do not create or move repository files. Settings use AI Subscriptions, Named Power Bands, Named Time Windows and subscription-owned Named Launch Sequences; sequence names combine a fixed subscription prefix with an editable suffix.
+Registration uses `project create --path ABSOLUTE_PATH --revision N --json` and starts disabled. Resolve its returned ID before configuration. Do not create or move repository files. Settings use AI Subscriptions, Named Power Bands, Named Time Windows, Named Automations and subscription-owned Named Launch Sequences; sequence names combine a fixed subscription prefix with an editable suffix.
+
+Named Automations are shared definitions. Project attachments own local enablement and priority; attaching starts disabled. Use `automation-attachment` resources or the revisioned `automation_attachments` configuration array. Detach references before deleting a definition. Duplicate creates independent rules. Shared edits affect future admissions; active assignments retain their saved inputs.
 
 Shared edits can affect several projects. Report those references from the actual config. Preserve existing enablement unless the user requests changing it. A planning or demo request keeps examples disabled and never exhausts live subscriptions.
 

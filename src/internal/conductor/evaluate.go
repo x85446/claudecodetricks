@@ -22,6 +22,7 @@ type EvaluateRequest struct {
 	QueueAvailable *bool                    `json:"queue_available,omitempty"`
 }
 type Candidate struct {
+	SampleBudget *BudgetPreviewResult `json:"sample_budget,omitempty"`
 	Project      model.Project        `json:"project"`
 	Plan         Plan                 `json:"plan"`
 	Automation   model.Automation     `json:"automation"`
@@ -254,7 +255,7 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 				continue
 			}
 			ready := false
-			rules := append([]model.Automation{}, c.Automations...)
+			rules := append([]model.Automation{}, model.EffectiveAutomations(c)...)
 			sort.SliceStable(rules, func(i, j int) bool {
 				if rules[i].Priority != rules[j].Priority {
 					return rules[i].Priority < rules[j].Priority
@@ -262,7 +263,7 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 				return rules[i].ID < rules[j].ID
 			})
 			for _, a := range rules {
-				if a.ProjectID != p.ID || (req.AutomationID != "" && a.ID != req.AutomationID) {
+				if a.ProjectID != p.ID || (req.AutomationID != "" && a.ID != req.AutomationID && a.DefinitionID != req.AutomationID) {
 					continue
 				}
 				entries := a.Entries
@@ -286,6 +287,10 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 					bd := budget.EvaluateForModel(pols[sub.PowerBandID], sub, u, now, en.MaxBand, a.HonorOverdrive, a.OnlyOverdrive, r.Occurrences, sq.Model)
 					d.Occurrences = mergeOccurrences(d.Occurrences, bd.Occurrences)
 					x := Candidate{Project: p, Plan: pl, Automation: a, Subscription: sub, Sequence: sq, EntryID: en.ID, Budget: bd, Eligible: true, Code: "eligible", Reason: "Eligible"}
+					if _, sampled := req.Samples[sub.ID]; sampled {
+						preview := sampleBudget(pols[sub.PowerBandID], sub, u, now, en.MaxBand, a.HonorOverdrive, a.OnlyOverdrive, sq.Model)
+						x.SampleBudget = &preview
+					}
 					deny := func(code, reason string) {
 						if x.Eligible {
 							x.Eligible = false

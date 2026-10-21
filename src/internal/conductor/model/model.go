@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const SchemaVersion = 2
+const SchemaVersion = 3
 const ProtocolVersion = 1
 
 type Band string
@@ -18,15 +18,16 @@ const (
 )
 
 type Config struct {
-	Version       int            `json:"version"`
-	Revision      int64          `json:"revision"`
-	Enabled       bool           `json:"enabled"`
-	Paused        bool           `json:"paused"`
-	Projects      []Project      `json:"projects"`
-	Subscriptions []Subscription `json:"subscriptions"`
-	PowerBands    []PowerBand    `json:"power_bands"`
-	TimeWindows   []TimeWindow   `json:"time_windows"`
-	Automations   []Automation   `json:"automations"`
+	Version       int                    `json:"version"`
+	Revision      int64                  `json:"revision"`
+	Enabled       bool                   `json:"enabled"`
+	Paused        bool                   `json:"paused"`
+	Projects      []Project              `json:"projects"`
+	Subscriptions []Subscription         `json:"subscriptions"`
+	PowerBands    []PowerBand            `json:"power_bands"`
+	TimeWindows   []TimeWindow           `json:"time_windows"`
+	Attachments   []AutomationAttachment `json:"automation_attachments"`
+	Automations   []Automation           `json:"automations"`
 }
 
 type Project struct {
@@ -91,16 +92,19 @@ type Preset struct {
 }
 
 type PowerBand struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	GreenCurve   []float64 `json:"green_curve"`
-	RedCurve     []float64 `json:"red_curve"`
-	ShortGreen   float64   `json:"short_green"`
-	ShortRed     float64   `json:"short_red"`
-	AllowedBands []Band    `json:"allowed_bands"`
+	ID              string    `json:"id"`
+	Name            string    `json:"name"`
+	GreenCurve      []float64 `json:"green_curve"`
+	RedCurve        []float64 `json:"red_curve"`
+	ShortGreenCurve []float64 `json:"short_green_curve,omitempty"`
+	ShortRedCurve   []float64 `json:"short_red_curve,omitempty"`
+	ShortGreen      float64   `json:"short_green"`
+	ShortRed        float64   `json:"short_red"`
+	AllowedBands    []Band    `json:"allowed_bands"`
 }
 
 type Recurrence struct {
+	AllDay     bool   `json:"all_day,omitempty"`
 	Days       []int  `json:"days"`
 	Start      string `json:"start"`
 	End        string `json:"end"`
@@ -133,7 +137,39 @@ type OverdriveWindow struct {
 	TargetUsedPercent float64    `json:"target_used_percent"`
 }
 
+type AutomationAttachment struct {
+	ID           string `json:"id"`
+	DefinitionID string `json:"definition_id"`
+	ProjectID    string `json:"project_id"`
+	Enabled      bool   `json:"enabled"`
+	Priority     int    `json:"priority"`
+}
+
+// EffectiveAutomations composes shared rules with project-local activation and identity.
+func EffectiveAutomations(c Config) []Automation {
+	out := []Automation{}
+	for _, a := range c.Automations {
+		if a.ProjectID != "" {
+			out = append(out, a)
+			continue
+		}
+		for _, link := range c.Attachments {
+			if link.DefinitionID == a.ID {
+				x := a
+				x.DefinitionID = a.ID
+				x.ID = link.ID
+				x.ProjectID = link.ProjectID
+				x.Enabled = link.Enabled
+				x.Priority = link.Priority
+				out = append(out, x)
+			}
+		}
+	}
+	return out
+}
+
 type Automation struct {
+	DefinitionID   string   `json:"definition_id,omitempty"`
 	ID             string   `json:"id"`
 	Name           string   `json:"name"`
 	ProjectID      string   `json:"project_id"`

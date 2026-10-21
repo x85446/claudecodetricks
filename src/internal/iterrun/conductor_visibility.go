@@ -50,7 +50,7 @@ func conductorVisibility(ctx context.Context, s *conductor.Service, path string)
 		}
 		v := conductorVisibilityView{ProjectID: p.ID, ProjectPath: p.Path, State: d.State, EffectiveSequence: "None selected", Reason: "No eligible automation", Usage: []conductorUsageView{}}
 		ids := map[string]bool{}
-		for _, automation := range c.Automations {
+		for _, automation := range model.EffectiveAutomations(c) {
 			if automation.ProjectID != p.ID {
 				continue
 			}

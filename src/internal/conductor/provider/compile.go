@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -179,16 +180,30 @@ func ExecutionEnv(adapter string, env []string) []string {
 	return out
 }
 
-// Probe checks executable help without submitting a model request or claiming authentication.
-func Probe(ctx context.Context, s model.Subscription) model.Readiness {
+// Detect resolves the configured executable on the Conductor host.
+func Detect(s model.Subscription) model.Readiness {
 	r := model.Readiness{Executable: s.Executable}
 	path, err := exec.LookPath(s.Executable)
 	if err != nil {
 		r.Reason = "Executable unavailable"
 		return r
 	}
+	if absolute, err := filepath.Abs(path); err == nil {
+		path = absolute
+	}
 	r.Executable = path
 	r.Installed = true
+	r.Reason = "Program found on Conductor host"
+	return r
+}
+
+// Probe checks executable help without submitting a model request or claiming authentication.
+func Probe(ctx context.Context, s model.Subscription) model.Readiness {
+	r := Detect(s)
+	if !r.Installed {
+		return r
+	}
+	path := r.Executable
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 	args := []string{"--help"}
@@ -209,7 +224,16 @@ func Probe(ctx context.Context, s model.Subscription) model.Readiness {
 		r.Stream = strings.Contains(string(b), "stream-json")
 		r.ResultContract = r.Stream
 		_, collectorErr := exec.LookPath("codexbar")
-		r.Telemetry = len(s.UsageCommand) > 0 || collectorErr == nil
+		defaultPath, defaultErr := exec.LookPath("claude")
+		r.Telemetry = len(s.UsageCommand) > 0 || (collectorErr == nil && defaultErr == nil && defaultPath == path)
+		if !r.Telemetry {
+			if defaultErr != nil || defaultPath != path {
+				r.Reason = "Custom Claude program needs a collector override"
+			} else {
+				r.Reason = "CodexBar unavailable; install CodexBar or configure a collector override"
+			}
+			return r
+		}
 	case "generic", "jsonl", "custom":
 		_, e := Compile(s, model.Sequence{}, model.Assignment{})
 		r.ResultContract = e == nil

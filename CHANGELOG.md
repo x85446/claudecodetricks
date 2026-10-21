@@ -3,6 +3,24 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [javelina] - 2026-10-21
+
+### Added
+- Shared Named Automations with revisioned global definitions, independent project attachments, stable migrated runtime identities, Used by references and guarded deletion.
+- Policy-only preview API and interpolated five-hour green/red curves with six hourly points; legacy fixed thresholds retain their behavior.
+- Editable full-day Weekdays/Weekends presets with civil-midnight boundaries and daylight-saving coverage.
+- Host executable detection, help-only installation verification, literal argument editors and contextual field help in subscription setup.
+
+### Changed
+- Power-band samples use independent elapsed-time and used-percentage inputs with no subscription or scheduling dependencies.
+- Dashboard project activation, subscription activation and overdrive controls use accessible switches; disabled content stays compact, readable and editable.
+- Conductor CLI skill guidance describes named rules and local attachments; focused settings verification runs through TESTMASTER.
+
+### Fixed
+- Exact-zero samples show a green current-state indicator without changing the configured threshold geometry.
+- Achieved overdrive targets keep their green region and checkmarked outcome while hard provider limits remain authoritative.
+- Stale preview and configuration polling responses cannot overwrite newer UI state; revision conflicts preserve drafts.
+
 ## [indigobird] - 2026-10-16
 
 ### Added
