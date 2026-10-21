@@ -24,36 +24,53 @@ const sourcePlan = "name: alpha\nphase: planned\nstatus: queued\nrunning: false\
 
 // TESTMASTER: id=indigobird-execution-teams tier=fast parallel=yes
 func TestConductorSourceDependencyCheckpoint(t *testing.T) {
-	ctx := context.Background()
-	p := model.Project{ID: "p", Path: t.TempDir()}
-	path := writeConductorPlan(t, p.Path, sourcePlan)
-	src := ConductorPlanSource{}
-	pair, e := src.Pair(ctx, p, "alpha")
-	if e != nil || pair.Step != 2 || pair.Team != "prerequisite" {
-		t.Fatal(pair, e)
-	}
-	a := model.Assignment{ID: "assignment", ProjectPath: p.Path, Plan: "alpha", Step: 2, SourceDigest: pair.Digest}
-	r := model.Result{Evidence: []string{"real fixture verified"}}
-	if e = src.Checkpoint(ctx, a, r); e != nil {
-		t.Fatal(e)
-	}
-	if e = src.Checkpoint(ctx, a, r); e != nil {
-		t.Fatal("idempotent checkpoint", e)
-	}
-	pair, e = src.Pair(ctx, p, "alpha")
-	if e != nil || pair.Step != 1 {
-		t.Fatal(pair, e)
-	}
-	b, _ := os.ReadFile(path)
-	if strings.Count(string(b), "conductor checkpoint assignment") != 1 {
-		t.Fatal("duplicate checkpoint")
-	}
-	a.Step = 1
-	a.SourceDigest = pair.Digest
-	edited := strings.Replace(string(b), "dependent work", "changed work", 1)
-	_ = conductor.AtomicWrite(path, []byte(edited))
-	if e = src.Checkpoint(ctx, a, r); e == nil {
-		t.Fatal("changed source accepted")
+	for _, format := range []string{"checkbox", "numbered", "check-validation", "focus-column"} {
+		t.Run(format, func(t *testing.T) {
+			text := sourcePlan
+			switch format {
+			case "numbered":
+				text = strings.ReplaceAll(text, "- [ ] ", "")
+			case "check-validation":
+				text = strings.ReplaceAll(text, "- [ ] 1. verify", "- [ ] check 1: verify")
+				text = strings.ReplaceAll(text, "- [ ] 2. verify", "- [ ] check 2: verify")
+			case "focus-column":
+				text = strings.ReplaceAll(text, "- [ ] ", "")
+				text = strings.Replace(text, "| Steps | Depends |", "| Steps | Focus | Depends on |", 1)
+				text = strings.Replace(text, "| dependent | 1 | prerequisite |", "| dependent | 1 | downstream work | prerequisite |", 1)
+				text = strings.Replace(text, "| prerequisite | 2 | — |", "| prerequisite | 2 | foundation | — |", 1)
+			}
+			ctx := context.Background()
+			p := model.Project{ID: "p", Path: t.TempDir()}
+			path := writeConductorPlan(t, p.Path, text)
+			src := ConductorPlanSource{}
+			pair, e := src.Pair(ctx, p, "alpha")
+			if e != nil || pair.Step != 2 || pair.Team != "prerequisite" {
+				t.Fatal(pair, e)
+			}
+			a := model.Assignment{ID: "assignment", ProjectPath: p.Path, Plan: "alpha", Step: 2, SourceDigest: pair.Digest}
+			r := model.Result{Evidence: []string{"real fixture verified"}}
+			if e = src.Checkpoint(ctx, a, r); e != nil {
+				t.Fatal(e)
+			}
+			if e = src.Checkpoint(ctx, a, r); e != nil {
+				t.Fatal("idempotent checkpoint", e)
+			}
+			pair, e = src.Pair(ctx, p, "alpha")
+			if e != nil || pair.Step != 1 {
+				t.Fatal(pair, e)
+			}
+			b, _ := os.ReadFile(path)
+			if strings.Count(string(b), "conductor checkpoint assignment") != 1 {
+				t.Fatal("duplicate checkpoint")
+			}
+			a.Step = 1
+			a.SourceDigest = pair.Digest
+			edited := strings.Replace(string(b), "dependent work", "changed work", 1)
+			_ = conductor.AtomicWrite(path, []byte(edited))
+			if e = src.Checkpoint(ctx, a, r); e == nil {
+				t.Fatal("changed source accepted")
+			}
+		})
 	}
 }
 
@@ -299,5 +316,26 @@ func TestConductorManualReleaseHandoff(t *testing.T) {
 				t.Fatalf("gate=%v, want busy=%v", e, tc.want)
 			}
 		})
+	}
+}
+
+// TESTMASTER: id=conductor-malformed-plan-admission tier=? parallel=yes
+func TestConductorSourceMalformedPlanAdmission(t *testing.T) {
+	p := model.Project{ID: "p", Path: t.TempDir()}
+	for _, text := range []string{
+		"phase: planned\nstatus: queued\nrunning: false\n## Steps\nnot a task\n## Validation\nnot a criterion\n",
+		"phase: planned\nstatus: queued\nrunning: false\n## Steps\n1. Task\n## Validation\n",
+		"phase: planned\nstatus: queued\nrunning: false\n## Steps\n1. Task\n1. Duplicate task\n## Validation\n1. Proof\n",
+	} {
+		writeConductorPlan(t, p.Path, text)
+		plans, err := (ConductorPlanSource{}).List(context.Background(), p)
+		if err != nil || len(plans) != 1 || !plans[0].Blocked || !strings.HasPrefix(plans[0].Reason, "Plan cannot run:") {
+			t.Fatalf("invalid source appeared eligible: %#v, %v", plans, err)
+		}
+	}
+	writeConductorPlan(t, p.Path, strings.ReplaceAll(sourcePlan, "- [ ] ", ""))
+	plans, err := (ConductorPlanSource{}).List(context.Background(), p)
+	if err != nil || len(plans) != 1 || plans[0].Blocked {
+		t.Fatalf("repaired numbered plan remained blocked: %#v, %v", plans, err)
 	}
 }

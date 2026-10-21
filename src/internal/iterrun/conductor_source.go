@@ -32,7 +32,13 @@ func (ConductorPlanSource) List(ctx context.Context, p model.Project) ([]conduct
 		started, _ := v.StartedAt()
 		state := v.StateLabel()
 		running := conductorManualPlanRunning(p.Path, v, time.Now())
-		out = append(out, conductor.Plan{Running: running, Name: v.Name, ProjectPath: p.Path, ID: conductor.PlanID(p.Path, v.Name), State: state, Staged: v.IsQueued() || v.Phase == "executing" || state == "unblocked", Blocked: state == "blocked" || state == "paused", Reason: v.Status, Release: v.TypedOnly, Started: started, Complete: v.Phase == "complete" || v.Phase == "done"})
+		plan := conductor.Plan{Running: running, Name: v.Name, ProjectPath: p.Path, ID: conductor.PlanID(p.Path, v.Name), State: state, Staged: v.IsQueued() || v.Phase == "executing" || state == "unblocked", Blocked: state == "blocked" || state == "paused", Reason: v.Status, Release: v.TypedOnly, Started: started, Complete: v.Phase == "complete" || v.Phase == "done"}
+		if plan.Staged && !plan.Blocked && !plan.Running && !plan.Complete {
+			if _, err := (ConductorPlanSource{}).Pair(ctx, p, v.Name); err != nil {
+				plan.Blocked, plan.State, plan.Reason = true, "blocked", "Plan cannot run: "+err.Error()
+			}
+		}
+		out = append(out, plan)
 	}
 	return out, nil
 }
@@ -56,8 +62,6 @@ func safePlanPath(project, name string) (string, error) {
 	return path, nil
 }
 
-var conductorPairRE = regexp.MustCompile(`^- \[([ xX])\] ([0-9]+)\.\s*(.*)$`)
-
 type pairLines struct {
 	step, taskLine, validationLine int
 	task, validation               string
@@ -74,20 +78,26 @@ func parseConductorPairs(text string) ([]pairLines, error) {
 		if strings.HasPrefix(line, "## ") {
 			section = strings.TrimSpace(strings.TrimPrefix(line, "## "))
 		}
-		m := conductorPairRE.FindStringSubmatch(line)
-		if m == nil {
+		item, ok := parsePlanItem(strings.TrimSpace(line))
+		if !ok {
 			continue
 		}
-		step, _ := strconv.Atoi(m[2])
+		step := item.Num
 		switch section {
 		case "Steps":
+			if _, exists := index[step]; exists {
+				return nil, fmt.Errorf("step %d occurs more than once", step)
+			}
 			index[step] = len(pairs)
-			pairs = append(pairs, pairLines{step: step, taskLine: n, validationLine: -1, task: m[3], done: strings.EqualFold(m[1], "x")})
+			pairs = append(pairs, pairLines{step: step, taskLine: n, validationLine: -1, task: item.Text, done: item.Checked})
 		case "Validation":
 			if i, ok := index[step]; ok {
+				if pairs[i].validationLine >= 0 {
+					return nil, fmt.Errorf("validation %d occurs more than once", step)
+				}
 				pairs[i].validationLine = n
-				pairs[i].validation = m[3]
-				pairs[i].done = pairs[i].done && strings.EqualFold(m[1], "x")
+				pairs[i].validation = item.Text
+				pairs[i].done = pairs[i].done && item.Checked
 			}
 		}
 	}
@@ -185,8 +195,8 @@ func (ConductorPlanSource) Checkpoint(ctx context.Context, a model.Assignment, r
 		if p.done {
 			return nil
 		}
-		lines[p.taskLine] = strings.Replace(lines[p.taskLine], "[ ]", "[x]", 1)
-		lines[p.validationLine] = strings.Replace(lines[p.validationLine], "[ ]", "[x]", 1)
+		lines[p.taskLine] = fmt.Sprintf("- [x] %d. %s", p.step, p.task)
+		lines[p.validationLine] = fmt.Sprintf("- [x] %d. %s", p.step, p.validation)
 		text := strings.Join(lines, "\n")
 		text = conductorSetField(text, "phase", "executing")
 		text = conductorSetField(text, "status", "executing")
@@ -400,6 +410,7 @@ type conductorTeam struct {
 func conductorTeams(text string) map[string]conductorTeam {
 	out := map[string]conductorTeam{}
 	section := false
+	stepsColumn, dependsColumn := 1, 2
 	for _, line := range strings.Split(text, "\n") {
 		if strings.HasPrefix(line, "## ") {
 			section = strings.TrimSpace(line) == "## Teams"
@@ -413,11 +424,23 @@ func conductorTeams(text string) map[string]conductorTeam {
 			continue
 		}
 		name := strings.Trim(strings.TrimSpace(cols[0]), "` ")
-		if name == "Team" || name == "team" || strings.Contains(name, "---") {
+		if strings.EqualFold(name, "team") {
+			dependsColumn = -1
+			for i, col := range cols {
+				switch strings.ToLower(strings.TrimSpace(col)) {
+				case "steps":
+					stepsColumn = i
+				case "depends", "depends on", "depends-on":
+					dependsColumn = i
+				}
+			}
+			continue
+		}
+		if strings.Contains(name, "---") || stepsColumn >= len(cols) {
 			continue
 		}
 		team := conductorTeam{}
-		for _, piece := range strings.Split(strings.TrimSpace(cols[1]), ",") {
+		for _, piece := range strings.Split(strings.TrimSpace(cols[stepsColumn]), ",") {
 			piece = strings.Trim(strings.TrimSpace(piece), "` ")
 			bounds := strings.Split(piece, "-")
 			lo, e := strconv.Atoi(bounds[0])
@@ -432,7 +455,11 @@ func conductorTeams(text string) map[string]conductorTeam {
 				team.steps = append(team.steps, n)
 			}
 		}
-		for _, d := range strings.Split(strings.TrimSpace(cols[2]), ",") {
+		depends := ""
+		if dependsColumn >= 0 && dependsColumn < len(cols) {
+			depends = cols[dependsColumn]
+		}
+		for _, d := range strings.Split(strings.TrimSpace(depends), ",") {
 			d = strings.Trim(strings.TrimSpace(d), "` ")
 			if d != "" && d != "—" && d != "-" {
 				team.dependencies = append(team.dependencies, d)
