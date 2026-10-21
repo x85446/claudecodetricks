@@ -905,6 +905,48 @@ func TestIndigobirdSampleEpochAndDaySeven(t *testing.T) {
 	if e != nil || d.HardAllowed {
 		t.Fatal("sample exhaustion hidden", d, e)
 	}
+	c, _ = s.Config()
+	c.Subscriptions[0].Enabled = false
+	c.Subscriptions[0].OverdriveEnabled = true
+	c.Subscriptions[0].OverdriveWindows = []model.OverdriveWindow{{
+		ID: "preview", Name: "Preview", Enabled: true, TargetUsedPercent: 60,
+		StartMode: "weekly", EndMode: "recurrence",
+		Recurrence: model.Recurrence{Days: []int{1, 2, 3, 4, 5, 6, 7}, Start: "00:00", End: "00:00", Timezone: "UTC", EveryWeeks: 1},
+	}}
+	if _, e = s.Apply(c.Revision, c); e != nil {
+		t.Fatal(e)
+	}
+	configBefore, _ := os.ReadFile(filepath.Join(s.Dir, "config.json"))
+	runtimeBefore, _ := s.Runtime()
+	day = 3
+	for _, amount := range []float64{53, 60, 100} {
+		used = amount
+		d, e = s.BudgetPreview(context.Background(), BudgetPreviewRequest{SubscriptionID: "account", Sample: &sample, MaxBand: model.Green, HonorOverdrive: true})
+		if e != nil || d.Allowed || d.HardAllowed || d.Code != "subscription_disabled" || d.Display == nil || d.DisplayNote == "" {
+			t.Fatalf("disabled sample must preserve denial and provide a separate display: %+v %v", d, e)
+		}
+		if d.Display.GreenEnd <= 0 || d.Display.RedStart <= 0 || d.Display.WeeklyUsed == nil || *d.Display.WeeklyUsed != amount {
+			t.Fatalf("sample has missing band geometry: %+v", d.Display)
+		}
+		if d.Display.OverdriveActive != (amount < 60) || (amount < 60 && d.Display.TargetUsedPercent != 60) {
+			t.Fatalf("sample target boundary is wrong at %v: %+v", amount, d.Display)
+		}
+		if amount == 100 && (d.Display.Allowed || d.Display.HardAllowed) {
+			t.Fatal("display bypassed hard exhaustion")
+		}
+	}
+	d, e = s.BudgetPreview(context.Background(), BudgetPreviewRequest{SubscriptionID: "account", HonorOverdrive: true})
+	if e != nil || d.Allowed || d.Display != nil {
+		t.Fatal("non-sample request must not assume enabled", d, e)
+	}
+	configAfter, _ := os.ReadFile(filepath.Join(s.Dir, "config.json"))
+	runtimeAfter, _ := s.Runtime()
+	beforeJSON, _ := json.Marshal(runtimeBefore)
+	afterJSON, _ := json.Marshal(runtimeAfter)
+	if string(configBefore) != string(configAfter) || string(beforeJSON) != string(afterJSON) {
+		t.Fatal("preview changed saved configuration or runtime")
+	}
+
 }
 
 // TESTMASTER: id=indigobird-ordered-profiles-contention tier=fast parallel=yes
@@ -2371,5 +2413,162 @@ func TestIndigobirdBoundedContractExpansion(t *testing.T) {
 	out, err := s.Tick(context.Background())
 	if err != nil || out.Assignment == nil || out.Result == nil || out.Result.Outcome != "completed" || source.checkpoints != 1 {
 		t.Fatalf("real executor did not receive bounded autonomous repair policy: %+v %v", out, err)
+	}
+}
+
+// TESTMASTER: id=conductor-parked-plan-visibility tier=? parallel=yes
+func TestConductorParkedPlanVisibility(t *testing.T) {
+	s, src, c := fixture(t, "")
+	ctx := context.Background()
+	key := PlanID(c.Projects[0].Path, "alpha")
+	err := s.withLock(func() error {
+		r, e := s.runtime()
+		if e != nil {
+			return e
+		}
+		pg := r.Progress[key]
+		pg.Parked = true
+		pg.Reason = "owned assignment interrupted"
+		r.Progress[key] = pg
+		return s.saveRuntime(&r)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := s.Status(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, p := range d.Queues[0].Plans {
+		if p.Name == "alpha" {
+			found = true
+			if !p.Blocked || p.State != "blocked" || p.Reason != "owned assignment interrupted" {
+				t.Fatal(p)
+			}
+		}
+	}
+	if !found || d.Queues[0].Running != 0 {
+		t.Fatal(d.Queues)
+	}
+	if d.Selected == nil || d.Selected.Plan.Name != "beta" {
+		t.Fatal("independent plan selection", d.Selected)
+	}
+	src.plans[0].State = "unblocked"
+	d, err = s.Status(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Selected == nil || d.Selected.Plan.Name != "alpha" {
+		t.Fatal("unblocked plan not selected", d.Selected)
+	}
+	for _, p := range d.Queues[0].Plans {
+		if p.Name == "alpha" && p.Blocked {
+			t.Fatal("stale parking overrides unblock", p)
+		}
+	}
+}
+
+// TESTMASTER: id=conductor-running-owner-labels tier=? parallel=yes
+func TestConductorRunningOwners(t *testing.T) {
+	s, src, c := fixture(t, "")
+	src.plans = []Plan{{Name: "automated", State: "executing", Running: true}, {Name: "manual", State: "executing", Running: true}, {Name: "historical", State: "queued", Staged: true}}
+	ctx := context.Background()
+	err := s.withLock(func() error {
+		r, e := s.runtime()
+		if e != nil {
+			return e
+		}
+		r.Leases["assignment"] = Lease{Assignment: model.Assignment{ID: "assignment", ProjectID: c.Projects[0].ID, ProjectPath: c.Projects[0].Path, Plan: "automated"}}
+		return s.saveRuntime(&r)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, e := s.Status(ctx)
+	if e != nil {
+		t.Fatal(e)
+	}
+	q := d.Queues[0]
+	if q.Running != 2 || len(q.RunningOwners) != 2 || q.RunningOwners["automated"] != "conductor" || q.RunningOwners["manual"] != "cli" || q.RunningOwners["historical"] != "" {
+		t.Fatalf("owner mismatch: %+v", q)
+	}
+	err = s.withLock(func() error {
+		r, e := s.runtime()
+		if e != nil {
+			return e
+		}
+		delete(r.Leases, "assignment")
+		return s.saveRuntime(&r)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	src.plans[0].Running = false
+	d, e = s.Status(ctx)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if d.Queues[0].Running != 1 || len(d.Queues[0].RunningOwners) != 1 || d.Queues[0].RunningOwners["automated"] != "" {
+		t.Fatal("ended assignment retains owner", d.Queues)
+	}
+}
+
+// TESTMASTER: id=conductor-unblock-fresh-progress-budget tier=? parallel=yes
+func TestConductorUnblockedFreshProgressBudget(t *testing.T) {
+	s, src, c := fixture(t, "hold")
+	src.plans = src.plans[:1]
+	src.plans[0].State = "unblocked"
+	key := PlanID(c.Projects[0].Path, "alpha")
+	ctx := context.Background()
+	err := s.withLock(func() error {
+		r, e := s.runtime()
+		if e != nil {
+			return e
+		}
+		r.Progress[key] = Progress{Parked: true, Started: s.now().Add(-2 * time.Hour), LastProgress: s.now().Add(-2 * time.Hour), Attempts: 5, AttemptsByState: map[string]int{"old": 5}, Reason: "repaired blocker"}
+		return s.saveRuntime(&r)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { _, e := s.Tick(ctx); done <- e }()
+	defer s.Control(ctx, "kill", "project")
+	var active Lease
+	waitUntil(t, 3*time.Second, func() bool {
+		r, _ := s.Runtime()
+		for _, l := range r.Leases {
+			if l.PID > 0 {
+				active = l
+				return true
+			}
+		}
+		return false
+	})
+	r, e := s.Runtime()
+	if e != nil {
+		t.Fatal(e)
+	}
+	pg := r.Progress[key]
+	if pg.Parked || pg.Attempts != 0 || len(pg.AttemptsByState) != 0 || !pg.LastProgress.Equal(s.now()) {
+		t.Fatalf("unblock retained expired execution budget: %+v", pg)
+	}
+	if stop, e := s.mustInterrupt(active.Assignment); e != nil || stop {
+		t.Fatal("freshly unblocked assignment interrupted", stop, e)
+	}
+	if e := os.WriteFile(active.Assignment.ResultPath+".continue", nil, 0600); e != nil {
+		t.Fatal(e)
+	}
+	select {
+	case e := <-done:
+		if e != nil {
+			t.Fatal(e)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("unblocked checkpoint did not finish")
+	}
+	if src.checkpoints != 1 {
+		t.Fatal("checkpoint not validated", src.checkpoints)
 	}
 }

@@ -159,14 +159,21 @@ type BudgetPreviewRequest struct {
 	OnlyOverdrive  bool             `json:"only_overdrive"`
 }
 
-func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (model.BudgetDecision, error) {
+// BudgetPreviewResult keeps hypothetical chart geometry separate from admission eligibility.
+type BudgetPreviewResult struct {
+	model.BudgetDecision
+	Display     *model.BudgetDecision `json:"display,omitempty"`
+	DisplayNote string                `json:"display_note,omitempty"`
+}
+
+func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (BudgetPreviewResult, error) {
 	c, e := s.Config()
 	if e != nil {
-		return model.BudgetDecision{}, e
+		return BudgetPreviewResult{}, e
 	}
 	r, e := s.Runtime()
 	if e != nil {
-		return model.BudgetDecision{}, e
+		return BudgetPreviewResult{}, e
 	}
 	now := s.now()
 	if req.Now != nil {
@@ -188,7 +195,7 @@ func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (
 		if req.Policy != nil {
 			p = *req.Policy
 			if e = budget.ValidatePolicy(p); e != nil {
-				return model.BudgetDecision{}, e
+				return BudgetPreviewResult{}, e
 			}
 		}
 		modelID := ""
@@ -201,9 +208,18 @@ func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (
 		if max == "" {
 			max = model.Green
 		}
-		return budget.EvaluateForModel(p, sub, r.Usage[sub.ID], now, max, req.HonorOverdrive, req.OnlyOverdrive, r.Occurrences, modelID), nil
+		result := BudgetPreviewResult{BudgetDecision: budget.EvaluateForModel(p, sub, r.Usage[sub.ID], now, max, req.HonorOverdrive, req.OnlyOverdrive, r.Occurrences, modelID)}
+		if req.Sample != nil && !sub.Enabled {
+			// The sample chart describes the configured window; admission retains the saved enable switch.
+			previewSub := sub
+			previewSub.Enabled = true
+			display := budget.EvaluateForModel(p, previewSub, r.Usage[sub.ID], now, max, req.HonorOverdrive, req.OnlyOverdrive, r.Occurrences, modelID)
+			result.Display = &display
+			result.DisplayNote = "Sample bar previews this subscription as enabled. The saved subscription is disabled; no work can launch."
+		}
+		return result, nil
 	}
-	return model.BudgetDecision{}, errors.New("subscription not found")
+	return BudgetPreviewResult{}, errors.New("subscription not found")
 }
 
 type OverdriveOption struct {

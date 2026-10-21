@@ -70,7 +70,14 @@ func conductorProjects(w http.ResponseWriter, r *http.Request) {
 		if e != nil {
 			canonical = filepath.Clean(p)
 		}
-		if _, ok := by[canonical]; !ok {
+		registered := false
+		for existing := range by {
+			if sameProjectDirectory(existing, canonical) {
+				registered = true
+				break
+			}
+		}
+		if !registered {
 			by[canonical] = conductorProjectView{Name: filepath.Base(canonical), Path: canonical}
 		}
 	}
@@ -173,7 +180,7 @@ func conductorDetailHeader(project, title string, returnURLs ...string) string {
 	if len(returnURLs) > 0 {
 		returnURL = returnURLs[0]
 	}
-	return `<header class="conductor-detail-header" aria-label="Conductor navigation" data-project="` + html.EscapeString(project) + `" data-plan="` + html.EscapeString(title) + `"><a href="/">All projects</a><a href="/settings?return=` + url.QueryEscape(returnURL) + `">Settings</a></header><nav class="conductor-detail-nav" aria-label="Breadcrumb"><a href="/">All projects</a> / <a href="/project?project=` + p + `&tab=plans">` + html.EscapeString(filepath.Base(project)) + `</a> / Plans / ` + html.EscapeString(title) + `<p>` + html.EscapeString(project) + `</p><a href="/project?project=` + p + `&tab=plans">Plans</a> · <a href="/project?project=` + p + `&tab=automations">Automations</a> · <a href="/project?project=` + p + `&tab=activity">Activity</a></nav><section id="conductor-live-detail" class="conductor-detail-nav" aria-live="polite"></section><script src="/assets/conductor/detail.js" defer></script>`
+	return `<header class="conductor-detail-header" aria-label="Conductor navigation" data-project="` + html.EscapeString(project) + `" data-plan="` + html.EscapeString(title) + `"><a href="/">Conductor</a><a href="/settings?return=` + url.QueryEscape(returnURL) + `">Settings</a></header><nav class="conductor-detail-nav" aria-label="Breadcrumb"><a href="/">All projects</a> / <a href="/project?project=` + p + `&tab=plans">` + html.EscapeString(filepath.Base(project)) + `</a> / Plans / ` + html.EscapeString(title) + `<p>` + html.EscapeString(project) + `</p><a href="/project?project=` + p + `&tab=plans">Plans</a> · <a href="/project?project=` + p + `&tab=automations">Automations</a> · <a href="/project?project=` + p + `&tab=activity">Activity</a></nav><script src="/assets/conductor/detail.js" defer></script>`
 }
 func conductorDetailError(w http.ResponseWriter, r *http.Request, status int, message string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

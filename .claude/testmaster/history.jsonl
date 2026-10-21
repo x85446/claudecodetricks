@@ -4499,3 +4499,42 @@
 {"batch":"4 patterns","failed":0,"missing":0,"ms":6486,"not_run":0,"passed":38,"runner":"testmaster","skipped":0,"ts":"2026-10-16T22:13:53Z"}
 {"id":"conductor.TestIndigobirdMixedQueuePriority","ms":1390,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-16T22:15:37Z"}
 {"batch":"conductor.TestIndigobirdMixedQueuePriority","failed":0,"missing":0,"ms":2332,"not_run":0,"passed":1,"runner":"testmaster","skipped":0,"ts":"2026-10-16T22:15:37Z"}
+{"id":"budget.TestIndigobirdBudgetBands","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdDST","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdExplicitEndAndEpoch","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdOverdriveLifecycle","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdOverdriveTargets","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdOverdriveToggleResume","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdPowerbarGeometry","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdProviderHardBlock","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdRecurrence","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdResetRelative","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdUnsupportedShortPool","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"budget.TestIndigobirdUsageGates","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"conductor.TestIndigobirdSampleEpochAndDaySeven","ms":50,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"iterrun.TestConductorAPIOverdriveWindowSamples","ms":60,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"id":"iterrun.TestConductorIntegrationCumulativeBandsAndSampleIsolation","ms":30,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T03:08:40Z"}
+{"batch":"4 patterns","failed":0,"missing":0,"ms":1442,"not_run":0,"passed":15,"runner":"testmaster","skipped":0,"ts":"2026-10-21T03:08:40Z"}
+{"id":"iterrun.TestConductorProjectDirectoryAliases","ms":20,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T05:26:50Z"}
+{"id":"iterrun.TestConductorUnenrolledQueueDiscovery","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T05:26:50Z"}
+{"batch":"iterrun.TestConductorProjectDirectoryAliases+iterrun.TestConductorUnenrolledQueueDiscovery","failed":0,"missing":0,"ms":672,"not_run":0,"passed":2,"runner":"testmaster","skipped":0,"ts":"2026-10-21T05:26:50Z"}
+{"id":"conductor.TestConductorParkedPlanVisibility","ms":30,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T05:54:52Z"}
+{"id":"conductor.TestIndigobirdInterruptAndConcurrency","ms":220,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T05:54:52Z"}
+{"id":"conductor.TestIndigobirdRetryParking","ms":1850,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T05:54:52Z"}
+{"id":"iterrun.TestConductorSourceOwnTrail","ms":90,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T05:54:52Z"}
+{"id":"iterrun.TestConductorSourceParkedInterruption","ms":90,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T05:54:52Z"}
+{"batch":"5 patterns","failed":0,"missing":0,"ms":2560,"not_run":0,"passed":5,"runner":"testmaster","skipped":0,"ts":"2026-10-21T05:54:52Z"}
+{"id":"conductor.TestConductorParkedPlanVisibility","ms":30,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:11:27Z"}
+{"id":"conductor.TestConductorRunningOwners","ms":30,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:11:27Z"}
+{"id":"conductor.TestIndigobirdMixedQueuePriority","ms":1210,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:11:27Z"}
+{"batch":"conductor.TestConductorRunningOwners+conductor.TestIndigobirdMixedQueuePriority+conductor.TestConductorParkedPlanVisibility","failed":0,"missing":0,"ms":1654,"not_run":0,"passed":3,"runner":"testmaster","skipped":0,"ts":"2026-10-21T06:11:27Z"}
+{"id":"conductor.TestConductorRunningOwners","ms":40,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:25:18Z"}
+{"id":"conductor.TestConductorUnblockedFreshProgressBudget","ms":330,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:25:18Z"}
+{"id":"conductor.TestIndigobirdDisableAndKillSafety","ms":1610,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:25:18Z"}
+{"id":"conductor.TestIndigobirdNoProgressTimeout","ms":300,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:25:18Z"}
+{"id":"iterrun.TestConductorManualReleaseHandoff","ms":190,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:25:18Z"}
+{"id":"iterrun.TestConductorSourceOwnTrail","ms":120,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:25:18Z"}
+{"batch":"6 patterns","failed":0,"missing":0,"ms":2684,"not_run":0,"passed":6,"runner":"testmaster","skipped":0,"ts":"2026-10-21T06:25:18Z"}
+{"id":"iterrun.TestConductorDetailIdentityAndMissingSource","ms":20,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:32:47Z"}
+{"id":"iterrun.TestConductorUnifiedDetailPreservesTimeline","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T06:32:47Z"}
+{"batch":"iterrun.TestConductorUnifiedDetailPreservesTimeline+iterrun.TestConductorDetailIdentityAndMissingSource","failed":0,"missing":0,"ms":2119,"not_run":0,"passed":2,"runner":"testmaster","skipped":0,"ts":"2026-10-21T06:32:47Z"}

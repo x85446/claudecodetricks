@@ -105,6 +105,13 @@ func (s *Service) TickProject(ctx context.Context, projectID string) (out TickRe
 			}
 		}
 		pg := r.Progress[x.Plan.ID]
+		if x.Plan.State == "unblocked" {
+			// Explicit recovery starts a fresh attempt budget; parked time is not execution time.
+			pg.Parked = false
+			pg.Attempts = 0
+			pg.AttemptsByState = nil
+			pg.LastProgress = s.now()
+		}
 		kind := "pair"
 		if pg.NextKind != "" {
 			kind = pg.NextKind
