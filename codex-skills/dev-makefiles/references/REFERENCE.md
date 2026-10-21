@@ -189,7 +189,7 @@ cmd_uninstall_completions() {
 |-----------------|-----------------------|---------------------------------------|
 | **General**     | `help`                | Display organized help message        |
 |                 | `prereqs`             | Check/install prerequisites (OS-aware)|
-| **Build**       | `build`               | Build CLI + daemon (debug mode)   |
+| **Build**       | `build`               | Build CLI + daemon (debug mode)       |
 |                 | `build-production`    | Cross-compile release binaries        |
 |                 | `build-daemons`       | Build daemons for all platforms       |
 |                 | `proto`               | Generate Go code from protobuf        |

@@ -138,7 +138,9 @@ top-level keys are spelled exactly as the flags are (`provider`, `remote`,
 `format`, `os`, `color`, `local`, `quiet`, `verbose`, `yes`), plus the
 `[[remotes]]` array of tables. `izmachine config show --origin` names the layer
 that answered for each value; `izmachine config path` names every file consulted
-and whether it exists. **No config file is not an error.**
+and whether it exists, in four layers: `global` (`global.iz`, machine
+definitions — see [iz-files.md](iz-files.md)), `project` (`izmachine.toml`),
+`user` (`config.toml`) and `directory`. **No config file is not an error.**
 
 Set `IZMACHINE_PROVIDER` rather than repeating `--provider` on every call when a
 whole session targets one provider — the flag still wins wherever you need it to.

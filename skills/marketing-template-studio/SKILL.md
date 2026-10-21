@@ -167,7 +167,7 @@ When the user picks a winner, **ask them whether to add a new slot or replace an
 4. Preserve the slot's Status line. E.g., if replacing `business-classic`, keep its "Status: Canonical · Default" header in design-notes.md.
 5. Sanity-check render using `marketing-doc-formatter --template [slot]` against device-management. Verify 1 page.
 6. Sync to backup repo.
-7. Confirm: tell the user the slot is updated, the previous version is archived, and any future `/marketing-doc-formatter --template [slot]` uses the new design.
+7. Confirm: identify the active slot design and its archive; `/marketing-doc-formatter --template [slot]` renders with the active design.
 
 **Backup Sync (both flows):**
 ```

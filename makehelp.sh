@@ -166,6 +166,40 @@ cmd_install_conductor() {
     if [[ -f "$destination/iterate-run" ]]; then cp -p "$destination/iterate-run" "$destination/iterate-run.previous"; fi
     mv -f "$temporary" "$destination/iterate-run"
     "$destination/iterate-run" version
+    rearm_nightly
+}
+
+# launchd pins a LaunchAgent to the code signature its program had when the
+# agent was bootstrapped. A replaced binary carries a new ad-hoc signature, so
+# every later spawn fails with "Unable to get updated LWCR" (exit 78, EX_CONFIG)
+# until the agent is bootstrapped again. The nightly tick is a timer with no
+# process to restart, so re-registering it is the whole fix; its plist is kept
+# as written by `iterate-run nightly install`.
+NIGHTLY_LABEL="com.x85446.iterate-nightly"
+NIGHTLY_PLIST="$HOME/Library/LaunchAgents/$NIGHTLY_LABEL.plist"
+
+rearm_nightly() {
+    [[ "$(uname -s)" == "Darwin" && -f "$NIGHTLY_PLIST" ]] || return 0
+    launchctl bootout "$UID_DOMAIN/$NIGHTLY_LABEL" 2>/dev/null || true
+    for attempt in {1..20}; do
+        if ! launchctl print "$UID_DOMAIN/$NIGHTLY_LABEL" >/dev/null 2>&1; then break; fi
+        sleep 0.1
+    done
+    if bootstrap_with_retry "$UID_DOMAIN" "$NIGHTLY_PLIST" "$NIGHTLY_LABEL"; then
+        echo "re-armed: $NIGHTLY_LABEL"
+    else
+        echo "error: could not re-arm $NIGHTLY_LABEL; run 'iterate-run nightly install'" >&2
+        return 1
+    fi
+}
+
+# `make install` replaces the binary the managed dashboard runs. Restart the
+# dashboard on the new build when its agent is installed; install nothing when
+# it is not.
+cmd_serve_refresh() {
+    local bin="$1" port="$2"
+    [[ "$(uname -s)" == "Darwin" && -f "$SERVE_PLIST" ]] || return 0
+    cmd_serve_install "$bin" "$port"
 }
 
 cmd_conductor_acceptance() {
@@ -301,6 +335,7 @@ case "${1:-}" in
     install-conductor) shift; cmd_install_conductor "$@" ;;
     conductor-acceptance) shift; cmd_conductor_acceptance "$@" ;;
     serve-install)     shift; cmd_serve_install "$@" ;;
+    serve-refresh)     shift; cmd_serve_refresh "$@" ;;
     install-conductor-skills) cmd_install_conductor_skills ;;
     serve-uninstall)   shift; cmd_serve_uninstall "$@" ;;
     serve-status)      shift; cmd_serve_status "$@" ;;

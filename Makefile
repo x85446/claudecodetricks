@@ -355,12 +355,13 @@ install: build  ## Install hooks to Claude Code directory, and tools onto PATH
 	$(Q)echo -e "$(COLOR_CYAN)  Note: Update ~/.claude/settings.json to enable hooks$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_BLUE)→ Installing tools...$(COLOR_RESET)"
 	$(Q)mkdir -p $(TOOLS_INSTALL_DIR)
-	$(Q)cp -f $(ITERATE_RUN_BIN) $(TOOLS_INSTALL_DIR)/
+	$(Q)./makehelp.sh install-conductor "$(ITERATE_RUN_BIN)" "$(TOOLS_INSTALL_DIR)"
 	$(Q)cp -f $(TESTMASTER_BIN) $(TOOLS_INSTALL_DIR)/
-	$(Q)chmod +x $(TOOLS_INSTALL_DIR)/iterate-run $(TOOLS_INSTALL_DIR)/testmaster
+	$(Q)chmod +x $(TOOLS_INSTALL_DIR)/testmaster
 	$(Q)if command -v codesign >/dev/null 2>&1; then \
-		codesign --force --sign - $(TOOLS_INSTALL_DIR)/iterate-run $(TOOLS_INSTALL_DIR)/testmaster; \
+		codesign --force --sign - $(TOOLS_INSTALL_DIR)/testmaster; \
 	fi
+	$(Q)./makehelp.sh serve-refresh "$(TOOLS_INSTALL_DIR)/iterate-run" "$(ITERATE_SERVE_PORT)"
 	$(Q)echo -e "$(COLOR_GREEN)✓ iterate-run and testmaster installed to $(TOOLS_INSTALL_DIR)$(COLOR_RESET)"
 
 uninstall:  ## Remove installed hooks and tools
