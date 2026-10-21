@@ -88,7 +88,9 @@ def main():
             assert [a['id'] for a in repeated['automations']] == ['filemaster-overdrive', 'unrelated-rule']
             assert repeated['automations'][0]['participants'] == [sequence_id]
             assert not repeated['automations'][0].get('window_id')
-            assert repeated['automations'][1] == unrelated_rule
+            assert repeated['automations'][1] == dict(unrelated_rule, project_id='')
+            assert len(repeated['automation_attachments']) == 2
+            assert not next(a for a in repeated['automation_attachments'] if a['definition_id'] == 'unrelated-rule')['enabled']
             assert len(next(s for s in repeated['subscriptions'] if s['id'] == sub['id'])['overdrive_windows']) == 3
             assert len(next(s for s in repeated['subscriptions'] if s['id'] == claude['id'])['overdrive_windows']) == 1
             assert repeated['subscriptions'][-1] == unrelated
@@ -112,7 +114,7 @@ def main():
             current = read('config', 'show')['data']
             for _ in range(2):
                 current = read('config', 'apply', '--file', '-', '--revision', str(current['revision']), payload=current)['data']
-                assert current['automations'] == [base, unrelated_rule, rule]
+                assert current['automations'] == [dict(a, project_id='') for a in (base, unrelated_rule, rule)]
                 assert direct('automation', 'show', 'scheduled')['data']['entries'] == rule['entries']
             # Independent account-window edits preserve neighboring windows and rules.
             old_subscriptions = copy.deepcopy(current['subscriptions'])
@@ -124,7 +126,7 @@ def main():
             assert saved_windows[0]['enabled'] and saved_windows[0]['target_used_percent'] == 75
             assert saved_windows[1:] == old_windows[1:]
             assert direct('subscription', 'show', claude['id'])['data'] == next(s for s in old_subscriptions if s['id'] == claude['id'])
-            assert current['automations'] == [base, unrelated_rule, rule]
+            assert current['automations'] == [dict(a, project_id='') for a in (base, unrelated_rule, rule)]
             # Named policy edits preserve references and unrelated definitions.
             current = read('config', 'show')['data']
             policy = copy.deepcopy(current['power_bands'][0])

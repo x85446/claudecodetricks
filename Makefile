@@ -240,6 +240,12 @@ build-testmaster-cross: check-tools  ## Cross-build testmaster for windows/amd64
 
 ##@ Test
 
+.PHONY: conductor-settings-test
+conductor-settings-test:  ## Verify Conductor settings interactions through TESTMASTER
+	$(Q)testmaster suite discover
+	$(Q)testmaster suite run conductor.settings-ui 'budget.TestJavelina*' 'conductor.TestJavelina*' 'iterrun.TestJavelina*' 'provider.TestJavelina*'
+
+
 test: test-unit test-hook  ## Run all tests
 	$(Q)echo -e "$(COLOR_GREEN)✓ All tests passed$(COLOR_RESET)"
 

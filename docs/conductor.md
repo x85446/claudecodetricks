@@ -13,11 +13,15 @@ The All projects table sorts by its column headers. **Configure** or **Edit** op
 ## Set up a project
 
 1. Choose **Add project** and select its existing folder. Registration starts disabled and leaves repository files alone. Each worktree has its own canonical identity, even when names match.
-2. Open **Settings → AI Subscriptions**. Choose or add the CLI/account you use. Set its name, executable, subscription tier, typical weekly reset and Named Power Band. Account binding and fresh provider telemetry establish actual allowance; a suggested template or estimated reset does not establish readiness.
+2. Open **Settings → AI Subscriptions**. Choose or add the CLI/account you use. Choose its AI tool and name, then use **Detect** to resolve the installed program on the Conductor host. **Verify installation** inspects capabilities without submitting model work. **Use another path** accepts a specific executable path. The optional plan/tier and defaulted power band stay visible; Advanced holds concurrency, usage freshness, literal argument rows, collector override and estimated reset. Diagnostics shows account/pool identities. Account binding and fresh provider telemetry establish actual allowance; a suggested template or estimated reset does not establish readiness.
 3. Add a **Named Launch Sequence** under that subscription. Its name combines the subscription prefix and your suffix, such as `Codex · build`. Select model, reasoning and permission preset, or enter literal CLI arguments. **Effective command** shows the compiled launch. Presets such as YOLO remain editable; unsupported or conflicting transport arguments produce a validation error.
-4. In the project's **Automations**, create the desired behavior and enable it when ready. Enable the project and start Conductor to permit admissions. A staged plan is still subject to account availability, schedule, budget and ownership gates.
+4. Create rules under **Settings → Named Automations**, then choose the saved automation in a project's **Automations** tab and select **Add to project**. Each attachment starts disabled. Enable it when ready, use **Automation enabled** on the dashboard to enable the project, and start Conductor to permit admissions. A staged plan is still subject to account availability, schedule, budget and ownership gates.
 
 Use `/ip stage <plan>` in Claude or `$ip stage <plan>` in Codex to approve a saved plan for unattended execution. Editing its approved requirements removes staging. Release and release-candidate plans require a direct human iterate invocation.
+
+The subscription summary card and editor share a **Subscription enabled** switch. Disabled summaries remain muted and editable, with a visible re-enable control. Editing project settings preserves activation; the dashboard owns the project switch. Disabling prevents future assignments and lets existing work finish its checkpoint.
+
+Use the ⓘ buttons for field explanations. Enter opens focused help; Escape or an outside click dismisses it. **Refresh usage / bind account** acts on the saved subscription and can bind its authenticated account; it never enables a subscription. Codex collects usage through app-server. Automatic Claude collection requires CodexBar and the default Claude executable. A custom Claude path requires a collector override. Each argument row holds one literal value, including spaces or repeated flags.
 
 ## Choose an automation
 
@@ -27,6 +31,8 @@ Use `/ip stage <plan>` in Claude or `$ip stage <plan>` in Codex to approve a sav
 | Run on a schedule | Try the same ordered choices inside a named time window. |
 | Follow subscription overdrive | Use participating sequences only while their subscriptions have active overdrive. |
 
+Named Automations are shared definitions. **Used by** lists attached projects. Editing rules affects future admissions for every attachment; active assignments retain their saved inputs. **Duplicate** creates independent rules. A project's enabled state and priority are local; lower priority numbers run first. Queues, progress, occurrence consumption and history remain separate for each project. **Remove from project** detaches rules without deleting their definition or history. Delete accepts only unused definitions.
+
 Each normal row has a **maximum band**: Green only, Green + Yellow, or Green + Yellow + Red. A Yellow row also accepts Green. The first eligible row wins. Repeated sequences allow choices such as Claude Green, Codex Green, Claude Yellow, Codex Red. Every row still respects hard quota, fresh telemetry and exclusive project ownership.
 
 Normal automations honor their selected maximum bands. The advanced **Honor subscription overdrive** switch permits subscription overdrive to relax soft bands for that automation. **Only during subscription overdrive** also requires honor and waits outside active overdrive. Follow subscription overdrive sets both and uses an unordered participant list; overlapping eligible subscriptions prefer the soonest trusted reset, with fair tie handling.
@@ -35,7 +41,7 @@ One assignment runs per project. Conductor reevaluates choices between bounded t
 
 ## Time windows and closing behavior
 
-Named Time Windows use selected weekdays, start/end, timezone and repeat interval. Recurrence has no expiry date. An overnight window belongs to its starting day: Monday 22:00–06:00 includes Tuesday morning. Equal start/end covers a full day; 00:00–23:59 closes at 23:59. A project-wide time window further restricts its automations; Anytime adds no restriction.
+Named Time Windows use selected weekdays, start/end, timezone and repeat interval. Recurrence has no expiry date. An overnight window belongs to its starting day: Monday 22:00–06:00 includes Tuesday morning. The editable **Weekdays** and **Weekends** defaults select **Full day**, displayed as 00:00–23:59 and covering every instant through the final minute. With Full day off, end time is exclusive; equal start/end covers a full day. Times use 24-hour HH:MM. Recurrence uses a deterministic phase without an anchor-date field; existing stored phases remain effective. A project-wide time window further restricts its automations; Anytime adds no restriction.
 
 Scheduled automations have two independent choices:
 
@@ -48,7 +54,7 @@ Finish current checkpoint is the default. Finish current plan continues only the
 
 ## Named Power Bands and overdrive
 
-Settings contains AI Subscriptions, Named Power Bands and Named Time Windows. **Universal power band** is editable and is the default. Each subscription selects exactly one named definition. Editing a shared definition affects its assigned subscriptions; their usage, resets and overdrive remain independent unless they share an actual allowance pool. Referenced definitions require reassignment before deletion.
+Settings contains AI Subscriptions, Named Power Bands, Named Time Windows and Named Automations. **Universal power band** is editable and is the default. Each subscription selects exactly one named definition. Editing a shared definition affects its assigned subscriptions; their usage, resets and overdrive remain independent unless they share an actual allowance pool. Referenced definitions require reassignment before deletion.
 
 Bars increase from **0% used** to **100% used**. The black marker shows current use; ordinary bands use dark green, orange and red. Numeric remaining capacity and independent weekly/short-window reset clocks provide context. Missing or unsupported telemetry stays explicit.
 
@@ -62,7 +68,11 @@ For example, a Codex subscription can have Saturday 00:00 → 100% used, Monday 
 
 ## Try a configuration
 
-Automation and budget testers call the same evaluator as admission. Samples do not save settings or launch work. For a disabled subscription, the budget and subscription testers label the bar as a hypothetical enabled preview; the result row retains the disabled launch decision. Keep it working needs no day/hour unless a project-wide time window applies. Scheduled testing supplies time in the window's timezone. Overdrive testing offers only available enabled windows across participating subscriptions, uses one common sample instant and lets you vary weekly use.
+**Try the power bands** uses only the draft policy, elapsed time and percentage used. Weekly elapsed time and usage are independent, as are five-hour elapsed time and usage. Six green/red points at hours 0–5 define the hourly curve; interpolation supplies fractional-hour thresholds. Existing fixed thresholds form constant curves. Real admission uses the allowance window's actual start time.
+
+At exact zero, the black marker stays at zero and the current-sample label is green. Threshold regions retain their configured widths, including zero-width green. A sample of 2h 33m and 51% used describes two independent values. This tester has no subscription, overdrive or eligibility controls.
+
+Subscription-window and automation testers call the same evaluator as admission. A disabled subscription’s sample chart labels its hypothetical enabled state; the decision row retains the saved disabled state. Samples do not save settings or launch work. At or above an applicable overdrive target, **✓ Overdrive achieved** retains bright green through the target while the marker shows actual sample use. Moving below the target recomputes active overdrive. This display does not grant launch permission; 100% use still denies work. Keep it working needs no day/hour unless a project-wide time window applies. Scheduled testing supplies time in the window's timezone. Overdrive testing offers only available enabled windows across participating subscriptions, uses one common sample instant and lets you vary weekly use.
 
 Each tester has one results table. Only the selected eligible row receives a light-green highlight and a single Would launch label; other rows explain why they wait. Disabled or deleted windows cannot become available merely by selecting a sample.
 

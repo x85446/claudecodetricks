@@ -48,8 +48,7 @@ func ValidateRecurrence(r model.Recurrence) error {
 		if _, err := time.Parse("2006-01-02", r.AnchorDate); err != nil {
 			return fmt.Errorf("anchor date must use YYYY-MM-DD")
 		}
-	} else if r.EveryWeeks > 1 {
-		return fmt.Errorf("anchor date is required for multiweek recurrence")
+
 	}
 	return nil
 }
@@ -120,6 +119,10 @@ func recurrenceOn(r model.Recurrence, date time.Time) model.Occurrence {
 	start, _ := clockMinutes(r.Start)
 	end, _ := clockMinutes(r.End)
 	endDate := date
+	if r.AllDay {
+		start = 0
+		end = 0
+	}
 	if end <= start {
 		endDate = endDate.AddDate(0, 0, 1)
 	}

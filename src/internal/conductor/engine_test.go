@@ -1140,11 +1140,12 @@ func TestIndigobirdFinishPlanHardGates(t *testing.T) {
 			case "subscription_disabled":
 				c.Subscriptions[0].Enabled = false
 			case "rule_disabled":
-				c.Automations[0].Enabled = false
+				c.Attachments[0].Enabled = false
 			case "project_window":
 				c.Projects[0].WindowID = "window"
 			case "rule_deleted":
 				c.Automations = nil
+				c.Attachments = nil
 			case "weekly_exhausted", "short_exhausted":
 				collect := s.CollectUsage
 				s.CollectUsage = func(ctx context.Context, sub model.Subscription) (model.Usage, error) {
@@ -2113,6 +2114,7 @@ func TestIndigobirdDistinctRuleWindows(t *testing.T) {
 	second.WindowID = "late"
 	second.Entries = []model.Entry{{ID: "second-entry", SequenceID: "second-sequence", MaxBand: model.Red}}
 	c.Automations = append(c.Automations, second)
+	c.Attachments = append(c.Attachments, model.AutomationAttachment{ID: second.ID, DefinitionID: second.ID, ProjectID: "project", Enabled: true})
 	if _, e := s.Apply(c.Revision, c); e != nil {
 		t.Fatal(e)
 	}
@@ -2164,10 +2166,13 @@ func TestIndigobirdRuleOverlapSelection(t *testing.T) {
 			second.Name = "Other"
 			second.Entries = []model.Entry{{ID: "second-entry", SequenceID: "second-sequence", MaxBand: model.Red}}
 			c.Automations[0].ID = "z-rule"
+			c.Attachments[0].ID = "z-rule"
+			c.Attachments[0].DefinitionID = "z-rule"
 			c.Automations = append(c.Automations, second)
+			c.Attachments = append(c.Attachments, model.AutomationAttachment{ID: second.ID, DefinitionID: second.ID, ProjectID: "project", Enabled: true})
 			want := "a-rule"
 			if criterion == "priority" {
-				c.Automations[0].Priority = -1
+				c.Attachments[0].Priority = -1
 				want = "z-rule"
 			}
 			collect := s.CollectUsage

@@ -126,6 +126,7 @@ func TestConductorAPIResourceLifecycle(t *testing.T) {
 		}
 	}
 	acceptanceMutation(t, s, "subscription", "delete", copyID, "", nil)
+	acceptanceMutation(t, s, "automation-attachment", "delete", "automation-test", "", nil)
 	for i := len(resources) - 1; i >= 0; i-- {
 		r := resources[i]
 		acceptanceMutation(t, s, r.noun, "delete", r.id, r.parent, nil)
@@ -168,6 +169,7 @@ func TestConductorAPIReferenceIntegrity(t *testing.T) {
 	c.Subscriptions[0].PowerBandID = "universal"
 	c.PowerBands = c.PowerBands[:1]
 	c.Automations = nil
+	c.Attachments = nil
 	c.Projects = nil
 	c.TimeWindows = nil
 	acceptanceData(t, ConductorAPI(s), "POST", "config", map[string]any{"expected_revision": c.Revision, "config": c}, nil)

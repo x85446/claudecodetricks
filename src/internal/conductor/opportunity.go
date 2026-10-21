@@ -57,7 +57,7 @@ func (s *Service) NextOpportunity(ctx context.Context, projectID string) (out Sc
 		windows[w.ID] = w
 	}
 	var unknown bool
-	rules := append([]model.Automation(nil), c.Automations...)
+	rules := append([]model.Automation(nil), model.EffectiveAutomations(c)...)
 	sort.SliceStable(rules, func(i, j int) bool {
 		if rules[i].Priority != rules[j].Priority {
 			return rules[i].Priority < rules[j].Priority
