@@ -1306,6 +1306,9 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 		// to fix elsewhere: language that reads as live when the thing it
 		// describes is over). "Ran for" for a finished run, same figure.
 		label := "Running for"
+		if chrome != "" {
+			label = "Recorded execution span"
+		}
 		if plan.Archived {
 			label = "Ran for"
 		}
@@ -1340,7 +1343,7 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 	b.WriteString(`<div class="stats">`)
 	fmt.Fprintf(&b, `<div class="stat s-good"><div class="n">%d</div><div class="l">done</div></div>`, done)
 	runningLabel := "running"
-	if plan.Archived {
+	if plan.Archived || chrome != "" {
 		runningLabel = "recorded open"
 	}
 	fmt.Fprintf(&b, `<div class="stat s-warn"><div class="n">%d</div><div class="l">%s</div></div>`, running, runningLabel)
@@ -1366,7 +1369,7 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 
 	if coordRow != nil {
 		b.WriteString(`<h2>Coordinator</h2><div class="gantt">`)
-		writeGanttRow(&b, *coordRow, pct, false)
+		writeGanttRow(&b, *coordRow, pct, false, plan.Archived || chrome != "")
 		if hasActivity {
 			writeTimeAxis(&b, minT.Local(), maxT.Local(), pct)
 		}
@@ -1393,7 +1396,7 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 				divider = !firstRoot
 				firstRoot = false
 			}
-			writeGanttRow(&b, r, pct, divider)
+			writeGanttRow(&b, r, pct, divider, plan.Archived || chrome != "")
 		}
 		if hasActivity {
 			writeTimeAxis(&b, minT.Local(), maxT.Local(), pct)
@@ -1404,7 +1407,7 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 	}
 
 	openLabel := "still running"
-	if plan.Archived {
+	if plan.Archived || chrome != "" {
 		openLabel = "open at last recorded observation"
 	}
 	b.WriteString(`<div class="legend"><span><span class="sw" style="background:var(--busy)"></span>confirmed activity</span><span><span class="sw sw-open"></span>` + openLabel + `</span><span><span class="sw" style="background:var(--danger)"></span>severe gap (5m+)</span><span>unmarked gaps under 5m are normal think-time</span></div>`)
@@ -1764,8 +1767,11 @@ func writeTimeAxis(b *strings.Builder, minT, maxT time.Time, pct func(time.Time)
 	b.WriteString(`</div><div class="ax-pad-r"></div></div>`)
 }
 
-func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divider bool) {
+func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divider bool, recorded ...bool) {
 	pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
+	if len(recorded) > 0 && recorded[0] && pillClass == "p-running" {
+		pillLabel = "recorded open"
+	}
 	busy := busyDuration(r.spans)
 
 	hasSteps := len(r.steps) > 0
