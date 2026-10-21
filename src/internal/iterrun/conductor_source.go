@@ -31,20 +31,7 @@ func (ConductorPlanSource) List(ctx context.Context, p model.Project) ([]conduct
 	for _, v := range ps {
 		started, _ := v.StartedAt()
 		state := v.StateLabel()
-		running := false
-		if IsLive(p.Path, time.Now()) && !conductorOwnTrail(p.Path) && CurrentPlanName(p.Path) == v.Name {
-			running = true
-		}
-		if path, x := safePlanPath(p.Path, v.Name); x == nil {
-			b, _ := os.ReadFile(path)
-			m := regexp.MustCompile(`(?m)^running:\s*([0-9T:Z.+-]+)`).FindSubmatch(b)
-			if len(m) > 1 {
-				at, x := time.Parse(time.RFC3339, string(m[1]))
-				if x == nil && time.Since(at) < 90*time.Second {
-					running = true
-				}
-			}
-		}
+		running := conductorManualPlanRunning(p.Path, v, time.Now())
 		out = append(out, conductor.Plan{Running: running, Name: v.Name, ProjectPath: p.Path, ID: conductor.PlanID(p.Path, v.Name), State: state, Staged: v.IsQueued() || v.Phase == "executing" || state == "unblocked", Blocked: state == "blocked" || state == "paused", Reason: v.Status, Release: v.TypedOnly, Started: started, Complete: v.Phase == "complete" || v.Phase == "done"})
 	}
 	return out, nil
@@ -218,10 +205,32 @@ func conductorSetField(text, key, value string) string {
 	}
 	return key + ": " + value + "\n" + text
 }
-func (ConductorPlanSource) Gate(ctx context.Context, p model.Project, now time.Time) error {
-	if IsLive(p.Path, now) && !conductorOwnTrail(p.Path) {
-		return errors.New("manual iterate heartbeat owns this project")
+
+// conductorManualPlanRunning respects an explicit release before consulting activity.
+// Generic project hooks provide a fallback only for an executing plan without a release.
+func conductorManualPlanRunning(project string, plan PlanSummary, now time.Time) bool {
+	path, err := safePlanPath(project, plan.Name)
+	if err != nil {
+		return false
 	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	marker := regexp.MustCompile(`(?m)^running:[ \t]*([^\r\n]*)`).FindSubmatch(raw)
+	if len(marker) > 1 {
+		value := strings.TrimSpace(string(marker[1]))
+		if value == "false" {
+			return false
+		}
+		if at, err := time.Parse(time.RFC3339, value); err == nil && now.Sub(at) >= 0 && now.Sub(at) < 90*time.Second {
+			return true
+		}
+	}
+	return plan.StateLabel() == "executing" && CurrentPlanName(project) == plan.Name && IsLive(project, now) && !conductorOwnTrail(project)
+}
+
+func (ConductorPlanSource) Gate(ctx context.Context, p model.Project, now time.Time) error {
 	policy, e := ReadLaunchSchedule(p.Path)
 	if e != nil {
 		return e
@@ -238,17 +247,8 @@ func (ConductorPlanSource) Gate(ctx context.Context, p model.Project, now time.T
 		return e
 	}
 	for _, plan := range plans {
-		path, e := safePlanPath(p.Path, plan.Name)
-		if e != nil {
-			continue
-		}
-		b, _ := os.ReadFile(path)
-		running := regexp.MustCompile(`(?m)^running:\s*([0-9T:Z.+-]+)`).FindSubmatch(b)
-		if len(running) > 1 {
-			at, e := time.Parse(time.RFC3339, string(running[1]))
-			if e == nil && now.Sub(at) < 90*time.Second {
-				return errors.New("manual iterate run lock owns this project")
-			}
+		if conductorManualPlanRunning(p.Path, plan, now) {
+			return errors.New("manual iterate run lock owns this project")
 		}
 	}
 	return nil
@@ -292,7 +292,7 @@ func (ConductorPlanSource) Outcome(ctx context.Context, a model.Assignment, r mo
 			return errors.New("intake plan lacks source provenance")
 		}
 		return nil
-	case r.Outcome == "blocked" || r.Outcome == "partial":
+	case r.Outcome == "blocked" || r.Outcome == "partial" || r.Outcome == "interrupted":
 		text = conductorSetField(text, "status", "blocked-on-operator: "+strings.ReplaceAll(r.Blocker, "\n", " "))
 		text += "\n<!-- conductor outcome " + a.ID + ": " + r.Outcome + " -->\n"
 		for _, v := range r.Evidence {

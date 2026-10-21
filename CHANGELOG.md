@@ -17,6 +17,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
 - Conductor CLI skill guidance describes named rules and local attachments; focused settings verification runs through TESTMASTER.
 
 ### Fixed
+- Explicit CLI release returns unblocked plans to Conductor; ownership labels distinguish live CLI and automated assignments, and parked failures retain visible blockers.
+- Plan pages place project navigation and plan identity above bounded, scrollable Conductor activity; canonical project discovery combines directory aliases.
 - Exact-zero samples show a green current-state indicator without changing the configured threshold geometry.
 - Achieved overdrive targets keep their green region and checkmarked outcome while hard provider limits remain authoritative.
 - Stale preview and configuration polling responses cannot overwrite newer UI state; revision conflicts preserve drafts.

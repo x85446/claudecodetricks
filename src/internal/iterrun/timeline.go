@@ -1166,7 +1166,7 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 		title = planName + " — iterate-run timeline"
 	}
 	backLink := ""
-	if homeURL != "" {
+	if homeURL != "" && chrome == "" {
 		backLink = `<a class="back" href="` + html.EscapeString(homeURL) + `">&larr; Dashboard</a>`
 	}
 	eyebrow := `<div class="eyebrow">iterate plan</div>`
@@ -1185,8 +1185,12 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 	if plan.GoalFull != "" {
 		header += `<div class="goal"><div class="goal-label">Goal</div><p>` + html.EscapeString(plan.GoalFull) + `</p></div>`
 	}
+	activity := ""
+	if chrome != "" && !plan.Archived {
+		activity = `<section id="conductor-live-detail" aria-labelledby="conductor-activity-title"><h2 id="conductor-activity-title">Conductor activity</h2><div data-status aria-live="polite"><p>Loading activity…</p></div><details class="conductor-events" open><summary>Event log</summary><div class="conductor-event-scroll" role="region" aria-label="Conductor event log" tabindex="0"><p>Loading events…</p></div></details><details class="conductor-usage"><summary>Usage observations</summary><div data-usage></div></details></section>`
+	}
 	if len(rows) == 0 {
-		return timelinePageHead(title, chrome) + header + `<p class="empty">no activity recorded yet</p></div>`
+		return timelinePageHead(title, chrome) + header + activity + `<p class="empty">no activity recorded yet</p></div>`
 	}
 
 	var minT, maxT time.Time
@@ -1343,6 +1347,7 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 	fmt.Fprintf(&b, `<div class="stat"><div class="n">%d</div><div class="l">queued</div></div>`, queued)
 	fmt.Fprintf(&b, `<div class="stat s-bad"><div class="n">%d</div><div class="l">severe gap%s</div></div>`, severeGaps, plural(severeGaps))
 	b.WriteString(`</div>`)
+	b.WriteString(activity)
 
 	// The coordinator isn't a team — it's the orchestrator dispatching and
 	// merging everyone else — so it gets its own section above the team
@@ -1921,7 +1926,18 @@ func timelinePageHead(title, chrome string) string {
 	if chrome == "" {
 		return timelineHead(title)
 	}
-	return timelineHeadCSS(title) + tokenPanelCSS + `</style><meta name="viewport" content="width=device-width,initial-scale=1"><style>.conductor-detail-header,.conductor-detail-nav{max-width:1000px;margin:0 auto 20px;overflow-wrap:anywhere}.conductor-detail-header{display:flex;justify-content:space-between}.conductor-detail-header a,.conductor-detail-nav a{color:var(--accent)}.conductor-detail-nav{font-size:14px;line-height:1.8}.conductor-detail-nav p{font-size:12px;margin:2px 0;color:var(--text-dim)}body{overflow-x:hidden}</style></head><body>` + chrome + `<div>`
+	return timelineHeadCSS(title) + tokenPanelCSS + `</style><meta name="viewport" content="width=device-width,initial-scale=1"><style>.conductor-detail-header,.conductor-detail-nav{max-width:900px;margin:0 auto 20px;overflow-wrap:anywhere}.conductor-detail-header{display:flex;justify-content:space-between}.conductor-detail-header a,.conductor-detail-nav a{color:var(--accent)}.conductor-detail-nav{font-size:14px;line-height:1.8}.conductor-detail-nav p{font-size:12px;margin:2px 0;color:var(--text-dim)}.conductor-detail-nav{padding-bottom:16px;border-bottom:1px solid var(--border)}
+#conductor-live-detail{margin:22px 0;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px;overflow-wrap:anywhere}
+#conductor-live-detail h2{margin:0 0 10px}
+#conductor-live-detail p{margin:6px 0;color:var(--text-dim)}
+#conductor-live-detail summary{cursor:pointer;padding:10px 0;color:var(--accent);font-weight:600}
+.conductor-events{margin-top:12px;border-top:1px solid var(--border)}
+.conductor-event-scroll{height:260px;max-height:40vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+.conductor-event-scroll:focus-visible,#conductor-live-detail summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.conductor-event-scroll h3{font-size:13px;margin:14px 0 8px}
+.conductor-event-scroll h3:first-child{margin-top:0}
+.conductor-event-scroll p{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.conductor-usage{font-size:12px}body{overflow-x:hidden}</style></head><body>` + chrome + `<div>`
 }
 
 func timelineHead(title string) string {

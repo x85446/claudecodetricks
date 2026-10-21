@@ -8,7 +8,7 @@ nodes.set('#definition-form',emptyForm);nodes.set('#editor',{addEventListener:()
 for(const k of ['#policy-tester','#policy-results','#policy-weekly-bar','#policy-short-bar'])nodes.set(k,{innerHTML:'',textContent:''});
 const pending=[];
 const storage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
-const sandbox={structuredClone,URLSearchParams,URL,crypto:require('node:crypto').webcrypto,Intl,console,sessionStorage:storage,localStorage:storage,location:{search:'',pathname:'/'},addEventListener:()=>{},setInterval:()=>{},setTimeout:()=>{},clearTimeout:()=>{},document:{querySelector:s=>nodes.get(s),addEventListener:()=>{}},fetch:(path,opts)=>new Promise(resolve=>pending.push({path,body:JSON.parse(opts.body),resolve}))};
+const sandbox={AbortController,structuredClone,URLSearchParams,URL,crypto:require('node:crypto').webcrypto,Intl,console,sessionStorage:storage,localStorage:storage,location:{search:'',pathname:'/'},addEventListener:()=>{},setInterval:()=>{},setTimeout:()=>{},clearTimeout:()=>{},document:{querySelector:s=>nodes.get(s),addEventListener:()=>{}},fetch:(path,opts)=>new Promise(resolve=>pending.push({path,body:JSON.parse(opts.body),resolve}))};
 let source=fs.readFileSync('src/internal/iterrun/conductor_web/app.js','utf8');
 source=source.replace('refresh();setInterval(', 'setInterval(');
 source=source.replace(/\}\)\(\);\s*$/,`globalThis.subject={newItem,subscriptionFields,recurrenceFields,policyBar,sampleHourLabel,check,info,references,automationsView,automationConfig,capture,evaluateBudget,loadPolicyTester,setup(c,d,b){cfg=c;dialogState=d;budgetSample=b;},setDraft(d){draft=d;},close(){dialogState=null;}};})();`);

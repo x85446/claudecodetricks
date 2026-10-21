@@ -100,3 +100,81 @@ func TestConductorUnenrolledQueueDiscovery(t *testing.T) {
 		t.Fatal("read-only discovery persisted enrollment")
 	}
 }
+
+// TESTMASTER: id=conductor-project-directory-aliases tier=? parallel=no
+func TestConductorProjectDirectoryAliases(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("ITERATE_CONDUCTOR_DIR", t.TempDir())
+	root := t.TempDir()
+	project := filepath.Join(root, "project")
+	if err := os.MkdirAll(filepath.Join(project, ".claude", "iterate", "plans"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(root, "alias")
+	if err := os.Symlink(project, alias); err != nil {
+		t.Fatal(err)
+	}
+	other := filepath.Join(root, "other")
+	if err := os.MkdirAll(filepath.Join(other, ".claude", "iterate", "plans"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	RegisterProject(project)
+	RegisterProject(alias)
+	RegisterProject(other)
+	known, err := ListProjects()
+	if err != nil || len(known) != 2 {
+		t.Fatalf("registered aliases: %v, %v", known, err)
+	}
+	// A historical index can contain aliases even when registration rejects new duplicates.
+	paths := []string{project, alias, other}
+	caseAlias := filepath.Join(root, "PROJECT")
+	if sameProjectDirectory(project, caseAlias) {
+		paths = append(paths, caseAlias)
+	}
+	raw, _ := json.Marshal(paths)
+	if err := os.WriteFile(ProjectsPath(), raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	known, err = ListProjects()
+	if err != nil || len(known) != 2 {
+		t.Fatalf("historical aliases: %v, %v", known, err)
+	}
+	svc := NewConductorService("")
+	cfg, _ := svc.Config()
+	enrolledPath := project
+	if sameProjectDirectory(project, caseAlias) {
+		enrolledPath = caseAlias
+	}
+	cfg.Projects = []model.Project{{ID: "owned-project", Name: "Project", Path: enrolledPath}}
+	if _, err := svc.Apply(cfg.Revision, cfg); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := svc.Config()
+	w := httptest.NewRecorder()
+	conductorProjects(w, httptest.NewRequest("GET", "/api/conductor/projects", nil))
+	var response struct {
+		Data []conductorProjectView `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != 200 || len(response.Data) != 2 {
+		t.Fatalf("alias rows: %s", w.Body)
+	}
+	owned := 0
+	for _, p := range response.Data {
+		if sameProjectDirectory(p.Path, project) {
+			owned++
+			if p.ID != "owned-project" || !p.Registered {
+				t.Fatalf("lost enrollment: %+v", p)
+			}
+		}
+	}
+	if owned != 1 {
+		t.Fatalf("project appears %d times", owned)
+	}
+	after, _ := svc.Config()
+	if after.Revision != before.Revision {
+		t.Fatal("read-only view mutated configuration")
+	}
+}

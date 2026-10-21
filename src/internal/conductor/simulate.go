@@ -163,11 +163,13 @@ type BudgetPreviewRequest struct {
 	OnlyOverdrive  bool             `json:"only_overdrive"`
 }
 
+// BudgetPreviewResult keeps hypothetical chart geometry separate from admission eligibility.
 type BudgetPreviewResult struct {
 	model.BudgetDecision
-	Display  *model.BudgetDecision `json:"display,omitempty"`
-	Achieved bool                  `json:"overdrive_achieved"`
-	Target   float64               `json:"display_target"`
+	Display     *model.BudgetDecision `json:"display,omitempty"`
+	DisplayNote string                `json:"display_note,omitempty"`
+	Achieved    bool                  `json:"overdrive_achieved"`
+	Target      float64               `json:"display_target"`
 }
 
 func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (BudgetPreviewResult, error) {
@@ -216,6 +218,7 @@ func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (
 		if req.Sample != nil {
 			preview := sampleBudget(p, sub, r.Usage[sub.ID], now, max, req.HonorOverdrive, req.OnlyOverdrive, modelID)
 			out.Display, out.Target, out.Achieved = preview.Display, preview.Target, preview.Achieved
+			out.DisplayNote = preview.DisplayNote
 		}
 		return out, nil
 	}
@@ -387,6 +390,9 @@ func sampleBudget(p model.PowerBand, sub model.Subscription, u model.Usage, now 
 	displaySub.Enabled = true
 	display := budget.EvaluateForModel(p, displaySub, u, now, max, honor, only, nil, modelID)
 	out := BudgetPreviewResult{Display: &display}
+	if !sub.Enabled {
+		out.DisplayNote = "Sample bar previews this subscription as enabled. The saved subscription is disabled; no work can launch."
+	}
 	found := false
 	if honor && sub.OverdriveEnabled {
 		for _, w := range sub.OverdriveWindows {

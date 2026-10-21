@@ -10,6 +10,8 @@ What changed, for people who use this.
 - Weekdays and Weekends come with editable full-day hours, displayed as 00:00–23:59.
 
 **Improved**
+- Completed CLI repairs hand unblocked plans back to Conductor. Running badges identify CLI versus Conductor ownership, while parked failures remain visible.
+- Plan identity stays above a compact, scrollable activity log. Directory aliases share one project entry.
 - Subscription setup shows the AI tool, installed program, account/usage status and power band first. Detect and Verify identify the host executable; advanced options use readable argument rows, with inline help for technical choices.
 - Dashboard and subscription switches make activation visible. Disabled settings remain readable and easy to re-enable.
 - Overdrive testers keep the green bar and show “✓ Overdrive achieved” at the target. Provider hard limits still apply.

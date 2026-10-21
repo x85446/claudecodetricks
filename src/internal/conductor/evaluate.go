@@ -37,14 +37,15 @@ type Candidate struct {
 	Occurrence   *model.Occurrence    `json:"occurrence,omitempty"`
 }
 type Queue struct {
-	RunningPlans []string `json:"running_plans"`
-	ProjectID    string   `json:"project_id"`
-	Plans        []Plan   `json:"plans"`
-	Depth        int      `json:"depth"`
-	Ready        int      `json:"ready"`
-	Waiting      int      `json:"waiting"`
-	Running      int      `json:"running"`
-	Error        string   `json:"error,omitempty"`
+	RunningOwners map[string]string `json:"running_owners"`
+	RunningPlans  []string          `json:"running_plans"`
+	ProjectID     string            `json:"project_id"`
+	Plans         []Plan            `json:"plans"`
+	Depth         int               `json:"depth"`
+	Ready         int               `json:"ready"`
+	Waiting       int               `json:"waiting"`
+	Running       int               `json:"running"`
+	Error         string            `json:"error,omitempty"`
 }
 type Decision struct {
 	Revision        int64              `json:"revision"`
@@ -147,7 +148,7 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 		if req.ProjectID != "" && req.ProjectID != p.ID {
 			continue
 		}
-		q := Queue{ProjectID: p.ID, Plans: []Plan{}}
+		q := Queue{ProjectID: p.ID, Plans: []Plan{}, RunningOwners: map[string]string{}}
 		plans := []Plan{}
 		if s.Source != nil {
 			var err error
@@ -203,6 +204,7 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 				busy = true
 				q.Running++
 				q.RunningPlans = append(q.RunningPlans, l.Assignment.Plan)
+				q.RunningOwners[l.Assignment.Plan] = "conductor"
 			}
 		}
 		for _, pl := range plans {
@@ -231,6 +233,7 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 				}
 				if !owned {
 					q.RunningPlans = append(q.RunningPlans, pl.Name)
+					q.RunningOwners[pl.Name] = "cli"
 					q.Running++
 				}
 				continue
@@ -248,7 +251,13 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 				continue
 			}
 			if pl.Kind != "intake" {
-				q.Plans = append(q.Plans, pl)
+				visible := pl
+				if pg := r.Progress[pl.ID]; pg.Parked && pl.State != "unblocked" {
+					visible.Blocked = true
+					visible.State = "blocked"
+					visible.Reason = pg.Reason
+				}
+				q.Plans = append(q.Plans, visible)
 				q.Depth++
 			}
 			if req.QueueAvailable != nil && !*req.QueueAvailable {

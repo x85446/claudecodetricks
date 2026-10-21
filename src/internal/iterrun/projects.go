@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 )
 
@@ -35,8 +34,10 @@ func RegisterProject(dir string) {
 		return
 	}
 	known, _ := ListProjects()
-	if slices.Contains(known, abs) {
-		return
+	for _, path := range known {
+		if sameProjectDirectory(path, abs) {
+			return
+		}
 	}
 	known = append(known, abs)
 	sort.Strings(known)
@@ -70,7 +71,16 @@ func ListProjects() ([]string, error) {
 	var live []string
 	for _, p := range known {
 		if _, err := os.Stat(filepath.Join(p, ".claude", "iterate", "plans")); err == nil {
-			live = append(live, p)
+			duplicate := false
+			for _, existing := range live {
+				if sameProjectDirectory(existing, p) {
+					duplicate = true
+					break
+				}
+			}
+			if !duplicate {
+				live = append(live, p)
+			}
 		}
 	}
 	return live, nil
@@ -113,4 +123,17 @@ func ProjectRoot(dir string) string {
 		}
 		d = parent
 	}
+}
+
+// sameProjectDirectory compares filesystem identity, including case aliases on case-insensitive volumes.
+func sameProjectDirectory(a, b string) bool {
+	if a == b {
+		return true
+	}
+	left, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	right, err := os.Stat(b)
+	return err == nil && left.IsDir() && right.IsDir() && os.SameFile(left, right)
 }

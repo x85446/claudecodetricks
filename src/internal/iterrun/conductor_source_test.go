@@ -80,8 +80,12 @@ func TestConductorSourceOwnTrail(t *testing.T) {
 	if e := os.Chtimes(HeartbeatPath(p.Path), at, at); e != nil {
 		t.Fatal(e)
 	}
+	if e := src.Gate(ctx, p, at); e != nil {
+		t.Fatal("released plan reclaimed by generic activity", e)
+	}
+	writeConductorPlan(t, p.Path, strings.Replace(sourcePlan, "running: false", "running: "+at.UTC().Format(time.RFC3339), 1))
 	if e := src.Gate(ctx, p, at); e == nil {
-		t.Fatal("new manual heartbeat ignored")
+		t.Fatal("live explicit manual run lock ignored")
 	}
 }
 
@@ -226,5 +230,74 @@ func TestConductorSourceTypedPlanExclusion(t *testing.T) {
 	d, e := s.Evaluate(context.Background(), conductor.EvaluateRequest{})
 	if e != nil || len(d.Queues) != 1 || d.Queues[0].Depth != 1 || d.Queues[0].Plans[0].Name != "normal" {
 		t.Fatal("typed plan entered automated queue", d, e)
+	}
+}
+
+// TESTMASTER: id=conductor-parked-interruption-source tier=? parallel=yes
+func TestConductorSourceParkedInterruption(t *testing.T) {
+	p := model.Project{ID: "p", Path: t.TempDir()}
+	path := writeConductorPlan(t, p.Path, sourcePlan)
+	src := ConductorPlanSource{}
+	a := model.Assignment{ID: "interrupted", ProjectPath: p.Path, Plan: "alpha", Kind: "pair"}
+	ctx := context.Background()
+	if e := src.Claim(ctx, a); e != nil {
+		t.Fatal(e)
+	}
+	if e := src.Outcome(ctx, a, model.Result{Outcome: "interrupted", Blocker: "owned assignment interrupted"}); e != nil {
+		t.Fatal(e)
+	}
+	if e := src.Release(ctx, a); e != nil {
+		t.Fatal(e)
+	}
+	plans, e := src.List(ctx, p)
+	if e != nil || len(plans) != 1 || !plans[0].Blocked || plans[0].Running {
+		t.Fatal(plans, e)
+	}
+	b, e := os.ReadFile(path)
+	if e != nil || strings.Contains(string(b), "[x]") || !strings.Contains(string(b), "status: blocked-on-operator: owned assignment interrupted") {
+		t.Fatal(string(b), e)
+	}
+}
+
+// TESTMASTER: id=conductor-cli-unblock-handoff tier=? parallel=no
+func TestConductorManualReleaseHandoff(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	for _, tc := range []struct {
+		name, status, marker string
+		want                 bool
+	}{
+		{"unblocked release", "unblocked", "false", false},
+		{"executing release", "executing", "false", false},
+		{"blocked release", "blocked-on-operator: fixture", "false", false},
+		{"fresh manual lock", "executing", now.Format(time.RFC3339), true},
+		{"unblocked but still owned", "unblocked", now.Format(time.RFC3339), true},
+		{"legacy active", "executing", "", true},
+		{"legacy unblocked", "unblocked", "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := model.Project{ID: "p", Path: t.TempDir()}
+			text := strings.Replace(sourcePlan, "phase: planned", "phase: executing", 1)
+			text = strings.Replace(text, "status: queued", "status: "+tc.status, 1)
+			text = strings.Replace(text, "running: false\n", "", 1)
+			if tc.marker != "" {
+				text = "running: " + tc.marker + "\n" + text
+			}
+			writeConductorPlan(t, p.Path, text)
+			if e := conductor.AtomicWrite(filepath.Join(p.Path, ".claude", "iterate", "current"), []byte("alpha\n")); e != nil {
+				t.Fatal(e)
+			}
+			TouchHeartbeat(p.Path)
+			src := ConductorPlanSource{}
+			plans, e := src.List(ctx, p)
+			if e != nil || len(plans) != 1 || plans[0].Running != tc.want {
+				t.Fatal(plans, e)
+			}
+			e = src.Gate(ctx, p, time.Now())
+			if (e != nil) != tc.want {
+				t.Fatalf("gate=%v, want busy=%v", e, tc.want)
+			}
+		})
 	}
 }
