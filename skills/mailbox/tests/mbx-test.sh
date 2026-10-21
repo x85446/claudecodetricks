@@ -1,4 +1,5 @@
 #!/bin/bash
+# TESTMASTER: id=mailbox.mbx-test tier=standard parallel=yes
 # Fixtures for skills/mailbox/scripts/mbx.py: registry seeding and resolution, send/dedup,
 # agent targeting, read marking, atomic claims, the work list, waiting states, reply threading,
 # the hop limit, legacy informs and held statuses.
