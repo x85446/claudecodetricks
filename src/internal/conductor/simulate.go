@@ -72,6 +72,10 @@ func applySamples(c model.Config, r *Runtime, now time.Time, samples map[string]
 			if sample.Band == "" {
 				alignSampleWeekly(u.Weekly, now, loc)
 			}
+			u.SubscriptionID = id
+			u.AccountID = sub.AccountID
+			u.PoolID = sub.PoolID
+			u.Supported = true
 			u.ObservedAt = now
 			u.Source = "Sample"
 			if u.Short != nil && (now.Before(u.Short.StartsAt) || !now.Before(u.Short.ResetsAt)) {
@@ -159,14 +163,21 @@ type BudgetPreviewRequest struct {
 	OnlyOverdrive  bool             `json:"only_overdrive"`
 }
 
-func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (model.BudgetDecision, error) {
+type BudgetPreviewResult struct {
+	model.BudgetDecision
+	Display  *model.BudgetDecision `json:"display,omitempty"`
+	Achieved bool                  `json:"overdrive_achieved"`
+	Target   float64               `json:"display_target"`
+}
+
+func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (BudgetPreviewResult, error) {
 	c, e := s.Config()
 	if e != nil {
-		return model.BudgetDecision{}, e
+		return BudgetPreviewResult{}, e
 	}
 	r, e := s.Runtime()
 	if e != nil {
-		return model.BudgetDecision{}, e
+		return BudgetPreviewResult{}, e
 	}
 	now := s.now()
 	if req.Now != nil {
@@ -188,7 +199,7 @@ func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (
 		if req.Policy != nil {
 			p = *req.Policy
 			if e = budget.ValidatePolicy(p); e != nil {
-				return model.BudgetDecision{}, e
+				return BudgetPreviewResult{}, e
 			}
 		}
 		modelID := ""
@@ -201,9 +212,14 @@ func (s *Service) BudgetPreview(ctx context.Context, req BudgetPreviewRequest) (
 		if max == "" {
 			max = model.Green
 		}
-		return budget.EvaluateForModel(p, sub, r.Usage[sub.ID], now, max, req.HonorOverdrive, req.OnlyOverdrive, r.Occurrences, modelID), nil
+		out := BudgetPreviewResult{BudgetDecision: budget.EvaluateForModel(p, sub, r.Usage[sub.ID], now, max, req.HonorOverdrive, req.OnlyOverdrive, r.Occurrences, modelID)}
+		if req.Sample != nil {
+			preview := sampleBudget(p, sub, r.Usage[sub.ID], now, max, req.HonorOverdrive, req.OnlyOverdrive, modelID)
+			out.Display, out.Target, out.Achieved = preview.Display, preview.Target, preview.Achieved
+		}
+		return out, nil
 	}
-	return model.BudgetDecision{}, errors.New("subscription not found")
+	return BudgetPreviewResult{}, errors.New("subscription not found")
 }
 
 type OverdriveOption struct {
@@ -229,7 +245,7 @@ func (s *Service) OverdriveOptions(ctx context.Context, automationID string) ([]
 		return nil, e
 	}
 	var automation model.Automation
-	for _, a := range c.Automations {
+	for _, a := range append(c.Automations, model.EffectiveAutomations(c)...) {
 		if a.ID == automationID {
 			automation = a
 		}
@@ -363,4 +379,25 @@ func alignSampleWeekly(a *model.Allowance, now time.Time, loc *time.Location) {
 	a.StartsAt = start
 	a.ResetsAt = end
 	a.Epoch = "sample:" + start.UTC().Format(time.RFC3339)
+}
+
+// sampleBudget describes a hypothetical window without retiring its occurrence.
+func sampleBudget(p model.PowerBand, sub model.Subscription, u model.Usage, now time.Time, max model.Band, honor, only bool, modelID string) BudgetPreviewResult {
+	displaySub := sub
+	displaySub.Enabled = true
+	display := budget.EvaluateForModel(p, displaySub, u, now, max, honor, only, nil, modelID)
+	out := BudgetPreviewResult{Display: &display}
+	found := false
+	if honor && sub.OverdriveEnabled {
+		for _, w := range sub.OverdriveWindows {
+			if _, active, err := budget.OverdriveAt(w, u.Weekly, now); err == nil && active {
+				if !found || out.Target < w.TargetUsedPercent {
+					out.Target = w.TargetUsedPercent
+				}
+				found = true
+			}
+		}
+	}
+	out.Achieved = found && u.Weekly != nil && u.Weekly.UsedPercent >= out.Target
+	return out
 }

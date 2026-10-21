@@ -15,8 +15,14 @@ import (
 	"strings"
 )
 
+func defaultTimeWindows() []model.TimeWindow {
+	return []model.TimeWindow{
+		{ID: "weekdays", Name: "Weekdays", Enabled: true, StartMode: "weekly", Recurrence: model.Recurrence{Days: []int{1, 2, 3, 4, 5}, Start: "00:00", End: "23:59", AllDay: true, Timezone: "America/Chicago", EveryWeeks: 1}},
+		{ID: "weekends", Name: "Weekends", Enabled: true, StartMode: "weekly", Recurrence: model.Recurrence{Days: []int{6, 7}, Start: "00:00", End: "23:59", AllDay: true, Timezone: "America/Chicago", EveryWeeks: 1}},
+	}
+}
 func Defaults() model.Config {
-	return model.Config{Version: model.SchemaVersion, PowerBands: []model.PowerBand{budget.Universal()}, Subscriptions: provider.Templates(), Projects: []model.Project{}, Automations: []model.Automation{}, TimeWindows: []model.TimeWindow{}}
+	return model.Config{Version: model.SchemaVersion, PowerBands: []model.PowerBand{budget.Universal()}, Subscriptions: provider.Templates(), Projects: []model.Project{}, Automations: []model.Automation{}, TimeWindows: defaultTimeWindows()}
 }
 func (s *Service) config() (model.Config, error) {
 	var c model.Config
@@ -39,6 +45,9 @@ func normalize(c *model.Config) {
 	c.Version = model.SchemaVersion
 	if len(c.PowerBands) == 0 {
 		c.PowerBands = []model.PowerBand{budget.Universal()}
+	}
+	for i := range c.PowerBands {
+		budget.NormalizeShort(&c.PowerBands[i])
 	}
 	fallback := "universal"
 	for _, p := range c.PowerBands {
@@ -85,6 +94,23 @@ func normalize(c *model.Config) {
 	}
 	for i := range c.Automations {
 		a := &c.Automations[i]
+		if a.ProjectID != "" {
+			found := false
+			for j := range c.Attachments {
+				link := &c.Attachments[j]
+				if link.DefinitionID == a.ID && link.ProjectID == a.ProjectID {
+					link.Enabled = a.Enabled
+					link.Priority = a.Priority
+					found = true
+					break
+				}
+			}
+			if !found {
+				c.Attachments = append(c.Attachments, model.AutomationAttachment{ID: a.ID, DefinitionID: a.ID, ProjectID: a.ProjectID, Enabled: a.Enabled, Priority: a.Priority})
+			}
+			a.ProjectID = ""
+		}
+
 		if a.RunLimit == "" {
 			a.RunLimit = "drain_queue"
 		}
@@ -156,6 +182,19 @@ func migrateJSON(b []byte) (model.Config, error) {
 					c.PowerBands = append(c.PowerBands, p)
 				}
 				s.PowerBandID = p.ID
+			}
+		}
+	}
+	if c.Version < 3 {
+		for _, w := range defaultTimeWindows() {
+			exists := false
+			for _, old := range c.TimeWindows {
+				if old.ID == w.ID || old.Name == w.Name {
+					exists = true
+				}
+			}
+			if !exists {
+				c.TimeWindows = append(c.TimeWindows, w)
 			}
 		}
 	}
@@ -394,11 +433,37 @@ func ValidateConfig(c model.Config) error {
 	if !pol["universal"] {
 		return errors.New("Universal power band is required")
 	}
+	definitions := map[string]model.Automation{}
 	for _, a := range c.Automations {
+		definitions[a.ID] = a
+	}
+	attachmentIDs, pairs := map[string]bool{}, map[string]bool{}
+	for _, link := range c.Attachments {
+		a, exists := definitions[link.DefinitionID]
+		if !exists {
+			return errors.New("automation is in use: detach project references before deleting its definition")
+		}
+		if !projects[link.ProjectID] {
+			return errors.New("referenced attachment project missing")
+		}
+		pair := link.ProjectID + "/" + link.DefinitionID
+		if link.ID == "" || strings.ContainsAny(link.ID, "/\\\x00") || attachmentIDs[link.ID] || pairs[pair] {
+			return errors.New("duplicate or empty automation attachment")
+		}
+		attachmentIDs[link.ID] = true
+		pairs[pair] = true
+		if link.Enabled && ((a.Mode == "overdrive" && len(a.Participants) == 0) || (a.Mode != "overdrive" && len(a.Entries) == 0)) {
+			return errors.New("enabled attachment requires launch sequences")
+		}
+	}
+	for _, a := range c.Automations {
+		if strings.TrimSpace(a.Name) == "" {
+			return errors.New("automation name required")
+		}
 		if e := add(a.ID); e != nil {
 			return e
 		}
-		if !projects[a.ProjectID] {
+		if a.ProjectID != "" && !projects[a.ProjectID] {
 			return errors.New("referenced project missing")
 		}
 		if a.OnlyOverdrive && !a.HonorOverdrive {

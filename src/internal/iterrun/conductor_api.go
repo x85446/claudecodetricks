@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/x85446/claudecodetricks/src/internal/conductor"
+	"github.com/x85446/claudecodetricks/src/internal/conductor/budget"
 	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 	"github.com/x85446/claudecodetricks/src/internal/conductor/provider"
 )
@@ -240,6 +241,13 @@ func ConductorAPI(s *conductor.Service) http.Handler {
 					data, err = s.Evaluate(r.Context(), req)
 				}
 			}
+		case "policy-preview":
+			if post() {
+				var req budget.PolicySample
+				if err = conductorDecode(r, &req); err == nil {
+					data, err = budget.PreviewPolicy(req)
+				}
+			}
 		case "budget-preview":
 			if post() {
 				var req conductor.BudgetPreviewRequest
@@ -274,7 +282,7 @@ func ConductorAPI(s *conductor.Service) http.Handler {
 					}
 				}
 			}
-		case "probe", "preview":
+		case "detect", "probe", "preview":
 			if post() {
 				var req struct {
 					Subscription   model.Subscription `json:"subscription"`
@@ -311,7 +319,9 @@ func ConductorAPI(s *conductor.Service) http.Handler {
 						break
 					}
 				}
-				if path == "probe" {
+				if path == "detect" {
+					data = provider.Detect(req.Subscription)
+				} else if path == "probe" {
 					ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 					data = provider.Probe(ctx, req.Subscription)
 					cancel()

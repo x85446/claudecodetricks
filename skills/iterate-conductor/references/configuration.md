@@ -4,7 +4,7 @@ The current schema comes from `iterate-run conductor config show --json`. Keep t
 
 ## Project automation
 
-Resolve a registered project's exact canonical path and ID. Resolve launch sequences inside their owning subscriptions. Each automation has a stable `id`, `project_id`, editable `name`, `enabled`, and numeric `priority` (lower first). Preserve IDs for repeated requests, including entry IDs while reordering them.
+Resolve a registered project's exact canonical path and ID. Resolve launch sequences inside their owning subscriptions. Each named automation definition has a stable `id` and editable `name`. Each `automation_attachments` entry has a stable `id`, `definition_id`, `project_id`, local `enabled`, and numeric `priority` (lower first). One definition attaches at most once per project. Create attachments disabled unless activation is explicitly requested. Shared edits govern future admissions; active assignments retain their saved inputs. Duplicate a definition for independent rules. Detach project references before deleting a definition. Preserve IDs for repeated requests, including entry IDs while reordering them.
 
 | Request | Mode and fields |
 |---|---|
@@ -18,7 +18,7 @@ Scheduled automations select `run_limit: "drain_queue"` (default) or `"one_plan"
 
 ## Named Time Windows
 
-Create or reuse a `time_windows` entry and refer to its ID. A weekly recurrence contains `days` (Monday=1 through Sunday=7), `start`, `end` in HH:MM, IANA `timezone`, `every_weeks` (default 1), and `anchor_date` for multiweek recurrence. It repeats indefinitely. Enabled recurrences require selected days. Overnight windows belong to their start day; equal start/end covers a full day. 00:00–23:59 closes at 23:59.
+Create or reuse a `time_windows` entry and refer to its ID. A weekly recurrence contains `days` (Monday=1 through Sunday=7), `start`, `end` in HH:MM, IANA `timezone`, `every_weeks` (default 1), and optional `anchor_date` for stored multiweek phase; an absent anchor uses a deterministic internal epoch. It repeats indefinitely. Enabled recurrences require selected days. Overnight windows belong to their start day; equal start/end covers a full day. The editable Weekdays and Weekends defaults use `all_day: true`, displayed as 00:00–23:59 and ending at the next civil midnight, including the final minute. Other explicit end times remain exclusive.
 
 Example: weeknights uses `days: [1,2,3,4,5]`, `start: "22:00"`, `end: "06:00"`, `timezone: "America/Chicago"`, `every_weeks: 1`, and `start_mode: "weekly"`. The subscription's trusted reset supports `start_mode: "reset_relative"` with `hours_before_reset` instead of a guessed reset date. A project's `window_id` is an additional limit intersecting its automation windows; empty means Anytime.
 

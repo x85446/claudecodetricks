@@ -115,3 +115,39 @@
 - status: fixed (interactive preview)
 
 - verification: Opened the served preview in Chrome and edited Codex · build. The permission-preset dialog, sequence collection and overdrive rows display neutral outlined Duplicate, Delete and Edit buttons using the shared cp-button style.
+
+
+## Javelina verification — 2026-10-21
+
+### F13 — Subscription setup exposes implementation details before useful choices
+- surface: subscription summary and editor
+- kind: ux; severity: high; status: fixed
+- evidence: user screenshots and isolated Chrome fixture localhost:8421.
+- fix: AI tool, host program detection, account/usage status and power band lead; literal arguments and technical controls live in Advanced; account IDs are read-only Diagnostics.
+- verification: Codex detection resolves an absolute host path; Verify executes help only; missing custom path receives a remedy; tool switching preserves explicit overrides and clears readiness. Cancel discards drafts. Required/Optional/Defaulted labels, no JSON requirement, popover Escape/focus/background-scroll and 320px dialog geometry pass. Touch opens overdrive help; keyboard opens/dismisses subscription help.
+
+### F14 — Activation controls are scattered and disabled content looks active
+- surface: dashboard, subscription summary/editor, overdrive parent/window, automation attachment, named window
+- kind: ux; severity: high; status: fixed
+- fix: activation uses role=switch, dashboard owns project activation, disabled rows/panels are muted and compact with visible names/Edit/re-enable controls. Weekdays remain selection checkboxes.
+- verification: pointer/Space/touch toggle fixture projects; Save/Edit preserves activation. Subscription card and editor share state. Disabling overdrive preserves its enabled child and collapses its tester; re-enabling restores it. Attachments remain independently enabled/disabled across two projects. Regression API checks reject conflicting writes; browser retains an automation draft on conflict. A stale polling response cannot replace a newer config revision.
+
+### F15 — Power-band tester mixes unrelated account and scheduler decisions
+- surface: Named Power Bands editor
+- kind: ux; severity: high; status: fixed
+- fix: four independent sample inputs, policy-only API, six five-hour threshold points and separate current-sample label.
+- verification: Chrome shows exact day 0 / 0% as green with visible marker and unchanged zero thresholds; 2h 33m and 51% remain independent. No subscription, overdrive, warning or decision table. Executed UI regression rejects out-of-order/closed-dialog responses. Visual review of /tmp/javelina-final-powerband.png confirms readable controls and unclipped markers.
+
+### F16 — Overdrive completion loses its visual outcome
+- surface: subscription and automation testers
+- kind: ui; severity: medium; status: fixed
+- fix: applicable target completion uses a green target region and checkmarked achieved label; real admission keeps its hard gates.
+- verification: targets 60 and 100 pass below/exact/above/rewind fixture cases. Chrome at 60 and 100 shows achieved and accurate marker. Disabled subscription remains denied. /tmp/javelina-overdrive-achieved.png passes independent visual review.
+
+### F17 — Reusing automation rules requires copies with unclear ownership
+- surface: global Named Automations and project Automations
+- kind: ux; severity: high; status: fixed
+- fix: shared named definitions, local attachments, Used by, shared-edit explanation, independent Duplicate and guarded Delete.
+- verification: browser creates a definition, attaches it to Sample A and B disabled, enables A independently, duplicates and deletes the unused copy, prevents referenced deletion, detaches/re-attaches B disabled, and preserves a stale draft. Bounded worker tests prove distinct assignment/occurrence identities; checkpoint tests prove active snapshots survive shared edits.
+
+Final repeat sweep: no additional findings across the covered dashboard, subscription, power-band, time-window, overdrive and shared-automation flows. Nested help, cancel/reopen, disabled-parent/enabled-child and 320px subscription layout are exercised. Global fixture admission stays disabled; no model work runs. Production localhost:8420 and user configuration remain unchanged.

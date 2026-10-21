@@ -13,7 +13,7 @@ import (
 
 var ErrConductorNotFound = errors.New("definition not found; reload the collection and choose an existing ID")
 
-var conductorCollections = map[string]string{"project": "projects", "subscription": "subscriptions", "sequence": "sequences", "preset": "presets", "power-band": "power_bands", "time-window": "time_windows", "overdrive": "overdrive_windows", "automation": "automations"}
+var conductorCollections = map[string]string{"project": "projects", "subscription": "subscriptions", "sequence": "sequences", "preset": "presets", "power-band": "power_bands", "time-window": "time_windows", "overdrive": "overdrive_windows", "automation": "automations", "automation-attachment": "automation_attachments"}
 
 // ConductorResource uses the same full-document validation and atomic transaction as config apply.
 func ConductorResource(s *conductor.Service, noun, verb, id, parent string, body []byte, expected *int64, dryRun bool) (any, int64, error) {

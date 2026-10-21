@@ -2,6 +2,18 @@
 
 What changed, for people who use this.
 
+## 2026-10-21 — Reusable automations and clearer settings
+
+**New**
+- Name automation rules once in Settings and attach them to several projects. Each project has its own enable switch and priority. Used by shows shared scope; Duplicate creates independent rules, and referenced rules are protected from deletion.
+- Set green/red percentages at each elapsed hour from 0 through 5. Try the power bands uses only your draft, elapsed time and usage percentage, with a clear green indicator at zero.
+- Weekdays and Weekends come with editable full-day hours, displayed as 00:00–23:59.
+
+**Improved**
+- Subscription setup shows the AI tool, installed program, account/usage status and power band first. Detect and Verify identify the host executable; advanced options use readable argument rows, with inline help for technical choices.
+- Dashboard and subscription switches make activation visible. Disabled settings remain readable and easy to re-enable.
+- Overdrive testers keep the green bar and show “✓ Overdrive achieved” at the target. Provider hard limits still apply.
+
 ## 2026-10-16 — One place to schedule and follow AI work
 
 **New**

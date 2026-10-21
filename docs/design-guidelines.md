@@ -36,7 +36,7 @@ Keep actions beside the content they affect. Do not push an Edit or Add button t
 - Align subscription summaries, Named Launch Sequences and Overdrive windows to the same outer edges and 800px maximum content width. Let panels shrink to fit their container.
 - Keep fields and action groups compact within those panels; matching panel widths do not require full-width controls.
 - Use one heading for each section. Do not place an Overdrive heading immediately above another heading named Overdrive windows.
-- Show each overdrive window as a single row: enable checkbox, name with target percentage, then Duplicate, Delete, Edit. Example: **Before Sunday reset (100%)**. Put recurrence, timezone and ending conditions in its editor.
+- Show each overdrive window as a single row: enable switch, name with target percentage, then Duplicate, Delete, Edit. Example: **Before Sunday reset (100%)**. Put recurrence, timezone and ending conditions in its editor.
 - Keep collection summaries short. Put supplementary explanations behind a labeled disclosure; keep essential consequences and validation errors visible.
 - Reflow controls at narrow widths, including 320px. Wrap groups without clipping labels, actions or fields. Single-line rows may wrap when space requires it.
 
@@ -57,7 +57,7 @@ Use dialogs for Add, Duplicate and Edit of subscriptions, launch sequences, perm
 
 ## Navigation and ownership
 
-Use All projects as the global overview. Its compact table has sortable Name, Queued, Draft, Running, Blocked, Enrolled and Activity columns. Name sorts alphabetically; counts sort numerically; Activity sorts by the latest recorded plan milestone or assignment start, with unavailable values last. Sort and tag selections persist in the URL. Queued counts link to the queue, Draft to work awaiting staging, Running to currently owned work, and Blocked to work awaiting attention. Project settings store lowercase tags; selecting multiple tags matches any selected tag. Enrollment and the enabled switch remain distinct. Keep the table horizontally scrollable within its own labeled region on narrow screens. Selecting a project opens its workspace with Plans, Automations and Activity tabs. Plans provides All, Draft, Queued, Running, Blocked and Archived filters. Each plan has one state; All includes every state and shows blocked work first. Use short status badges and expandable blocker explanations that wrap within the panel; queue counts open the corresponding project’s queued view. Plan details retain the project header and tabs. Scope activity to the selected project. Place Settings as a global labeled utility in the application header. Within Settings, order navigation as **AI Subscriptions → Named Power Bands → Named Time Windows**.
+Use All projects as the global overview. Its compact table has sortable Name, Queued, Draft, Running, Blocked, Enrolled and Activity columns. Name sorts alphabetically; counts sort numerically; Activity sorts by the latest recorded plan milestone or assignment start, with unavailable values last. Sort and tag selections persist in the URL. Queued counts link to the queue, Draft to work awaiting staging, Running to currently owned work, and Blocked to work awaiting attention. Project settings store lowercase tags; selecting multiple tags matches any selected tag. Enrollment and the enabled switch remain distinct. Keep the table horizontally scrollable within its own labeled region on narrow screens. Selecting a project opens its workspace with Plans, Automations and Activity tabs. Plans provides All, Draft, Queued, Running, Blocked and Archived filters. Each plan has one state; All includes every state and shows blocked work first. Use short status badges and expandable blocker explanations that wrap within the panel; queue counts open the corresponding project’s queued view. Plan details retain the project header and tabs. Scope activity to the selected project. Place Settings as a global labeled utility in the application header. Within Settings, order navigation as **AI Subscriptions → Named Power Bands → Named Time Windows → Named Automations**.
 
 Show breadcrumbs that identify All projects, the selected project and its current tab or plan; Settings breadcrumbs identify the configuration section and owning subscription. Browser Back/Forward and application Back restore the corresponding location and selection. Settings returns to the page from which it was opened, preserving any automation draft.
 
@@ -78,10 +78,11 @@ Use Add, Duplicate, Edit and Delete with the shared collection and dialog patter
 - All power bars and their controls represent **percentage used**, increasing from 0% to 100%. Label remaining allowance separately and show weekly and five-hour reset information independently.
 - Use dark green for the normal green band, orange for the band labeled Yellow, and red for the red band. Pair colors with text.
 - Show a visible black current-use marker on every sample power bar.
-- During active overdrive, show bright green from 0% through its target-used percentage. Any normal green beyond that target remains dark green. At the target, restore normal policy presentation.
+- During active overdrive, show bright green from 0% through its target-used percentage. Any normal green beyond that target remains dark green. At or above the applicable target, retain target-length bright green and show **✓ Overdrive achieved**. Eligibility still follows the actual evaluator.
 - Animate only the unfilled words **OVERDRIVE active**, briefly and with reduced-motion support. Keep bars and backgrounds still. Inactive overdrive uses neutral grey treatment.
 - Mark testers as samples that do not change live settings or launch work. Use the available configuration; do not invent enabled accounts or windows.
-- Present results once in a table. Highlight only the selected eligible row in light green. Put **Would launch:** and its reason in that row; do not repeat the winner in a separate banner. Keep waiting and secondary rows neutral, with clear reasons.
+- Keep the standalone policy tester free of subscription, overdrive and admission controls. Give elapsed time and usage independent sliders and publish both values. Preserve exact zero with a green current-sample label and a visible black marker, even when the configured green range has zero width.
+- Present admission results once in a table in subscription and automation testers. Highlight only the selected eligible row in light green. Put **Would launch:** and its reason in that row; do not repeat the winner in a separate banner. Keep waiting and secondary rows neutral, with clear reasons.
 - Show only relevant sample controls: unrestricted Keep it working needs no day/hour inputs; scheduled automations use day/hour controls; overdrive uses an available-window selector and a percentage-used slider.
 
 ## Review checklist
@@ -98,3 +99,11 @@ Review the same action across at least one collection and one dialog, rather tha
 - Do samples use real available definitions, correct percentage units and one highlighted result?
 
 Record observed violations in `.claude/uxmaster/findings.md`. Keep a finding open until its interaction and visual treatment have been verified.
+
+## Activation and field help
+
+Use accessible binary switches for activation and checkboxes for independent selections such as weekdays. Disabled content uses muted, readable styling and compact detail disclosures. Keep its name, edit action and re-enable switch visible; preserve child settings. The dashboard owns project activation. Subscription cards and editors expose the same saved switch state. Failed or conflicting saves show the authoritative state and retain recoverable drafts.
+
+Place labeled ⓘ buttons beside technical fields and concepts. Help opens by pointer or keyboard, fits a 320px viewport, dismisses with Escape or outside click, and restores focus without moving the background. Essential consequences and validation errors stay visible. Mark subscription fields Required, Optional or Defaulted according to validation. Keep common choices prominent and group optional overrides under Advanced; opaque account IDs belong in read-only Diagnostics.
+
+Named Automations hold shared rules. Project attachments own local activation and order. Show Used by and the scope of shared edits. Distinguish Remove from project from Delete; offer Duplicate for independent rules and block referenced deletion.
