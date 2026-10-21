@@ -10,6 +10,8 @@ A blocked plan does not stop the whole project queue. Conductor skips that plan 
 
 The All projects table sorts by its column headers. **Configure** or **Edit** opens project settings, where **Tags** accepts comma-separated labels. Tags use lowercase and combine duplicates. Select tag buttons above the table to match any selected tag; **Clear filters** restores all projects. Sorting and tag selections persist in the URL.
 
+Timeline durations and open rows describe recorded activity. The Conductor activity panel reports current project execution and admission state.
+
 ## Set up a project
 
 1. Choose **Add project** and select its existing folder. Registration starts disabled and leaves repository files alone. Each worktree has its own canonical identity, even when names match.

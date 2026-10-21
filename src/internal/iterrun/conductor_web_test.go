@@ -30,6 +30,21 @@ func TestConductorUnifiedDetailPreservesTimeline(t *testing.T) {
 	if strings.Count(page, "<!doctype html>") != 1 {
 		t.Fatal("nested document instead of composed timeline")
 	}
+	for _, state := range []string{"blocked-on-operator: needs repair", "unblocked", "executing"} {
+		p.Archived = false
+		p.Status = state
+		page = RenderTimelineWithChrome(rows, p, "/project?project=fixture", nil, conductorDetailHeader("/workspace/fixture", "gar"))
+		for _, want := range []string{"Recorded execution span", "recorded open", "open at last recorded observation", "recorded evidence"} {
+			if !strings.Contains(page, want) {
+				t.Errorf("%s: historical detail missing %q", state, want)
+			}
+		}
+		for _, misleading := range []string{"Running for", `class="l">running</div>`, `>running</span>`, ">still running</span>"} {
+			if strings.Contains(page, misleading) {
+				t.Errorf("%s: historical detail claims live execution: %q", state, misleading)
+			}
+		}
+	}
 }
 
 // TESTMASTER: id=indigobird-unified-identity-errors tier=? parallel=no

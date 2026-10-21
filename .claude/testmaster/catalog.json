@@ -588,8 +588,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "test": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
           "validity": "valid"
         },
@@ -601,8 +601,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestRunboxPrefersExecutingOverStarted",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "test": "iterrun.TestRunboxPrefersExecutingOverStarted",
           "validity": "valid"
         },
@@ -614,8 +614,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "test": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
           "validity": "valid"
         },
@@ -627,8 +627,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "test": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
           "validity": "valid"
         },
@@ -640,8 +640,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "test": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
           "validity": "valid"
         },
@@ -653,8 +653,8 @@
           ],
           "covers_source": "coverage",
           "id": "iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "test": "iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen",
           "validity": "valid"
         },
@@ -1289,7 +1289,7 @@
       ],
       "id": "req-plan-item-formats",
       "source": "user",
-      "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" \u2014 the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams."
+      "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" — the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams."
     },
     {
       "cases": [
@@ -1702,7 +1702,7 @@
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "evidence": "claude -p \"/ip add to otter \u2026\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged \u2014 re-stage with /ip stage otter\"",
+          "evidence": "claude -p \"/ip add to otter …\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged — re-stage with /ip stage otter\"",
           "given": "a queued plan",
           "id": "st-4",
           "last_validated_commit": "b49945e6",
@@ -1824,7 +1824,7 @@
           "id": "np-2",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "it proceeds \u2014 the plan's Cost: line is the authority \u2014 and the transcript contains no 'go-ahead', 'pause the plan' or 'let me know when' text",
+          "then": "it proceeds — the plan's Cost: line is the authority — and the transcript contains no 'go-ahead', 'pause the plan' or 'let me know when' text",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -1842,7 +1842,7 @@
           "id": "np-3",
           "last_validated_commit": "wt",
           "source": "plan:flamingo",
-          "then": "a 'paused by operator' line from /iterate pause or /ic pause accompanies it \u2014 a pause with no human command behind it is a defect",
+          "then": "a 'paused by operator' line from /iterate pause or /ic pause accompanies it — a pause with no human command behind it is a defect",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T04:16:44Z",
@@ -1859,7 +1859,7 @@
           "id": "np-4",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "the same turn writes one of the four terminal endings (all-green, human-gate, blocked-on-operator after the ladder, giveup) or records a human pause/kill \u2014 never 'awaiting go-ahead'",
+          "then": "the same turn writes one of the four terminal endings (all-green, human-gate, blocked-on-operator after the ladder, giveup) or records a human pause/kill — never 'awaiting go-ahead'",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -1871,12 +1871,12 @@
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, \u26a0 branch-not-merged line",
+          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, ⚠ branch-not-merged line",
           "given": "a plan with human-gate: N and every other validation green",
           "id": "np-5",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "success-with-handoff fires exactly as before \u2014 the one designed stop is unchanged",
+          "then": "success-with-handoff fires exactly as before — the one designed stop is unchanged",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -2047,7 +2047,7 @@
           "last_validated_commit": "915e3241",
           "source": "plan:gaur",
           "test": "tutorial.box-test",
-          "then": "a closed frame shows the (no tutorials yet \u2026) placeholder row",
+          "then": "a closed frame shows the (no tutorials yet …) placeholder row",
           "tier": "fast",
           "validity": "valid",
           "when": "the menu renders"
@@ -2070,8 +2070,8 @@
           "covers_source": "manual",
           "given": "skills/iterate/SKILL.md",
           "id": "contract-1",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "source": "plan:gaur",
           "test": "iterate.contract-test",
           "then": "rule 33 exists, names contract expansion, answers extend-or-withdraw with extend, and cites tern",
@@ -2090,8 +2090,8 @@
           "covers_source": "manual",
           "given": "/iterate's On-stuck and landing-test Fails paragraphs",
           "id": "contract-2",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "source": "plan:gaur",
           "test": "iterate.contract-test",
           "then": "the operator-only list is closed to a secret, physical access and an external party with no decision on it, and a clause-3/4 failure is work",
@@ -2135,8 +2135,8 @@
           "covers_source": "manual",
           "given": "the triage state table",
           "id": "contract-4",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "source": "plan:gaur",
           "test": "iterate.contract-test",
           "then": "exactly one Executor-defect row exists, cleared with fix problem N and status: unblocked",
@@ -2155,8 +2155,8 @@
           "covers_source": "manual",
           "given": "the 13 iterate family members",
           "id": "contract-5",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "source": "plan:gaur",
           "test": "iterate.contract-test",
           "then": "every member carries the family version and every installed copy matches",
@@ -2603,7 +2603,7 @@
         }
       ],
       "id": "req-hoatzin-win-tree",
-      "requirement": "native Windows process-tree cancellation \u2014 a timeout or an interrupt kills everything the test spawned, not just the first process (kingtut inbox 20261013T051222Z)",
+      "requirement": "native Windows process-tree cancellation — a timeout or an interrupt kills everything the test spawned, not just the first process (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -2746,7 +2746,7 @@
         }
       ],
       "id": "req-hoatzin-win-lock",
-      "requirement": "an exclusive kernel-backed project run lock \u2014 two testmaster runs in one project never interleave registry writes, and the lock is released when the holder exits however it exits (kingtut inbox 20261013T051222Z)",
+      "requirement": "an exclusive kernel-backed project run lock — two testmaster runs in one project never interleave registry writes, and the lock is released when the holder exits however it exits (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -2879,7 +2879,7 @@
         }
       ],
       "id": "req-hoatzin-win-shell",
-      "requirement": "compatible shell invocation \u2014 shell-kind tests run under a Windows-capable shell instead of assuming /bin/sh, and runner set shell still overrides it (kingtut inbox 20261013T051222Z)",
+      "requirement": "compatible shell invocation — shell-kind tests run under a Windows-capable shell instead of assuming /bin/sh, and runner set shell still overrides it (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -6876,7 +6876,7 @@
             "src/internal/conductor/budget/recurrence.go"
           ],
           "covers_source": "coverage",
-          "given": "selected Friday 22:00\u201306:00 in an IANA timezone",
+          "given": "selected Friday 22:00–06:00 in an IANA timezone",
           "id": "indigobird-recurrence-overnight",
           "last_validated": "2026-10-21T18:12:00Z",
           "last_validated_commit": "915e3241",
@@ -11541,8 +11541,8 @@
           "covers_source": "coverage",
           "given": "a project has queued and active plans",
           "id": "indigobird-unified-detail",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "test": [
             "iterrun.TestConductorUnifiedDetailPreservesTimeline"
           ],
@@ -11586,8 +11586,8 @@
           ],
           "given": "a project has the gar archive fixture with existing timeline data",
           "id": "indigobird-unified-archive",
-          "last_validated": "2026-10-21T18:12:00Z",
-          "last_validated_commit": "915e3241",
+          "last_validated": "2026-10-21T18:17:41Z",
+          "last_validated_commit": "8eb9e0aa",
           "test": [
             "iterrun.TestConductorUnifiedDetailPreservesTimeline"
           ],
@@ -11596,7 +11596,7 @@
           "validity": "valid",
           "verified_at": "2026-10-16T21:50:35Z",
           "verified_by": "Scoped root live-provider and route evidence; exact assertions in acceptance_evidence",
-          "when": "open Plans \u2192 Archived \u2192 gar, then directly open and reload its encoded /archive bookmark"
+          "when": "open Plans → Archived → gar, then directly open and reload its encoded /archive bookmark"
         },
         {
           "acceptance_evidence": [
@@ -12097,7 +12097,7 @@
             "src/internal/conductor/provider/compile.go",
             "src/internal/iterrun/conductor_api.go"
           ],
-          "given": "00:00\u201323:59 full-day preset",
+          "given": "00:00–23:59 full-day preset",
           "id": "javelina-full-day",
           "last_validated": "2026-10-21T18:12:00Z",
           "last_validated_commit": "915e3241",
