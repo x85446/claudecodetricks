@@ -6366,3 +6366,12 @@
 {"id":"testmaster.TestWindowsShellResolution","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:12:00Z"}
 {"id":"tutorial.box-test","ms":7442,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:12:00Z"}
 {"batch":"fast+standard","failed":0,"missing":0,"ms":70644,"not_run":0,"passed":314,"runner":"testmaster","skipped":0,"ts":"2026-10-21T18:12:00Z"}
+{"id":"iterate.contract-test","ms":792,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
+{"id":"iterrun.TestConductorUnifiedDetailPreservesTimeline","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
+{"id":"iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
+{"id":"iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
+{"id":"iterrun.TestRunboxHandlesZeroConfirmedActivity","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
+{"id":"iterrun.TestRunboxPrefersExecutingOverStarted","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
+{"id":"iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
+{"id":"iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-21T18:17:41Z"}
+{"batch":"5 patterns","failed":0,"missing":0,"ms":793,"not_run":0,"passed":8,"runner":"testmaster","skipped":0,"ts":"2026-10-21T18:17:41Z"}
