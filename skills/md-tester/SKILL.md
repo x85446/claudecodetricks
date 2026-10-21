@@ -62,10 +62,11 @@ Execute tests defined in entries.
    - `run provider` — all entries in `provider.md` that have a `run:` block
    - `run all` — all entries across all test spec files that have `run:` blocks
    - Natural language: `run all clipboard tests` — grep tags for "clipboard", run matching entries
-2. **Skip unimplemented.** If an entry has no `run:` block, skip it and note it as "not yet implemented."
-3. **Execute.** For each target entry, extract the `run:` bash block and execute it from the project root directory.
-4. **Report results.** Show pass/fail status for each entry. Include the entry ID and short title.
-5. **On failure — fix loop** (max 3 retries per entry):
+2. **Parse runtime modifiers.** See the **Runtime modifiers** section below. Modifiers are natural-language phrases mixed into the user's request (e.g., "run provider-0011 in parallel, grouped only"). Translate them to env var prefixes that get prepended to the `run:` command at execution time. Never edit the `run:` block in the .md file just to apply a modifier.
+3. **Skip unimplemented.** If an entry has no `run:` block, skip it and note it as "not yet implemented."
+4. **Execute.** For each target entry, extract the `run:` bash block and execute it from the project root directory, prefixed by any env vars from step 2.
+5. **Report results.** Show pass/fail status for each entry. Include the entry ID and short title.
+6. **On failure — fix loop** (max 3 retries per entry):
    a. Show the failure output to the user.
    b. Read the Go test file listed in the entry's `test:` field.
    c. Read any relevant source files referenced by the test.
@@ -73,7 +74,45 @@ Execute tests defined in entries.
    e. Fix the code (test or source) using Edit tool.
    f. Re-run the `run:` command.
    g. If still failing after 3 retries, report the failure and move on.
-6. **Summary.** After all targets, print a summary: X passed, Y failed, Z skipped (unimplemented).
+7. **Summary.** After all targets, print a summary: X passed, Y failed, Z skipped (unimplemented).
+
+### Runtime modifiers
+
+Runtime modifiers tune *how* a `run:` command is executed without touching the command text stored in the spec file. They are opt-in: if the user's message contains no modifier language, execute the `run:` block exactly as written.
+
+Modifiers come from the user's request in free-form prose. Detect them by keyword and translate to one of:
+
+1. An **environment variable** prefix prepended to the `run:` command.
+2. A **`go test` flag** (e.g. `-parallel N`, `-run REGEX`) appended to the command.
+3. **Test targeting** — adding an extra `-run` regex to narrow the subtest path.
+
+If a modifier is specified but the target entry doesn't support it (the entry isn't a Go test, or the env var isn't recognized by that test), warn the user once and run without the modifier — don't guess a substitute.
+
+#### Modifier vocabulary
+
+This table is specific to the warden project. Extend it as new test knobs appear.
+
+| User says                                         | Applies to       | Action |
+|---------------------------------------------------|------------------|--------|
+| "parallel", "in parallel", "concurrent"           | provider-0011    | Prepend `WARDEN_TEST_PARALLEL=1`. If the user also gives a count ("4 at a time", "parallel 8"), append `-parallel N` to the `go test` args. |
+| "serial", "sequential", "one at a time"           | provider-0011    | No action — that's the default. Confirm in the report. |
+| "isolated only", "just isolated"                  | provider-0011    | Prepend `WARDEN_TEST_SNIPPET_MODES=isolated`. |
+| "grouped only", "just grouped", "groups only"     | provider-0011    | Prepend `WARDEN_TEST_SNIPPET_MODES=grouped`. |
+| "bundled only", "just bundled"                    | provider-0011    | Prepend `WARDEN_TEST_SNIPPET_MODES=bundled`. |
+| "isolated and grouped", "skip bundled"            | provider-0011    | Prepend `WARDEN_TEST_SNIPPET_MODES=isolated,grouped`. |
+| "grouped and bundled", "skip isolated"            | provider-0011    | Prepend `WARDEN_TEST_SNIPPET_MODES=grouped,bundled`. |
+| "just docker", "docker only"                      | any matrix test  | Append `-run '<existing>/docker(/|$)'` tightening the subtest path. |
+| "just the X snippet" (e.g. "vim", "warden-prompt")| provider-0011    | Append a `-run` regex that pins the snippet leaf: `.*/(isolated|grouped|bundled)/.*X$`. |
+| "one image" / "bookworm-slim only"                | provider-0011    | Append a `-run` regex pinning the image segment. |
+| "fast", "quick", "tight loop"                     | provider-0011    | Shortcut for `WARDEN_TEST_SNIPPET_MODES=grouped` + `WARDEN_TEST_PARALLEL=1 -parallel 4`. |
+
+#### Applying modifiers safely
+
+- **Read the target entry first.** If it's not provider-0011, check whether the modifier even makes sense. `WARDEN_TEST_PARALLEL` only affects tests that read it.
+- **Modifiers stack additively.** "Parallel, grouped only, just docker" → `WARDEN_TEST_PARALLEL=1 WARDEN_TEST_SNIPPET_MODES=grouped go test ... -run 'TestSnippetsFunctional/docker.*'`.
+- **Echo the final command** to the user before executing so they can spot a misread modifier.
+- **Modifiers are ephemeral.** Never persist them to the spec file. The canonical `run:` block always represents the full, default-behavior run.
+- **One exception to "never edit the spec".** If a modifier keeps getting requested every time and is really a missing default (e.g. the user says "always run this parallel"), ask the user whether they want the default in the spec file changed. Don't change it unilaterally.
 
 ---
 

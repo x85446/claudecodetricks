@@ -88,7 +88,8 @@ Run everything end-to-end. No confirmation needed — the user already asked for
    
    For unresolved clusters: create the merchant and patterns, then re-run backfill:
    ```python
-   # Create merchant
+   # Create merchant — default_tier*_id are ONE cost center's tree ids (Personal's for a consumer
+   # merchant); a row on another cost center gets the same names resolved in its own tree
    INSERT INTO merchants (name, name_normalized, default_tier1_id, default_tier2_id, default_tier3_id, created_at)
    VALUES ('Merchant Name', 'merchant name', <t1_id>, <t2_id>, <t3_id>, datetime('now'));
    

@@ -6,13 +6,24 @@ Read this before authoring or editing a project's `./.iz`. The placement workflo
 
 `create` gives you a bare guest. `izmachine up` takes a **.iz file** — a
 description of a machine, not a script — and goes from nothing to provisioned in
-one command. Every file-scoped command reads `./.iz` in the current directory
-and nothing else, unless the global `--izfile <file>` (or the command's own
-`-f/--file`, the same selection) names another file. A named file such as
-`backup.iz` is **never** a fallback: with no `./.iz`, every file-scoped command
-exits 14 naming `izmachine init` and `--izfile`, and lists the named files it
-did not read. Two different paths (`--izfile a.iz -f b.iz`) are exit 2; the same
-path twice is fine. There is no parent-directory search and no merging.
+one command. Definitions come from two layers. The **project layer** is `./.iz`
+in the current directory, or the file the global `--izfile <file>` (or the
+command's own `-f/--file`, the same selection) names instead. Beneath it sits
+the **global layer**, `$XDG_CONFIG_HOME/izmachine/global.iz` (falling back to
+`~/.config/izmachine/global.iz`), for machines every project may use. A project
+machine replaces a global machine of the same key wholesale, never key by key. A
+named machine (`izmachine up <key>`) resolves across both layers; a bare verb
+(`izmachine up`, `down`, `info`, `validate`) acts on the project machines when a
+project file exists, else on the global ones. Imports (`[[file]]` payloads,
+provision files) resolve relative to the file that defines the machine.
+`validate --format json` and `info --format json` carry each machine's
+`source` (`{layer, path}`) and, for a project machine that hides a global one,
+`shadows` (the global `{layer, path}`); `izmachine config path --format json`
+lists `global.iz` under the `global` layer. A named file such as `backup.iz` is
+**never** a fallback: with no project file and no global file, every
+file-scoped command exits 14 naming `izmachine init` and `--izfile`, and lists
+the named files it did not read. Two different paths (`--izfile a.iz -f b.iz`)
+are exit 2; the same path twice is fine. There is no parent-directory search.
 
 **The `[machine]` argument is a definition key, not a guest name.** It must
 match a `[machine.<key>]` section, or name the target a section declares as

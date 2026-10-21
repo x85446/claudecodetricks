@@ -16,7 +16,7 @@ Reads government grant solicitations and grades each one against Izuma Networks'
 1. **Profile loaded?** Verify `izuma-profile.md` is in the same directory as this SKILL.md. If missing, stop and tell the user the skill is broken — the rubric cannot run without the company profile.
 2. **Grant inbox.** If invoked with no argument, verify `grants/inbox/` exists at the project root. If absent, create it (`mkdir -p grants/inbox`) and tell the user where to drop grants.
 3. **Output directory.** Ensure `output/grants/` exists at the project root (`mkdir -p output/grants`). No hard stop — auto-create.
-4. **Optional API key.** If the argument looks like a SAM.gov opportunity ID, check for `$SAM_API_KEY` in env. If missing, fall back to WebFetch on the public opportunity URL and warn the user that scoring may be less complete. **Never read `~/.ssh/sam.gov.key` directly** — the key is sourced into the shell via `profile.d/10-source-and-export.sh` and must reach the skill only through `$SAM_API_KEY`.
+4. **Optional API key — CURRENTLY DEAD, do not rely on it.** `$SAM_API_KEY` is rejected by SAM.gov with HTTP 401 / WSO2 code 900901, and regeneration is rate-limited. **The corpus pipeline uses a public bulk extract**: `crawl_sam_extract.sh` retrieves SAM records without authentication. Only the single-opportunity `sam_lookup.sh` path below still references the key, and it will fail until the key is rotated — prefer the public opportunity URL for one-off lookups. If the key is ever rotated: it is sourced into the shell via `profile.d/10-source-and-export.sh`, **never read `~/.ssh/sam.gov.key` directly**, and it must reach the skill only through `$SAM_API_KEY`.
 
 ## Step 1: Detect Input Mode
 
@@ -71,7 +71,7 @@ Look at the synopsis fields `applicantEligibilityDesc` and the agency program ty
 - Non-profit organizations only
 
 Auto-F is **not** triggered when:
-- Eligibility says "SBIR/STTR small business" (we're eligible)
+- Eligibility says "SBIR/STTR small business". This does not establish Izuma's ownership, control, affiliate size, principal-investigator, or workshare compliance. Record these as unconfirmed until supported; do not presume either eligibility or ineligibility.
 - Eligibility says "all eligible entities including for-profit" or lists "small businesses" explicitly
 - Eligibility lists "Private institutions of higher education" alongside fire departments — we still cannot apply, but flag for academic-partner pursuit
 - Eligibility is `unknown` or empty — skip the pre-filter and run the full rubric
@@ -84,12 +84,24 @@ The skill maintains a local corpus of currently-open federal funding opportuniti
 
 | Source | Crawler | Method | Auth |
 |---|---|---|---|
-| **SAM.gov v2** | `lookup/crawl_sam.sh` | paginate `opportunities/v2/search`, 11-month posted window | `$SAM_API_KEY` (env, never argv) |
+| **SAM.gov** | `lookup/crawl_sam_extract.sh` | single GET of the public bulk CSV extract (`ContractOpportunitiesFullCSV.csv`, ~85k records, ~65% with full description text) | none |
 | **Grants.gov** | `lookup/crawl_grants_gov.sh` | Search2 (`oppStatuses=posted\|forecasted`) + per-opp `fetchOpportunity` | none |
-| **DARPA** | `lookup/crawl_darpa.sh` | parse the official `darpa.mil/rss/opportunities.xml` feed (recent active opportunities) | none |
-| **SBIR.gov** | `lookup/crawl_sbir.sh` | paginated GET to `api.www.sbir.gov/public/api/solicitations?open=1` — covers DoD + civilian SBIR/STTR topics. (Replaces DSIP — DSIP's topic search requires CAC/login.gov; SBIR.gov mirrors the same DoD SBIR topics publicly plus all other agency SBIR/STTR.) | none |
+| **Grants.gov extract** | `lookup/crawl_grants_extract.sh` | daily bulk XML zip from S3 — the whole Grants.gov DB in one GET, filtered to open + small-business-eligible | none |
+| **DARPA** | `lookup/crawl_darpa.sh` | GET `darpa.mil/json/opportunity.json`, the endpoint DARPA's own opportunities table calls. 156 rows dedupe to ~41 unique by `nid`; carries the real solicitation number and a direct SAM.gov/DSIP twin URL. Closed items are pruned each run. **Do not use the RSS feed** — it is a rolling 10-item recency window that structurally omits long-lived standing office-wide BAAs. | none |
+| **SBIR.gov** | `lookup/crawl_sbir.sh` | headless HTML scrape of `www.sbir.gov/topics` (listing sweep, then one detail page per topic). **`api.www.sbir.gov/public/api/solicitations` is DEAD** — it returned 403 for 28 days and is not coming back. | none |
+| **DSIP** | `lookup/crawl_dsip.sh` + `lookup/enrich_dsip.sh` | `topics/api/public/topics/search` with `topicReleaseStatus` 591 (Open) / 592 (Pre-Release), then a Q&A pass per topic. The enricher runs automatically via the registry's `enrich` field. | none |
+| **Army xTech** | `lookup/crawl_xtech.sh` | HTML scrape of `xtech.army.mil/competitions/` (WordPress REST API is 401-locked). Always run with `--refresh`; delisted competitions are archived. | none |
+| **Challenge.gov** | `lookup/crawl_challenge_gov.sh` | **challenge.gov itself was SUNSET 2026-03-30** and serves a static notice with no listings. The crawler scrapes the successor the notice names: `usa.gov/find-active-challenge` plus its per-challenge detail pages. | none |
+| **NSPIRES** | `lookup/crawl_nspires.sh` | one unauthenticated POST to `solicitationsJSON.do?path=open` returns the whole ~3.5k-record corpus; detail from `summary!init.do?solId=<id>`. The page *looks* like a form-driven JSP but is jQuery DataTables over that single call. | none |
+| **DIU** | `lookup/crawl_diu.sh` | plain GET, then parse the Nuxt 2 `window.__NUXT__` devalue payload embedded in the HTML via `lookup/nuxt_devalue.py`. No browser and no JS runtime needed. | none |
 
-Each crawler writes raw responses under `_corpus/<source>/raw/`. `lookup/normalize.py` then maps every source into a unified record schema (see file header). `lookup/merge.py` produces `_corpus/_all.json` with cross-source dedupe by solicitation number (priority: dsip > darpa.mil > sam.gov > grants.gov).
+**No crawler requires an API key, a browser, or a human.** That is a hard invariant — `make smoke` asserts it. The browser is a discovery instrument for finding a request shape; it is never a runtime dependency of a shipped crawler.
+
+Sources are registered in `lookup/sources.json`. Adding one is two files: a `lookup/normalizers/<short>.py` module (declaring `SOURCE`/`DIR`/`PRIORITY`) and a registry entry naming its `short`/`name`/`crawler`. `normalize.py`, `merge.py` and `fetch_all.sh` all read that registry — none of them need editing.
+
+Each crawler writes raw responses under `_corpus/<source>/raw/`. `lookup/normalize.py` maps every source into a unified record schema via the self-registering `lookup/normalizers/` package. `lookup/merge.py` produces `_corpus/_all.json` with cross-source dedupe by solicitation number, priority order taken from each normalizer's own `PRIORITY` attribute (dsip > sbir.gov > darpa.mil > sam.gov > grants.gov > grants.gov.extract > xtech).
+
+**Freshness:** `lookup/health_report.py` is "the report" (see CLAUDE.md). It derives last-effective-pull from raw-file mtimes only — never from a database `last_seen` column, which a re-normalize of cached files refreshes without any fetch having happened.
 
 **`--refresh-corpus` flow:**
 ```bash
@@ -180,6 +192,8 @@ For each grant being scored, extract:
 If a field can't be determined from the source, write `unknown` — don't guess. Unknown fields lower the confidence score on the final report.
 
 ## Step 4: Apply the Rubric
+
+This rubric supplies discovery and historical technical-fit scores. A recommendation to apply also requires a separate, evidence-based pursuit assessment of the complete primary ask, actual entry route, current maturity evidence, essential partners, specialized hardware, domain expertise, data access, and proposal timing. Keyword overlap and generic Phase I labels do not establish readiness. For October 18–31, 2026, use the [October application decision method](../../../output/grants/october-2026/method.md). Preserve the original scores; publish pursuit priority and blockers separately.
 
 Score each grant on **five weighted axes**. Each axis is 0–100. The weighted sum produces the overall percentage.
 

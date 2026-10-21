@@ -41,6 +41,19 @@ RUNTIME = {"known.md", "routing.md", "findings.md", "registry.json",
            ".DS_Store"}
 
 
+def harness_store(d):
+    """True for a directory Claude Code itself manages inside a skills root.
+
+    ~/.claude/skills/synced/ holds the account's synced skills under a bucket
+    directory, marked by a `.bucket-*` file. It has no SKILL.md of its own and
+    belongs to the harness, so it is neither a skill nor a broken one.
+    """
+    try:
+        return any(e.startswith(".bucket-") for e in os.listdir(d))
+    except OSError:
+        return False
+
+
 def targets_map():
     """symbolic name -> absolute path, read from the installer's own vars."""
     out = {}
@@ -164,7 +177,7 @@ def cmd_status(args):
     v = "-v" in args
     st = stale(rows, tmap)
     broken = [d for d in glob.glob(f"{H}/.claude/skills/*/") + glob.glob(f"{H}/.agents/skills/*/")
-              if not os.access(f"{d}/SKILL.md", os.R_OK)]
+              if not os.access(f"{d}/SKILL.md", os.R_OK) and not harness_store(d)]
     missing_src = [n for n, (t, o, _f) in rows.items()
                    if not os.path.exists(f"{src_of(n, o)}/SKILL.md")]
     print(f"skills\t{len(rows)}\tstale\t{len(st)}\tbroken\t{len(broken)}\tno-source\t{len(missing_src)}")

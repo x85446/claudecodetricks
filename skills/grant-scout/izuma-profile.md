@@ -8,7 +8,7 @@ Izuma Networks builds secure, federated, software-only infrastructure for edge e
 
 ## Heritage and posture
 
-- Founded on the codebase formerly known as Arm Pelion / mbed Cloud — over a decade of platform evolution at carrier and IoT scale.
+- Built on Arm Pelion / mbed Cloud technology, with over a decade of platform evolution at carrier and IoT scale.
 - SoftBank-backed.
 - Treat us as a small business with proven-at-scale technology — not a fresh-out-of-stealth startup. Grants that demand a "first-time founder" or "early-stage research validation" posture will mis-fit; grants that want a small business with a working product fit well.
 - Open-source-friendly: Apache 2.0 for the edge stack, contributes upstream to Kubernetes / vCluster / LwM2M ecosystems. No vendor lock-in is a deliberate positioning choice.
@@ -36,7 +36,7 @@ These traits are how Izuma builds. They shape the grade, not just the topic matc
 
 4. **Dual-use — civilian and defense, same stack.** We refuse to fork the product into a civilian SKU and a defense SKU. The same Exonet / Myriplane / Edge stack serves DDIL tactical and critical-infrastructure / industrial customers. Grants that force a civilian-only or defense-only path that would require a product fork are a personality misfit; grants that explicitly value dual-use are a strong personality fit.
 
-5. **Systems, not models.** We build the substrate. We are not an AI/ML model R&D shop. Grants that fund the substrate AI/ML runs on are great; grants that fund the model itself are usually a skill mismatch.
+5. **Software delivery.** Izuma can pursue application software outside its current portfolio, including governed AI workflows using existing models. Evaluate the complete requested software outcome and its validation method. Novel model research and specialist scientific inference require separate evidence of competence.
 
 6. **Honest about scope.** A grant we can't deliver is a grant we shouldn't pursue. The skill should penalize execution-overreach, not paper over it.
 
@@ -62,11 +62,21 @@ All four product directions are in active investment. Treat them as roughly equa
 
 ## Realistic execution scope
 
-- **SBIR / STTR Phase I** — always in scope. Comfortable solo.
-- **SBIR / STTR Phase II** — always in scope. Comfortable solo or with one partner.
-- **Direct-to-Phase-II** — in scope if we have a Phase-I-equivalent demonstration we can point to.
+- **SBIR Phase I** — assess the specific research, deliverables, proposal effort, and available staff. Phase I does not by itself establish feasibility for Izuma.
+- **STTR** — requires a committed eligible research institution and a credible workshare, budget, and intellectual-property arrangement. Izuma has no committed institution for the October 2026 application cycle.
+- **Phase II / Direct-to-Phase-II** — require the particular entry evidence specified by the solicitation. General platform maturity and a plan to run future experiments do not establish completed mission-specific feasibility.
 - **Mid-size cooperative R&D ($2M–$10M)** — only if (a) it's an exact product fit AND (b) we can find a prime / systems-integrator partner. The skill should flag the partner requirement explicitly.
 - **Large multi-year prime program ($10M+, 3–5yr, must lead as prime)** — stretch. Score reflects that we'd need significant team scale-up; recommend treating as "needs partner" unless the user says otherwise.
+
+Izuma has no project-ready tactical hardware or radio integration for the October 2026 application cycle. Required specialized hardware, uncommitted essential partners, inaccessible test data, and required maturity evidence are pursuit blockers or substantial deductions. Ordinary laptops, servers, and commercial cloud are acceptable software-development resources. Travis confirms SBIR qualification, a CAGE code, primary employment with Izuma, and US research performance. Travis leads the technical proposal. NIST work is underway; completed assessments, portal readiness and a costed delivery team require verification. A technical proposal starter exists; no submission-ready package exists for this cycle.
+
+The [October application decision method](../../../output/grants/october-2026/method.md) governs the October 18–31, 2026 review. It prioritizes complete software delivery over roadmap keywords and preserves historical fit scores separately from current pursuit priority.
+
+## Application priority adjustments
+
+A mandatory STTR route receives a **10-point deduction** from application priority. A mandatory STTR route with an actual submission deadline in October receives a **50-point total deduction** instead. The October rule applies to any year. Optional STTR alongside an available SBIR route does not trigger a deduction. Framework expiration dates and notice archive dates are not submission deadlines.
+
+The technical-fit rubric remains separate: `priority_score = technical_fit + deduction`. Preserve the technical score, record the deduction and rank by application priority. Negative priority scores remain valid. Unknown submission dates or program requirements require verification before applying the October rule. Original text heuristics remain available for comparison.
 
 ## Anti-fit signals (NOT a blacklist — read each grant)
 
@@ -93,3 +103,25 @@ When grading, also skim the current product one-pagers to ground in real capabil
 - `products/virtualcluster/roadmap.md` (planned operator hardening)
 
 If a grant maps to something the one-pager doesn't claim, that's a signal — flag the skillset axis as `medium` confidence.
+
+<!-- BEGIN auto-evidence (refresh_profile.py) -->
+## Evidence from past submissions
+
+_Auto-maintained by `refresh_profile.py` — mined from `opportunities/submitted/`. Informs the rubric with what Izuma has actually pursued._
+
+**Deals submitted (3):** ARM26BX01-NV001, DPA26BZ02-DV010, NEC
+
+**Agencies pursued:** Army, DARPA, NEC, Navy, SBIR/STTR
+
+**Recurring technical themes (by mention count in past deals):**
+- bare-metal provisioning (215)
+- quantum-related (46)
+- edge orchestration (35)
+- crypto / PKI (12)
+- hardware root of trust (TPM/UEFI) (4)
+- IoT device management / FOTA (4)
+- Kubernetes / multi-tenant control planes (3)
+- multi-tenancy / isolation (3)
+- disconnected / partition-tolerant ops (3)
+
+<!-- END auto-evidence (refresh_profile.py) -->

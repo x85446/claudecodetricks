@@ -69,7 +69,7 @@ Show INSERT statements for new merchant_patterns that would capture gap-filler t
 ### For unresolved clusters
 Create new merchants and patterns manually:
 ```sql
--- Create merchant
+-- Create merchant (default_tier*_id are ONE cost center's tree ids — Personal's for a consumer merchant)
 INSERT INTO merchants (name, name_normalized, default_tier1_id, default_tier2_id, default_tier3_id, created_at)
 VALUES ('ATM Fee Refund', 'atm fee refund', <t1_id>, <t2_id>, <t3_id>, datetime('now'));
 
@@ -87,7 +87,7 @@ Or use the shortcut: `python3 scripts/recurring_matcher.py --apply-pattern <merc
 ## Important Rules
 
 - Always backfill before reporting (the script does this automatically)
-- **Dual-column sync**: When `--apply-pattern` sets categories from merchant defaults, it updates BOTH text columns (category, sub_category, sub_sub) AND FK columns (tier1_id, tier2_id, tier3_id)
+- **Merchant defaults belong to one tree**: `default_tier1/2/3_id` are ids in one cost center's tree (Personal's for a consumer merchant). `--apply-pattern` writes them as-is only to uncategorized rows of that cost center; a row on another cost center gets the same names resolved in its own tree, or stays uncategorized when no equal exists. Never write another tree's ids — the DB triggers refuse them (`category belongs to another cost center`).
 - Gap-filler suggestions require item name similarity to avoid false positives
 - The script skips orphaned merchant_patterns (merchant deleted but pattern remains)
-- After changes, remind user to restart the web server to see updates
+- After changes, re-run the scan to see the new state; an open PersonalDB window shows it on Refresh

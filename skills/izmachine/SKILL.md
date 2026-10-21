@@ -23,7 +23,10 @@ The skill maintains the placement directive; izmachine chooses the host.
 1. **Run from the project root and read `./.iz`** (its keys are in
    [references/iz-files.md](references/iz-files.md)). Follow an existing
    definition's `remote` or `needs` as written. Preserve unrelated definitions,
-   non-`[machine]` tables and the project's other tools' settings.
+   non-`[machine]` tables and the project's other tools' settings. Definitions
+   the project file does not carry come from the user's `global.iz`
+   (`izmachine config path --format json` names it); a project key replaces a
+   global key wholesale.
 2. **Author a definition when one is missing.** If `./.iz` is absent, run
    `izmachine init` (it prints a status line, not JSON, and writes `./.iz`),
    then maintain that file in place. Give the
@@ -37,7 +40,7 @@ The skill maintains the placement directive; izmachine chooses the host.
    compatible Incus hosts; Lima supports local or SSH-hosted Lima. Use the
    available provider pool that serves the requested kind, OS and features.
    The `needs` directive lets the matcher rank that pool by observed load.
-4. **Use `remote = "<name>"` when the user names a place.** `remote` and
+4. **Use `remote = "<name>"` when the user names a place or selector.** `remote` and
    `needs` are mutually exclusive. Preserve explicit location instructions;
    add `--local` or `--remote` only when the user names a place. An unspecified
    location receives a `needs` directive rather than an agent-chosen host.
@@ -64,6 +67,59 @@ Inspect the live command and flag definitions before authoring a CLI invocation.
 Maintain this skill's reference with `make test-skill-parity` when that surface
 changes, including selector expressions and saved selectors when the binary
 supports them.
+
+## Remote selection
+
+| Selector | Meaning |
+| --- | --- |
+| `D71` | Exact registered remote |
+| `not:local` | Outside this computer, including proven-local Incus aliases |
+| `@offbox` | Saved expression from `[selectors]` |
+| `class=east,arch=arm64` | Match both keys |
+| `class=east,class=west` | Match either value of the repeated key |
+
+Type expressions unquoted: `izmachine remote find --kind vm --remote not:local --format json`
+and `izmachine list --remote @offbox --format json`. Keys are name, class, arch,
+kind and transport. `not:` negates a term or saved group; `name=local` means the
+exact registered name. Expressions avoid whitespace, shell operators, globs,
+parentheses, redirections, tilde and dollar expansion. Repeated flags form a
+union; acting verbs require one guest. `remote find` JSON carries
+`selector: {raw, expanded}` and excluded candidates' `why`.
+Read [references/remotes.md](references/remotes.md) for saved groups and recipes.
+
+## Watching usage — `top`
+
+`izmachine top` samples CPU, memory and disk per host and per guest across the
+selected remotes. Select remotes the way `list` does: positional `D71:`,
+`--remote <selector>` (a name, `@saved`, `not:local`, `class=east,arch=arm64`;
+repeat for a union) or `--local`. `-d/--interval` is the time between readings
+(default `2s`, at least `1s`); `-n/--iterations` is the number of readings
+(default `1`; in a terminal the default runs until quit); `--sort
+cpu|mem|disk|name` orders the rows. The first reading takes two samples one
+interval apart. A failed remote keeps its last reading and retries after 30
+seconds.
+
+In a terminal the keys are `q` or Esc to quit, `c` `m` `d` `n` to sort by CPU,
+memory, disk or name, `r` to refresh and `?` to show the keys; Ctrl-C quits
+and restores the terminal. **A pipe is batch mode**: the table prints once, and
+`--format json` prints one reading per line:
+
+```json
+{"sampled_at":"2026-10-20T23:04:11Z","interval":2,
+ "remotes":[{"name":"local","transport":"local","reachable":true,"age":0,
+   "host":{"cpus":12,"cpu_percent":48.5,"memory_used":27907145728,"memory_total":34359738368,
+           "disk_used":1949773037568,"disk_total":1995218165760,"disk_path":"/Users/travis/.izmachine"},
+   "guests":[{"name":"dev1","provider":"docker","kind":"container","state":"running","cpus":2,
+              "cpu_seconds":12.4,"cpu_percent":3.1,"memory_used":104857600,"memory_limit":null,
+              "disk_used":342000,"disk_limit":null}]}],
+ "totals":{"hosts":1,"guests":34,"running":1,"cpus":12,"memory_used":27222310912,
+           "memory_total":34359738368,"disk_used":1949887287296,"disk_total":1995218165760}}
+```
+
+Bytes are integers; usage a provider does not report is `null` (`-` in the
+table). A guest's `cpu_percent` counts one core as 100%; a host's spans all its
+cores. `age` is the seconds since that remote's last successful reading, and an
+unreachable remote (`reachable: false`) carries `error` saying why.
 
 ## Finding the binary
 
@@ -162,14 +218,15 @@ izmachine [global flags] direct <verb> [guest] [flags]
 Per-guest verbs live under `direct`. The .iz-file commands — `init`, `up`,
 `down`, `info`, `ssh`, `ssh-config`, `provision`, `validate`, `destroy` — are
 root-level and scoped to the machines the file defines, as are the host-wide
-reads `list` and `locks`. `izmachine direct list` and `izmachine direct locks`
+reads `list`, `locks` and `top`. `izmachine direct list` and `izmachine direct locks`
 are exit-2 stubs naming the root forms.
 
 Global flags: `--format table|json`, `--os <id|platform>`, `--provider <p>`,
 `--local` (act only on this host: remote-backed guests are excluded),
-`--remote <name>` (the remote to act on; `list` takes it more than once),
-`--izfile <file>` (the .iz file the file-scoped commands read instead of
-`./.iz`), `--yes`, `-v/--verbose`, `-q/--quiet`, `--version`.
+`--remote <selector>` (a name, @saved or comma-joined terms; repeat for a union),
+`--izfile <file>` (the project-layer .iz file the file-scoped commands read
+instead of `./.iz`; the user's `global.iz` sits beneath either), `--yes`,
+`-v/--verbose`, `-q/--quiet`, `--version`.
 
 `--kind vm|container`, `--osversion <v>`, `--image`, `--cpus`, `--memory`,
 `--disk`, `--tag` and `--opt` are **`direct create` flags, not global ones** —
@@ -197,6 +254,8 @@ Guest-naming commands carry `--provider` because
 | `izmachine list --format json` | every guest in every remote, whatever runs it, plus `warnings` and `unreachable` arrays |
 | `izmachine list --state up --kind container --name 'web-*' --tag role=build --format json` | the same listing narrowed: `--state` (up/down/pause, or their long spellings), `--kind` (vm/container), `--name` (a glob — quote it), `--tag` (`k=v` or a bare `k`, repeatable, ANDed, matching labels and provider tags alike). Composes with `--os`, `--provider`, `--remote`, `--local`. **An empty result is exit 0 with an empty `guests` array, never an error** |
 | `izmachine locks --format json` | every lock held on this host, with reason and tier |
+| `izmachine top --local --iterations 1 --format json` | one batch reading of host and guest CPU, memory and disk on this computer: `{sampled_at,interval,remotes:[{name,transport,reachable,error,age,host,guests}],totals}` — see [Watching usage](#watching-usage--top) |
+| `izmachine top --remote not:local --interval 1s --iterations 3 --sort mem --format json` | three readings a second apart across the selected remotes, sorted by memory; positional `D71:` selects a remote too |
 | `izmachine remote find --kind vm --format json` | ranked placement candidates with load and reasons; exit 14 on no match |
 | `izmachine remote list --format json` | every registered remote: `{remotes:[{name,transport,target,default}],default,source}` |
 | `izmachine remote show <name> --format json` | one remote plus the `reach` izmachine acts through |
@@ -222,7 +281,7 @@ Guest-naming commands carry `--provider` because
 
 | invocation | what it does |
 |---|---|
-| `izmachine daemon run --interval 30s` | run foreground inventory daemon |
+| `izmachine daemon run --interval 30s --idle-after 10m --idle-refresh-interval 10m` | run foreground inventory daemon; `start` and `install` take the same policy flags |
 | `izmachine daemon start --format json` | start this user's daemon explicitly |
 | `izmachine daemon stop --format json` | stop an owned daemon |
 | `izmachine daemon install --format json` | install user startup service |
@@ -382,12 +441,12 @@ left:      <running for you | torn down as asked>
 
 Each loads only when read. Read the one the task needs.
 
-- [references/iz-files.md](references/iz-files.md) — `up` and the `.iz` file: file
-  resolution, the `[machine]` keys (including `remote` and `needs`), dependencies,
-  provisioning and lowering. Read before authoring or editing `./.iz`.
+- [references/iz-files.md](references/iz-files.md) — `up` and the `.iz` file: the
+  project and global layers, the `[machine]` keys (including `remote` and `needs`),
+  dependencies, provisioning and lowering. Read before authoring or editing `./.iz`.
 - [references/remotes.md](references/remotes.md) — addressing a guest on a remote,
   listing selectors, `remote find`, the directory file, the inventory daemon and
-  SSH hosts.
+  its idle policy, and SSH hosts.
 - [references/providers.md](references/providers.md) — the default provider per
   (kind, platform), each provider's verb set, default images, the snapshot noun,
   `--provider` timings, a worked run and gotchas.

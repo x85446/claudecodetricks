@@ -36,7 +36,15 @@ VENDORED_MARKERS = [
     "/.claude/plugins/", "/3rd-party-Skills/", "/claudekit-skills",
     "/claude-plugins-official/", "/external_plugins/", "/plugins/plugin-dev",
     "/node_modules/", "/.cursor/", "/skills-paused/",
+    # Claude Code's own synced-skills store (Anthropic's skills, per account).
+    "/.claude/skills/synced/",
+    # The Flutter SDK's bundled agents, checked out inside a project.
+    "/.flutter/",
 ]
+
+# Repositories no longer in use. Their skills are neither registered nor
+# reported: the registry tracks what runs, and nothing runs from these.
+RETIRED_REPOS = [f"{os.path.expanduser('~')}/workspace/x85446/warden/"]
 GENERATED_MARKERS = ["/.agents/skills/", "/codex-skills/", "/.claude/skills/.backups/"]
 BACKUP_RE = re.compile(r'(\.bk\d*|\.backup|\.old|\.temp|\.orig)(/|$)')
 
@@ -112,8 +120,9 @@ def find_all():
         ["find", f"{H}/workspace", f"{H}/.claude/skills", "-name", "SKILL.md",
          "-not", "-path", "*/node_modules/*", "-not", "-path", "*/.git/*",
          "-not", "-path", "*/target/*"],
-        capture_output=True, text=True).stdout.split()
-    return [os.path.dirname(p) for p in out]
+        capture_output=True, text=True).stdout.split("\n")
+    return [os.path.dirname(p) for p in out
+            if p and not any(p.startswith(r) for r in RETIRED_REPOS)]
 
 
 def tracked_diff(reg_dir, live_dir):
