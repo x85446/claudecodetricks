@@ -6,9 +6,11 @@
 // drop an unsaved edit; a saved rename reaches the list, the project picker
 // and attached rows, an unsaved one shows as a draft; keyboard attach and
 // detach on Project Associations persist, and a duplicate attach writes
-// nothing. Every click is a pointer press held as long as a person's, so a
-// Save pressed straight after typing a name has to land. Exits 77 (skip)
-// when Chrome, Go or WebSocket is absent.
+// nothing. Every click is a pointer press held as long as a person's, and a
+// press that produces no click fails: Save or Cancel straight after typing
+// a name (F61), a press held across the 3-second refresh (F62), and a press
+// straight after typing a project priority (F63). Exits 77 (skip) when
+// Chrome, Go or WebSocket is absent.
 //
 // Run: node --experimental-websocket tests/conductor/automation-navigation.test.mjs
 import { execFileSync, spawn } from 'node:child_process';
@@ -133,7 +135,25 @@ listeners.add(m => {
 });
 let dragData = null;
 listeners.add(m => { if (m.method === 'Input.dragIntercepted') dragData = m.params.data; });
-await send('Page.enable'); await send('Runtime.enable');
+await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable');
+// The dashboard's own requests, so a check can wait for one full poll.
+const sent = new Map(), finished = [];
+listeners.add(m => {
+  if (m.method === 'Network.requestWillBeSent') sent.set(m.params.requestId, { url: m.params.request.url.split('?')[0], at: Date.now() });
+  if (m.method === 'Network.loadingFinished' && sent.has(m.params.requestId)) finished.push({ ...sent.get(m.params.requestId), done: Date.now() });
+});
+// Resolves once every endpoint the 3-second poll reads has answered a
+// request sent after the call, and the page has had time to act on it.
+const pollEndpoints = ['config', 'status', 'projects', 'usage', 'runs', 'visibility'];
+const nextPoll = async (ms = 7000) => {
+  const from = Date.now(), end = from + ms;
+  while (Date.now() < end) {
+    const seen = new Set(finished.filter(f => f.at >= from).map(f => f.url.replace(/^.*\/api\/conductor\//, '')));
+    if (pollEndpoints.every(e => seen.has(e))) { await wait(250); return true; }
+    await wait(50);
+  }
+  return false;
+};
 
 const evaluate = async expr => {
   const r = await send('Runtime.evaluate', { expression: `(async()=>{${expr}})()`, awaitPromise: true, returnByValue: true });
@@ -157,39 +177,33 @@ const until = async (expr, ms = 8000) => {
 // A real pointer click at the element's center once it holds still (the
 // editor's tester renders after the form and moves the buttons below it),
 // refused when something else would receive it. The button is held for a
-// person's 120 ms, so anything the press itself sets off (a blur, a
-// re-render) has landed before the release. The dashboard's 3-second poll
-// repaints the whole app when the saved state changed, and a repaint inside
-// the press swaps the element out from under the pointer; only that case is
-// pressed again, and the passing line counts it.
-let repaintRetries = 0;
-const click = async (sel, what) => {
-  for (let attempt = 0; ; attempt++) {
-    let p, prev;
-    for (let i = 0; i < 25; i++) {
-      p = await evaluate(`const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return { missing: true };
-        el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, hit = document.elementFromPoint(x, y);
-        window.__press = { el, header: document.querySelector('#app > header'), clicked: false };
-        return { x, y, ok: !!hit && (hit === el || el.contains(hit)), by: hit ? hit.tagName + (hit.id ? '#' + hit.id : '') + (hit.className ? '.' + hit.className : '') : 'nothing' };`);
-      if (prev && !p.missing && p.ok && p.x === prev.x && p.y === prev.y) break;
-      prev = p;
-      await wait(80);
-    }
-    if (p.missing) throw Error(`${what}: nothing on the page matches ${sel} (at ${await evaluate('return location.pathname + location.search')})`);
-    if (!p.ok) throw Error(`${what}: ${sel} is covered by ${p.by}`);
-    // A click on any element matching the selector counts, the repainted
-    // copy included.
-    await evaluate(`window.__pressSeen = e => { if (e.target.closest?.(${JSON.stringify(sel)})) window.__press.clicked = true; };
-      document.addEventListener('click', window.__pressSeen, true);`);
-    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: p.x, y: p.y });
-    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: p.x, y: p.y, button: 'left', buttons: 1, clickCount: 1 });
-    await wait(120);
-    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', buttons: 0, clickCount: 1 });
-    const r = await evaluate(`document.removeEventListener('click', window.__pressSeen, true); const p = window.__press;
-      return { clicked: p.clicked, repainted: !p.el.isConnected && p.header !== document.querySelector('#app > header') };`);
-    if (r.clicked || !r.repainted || attempt === 2) return;
-    repaintRetries++;
+// person's 120 ms, or until `during` resolves, so whatever the press sets off
+// (a blur, a save, a background refresh) lands before the release. A press
+// that produces no click on the element stops the section: that is the
+// "Save appears to do nothing" failure.
+const click = async (sel, what, during = () => wait(120)) => {
+  let p, prev;
+  for (let i = 0; i < 25; i++) {
+    p = await evaluate(`const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return { missing: true };
+      el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, hit = document.elementFromPoint(x, y);
+      window.__press = { el, clicked: false };
+      return { x, y, ok: !!hit && (hit === el || el.contains(hit)), by: hit ? hit.tagName + (hit.id ? '#' + hit.id : '') + (hit.className ? '.' + hit.className : '') : 'nothing' };`);
+    if (prev && !p.missing && p.ok && p.x === prev.x && p.y === prev.y) break;
+    prev = p;
+    await wait(80);
   }
+  if (p.missing) throw Error(`${what}: nothing on the page matches ${sel} (at ${await evaluate('return location.pathname + location.search')})`);
+  if (!p.ok) throw Error(`${what}: ${sel} is covered by ${p.by}`);
+  await evaluate(`window.__pressSeen = e => { if (e.target.closest?.(${JSON.stringify(sel)})) window.__press.clicked = true; };
+    document.addEventListener('click', window.__pressSeen, true);`);
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: p.x, y: p.y });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: p.x, y: p.y, button: 'left', buttons: 1, clickCount: 1 });
+  await Promise.all([wait(120), during()]);
+  const at = await evaluate(`const el = window.__press.el, h = document.elementFromPoint(${p.x}, ${p.y});
+    return { replaced: !el.isConnected, under: h ? h.tagName + (h.id ? '#' + h.id : '') + (h.className ? '.' + h.className : '') : 'nothing' };`);
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', buttons: 0, clickCount: 1 });
+  const clicked = await evaluate(`document.removeEventListener('click', window.__pressSeen, true); return window.__press.clicked;`);
+  if (!clicked) throw Error(`${what}: the press on ${sel} produced no click; ${at.replaced ? 'the page replaced the element during the press and ' : ''}the release landed on ${at.under}`);
 };
 const key = async (k, code, vk, text) => {
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, windowsVirtualKeyCode: vk, ...(text ? { text } : {}) });
@@ -517,6 +531,56 @@ try {
     check(JSON.stringify(await pairs()) === JSON.stringify(before), '3b: the pointer detach leaves the seeded associations', await pairs());
   });
 
+  // ---- F62: a press held across the 3-second poll, after another writer
+  // changed the configuration, still clicks the element it started on.
+  await section('F62 background refresh during a press', async () => {
+    await goto('/settings?section=automations');
+    await until(`!!document.querySelector('${EDIT('automation-green')}')`);
+    const c = await config();
+    (c.projects.find(p => p.id === 'project-izcros').tags ||= []).push('other-writer');
+    await postConfig(c);
+    let polled = false;
+    await click(EDIT('automation-green'), 'Edit Green and go held across a background refresh', async () => { polled = await nextPoll(); });
+    check(polled, 'F62: the dashboard polled the changed configuration while the press was held');
+    check(await until(editorOpen('automation-green')), 'F62: a press held across a background refresh still opens the Green and go editor', await view());
+
+    // Space activates a button on release, so a held Space is a press too.
+    await goto('/settings?section=automations');
+    await until(`!!document.querySelector('${EDIT('automation-run-yellow')}')`);
+    const d = await config();
+    (d.projects.find(p => p.id === 'project-izcros').tags ||= []).push('other-writer-2');
+    await postConfig(d);
+    await evaluate(`document.querySelector('${EDIT('automation-run-yellow')}').focus()`);
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', windowsVirtualKeyCode: 32, text: ' ' });
+    polled = await nextPoll();
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+    check(polled, 'F62: the dashboard polled the changed configuration while Space was held');
+    check(await until(editorOpen('automation-run-yellow')), 'F62: Space held across a background refresh still opens the Run yellow (Codex) editor', await view());
+  });
+
+  // ---- F63: on a project's Automations tab, a typed priority saves when the
+  // next press moves focus, and that press still lands.
+  await section('F63 project Automations tab', async () => {
+    const tab = `/project?${new URLSearchParams({ project: projectPaths['project-filemaster'], tab: 'automations' })}`;
+    const prio = '[data-action="attachment-priority"][data-id="attachment-fm-yellow-go"]';
+    const attachment = async () => (await config()).automation_attachments.find(a => a.id === 'attachment-fm-yellow-go');
+    await goto(tab);
+    await until(`!!document.querySelector('${prio}')`);
+    await typeInto(prio, '3');
+    await click(`#project-body ${EDIT('automation-yellow-go')}`, 'Edit shared rules pressed straight after typing a priority');
+    check(await until(editorOpen('automation-yellow-go')), 'F63: Edit shared rules pressed straight after typing a priority opens the editor', await view());
+    check((await attachment())?.priority === 3, 'F63: the typed priority 3 is saved', await attachment());
+
+    await goto(tab);
+    await until(`!!document.querySelector('${prio}')`);
+    await typeInto(prio, '4');
+    await click('[data-action="detach-automation"][data-id="attachment-fm-yellow-go"]', 'Remove from project pressed straight after typing a priority');
+    let gone = false;
+    for (let i = 0; i < 80 && !(gone = !(await attachment())); i++) await wait(100);
+    check(gone, 'F63: Remove from project pressed straight after typing a priority removes the attachment', await attachment());
+    check(await until(`/No automations attached/.test(document.querySelector('#project-body')?.textContent || '')`), 'F63: Filemaster’s tab shows no attached automations', await evaluate(`return document.querySelector('#project-body')?.textContent.slice(0, 200)`));
+  });
+
   check(consoleErrors.length === 0, 'no console errors or uncaught exceptions', consoleErrors);
 } catch (e) {
   failures.push(`the browser run stopped: ${e.stack || e}`);
@@ -529,5 +593,5 @@ if (failures.length) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log(`ok: ${checks} automation navigation checks passed${repaintRetries ? ` (${repaintRetries} click${repaintRetries > 1 ? 's' : ''} pressed again after a background repaint)` : ''}`);
+console.log(`ok: ${checks} automation navigation checks passed`);
 process.exit(0);
