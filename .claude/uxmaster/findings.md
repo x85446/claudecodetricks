@@ -177,7 +177,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Fully loaded Gemsbok shows 0 DONE and 1 RECORDED OPEN while all four clickable requirements show DONE and its archive records complete with merged PR28. Albatross shows one queued lane despite all 20 requirements showing DONE. Source counts row states rather than requirement completion.
 - fix: Separate plan outcome, task completion, validation completion and lane state. Close recorded lanes from authoritative terminal events; label unknown termination explicitly.
 - rule: —
-- status: open
+- status: fixed
+- verification: Verified progress section (report_progress.go), preview :8482 in headless Chrome against the real archives: Gemsbok reads "Completed and archived", merge PR 28 at 399c3bd, Complete 4 of 4 requirements, Lanes 1 lane completed (closed by the plan's completion event); Albatross 20 of 20 requirements and 6 lanes completed, merge PR 19 at ea3929c; Waterbuck Executing, 11 of 15, coordinator lane active. Every count names its unit; an ended plan's lane without a terminal observation reads "Unknown end". TestKrProgressComplete and TestKrProgressPartial pass. The superseded done/recorded open/queued cards in renderTimelinePage are removed by the layout step.
 
 ### F21 — Requirement detail omits recorded acceptance evidence
 - surface: requirement detail and expanded coordinator
@@ -186,7 +187,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Clicking Albatross requirement 3 shows a result NOTE. Clicking Gemsbok requirement 1 and expanding its coordinator shows the contract and checkmark without the actual result; its saved log contains 24-PDF acceptance, artifact identity, 299-case validation and merge evidence. Waterbuck requirement 4 carries a note mixing steps 4, 6 and 7.
 - fix: Store and display evidence per requirement and attempt: result, command, timestamp, exit status, artifact and source revision. Keep intended acceptance separate from observed proof.
 - rule: —
-- status: open
+- status: fixed
+- verification: Validation evidence section (report_evidence.go) on preview :8482: Waterbuck requirement 4 lists only its own four step-4 passages, and steps 6 and 7 hold their own; Gemsbok requirement 1 shows its imported acceptance line and plan-level evidence exposes 259/299-case counts, the 24-PDF scanner proof, build hash 2bcb15dc… and merge PR 28 at 399c3bd; requirements 2–4 read "Checked, no proof recorded". Acceptance text sits in its own disclosure. Observed items show result, command, exit status, time, artifact link, revision and environment; imported prose reads "Imported · Result not observed". TestKrEvidenceBinding and TestKrEvidenceFreshness pass. The requirement-grid note that merged steps is replaced by the layout step.
 
 ### F22 — Session cost and plan usage use different scopes
 - surface: Waterbuck Token spend
@@ -287,3 +289,35 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - rule: HTML Living Standard session history (pushState); WCAG 2.2 SC 3.2.3 Consistent Navigation
 - status: fixed
 - verification: Opening an automation pushes `automation=<id>`; Back returned to the list without an editor and Forward reopened the same editor.
+
+## Report integrity (killdeer integrity team) — 2026-10-22
+
+### F40 — An earlier "partial" log line overrides a requirement's checked boxes
+- surface: live Waterbuck requirement detail
+- kind: mistake
+- severity: high
+- evidence: GET localhost:8420/plan for Waterbuck with history, `bdShow(4)`: the detail reads "REQUIREMENT 4 · COORDINATOR · ACTIVE" although the plan file has `- [x] 4.` in both Steps and Validation. The 07:00:30Z Status/Log line "step 4 partial: …" is the latest line the step-status pattern matches; the later "step 4 bake.cleanup.green rerun passed" does not match it, so the stale partial wins over the checkboxes.
+- fix: Derive requirement state from the plan's checkboxes first and treat prose step reports as imported evidence for that requirement, not as state. A report only sets state on a plan that has no checkbox for it.
+- rule: —
+- status: fixed
+- verification: Preview :8482 Waterbuck: Verified progress lists requirement 4 Complete ("validation box checked"); its "step 4 partial" passage appears under Validation evidence as an imported report ("Reports: partial"), followed by the later "rerun passed" passage. TestKrEvidenceBinding asserts the same on the fixture. The Requirements grid in timeline.go still applies the log override; the layout step points it at the progress model.
+
+### F41 — Requirement cells open their detail by mouse only
+- surface: plan/archive Requirements grid (`.bd-cell`)
+- kind: a11y
+- severity: high
+- evidence: Headless Chrome on Waterbuck: each requirement cell is a `<div onclick="bdShow(N)">` with tabIndex -1 and no role, so Tab never reaches it and Enter/Space cannot open the detail that carries the step, its validation and its note.
+- fix: Give every requirement a keyboard-operable disclosure (native `<details>`/`<summary>`) that holds its acceptance text and observed evidence; replace or convert the click-only cells.
+- rule: WCAG 2.2 SC 2.1.1 Keyboard; SC 4.1.2 Name, Role, Value
+- status: deferred (the keyboard path ships; the click-only cells live in timeline.go, which the layout step replaces)
+- verification: Headless Chrome on Waterbuck, keyboard only: Enter on "Requirement by requirement" opens the list, Enter on the "Requirement 4" link moves to #evidence-req-4, opens its disclosure and focuses its summary, Enter closes it. Every requirement has a native summary in Validation evidence.
+
+### F42 — Success green text in the report sections is below 4.5:1 in the light theme
+- surface: Verified progress and Validation evidence (Complete badge, complete count, Available label, passed results)
+- kind: a11y
+- severity: medium
+- evidence: Headless Chrome on preview :8482 (Waterbuck, light scheme), computed colours: `--good` #059669 text on the white surface measures 3.77:1 for the 11px "Complete" badge, the 18px "11 of 15" count and the "Available" label. The dark scheme passes (5.44:1 and up).
+- fix: Scope a text green to both sections, #047857 in the light scheme and `--good` in the dark scheme, and use it for every green text rule; borders keep the page token.
+- rule: WCAG 2.2 SC 1.4.3 Contrast (Minimum)
+- status: fixed
+- verification: Re-measured on the rebuilt preview: lowest light-scheme ratios 5.02:1 (badges, state label), 4.83:1 (counts), 5.85:1 (result labels); dark scheme 4.60:1 and up.
