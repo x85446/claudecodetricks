@@ -2188,7 +2188,7 @@
           "last_validated_commit": "1fa8f369",
           "source": "plan:gaur",
           "test": "iterate.contract-test",
-          "then": "exactly one Executor-defect row exists, cleared with fix problem N and status: unblocked",
+          "then": "exactly one Executor-defect row exists, fixed by triage (I can fix) with status: unblocked",
           "tier": "fast",
           "validity": "drifted",
           "when": "it is read"
