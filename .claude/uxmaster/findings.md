@@ -168,7 +168,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Chrome reports history loaded on all three pages. Gemsbok has no Token spend section; Albatross has 236 requests with a missing coordinator transcript; Waterbuck has five requests. The token renderer returns without an empty-state explanation when Messages is zero.
 - fix: Always show accounting availability, capture coverage and missing sources. Distinguish unavailable usage from zero usage, and preserve a durable plan-scoped record across providers and archives.
 - rule: —
-- status: open
+- status: fixed
+- verification: Preview on :8481 with history: Gemsbok shows Tracking coverage complete and Usage with 70 requests (its coordinator ran in Codex; the rollouts were never read before), Albatross shows coverage partial with five captured team lanes (236 requests) and the coordinator lane missing because the hook log attributes no coordinator session, and the session count reads "0 of unknown". A plan with no usage keeps all three sections with an unavailable badge and "unknown, not zero". Go cases kr-coverage-missing and kr-coverage-providers cover absent, known-zero, partial, Codex, Claude, flat and teamed paths.
 
 ### F20 — Completion cards count lanes without naming that unit
 - surface: plan/archive completion cards
@@ -195,7 +196,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Chrome shows 893k context, 725 generated tokens, five requests and $784.89 SESSION COST together. Supporting prose says the dollar amount includes unrelated work in the same sessions. The report provides no coverage measure reconciling these totals with its 22h7m59s execution span.
 - fix: Group plan-attributed usage separately from whole-session cost. Show the attribution interval, coverage and estimated versus provider-reported amounts beside each total.
 - rule: —
-- status: open
+- status: fixed
+- verification: Preview on :8481, Waterbuck with history: Usage shows 430 plan-attributed requests (5 Claude Code, 425 Codex) in an exact block with the cost tile "unknown", the $784.89 figure under "Whole-session cost (not this plan's bill)" for one session, Codex allowance readings in their own block, the attribution window stated, and tool and wake-up breakdowns labelled estimated. Go cases kr-usage-scopes and kr-usage-dedup cover scope separation, price provenance and duplicate requests.
 
 ### F23 — Time gaps have severity without a recorded cause
 - surface: Waterbuck timeline
@@ -287,3 +289,52 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - rule: HTML Living Standard session history (pushState); WCAG 2.2 SC 3.2.3 Consistent Navigation
 - status: fixed
 - verification: Opening an automation pushes `automation=<id>`; Back returned to the list without an editor and Forward reopened the same editor.
+
+## Accounting sections review — 2026-10-22
+
+### F32 — Complete and captured badges fail text contrast in light mode
+- surface: plan report Tracking coverage, Usage and Delivery state badges
+- kind: a11y
+- severity: medium
+- evidence: Headless Chrome on :8481 (Albatross, Gemsbok, Waterbuck): badge text in --good (#059669) on the white section background measured 3.77:1 at 11.5px; in dark mode the partial badge on --warn-bg measured 4.48:1.
+- fix: Badge text uses --text on the tinted state background (--good-bg, --warn-bg), with the state color as the border; the word carries the state.
+- rule: WCAG 2.2 SC 1.4.3 Contrast (Minimum)
+- status: fixed
+- verification: Re-measured on :8481: the lowest text contrast in the three sections is 5.02:1 light and 5.04:1 dark; summaries are 24px tall.
+
+### F33 — The plan page has no main landmark or skip link
+- surface: /plan and /archive pages
+- kind: a11y
+- severity: medium
+- evidence: Headless Chrome on :8481: document.querySelectorAll('main,[role=main]') is empty on Albatross, Gemsbok and Waterbuck, no in-page skip link exists, and the report sections are regions outside any main landmark.
+- fix: Wrap the page content in <main> and add a skip link to it, during the report layout step.
+- rule: WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.1 Bypass Blocks
+- status: open
+
+### F34 — The superseded token panel repeats usage with a different scope
+- surface: /plan and /archive, "Token spend" below the timeline
+- kind: ux
+- severity: medium
+- evidence: Headless Chrome on :8481: after the Usage section, each page still renders the old Token spend panel (.tk-top) with its own totals and a "session cost" tile beside them, the presentation F22 describes.
+- fix: Remove the writeTokenPanel call from the timeline renderer; the Usage section carries its lane, tool and wake-up tables.
+- rule: —
+- status: open
+
+### F35 — An unknown session denominator read as an unknown capture count
+- surface: Tracking coverage counts, Albatross
+- kind: ux
+- severity: low
+- evidence: Headless Chrome on :8481: the sessions tile read "unknown sessions captured" although the report knew no coordinator session was captured; only the total was unknown.
+- fix: Show "0 of unknown" when the count is known and the denominator is not; keep "unknown" only before tool history loads.
+- rule: —
+- status: fixed
+- verification: Albatross on :8481 reads "0 of unknown sessions captured · unavailable" with the reason beside it.
+
+### F36 — Report sections keep their no-history state after history loads
+- surface: /plan and /archive without history=1 (the default navigation)
+- kind: mistake
+- severity: high
+- evidence: Headless Chrome on :8481, Gemsbok archive: after the status line changed to "Tool history and token usage loaded.", Usage still read "Plan usage is unavailable until tool history loads" and Tracking coverage still read "Usage is unavailable until tool history loads". The loader replaces only #plan-recorded-content, and the report sits before it.
+- fix: When history loads, replace #plan-report with the response's #plan-report as well as #plan-recorded-content (conductor_web/detail.js), or render the report inside #plan-recorded-content.
+- rule: —
+- status: open

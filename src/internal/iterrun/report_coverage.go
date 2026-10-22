@@ -651,7 +651,7 @@ func writeCoverageSection(b *strings.Builder, s CoverageSection) {
 			if c.Percent != nil {
 				val += fmt.Sprintf(" (%.0f%%)", *c.Percent)
 			}
-		case c.Captured > 0:
+		case c.Captured > 0 || s.History:
 			val = groupDigits(int64(c.Captured)) + " of unknown"
 		default:
 			val = "unknown"

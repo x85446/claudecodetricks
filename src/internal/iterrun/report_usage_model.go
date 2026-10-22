@@ -391,23 +391,22 @@ func accountingCSS(id string) string {
 #ID p{margin:6px 0;line-height:1.45}
 #ID .ra-sum{font-size:14px}
 #ID .ra-note{font-size:12.5px;color:var(--text-dim)}
-#ID .ra-badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;letter-spacing:.03em;border:1px solid currentColor}
-#ID .ra-good{color:var(--good)}
-#ID .ra-warn{color:var(--warn)}
-#ID .ra-bad{color:var(--danger)}
-#ID .ra-dim{color:var(--text-dim)}
 #ID .ra-unknown{color:var(--text-dim);font-style:italic}
 #ID .ra-partial{color:var(--warn);font-size:11px}
 #ID .ra-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0;padding:0;list-style:none}
 #ID .ra-figs li{padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2)}
 #ID .ra-figs b{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-size:15px}
 #ID .ra-figs span{font-size:11.5px;color:var(--text-dim)}
+#ID span.ra-badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;letter-spacing:.03em;color:var(--text);border:1px solid var(--border);background:var(--surface-2)}
+#ID span.ra-good{border-color:var(--good);background:var(--good-bg,var(--surface-2))}
+#ID span.ra-warn{border-color:var(--warn);background:var(--warn-bg,var(--surface-2))}
+#ID span.ra-bad{border-color:var(--danger);background:var(--danger-bg,var(--surface-2))}
 #ID table{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0 8px}
 #ID th{text-align:left;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:var(--text-dim);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--border)}
 #ID td{padding:5px 6px;border-bottom:1px solid var(--border);vertical-align:top}
 #ID td.ra-n{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
 #ID details{margin:8px 0}
-#ID summary{cursor:pointer;color:var(--accent);font-size:13px}
+#ID summary{cursor:pointer;color:var(--accent);font-size:13px;min-height:24px;line-height:24px}
 #ID summary:focus-visible,#ID a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #ID a{color:var(--accent)}
 #ID dl{margin:6px 0;font-size:12.5px}
