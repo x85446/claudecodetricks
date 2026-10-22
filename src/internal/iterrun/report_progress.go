@@ -989,16 +989,18 @@ func writeIntegrityState(b *strings.Builder, state string, notes []string, label
 }
 
 const progressCSS = `<style>
+#report-progress{--ri-good:#047857}
+@media (prefers-color-scheme:dark){#report-progress{--ri-good:var(--good)}}
 #report-progress{margin:26px 0;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow-wrap:anywhere}
 #report-progress h2{margin:0 0 10px}
 #report-progress h3{font-size:13px;margin:0 0 8px;color:var(--text)}
 #report-progress .rs-state{font-size:12.5px;color:var(--text-dim);margin:0 0 12px}
 #report-progress .rs-state-label{display:inline-block;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;border:1px solid var(--border);margin-right:4px}
-#report-progress .rs-available .rs-state-label{color:var(--good)}
+#report-progress .rs-available .rs-state-label{color:var(--ri-good)}
 #report-progress .rs-partial .rs-state-label{color:var(--warn)}
 #report-progress .rs-unavailable .rs-state-label{color:var(--danger)}
 #report-progress .pg-outcome{padding:12px 14px;border:1px solid var(--border);border-left:4px solid var(--text-faint);border-radius:8px;background:var(--surface-2);margin-bottom:16px}
-#report-progress .pg-o-completed{border-left-color:var(--good)}
+#report-progress .pg-o-completed{border-left-color:var(--ri-good)}
 #report-progress .pg-o-blocked,#report-progress .pg-o-archived{border-left-color:var(--danger)}
 #report-progress .pg-o-executing,#report-progress .pg-o-paused{border-left-color:var(--warn)}
 #report-progress .pg-kicker{margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);font-weight:600}
@@ -1015,7 +1017,7 @@ const progressCSS = `<style>
 #report-progress .pg-tile dd{margin:0}
 #report-progress .pg-n{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-size:18px;font-weight:700}
 #report-progress .pg-sub{font-size:11.5px;color:var(--text-dim)}
-#report-progress .pg-t-good .pg-n{color:var(--good)}
+#report-progress .pg-t-good .pg-n{color:var(--ri-good)}
 #report-progress .pg-t-warn .pg-n{color:var(--warn)}
 #report-progress .pg-t-bad .pg-n{color:var(--danger)}
 #report-progress .pg-t-unknown .pg-n{color:var(--text-dim)}
@@ -1027,7 +1029,7 @@ const progressCSS = `<style>
 #report-progress .pg-list li{padding:7px 0;border-top:1px solid var(--border);font-size:13px}
 #report-progress .pg-basis{display:block;font-size:12px;margin-top:2px}
 #report-progress .pg-badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid currentColor}
-#report-progress .pg-b-complete,#report-progress .pg-l-completed{color:var(--good)}
+#report-progress .pg-b-complete,#report-progress .pg-l-completed{color:var(--ri-good)}
 #report-progress .pg-b-in-progress,#report-progress .pg-l-active{color:var(--warn)}
 #report-progress .pg-b-blocked,#report-progress .pg-l-blocked{color:var(--danger)}
 #report-progress .pg-b-not-started,#report-progress .pg-l-queued,#report-progress .pg-l-unknown{color:var(--text-dim)}

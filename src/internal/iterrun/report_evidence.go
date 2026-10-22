@@ -726,12 +726,14 @@ func freshnessLabel(f string) string {
 const evidenceAnchorScript = `<script>(function(){function o(){var h=location.hash.slice(1);if(!h)return;var t=document.getElementById(h);if(!t||!t.closest('#report-evidence'))return;for(var p=t;p;p=p.parentElement){if(p.tagName==='DETAILS')p.open=true}var d=t.querySelector(':scope>details');if(d){d.open=true;var s=d.querySelector('summary');if(s)s.focus()}}window.addEventListener('hashchange',o);o()})()</script>`
 
 const evidenceCSS = `<style>
+#report-evidence{--ri-good:#047857}
+@media (prefers-color-scheme:dark){#report-evidence{--ri-good:var(--good)}}
 #report-evidence{margin:26px 0;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow-wrap:anywhere}
 #report-evidence h2{margin:0 0 10px}
 #report-evidence h3{font-size:12px;margin:12px 0 6px;color:var(--text);letter-spacing:.02em}
 #report-evidence .rs-state{font-size:12.5px;color:var(--text-dim);margin:0 0 12px}
 #report-evidence .rs-state-label{display:inline-block;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;border:1px solid var(--border);margin-right:4px}
-#report-evidence .rs-available .rs-state-label{color:var(--good)}
+#report-evidence .rs-available .rs-state-label{color:var(--ri-good)}
 #report-evidence .rs-partial .rs-state-label{color:var(--warn)}
 #report-evidence .rs-unavailable .rs-state-label{color:var(--danger)}
 #report-evidence .ev-summary{font-size:13px;margin:0 0 4px}
@@ -744,7 +746,7 @@ const evidenceCSS = `<style>
 #report-evidence .ev-num{font-weight:700}
 #report-evidence .ev-title{display:block;color:var(--text-dim);font-size:12.5px;margin:2px 0 0 18px}
 #report-evidence .ev-proof,#report-evidence .ev-result,#report-evidence .ev-fresh{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid currentColor}
-#report-evidence .ev-p-observed-passed,#report-evidence .ev-r-passed,#report-evidence .ev-f-current{color:var(--good)}
+#report-evidence .ev-p-observed-passed,#report-evidence .ev-r-passed,#report-evidence .ev-f-current{color:var(--ri-good)}
 #report-evidence .ev-p-observed-stale,#report-evidence .ev-p-imported-only,#report-evidence .ev-p-checked-without-proof,#report-evidence .ev-f-stale{color:var(--warn)}
 #report-evidence .ev-p-observed-failed,#report-evidence .ev-r-failed{color:var(--danger)}
 #report-evidence .ev-p-none,#report-evidence .ev-p-observed-unknown,#report-evidence .ev-r-unknown,#report-evidence .ev-f-unknown{color:var(--text-dim)}

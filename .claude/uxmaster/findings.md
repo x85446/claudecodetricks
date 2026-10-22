@@ -311,3 +311,13 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - rule: WCAG 2.2 SC 2.1.1 Keyboard; SC 4.1.2 Name, Role, Value
 - status: deferred (the keyboard path ships; the click-only cells live in timeline.go, which the layout step replaces)
 - verification: Headless Chrome on Waterbuck, keyboard only: Enter on "Requirement by requirement" opens the list, Enter on the "Requirement 4" link moves to #evidence-req-4, opens its disclosure and focuses its summary, Enter closes it. Every requirement has a native summary in Validation evidence.
+
+### F42 — Success green text in the report sections is below 4.5:1 in the light theme
+- surface: Verified progress and Validation evidence (Complete badge, complete count, Available label, passed results)
+- kind: a11y
+- severity: medium
+- evidence: Headless Chrome on preview :8482 (Waterbuck, light scheme), computed colours: `--good` #059669 text on the white surface measures 3.77:1 for the 11px "Complete" badge, the 18px "11 of 15" count and the "Available" label. The dark scheme passes (5.44:1 and up).
+- fix: Scope a text green to both sections, #047857 in the light scheme and `--good` in the dark scheme, and use it for every green text rule; borders keep the page token.
+- rule: WCAG 2.2 SC 1.4.3 Contrast (Minimum)
+- status: fixed
+- verification: Re-measured on the rebuilt preview: lowest light-scheme ratios 5.02:1 (badges, state label), 4.83:1 (counts), 5.85:1 (result labels); dark scheme 4.60:1 and up.
