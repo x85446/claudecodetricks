@@ -19,8 +19,13 @@ var (
 )
 
 func main() {
+	iterrun.BuildVersion = Version
 	if args, ok := conductorInvocation(os.Args[1:]); ok {
 		conductorCmd(args)
+		return
+	}
+	if args, ok := recordInvocation(os.Args[1:]); ok {
+		recordCmd(args)
 		return
 	}
 	if len(os.Args) < 2 {
@@ -62,6 +67,7 @@ Usage:
   iterate-run run --plan <name> [--team <name>] --unit <name> -- <command> [args...]
   iterate-run status
   iterate-run conductor --help       (revisioned scheduler, project and subscription controls)
+  iterate-run record list|show|append|import|types  (durable run record; iterate-run record --help)
   iterate-run hook pre|post          (wired into PreToolUse/PostToolUse in settings.json, not run by hand)
   iterate-run timeline [--plan <name>] [--home <dir>] [scan-dir...]
   iterate-run tokens [--plan <name>]  (token spend by lane, tool and wake-up; defaults to this project's current plan)

@@ -21,6 +21,7 @@ func Serve(addr, versionLine string) error {
 	mux.HandleFunc("/", conductorShell)
 	registerConductorWeb(mux)
 	registerConductorAPI(mux)
+	registerRecordAPI(mux)
 	mux.HandleFunc("/plan", handlePlan)
 	mux.HandleFunc("/archive", handleArchive)
 	mux.HandleFunc("/healthz", handleHealthz(versionLine))

@@ -222,6 +222,7 @@ func (s *Service) RecordEvent(a model.Assignment, event model.Event) error {
 			}
 		}
 		s.eventIndexes[a.RunID] = idx
+		s.record(RecordEvent, a, nil, &event)
 		if idx.Sequence%128 == 0 {
 			return atomicJSON(idxPath, idx)
 		}

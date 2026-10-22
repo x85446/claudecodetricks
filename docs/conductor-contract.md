@@ -13,9 +13,10 @@ One installed `iterate-run` binary owns admission, queue selection, leases, assi
 | `src/internal/conductor/budget` | Pure pace, recurrence and overdrive evaluator | budgets |
 | `src/internal/conductor` | Atomic configuration/runtime store, queue, evaluator, supervisor, reconciliation | engine |
 | `src/internal/iterrun` | Existing plan reader, timeline renderer, single HTTP router and client integration | controls |
+| `src/internal/runrecord` | Durable, versioned run record shared by the CLI and Conductor ([run record](run-record.md)) | controls |
 | `src/cmd/iterate-run` | CLI parsing and output | controls |
 
-The conductor packages do not import `iterrun`. A `PlanSource` interface supplies canonical plan summaries, pair content and validated checkpoint writes; an `iterrun` adapter reuses its existing parsers. Provider and budget packages depend only on model and the standard library. HTTP and CLI use service functions rather than duplicate policy.
+The conductor packages do not import `iterrun`. A `PlanSource` interface supplies canonical plan summaries, pair content and validated checkpoint writes; an `iterrun` adapter reuses its existing parsers. Provider and budget packages depend only on model and the standard library. `runrecord` depends only on the standard library; the supervisor reaches it through `RecordSource`, an optional extension of the plan source that the `iterrun` adapter implements. HTTP and CLI use service functions rather than duplicate policy.
 
 The initial shared package entrypoints are:
 
@@ -118,6 +119,7 @@ The web root presents All projects. `/project?project=<canonical>&tab=plans&filt
 | Complete and deliver | Verify result, preserve evidence, archive | Explicit delivery assignment |
 | Pause, wind down, kill | Lifecycle and owned resource cleanup | None |
 | Show status and live portal | Durable state, events, timeline and queue | None |
+| Record run history | The [run record](run-record.md) observes leases, assignment phases, results and hooks; it never decides admission | None |
 | Configure through skill | Revisioned API and validation | Translate the user's request into one atomic edit |
 
 The compatibility mapping retains these behaviors:
