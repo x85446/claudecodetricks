@@ -359,8 +359,13 @@ func Fold(events []Event, info fileRead) Run {
 		case TypeLifecycle:
 			l := *e.Lifecycle
 			r.Lifecycle = append(r.Lifecycle, LifecycleEntry{Meta: meta(e), Lifecycle: l})
-			r.State = l.State
+			// Archived is terminal for a run: a later execution of the
+			// codename opens a new run.
+			if !r.Archived {
+				r.State = l.State
+			}
 			if l.State == "archived" {
+				r.State = "archived"
 				r.Archived = true
 				if l.ArchiveFile != "" {
 					r.ArchiveFile = l.ArchiveFile
