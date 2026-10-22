@@ -37,3 +37,4 @@ Fix the weekly build and its leftovers. (Sanitized fixture shaped like the real 
 - 2026-10-21T07:00:30Z step 4 partial: preserved logs in evidence/waterbuck-bakes; both identities created 2026-10-18. Deleted exactly macos-bake-sequoia and macos-bake-tahoe. Step 6 build DONE exit=0. Step 7 fixture execution: td.evidence.run and weekly.results.selector 2 passed, 0 failed (17.8s), includes the named leaked-guest negative evidence.
 - 2026-10-21T07:06:37Z step 4 bake.cleanup.green rerun passed in 2.6s; failed/interrupted passed first run.
 - 2026-10-21T07:11:24Z step2 ci.retained.moved passed (0.6s): both stopped, snapshot names preserved.
+- 2026-10-21T07:30:34Z step8 Sequoia selection active, first whole-file invocation test-osx-runtime.

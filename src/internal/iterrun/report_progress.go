@@ -153,9 +153,11 @@ type reportRequirement struct {
 	// claims for the requirement; ReportedBy names where it came from.
 	Reported   string
 	ReportedBy string
-	Lane       string
-	Attempts   []runrecord.AttemptView
-	Evidence   []runrecord.EvidenceEntry
+	// LogMentions counts plan-log passages that name the requirement.
+	LogMentions int
+	Lane        string
+	Attempts    []runrecord.AttemptView
+	Evidence    []runrecord.EvidenceEntry
 }
 
 func integrityBool(b bool) *bool { return &b }
@@ -255,6 +257,9 @@ func reportRequirements(in ReportInput, src reportPlanSource) []reportRequiremen
 	}
 	for _, e := range src.Log {
 		for _, seg := range splitLogEntry(e.Text, known) {
+			for _, n := range seg.Steps {
+				byNum[n].LogMentions++
+			}
 			claim := reportedClaim(seg.Text)
 			if claim == "" {
 				continue
@@ -383,13 +388,15 @@ func requirementProgress(r reportRequirement, laneState map[string]string) Progr
 		default:
 			basis = append(basis, "lane "+r.Lane+" blocked")
 		}
-	case p.TaskDone || r.Reported == "partial" || hasAttempt:
+	case p.TaskDone || r.Reported == "partial" || hasAttempt || r.LogMentions > 0:
 		p.State = "in-progress"
 		switch {
 		case r.Reported == "partial":
 			basis = append(basis, "reported partial ("+r.ReportedBy+")")
 		case hasAttempt && !p.TaskDone:
 			basis = append(basis, fmt.Sprintf("attempt %d %s", attempt.Number, attempt.Outcome))
+		case !p.TaskDone:
+			basis = append(basis, fmt.Sprintf("the plan log reports work on it %d %s, with no result", r.LogMentions, unitWord(r.LogMentions, "time", "times")))
 		}
 	default:
 		p.State = "not-started"
@@ -589,6 +596,11 @@ func progressMerge(run *runrecord.Run, plan PlanSummary, src reportPlanSource) *
 			case f.Kind == "revision" && m.Revision == "":
 				m.Revision = f.Text
 			}
+		}
+		// The commit a merge produced, when the prose names it, beats any
+		// other revision on the line.
+		if mm := reFactMergedAs.FindStringSubmatch(text); mm != nil && isRevisionLike(mm[1]) {
+			m.Revision = strings.ToLower(mm[1])
 		}
 		if u := reURL.FindString(text); u != "" {
 			m.URL = strings.TrimRight(u, ".,;")
@@ -865,6 +877,7 @@ func writeProgressSection(b *strings.Builder, s ProgressSection) {
 		{"Requirement", "One numbered task and validation pair. Requirement counts never include lanes or attempts."},
 		{"Complete", "The validation box is checked, a team or the plan log reports it met, or observed evidence passed. An earlier partial report never undoes a checked box."},
 		{"Task implemented", "The task box is checked, its validation passed, a report says partial or met, or an attempt passed."},
+		{"In progress", "Not complete and not blocked, with a checked task box, an attempt, a partial report, or plan-log lines naming the requirement."},
 		{"Observed proof", "Evidence recorded at run time with a result, as opposed to imported prose or a checked box. See Validation evidence."},
 		{"Blocked or not met", "Not complete, and a report says not met, the latest attempt was blocked or failed, or the owning lane is blocked."},
 		{"Lane", "The coordinator or one team. A team lane ends on its Teams table status or its log's TEAM DONE or TEAM BLOCKED line; the coordinator lane ends with the plan's completion event."},

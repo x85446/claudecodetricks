@@ -37,10 +37,12 @@ type reportPlanSource struct {
 
 // planLogEntry is one bullet of a plan's Status / Log section.
 type planLogEntry struct {
-	At      *time.Time
-	Text    string
-	Line    int    // 1-based line in the plan file
-	Context string // the "### " heading the bullet sits under, if any
+	At *time.Time
+	// DateOnly marks a stamp that states a day and no time.
+	DateOnly bool
+	Text     string
+	Line     int    // 1-based line in the plan file
+	Context  string // the "### " heading the bullet sits under, if any
 }
 
 // teamValidationReport is one ##ITERATE-VALIDATION## line: a team's own
@@ -147,7 +149,7 @@ func parsePlanLog(text string) []planLogEntry {
 			e := planLogEntry{Line: i + 1, Context: heading, Text: strings.TrimSpace(m[1])}
 			if s := reLogStamp.FindStringSubmatch(e.Text); s != nil {
 				if t, ok := parseLogStamp(s[1]); ok {
-					e.At = &t
+					e.At, e.DateOnly = &t, len(s[1]) == len("2006-01-02")
 					e.Text = strings.TrimSpace(e.Text[len(s[0]):])
 				}
 			}
@@ -269,6 +271,11 @@ var reEvidenceSignal = regexp.MustCompile(`(?i)\b(pass|fail|done\b|met\b|partial
 
 func hasEvidenceSignal(text string) bool { return reEvidenceSignal.MatchString(text) }
 
+// reLooseSignal also finds result words run into their neighbours
+// ("step1acceptancepasses"). It is used only for text that already names
+// a requirement.
+var reLooseSignal = regexp.MustCompile(`(?i)(pass|fail|done|verified|green|exit)`)
+
 // reportedClaim reads the status a segment's first clause states: "step 4
 // partial:", "step 13 DONE", "step2 ci.retained.moved passed". It is what
 // the prose claims, never an observed result.
@@ -313,6 +320,7 @@ var (
 	reFactExit     = regexp.MustCompile(`(?i)\bexit(?:\s*code|\s*status)?\s*[=:]?\s*(\d+)\b`)
 	reFactRevision = regexp.MustCompile(`(?i)(?:commit|sha|head|revision|build|as|source|hash)\s*:?\s*([0-9a-f]{7,40})\b`)
 	reFactLongHex  = regexp.MustCompile(`\b([0-9a-f]{12,40})\b`)
+	reFactMergedAs = regexp.MustCompile(`(?i)merge[sd]?\s+(?:as|commit|at)\s*:?\s*([0-9a-f]{7,40})\b`)
 	reFactPR       = regexp.MustCompile(`(?i)\b(?:PR\s*#?\s*(\d+)|pull/(\d+))`)
 	reHasDigit     = regexp.MustCompile(`[0-9]`)
 	reHasHexLetter = regexp.MustCompile(`[a-f]`)

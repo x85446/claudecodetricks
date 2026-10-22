@@ -96,6 +96,7 @@ type EvidenceItem struct {
 	Command      string         `json:"command,omitempty"`
 	ExitStatus   *int           `json:"exit_status,omitempty"`
 	At           *time.Time     `json:"at,omitempty"`
+	DateOnly     bool           `json:"date_only,omitempty"`
 	ArtifactPath string         `json:"artifact_path,omitempty"`
 	ArtifactURL  string         `json:"artifact_url,omitempty"`
 	Revision     string         `json:"revision,omitempty"`
@@ -239,12 +240,13 @@ func buildEvidenceSection(in ReportInput) EvidenceSection {
 		}
 		for _, seg := range splitLogEntry(e.Text, known) {
 			facts := evidenceFacts(seg.Text)
-			if !hasEvidenceSignal(seg.Text) && len(facts) == 0 {
+			signal := hasEvidenceSignal(seg.Text) || (len(seg.Steps) > 0 && reLooseSignal.MatchString(seg.Text))
+			if !signal && len(facts) == 0 {
 				continue
 			}
 			segments++
 			it := EvidenceItem{Result: "unknown", Imported: true, Origin: origin, Provenance: fmt.Sprintf("plan file line %d", e.Line),
-				Summary: seg.Text, Facts: facts, At: e.At}
+				Summary: seg.Text, Facts: facts, At: e.At, DateOnly: e.DateOnly}
 			if len(seg.Steps) == 0 {
 				planLog = append(planLog, it)
 				continue
@@ -619,9 +621,12 @@ func writeEvidenceItem(b *strings.Builder, it EvidenceItem) {
 		kind = "Imported"
 	}
 	fmt.Fprintf(b, ` <span class="ev-kind">%s</span> <span class="ev-origin">%s</span>`, kind, esc(it.Origin))
-	if it.At != nil {
+	switch {
+	case it.At != nil && it.DateOnly:
+		fmt.Fprintf(b, ` <time class="ev-dim" datetime="%s">%s, time of day not recorded</time>`, it.At.UTC().Format("2006-01-02"), it.At.UTC().Format("2006-01-02"))
+	case it.At != nil:
 		fmt.Fprintf(b, ` <time class="ev-dim" datetime="%s">%s</time>`, it.At.UTC().Format(time.RFC3339), it.At.UTC().Format("2006-01-02 15:04 UTC"))
-	} else {
+	default:
 		b.WriteString(` <span class="ev-dim">time not recorded</span>`)
 	}
 	if it.Attempt > 0 {

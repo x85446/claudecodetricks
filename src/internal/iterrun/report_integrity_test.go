@@ -187,7 +187,7 @@ func TestKrProgressComplete(t *testing.T) {
 		const archive = "2026-09-11T02-27-19Z-albatross-done.md"
 		in, rep := loadReport(t, project, "", archive)
 		p := rep.Progress
-		if p.Outcome.State != "completed" || p.Outcome.Merge == nil || p.Outcome.Merge.Ref != "PR 19" {
+		if p.Outcome.State != "completed" || p.Outcome.Merge == nil || p.Outcome.Merge.Ref != "PR 19" || p.Outcome.Merge.Revision != "ea3929c" {
 			t.Fatalf("outcome: %+v merge %+v", p.Outcome, p.Outcome.Merge)
 		}
 		if p.Requirements.Total != 20 || p.Requirements.Complete != 20 || p.Requirements.ValidationsPassed != 20 {
@@ -400,10 +400,14 @@ func TestKrEvidenceBinding(t *testing.T) {
 		t.Fatalf("requirement 8: %s", r8.Proof)
 	}
 
-	// A stale "partial" report never undoes requirement 4's checked boxes.
+	// A stale "partial" report never undoes requirement 4's checked boxes;
+	// a log line naming requirement 8 with no result shows work, not proof.
 	for _, r := range rep.Progress.RequirementItems {
 		if r.Number == 4 && (r.State != "complete" || r.Reported != "met") {
 			t.Fatalf("requirement 4 progress: %+v", r)
+		}
+		if r.Number == 8 && (r.State != "in-progress" || !strings.Contains(r.Basis, "plan log reports work on it")) {
+			t.Fatalf("requirement 8 progress: %+v", r)
 		}
 	}
 
