@@ -312,7 +312,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Headless Chrome on :8481: document.querySelectorAll('main,[role=main]') is empty on Albatross, Gemsbok and Waterbuck, no in-page skip link exists, and the report sections are regions outside any main landmark.
 - fix: Wrap the page content in <main> and add a skip link to it, during the report layout step.
 - rule: WCAG 2.2 SC 1.3.1 Info and Relationships; SC 2.4.1 Bypass Blocks
-- status: open
+- status: fixed
+- verification: Layout step, preview :8484 (worktree build) in headless Chrome: Albatross, Gemsbok and Waterbuck each have one <main id="main" tabindex="-1">; the first Tab on Waterbuck lands on "Skip to the plan report" and Enter moves focus to main. TestKrReportNavigation asserts one main and the skip link as the first link on live, completed and archived pages; conductor.report-navigation checks it in Chrome.
 
 ### F34 — The superseded token panel repeats usage with a different scope
 - surface: /plan and /archive, "Token spend" below the timeline
@@ -321,7 +322,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Headless Chrome on :8481: after the Usage section, each page still renders the old Token spend panel (.tk-top) with its own totals and a "session cost" tile beside them, the presentation F22 describes.
 - fix: Remove the writeTokenPanel call from the timeline renderer; the Usage section carries its lane, tool and wake-up tables.
 - rule: —
-- status: open
+- status: fixed
+- verification: writeTokenPanel, tokenPanelCSS and their table helpers are removed; the three reference pages on :8484 carry no .tk-top, "Token spend" or table.tk, and Usage holds the lane, tool and wake-up tables. TestUsageSectionRendersLanesToolsAndWakeups and TestUsageIsUnknownWhenThereIsNothingMeasured assert the Usage equivalents; `iterate-run tokens` still prints its three tables from tokens.go.
 
 ### F35 — An unknown session denominator read as an unknown capture count
 - surface: Tracking coverage counts, Albatross
@@ -340,7 +342,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Headless Chrome on :8481, Gemsbok archive: after the status line changed to "Tool history and token usage loaded.", Usage still read "Plan usage is unavailable until tool history loads" and Tracking coverage still read "Usage is unavailable until tool history loads". The loader replaces only #plan-recorded-content, and the report sits before it.
 - fix: When history loads, replace #plan-report with the response's #plan-report as well as #plan-recorded-content (conductor_web/detail.js), or render the report inside #plan-recorded-content.
 - rule: —
-- status: open
+- status: fixed
+- verification: Headless Chrome on :8484, real Gemsbok archive without history=1, history request held by the DevTools Fetch domain: before release Usage and Tracking coverage read "until tool history loads"; after "Tool history and token usage loaded." both read complete, the opened "Requirement by requirement" and Time definitions stay open, and requirement 1 opened by Enter on its grid cell keeps its open evidence, focus and selected mark. detail.js matches disclosures by key rather than position and keeps the element at the viewport top in place. conductor.report-navigation repeats this on the fixture.
 
 ## Report integrity (killdeer integrity team) — 2026-10-22
 
@@ -361,8 +364,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Headless Chrome on Waterbuck: each requirement cell is a `<div onclick="bdShow(N)">` with tabIndex -1 and no role, so Tab never reaches it and Enter/Space cannot open the detail that carries the step, its validation and its note.
 - fix: Give every requirement a keyboard-operable disclosure (native `<details>`/`<summary>`) that holds its acceptance text and observed evidence; replace or convert the click-only cells.
 - rule: WCAG 2.2 SC 2.1.1 Keyboard; SC 4.1.2 Name, Role, Value
-- status: deferred (the keyboard path ships; the click-only cells live in timeline.go, which the layout step replaces)
-- verification: Headless Chrome on Waterbuck, keyboard only: Enter on "Requirement by requirement" opens the list, Enter on the "Requirement 4" link moves to #evidence-req-4, opens its disclosure and focuses its summary, Enter closes it. Every requirement has a native summary in Validation evidence.
+- status: fixed
+- verification: The requirement grid lives in Verified progress as <a class="bd-cell" href="#evidence-req-N" aria-label="Requirement N, <state>, lane <lane>">; state also shows as a shape (check, dot, cross, dashed border). Headless Chrome on :8484: Tab reaches all 15 Waterbuck cells with a 2px focus ring, Enter on Albatross cell 20 opens #evidence-req-20 and focuses its summary. Cells take their state from the progress model, so the stale "partial" override (F40) no longer reaches the grid; gantt steps link to their evidence instead of opening merged notes.
 
 ### F42 — Success green text in the report sections is below 4.5:1 in the light theme
 - surface: Verified progress and Validation evidence (Complete badge, complete count, Available label, passed results)
@@ -423,7 +426,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Preview Waterbuck shows "1 SEVERE GAP" and the "Where the time actually went" list above the Time section that labels the same 7h 21m interval Unobserved, unknown and not a failure.
 - fix: Remove the severe-gap stat, legend entry and list, and draw gantt gaps in the neutral unobserved pattern; the Time section's intervals replace them.
 - rule: —
-- status: open (layout step; timeline.go is outside this team's files)
+- status: fixed
+- verification: The severe-gap stat, legend entries, "Where the time actually went" list and red .gapmark markers are removed from the page; Waterbuck on :8484 shows the 7h 21m interval only under Time as Unobserved. The timeline caption says a gap between bars is not a failure and links to Time. SevereGap remains for `iterate-run timeline`'s terminal summary and timeBridge. TestKrReportNavigation asserts no "severe gap", gapmark or gap list on any page.
 
 ### F53 — Two elapsed figures disagree on a live plan
 - surface: plan page runbox ("Recorded execution span" / "Running for") and the Time section
@@ -432,7 +436,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: Preview Waterbuck (live): the runbox reads 44h12m13s, ending at the latest activity (14:36:27), while Time reads 1d 20h 23m, ending at the report time (14:47). Archived Albatross and Gemsbok agree because both end at Finished:.
 - fix: One clock: remove the runbox or render it from the Time section's window (start basis, end basis, open flag).
 - rule: —
-- status: open (layout step)
+- status: fixed
+- verification: The runbox is removed; #plan-elapsed renders the Time section's clock ("Elapsed 1d 20h 55m from 2026-10-20 18:24 CDT, still open at 2026-10-22 15:19 CDT" on Waterbuck, "1h 18m" Executing: to Finished: on Albatross, matching Time). The gantt caption names its own range as first to last recorded activity, not elapsed time. TestElapsedPrefersExecutingOverStarted, ...FallsBackToEarliestActivity..., ...HandlesZeroConfirmedActivity and ...PrefersFinishedOverActivityForArchivedPlans assert the four clock cases.
 
 ### F54 — First-pass success is unknowable for CLI-run plans
 - surface: Attempts and rework
@@ -443,3 +448,55 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - rule: —
 - status: open (needs the iterate executor to record attempts)
 
+
+## Report layout (killdeer layout) — 2026-10-22
+
+### F56 — The execution timeline sits below eight report sections with no way to jump there
+- surface: /plan and /archive (Albatross, Gemsbok, Waterbuck)
+- kind: ux
+- severity: medium
+- evidence: Headless Chrome at 1280px on the :8484 preview of 2d1fa616 with history loaded: the Coordinator gantt heading sits at y=8385 of a 9873px Albatross page, y=6724 of 7478 on Gemsbok and y=8244 of 9260 on Waterbuck, after Verified progress, Validation evidence, Tracking coverage, Usage, Time, Ownership, Attempts and Delivery. At 320px Albatross is 22754px tall. The page has no in-page navigation.
+- fix: Order the page header, outcome and evidence summary, execution timeline, then the breakdowns (Time, Ownership, Rework directly under the gantt, then Usage, Coverage, Delivery), with Conductor activity last in a bounded region; add an "On this page" link list after the header.
+- rule: WCAG 2.2 SC 2.4.5 Multiple Ways (advisory for in-page navigation); SC 1.3.2 Meaningful Sequence
+- status: fixed
+- verification: :8484 at 1280px: Execution timeline heading at y=3043 of 9023 (Albatross), 2061 of 7072 (Gemsbok), 2594 of 7782 (Waterbuck); order header, On this page, Verified progress, Validation evidence, Execution timeline, Time, Ownership, Attempts, Usage, Coverage, Delivery, Conductor activity. TestKrReportNavigation and conductor.report-navigation assert the order.
+
+### F57 — The gantt track collapses to zero width at 320px
+- surface: Coordinator and Activity by team gantts
+- kind: a11y
+- severity: high
+- evidence: Headless Chrome at 320px (mobile emulation), Albatross and Waterbuck: `.gantt .track` measures 0px wide; the 172px label column and the 60px busy column take the whole row, so no bar is visible.
+- fix: Below 600px stack each gantt row: label and busy time on one line, the full-width track under it; drop the fixed label-column spacer from the tick axis.
+- rule: WCAG 2.2 SC 1.4.10 Reflow
+- status: fixed
+- verification: 320px mobile emulation on :8484: every gantt track measures 258px on Albatross and Waterbuck (label and busy time on one line, track below); tick axis drops its fixed spacers. conductor.report-navigation requires tracks of at least 200px at 320px.
+
+### F58 — Overflowing text is clipped at 320px instead of wrapping
+- surface: requirement step text in the gantt disclosures, the Token spend table
+- kind: a11y
+- severity: medium
+- evidence: Headless Chrome at 320px: `body{overflow-x:hidden}` reports scrollWidth 320, but `.step-text` spans end at x=342–384 on Albatross and the Token spend table ends at x=541 on Waterbuck; the overflow is cut off rather than reachable.
+- fix: Let step text wrap (`min-width:0; overflow-wrap:anywhere`), remove the superseded token table, and stop hiding page overflow so a regression shows up as a measurable scroll instead of silent clipping.
+- rule: WCAG 2.2 SC 1.4.10 Reflow
+- status: fixed
+- verification: body no longer hides horizontal overflow; with every disclosure opened at 320px, Albatross and Waterbuck report scrollWidth 320 = clientWidth and no element past the right edge; step text wraps (min-width:0, overflow-wrap:anywhere) and the token table is removed.
+
+### F59 — Faint page text falls below 4.5:1 in both themes
+- surface: plan page chrome outside the report sections: archived chip, harness badge "unknown", family version, launch-command tag, runbox "since", disclosure chevrons, axis tick labels and endpoints, requirement cells, Token spend headers and dim cells, footer
+- kind: a11y
+- severity: medium
+- evidence: Headless Chrome on the :8484 preview of 2d1fa616, every visible text node measured against its painted background with details opened: `--text-faint` text reads 2.52–2.76:1 in the light theme (#a29b8d on #f7f4ef/#fff) and 2.40–2.81:1 in the dark theme (#565d64 on #0f1215/#1d2227); the success-green step check reads 3.58:1 and the done requirement cell 3.35:1, the active cell 4.32:1, in the light theme. The report sections pass.
+- fix: Give faint text a token that clears 4.5:1 on every page surface (#736b5e light, #8a929a dark), draw requirement cell numbers in body text with the state carried by border, tint and a shape glyph, and use the scoped #047857 text green for the step check in the light theme.
+- rule: WCAG 2.2 SC 1.4.3 Contrast (Minimum)
+- status: fixed
+- verification: Re-measured every visible text node on :8484 with details opened, light and dark: no failures on Albatross or Waterbuck (faint text #736b5e light 4.8:1 and up, #8a929a dark 5.1:1 and up; step check #047857; cells in body text). The only reported pair is the tick label measured against its own 1px tick mark, which it sits beside, not on.
+
+### F60 — An all-unknown Delivery section repeats "No evidence recorded" for every stage
+- surface: Delivery section on plans with no recorded delivery (Albatross, Gemsbok, Waterbuck)
+- kind: ux
+- severity: low
+- evidence: Headless Chrome on the :8484 preview of 2d1fa616: Delivery is 1197px tall at 1280px on Albatross and 1416px at 320px, eight stage cards each reading "No evidence recorded. Unknown, not failed." beneath a summary that already says every stage is unknown, not failed. On Waterbuck it pushes Conductor activity further down the page.
+- fix: When no stage has evidence, keep the summary line and fold the stage list with each stage's required proof into one disclosure; show the full list once any stage is recorded.
+- rule: —
+- status: fixed
+- verification: With no stage recorded the stage list folds into "Stages and the proof each needs (8)"; Delivery measures 276px at 320px on Albatross and Waterbuck (1416px before). TestKrDeliveryStages and TestKrDeliveryUnknown pass.
