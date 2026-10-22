@@ -209,7 +209,7 @@ $(DOC_GUARD_BIN): $(wildcard $(CMD_DIR)/doc-guard/*.go) $(wildcard $(INTERNAL_DI
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/doc-guard
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) doc-guard → $@"
 
-$(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(shell find $(INTERNAL_DIR)/iterrun $(INTERNAL_DIR)/conductor -type f 2>/dev/null)
+$(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(shell find $(INTERNAL_DIR)/iterrun $(INTERNAL_DIR)/conductor $(INTERNAL_DIR)/runrecord -type f 2>/dev/null)
 	$(Q)echo -e "$(COLOR_BLUE)→ Building iterate-run...$(COLOR_RESET)"
 	$(Q)mkdir -p $(TOOLS_BIN_DIR)
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/iterate-run
