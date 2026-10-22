@@ -245,6 +245,16 @@ conductor-settings-test:  ## Verify Conductor settings interactions through TEST
 	$(Q)testmaster suite discover
 	$(Q)testmaster suite run conductor.settings-ui 'budget.TestJavelina*' 'conductor.TestJavelina*' 'iterrun.TestJavelina*' 'provider.TestJavelina*'
 
+.PHONY: automation-test
+automation-test:  ## Verify Named Automations (editor, band tester, associations) through TESTMASTER
+	$(Q)testmaster suite discover
+	$(Q)testmaster suite run conductor.automations-ui conductor.settings-ui 'conductor.TestKilldeer*' 'iterrun.TestConductorAPIAutomationPreview'
+
+.PHONY: report-test
+report-test: build  ## Verify the run record and plan report (kr-* cases, headless-Chrome page test) through TESTMASTER
+	$(Q)testmaster suite discover
+	$(Q)testmaster suite run 'iterate-run.TestKr*' 'iterate-run.TestRecord*' 'iterrun.TestKr*' 'runrecord.*' conductor.report-navigation
+
 
 test: test-unit test-hook  ## Run all tests
 	$(Q)echo -e "$(COLOR_GREEN)✓ All tests passed$(COLOR_RESET)"
@@ -474,6 +484,29 @@ deps-update:  ## Update all dependencies
 
 run: build  ## Run or reuse the shared dashboard on localhost:8420 (ARGS overrides)
 	$(Q)./makehelp.sh run "$(ITERATE_RUN_BIN)" $(ARGS)
+
+PREVIEW_PORT ?= 8490
+REPORT_URL ?= http://localhost:8420
+
+.PHONY: preview
+preview: build  ## Run this build's dashboard on PREVIEW_PORT (8490): real plans read-only, Conductor state in a temp dir
+	$(Q)./makehelp.sh preview "$(ITERATE_RUN_BIN)" "$(PREVIEW_PORT)"
+
+.PHONY: record-list
+record-list: build  ## List recorded runs (PROJECT=<dir> PLAN=<name> narrow it)
+	$(Q)"$(ITERATE_RUN_BIN)" record list $(if $(PROJECT),--project "$(PROJECT)") $(if $(PLAN),--plan "$(PLAN)") $(ARGS)
+
+.PHONY: record-show
+record-show: build  ## Show one execution's run record (PROJECT, PLAN, ARCHIVE=<file>; default this project's current plan)
+	$(Q)"$(ITERATE_RUN_BIN)" record show $(if $(PROJECT),--project "$(PROJECT)") $(if $(PLAN),--plan "$(PLAN)") $(if $(ARCHIVE),--archive "$(ARCHIVE)") $(ARGS)
+
+.PHONY: record-import
+record-import: build  ## Preview the legacy record import for PLAN (APPLY=1 writes it; PROJECT, ARCHIVE narrow it)
+	$(Q)"$(ITERATE_RUN_BIN)" record import $(if $(PROJECT),--project "$(PROJECT)") $(if $(PLAN),--plan "$(PLAN)") $(if $(ARCHIVE),--archive "$(ARCHIVE)") $(if $(APPLY),,--dry-run) $(ARGS)
+
+.PHONY: report-json
+report-json:  ## Print /api/report JSON for PLAN or ARCHIVE in PROJECT from REPORT_URL (HISTORY=1 adds usage)
+	$(Q)./makehelp.sh report-json "$(REPORT_URL)" "$(PROJECT)" "$(PLAN)" "$(ARCHIVE)" "$(HISTORY)"
 
 watch:  ## Watch for changes and rebuild (requires fswatch or inotifywait)
 	$(Q)if command -v fswatch >/dev/null 2>&1; then \

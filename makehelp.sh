@@ -326,12 +326,57 @@ cmd_run() {
     exec "$bin" serve --port 8420
 }
 
+# `make preview` serves this build beside the managed dashboard. Plans,
+# archives, hook history and the run record are read where they live; the
+# Conductor store is a fresh temp dir, so the preview's wake loop never
+# admits, launches or changes real work.
+cmd_preview() {
+    local bin="$1" port="$2"
+    if [[ ! -x "$bin" ]]; then
+        echo "error: $bin not found — run 'make build' first" >&2
+        exit 1
+    fi
+    if [[ "$port" == "8420" ]]; then
+        echo "error: 8420 is the managed dashboard's port; pick another: make preview PREVIEW_PORT=8490" >&2
+        exit 1
+    fi
+    if lsof -nP -t -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+        echo "error: port $port is in use; pick another: make preview PREVIEW_PORT=<port>" >&2
+        exit 1
+    fi
+    local tmp="${TMPDIR:-/tmp}" store
+    store="$(mktemp -d "${tmp%/}/iterate-preview.XXXXXX")"
+    echo "preview: http://localhost:$port/  (Conductor state: $store; Ctrl-C stops it)"
+    ITERATE_CONDUCTOR_DIR="$store" exec "$bin" serve --port "$port"
+}
+
+# `make report-json` reads the plan report model from a running dashboard.
+cmd_report_json() {
+    local url="$1" project="${2:-$PWD}" plan="$3" archive="$4" history="$5" query
+    if [[ -z "$plan" && -z "$archive" ]]; then
+        echo "error: name the execution: make report-json PLAN=<name> or ARCHIVE=<archive file> [PROJECT=<dir>]" >&2
+        exit 2
+    fi
+    query="project=$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$project")"
+    [[ -n "$plan" ]] && query="$query&plan=$plan"
+    [[ -n "$archive" ]] && query="$query&archive=$archive"
+    [[ -n "$history" ]] && query="$query&history=1"
+    if ! curl --noproxy '*' --silent --show-error --fail-with-body --max-time 120 "$url/api/report?$query"; then
+        echo >&2
+        echo "error: $url did not serve /api/report — start a current build with 'make preview' and pass REPORT_URL=http://localhost:8490" >&2
+        exit 1
+    fi
+    echo
+}
+
 # ---------------------------------------------------------------------------
 # Dispatcher
 # ---------------------------------------------------------------------------
 
 case "${1:-}" in
     run)               shift; cmd_run "$@" ;;
+    preview)           shift; cmd_preview "$@" ;;
+    report-json)       shift; cmd_report_json "$@" ;;
     install-conductor) shift; cmd_install_conductor "$@" ;;
     conductor-acceptance) shift; cmd_conductor_acceptance "$@" ;;
     serve-install)     shift; cmd_serve_install "$@" ;;
@@ -343,7 +388,7 @@ case "${1:-}" in
     chrome-uninstall)  shift; cmd_chrome_uninstall "$@" ;;
     chrome-status)     shift; cmd_chrome_status "$@" ;;
     *)
-        echo "Usage: $0 {run|install-conductor|conductor-acceptance|serve-install|serve-uninstall|serve-status|chrome-install|chrome-uninstall|chrome-status}" >&2
+        echo "Usage: $0 {run|preview|report-json|install-conductor|conductor-acceptance|serve-install|serve-uninstall|serve-status|chrome-install|chrome-uninstall|chrome-status}" >&2
         exit 1
         ;;
 esac

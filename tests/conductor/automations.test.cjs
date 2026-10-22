@@ -1,4 +1,4 @@
-// TESTMASTER: id=killdeer-automation-ui tier=fast parallel=yes
+// TESTMASTER: id=conductor.automations-ui tier=fast parallel=yes
 // Named Automations UI: saved identity and labels, drafts, the band tester request and
 // summary, and Project Associations writes (disabled by default, idempotent, rebased).
 const assert = require('node:assert/strict');
