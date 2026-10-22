@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-22T20:50:22Z",
+  "updated": "2026-10-22T21:11:55Z",
   "sources": [
     {
       "kind": "go",
@@ -8,10 +8,10 @@
     }
   ],
   "last_run": {
-    "ts": "2026-10-22T20:50:22Z",
-    "selection": "8 patterns",
-    "ms": 626,
-    "passed": 8,
+    "ts": "2026-10-22T21:11:47Z",
+    "selection": "4 patterns",
+    "ms": 15585,
+    "passed": 4,
     "failed": 0,
     "skipped": 0,
     "missing": 0,
@@ -1266,38 +1266,50 @@
       "last_result": "pass",
       "updated": "2026-10-22T20:49:33Z"
     },
+    "conductor.automation-navigation": {
+      "kind": "shell",
+      "cmd": "node --experimental-websocket tests/conductor/automation-navigation.test.mjs",
+      "file": "tests/conductor/automation-navigation.test.mjs",
+      "parallel_safe": false,
+      "runs": 1,
+      "avg_ms": 9939,
+      "last_ms": 9939,
+      "tier": "fast",
+      "last_result": "pass",
+      "updated": "2026-10-22T21:11:47Z"
+    },
     "conductor.automations-ui": {
       "kind": "shell",
       "cmd": "node tests/conductor/automations.test.cjs",
-      "runs": 2,
-      "avg_ms": 50,
-      "last_ms": 52,
+      "runs": 3,
+      "avg_ms": 48,
+      "last_ms": 44,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:11:47Z"
     },
     "conductor.report-navigation": {
       "kind": "shell",
       "cmd": "node --experimental-websocket tests/conductor/report-navigation.test.mjs",
       "file": "tests/conductor/report-navigation.test.mjs",
       "parallel_safe": false,
-      "runs": 4,
-      "avg_ms": 10895,
-      "last_ms": 5349,
-      "tier": "standard",
+      "runs": 5,
+      "avg_ms": 9834,
+      "last_ms": 5593,
+      "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:11:47Z"
     },
     "conductor.settings-ui": {
       "kind": "shell",
       "cmd": "node tests/conductor/settings.test.cjs",
       "parallel_safe": true,
-      "runs": 15,
-      "avg_ms": 385,
-      "last_ms": 63,
+      "runs": 16,
+      "avg_ms": 364,
+      "last_ms": 52,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:11:47Z"
     },
     "conductor.skill-clients": {
       "kind": "shell",

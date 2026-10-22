@@ -7620,3 +7620,8 @@
 {"id":"iterrun.TestUsageIsUnknownWhenThereIsNothingMeasured","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:50:22Z"}
 {"id":"iterrun.TestUsageSectionRendersLanesToolsAndWakeups","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:50:22Z"}
 {"batch":"8 patterns","failed":0,"missing":0,"ms":626,"not_run":0,"passed":8,"runner":"testmaster","skipped":0,"ts":"2026-10-22T20:50:22Z"}
+{"id":"conductor.automation-navigation","ms":9939,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:11:47Z"}
+{"id":"conductor.automations-ui","ms":44,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:11:47Z"}
+{"id":"conductor.report-navigation","ms":5593,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:11:47Z"}
+{"id":"conductor.settings-ui","ms":52,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:11:47Z"}
+{"batch":"4 patterns","failed":0,"missing":0,"ms":15585,"not_run":0,"passed":4,"runner":"testmaster","skipped":0,"ts":"2026-10-22T21:11:47Z"}
