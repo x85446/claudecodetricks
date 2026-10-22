@@ -1,6 +1,6 @@
 ---
-name: ssh-config
-description: Use when someone asks to update/edit/add/delete/move an SSH host or site, wire up an SSH key (identityfile) for a host, modify ~/.ssh/config or ~/.ssh/config.d, manage SSH sites (cypress, df-austin, ed-house, brian), sort SSH config files, set up SSH access to a new machine, **speed up SSH connections** (ControlMaster / multiplexing / "make ssh faster" / "keep connection alive" / "reuse the connection"), or invokes $ssh-config.
+name: "ssh-config"
+description: "Use when someone asks to update/edit/add/delete/move an SSH host or site, wire up an SSH key (identityfile) for a host, modify ~/.ssh/config or ~/.ssh/config.d, manage SSH sites (cypress, df-austin, ed-house, brian), sort SSH config files, set up SSH access to a new machine, **speed up SSH connections** (ControlMaster / multiplexing / \"make ssh faster\" / \"keep connection alive\" / \"reuse the connection\"), or invokes $ssh-config."
 ---
 
 
@@ -22,7 +22,8 @@ Adds nodes, removes nodes, moves nodes between sites, and keeps host blocks alph
 ## Layout
 
 - Each file `~/.ssh/config.d/<site>` holds the nodes for one site.
-- The main `~/.ssh/config` already does `Include ~/.ssh/config.d/*`.
+- The main `~/.ssh/config` already does `Include ~/.ssh/config.d/*`, so **every file in `config.d/` is live configuration.** A backup, an editor copy or a temp file there applies its Host blocks too, and options such as `LocalForward` accumulate across matching blocks. Nothing but site files belongs in `config.d/`.
+- Backups and staged writes live beside it, in `~/.ssh/config.d-backups/`, outside the glob.
 - Banner header at the top of a file (lines starting with `#`, often ASCII art) is **preserved verbatim** on any sort or rewrite.
 - Host blocks start with `Host <name>` (column 0), followed by indented option lines until the next `Host` line or EOF.
 
@@ -35,17 +36,29 @@ Adds nodes, removes nodes, moves nodes between sites, and keeps host blocks alph
 | `ed-house` | Ed's house / Ed's garage. ASCII banner: "ya' know, ed's grarrage". |
 | `brian` | Brian's house. Banner to be created on first `new-site brian`. |
 
-### Files to ignore
+### Files the skill never edits
 
-Skip these when iterating `~/.ssh/config.d/*`:
+The skill never edits, moves or deletes these, but ssh still loads every one of them:
 
-- Zero-byte files (`1`, `octa`)
-- `*.bak`
-- `*.sync-conflict-*`
-- `old`
-- `gke`, `incus-uc-vms` (specialized non-site groupings — only touch if user names them explicitly)
+- Zero-byte files (`1`, `octa`) — they load nothing.
+- `gke`, `incus-uc-vms` — specialized non-site groupings; touch them only when the user names them.
+- Backup, editor, temp and sync copies: `*.bak`, `*.bak.*`, `*~`, `*.tmp`, `*.swp`, `*.orig`, `*.sync-conflict-*`, and `old`. These load as live config, so `verify` flags each one and the report lists them with the command that moves it out (`mv ~/.ssh/config.d/<file> ~/.ssh/config.d-backups/`). Moving them is the user's call.
 
 When in doubt about whether a filename is a site, ask once.
+
+## The helper: `scripts/sshcfg.py`
+
+Every write, backup, check and duplicate report goes through the helper in this skill's directory (`H="python3 <skill dir>/scripts/sshcfg.py"`). It reads `~/.ssh/config` unless `--config <path>` names another, and flags parse in any position.
+
+| Command | Does |
+|---|---|
+| `$H tempfile <site>` | Creates an empty staging file in `~/.ssh/config.d-backups/` and prints its path. Build the new site file there, never inside `config.d/`. |
+| `$H write <site> <staged file> --verify <host>` | Backs up the current site file to `~/.ssh/config.d-backups/<site>.<UTC>` (newest 20 kept per site), installs the staged file atomically, then runs `ssh -G <host>`. If ssh cannot parse the result it restores the backup and exits 3. |
+| `$H verify <host>` | Runs `ssh -G -vvv <host>`, names every file that applied options to it, and lists every non-empty file the glob loads that is a backup, editor or temp copy. Exit 0 clean, 1 flagged files, 3 ssh cannot parse. |
+| `$H dupes [<site>]` | Lists Host names defined twice within a site (with line numbers) and names defined in more than one site, on separate `DUPLICATE` and `CROSS-SITE` lines. |
+| `$H restore <site> [<backup>]` | Reinstalls the newest (or the named) backup. |
+| `$H migrate` | Moves `*.bak.skill` files left in `config.d/` into `config.d-backups/`. |
+| `$H sites` | Lists the live site files. |
 
 ## Arguments
 
@@ -91,6 +104,7 @@ These mirror the patterns already in the existing site files. Match the surround
 1. Read `$1` as subcommand. Reject if unknown.
 2. Resolve site name → file path: `~/.ssh/config.d/<site>`.
 3. Verify the file exists (or, for `new-site`, that it does not).
+4. Before any write, run `$H migrate` once so no skill backup is left inside the glob.
 
 ### Step 2: Parse the file into structured blocks
 
@@ -116,18 +130,18 @@ Prompt the user by asking the user to choose from a short numbered list for the 
 5. **proxyjump** (optional) — list existing host names from the same site file as candidates; allow "(none)".
 6. **localforward / remoteforward** (optional, can be multiple)
 
-Compose the new Host block using the standard options listed above. Append to the file, then run a sort pass (Step 4).
+Compose the new Host block using the standard options listed above. Build the new file (current contents plus the block, sorted per Step 4) in a `$H tempfile <site>` path, then `$H write <site> <path> --verify <host-name>`.
 
 #### `delete <site> <host-name>`
 
-Find the block. Confirm with the user showing the block's contents before removing (one round, default yes). Drop the block plus its trailing blank line. Write the file back. No sort needed (deletion preserves order).
+Find the block. Confirm with the user showing the block's contents before removing (one round, default yes). Drop the block plus its trailing blank line in a `$H tempfile <site>` copy, then `$H write <site> <path> --verify <a remaining host>`. No sort needed (deletion preserves order).
 
 #### `move <host-name> <from-site> <to-site>`
 
 1. Extract the block from `from-site`.
 2. Verify `host-name` does not already exist in `to-site`. If it does, refuse.
-3. Remove the block from `from-site` (write back).
-4. Append the block to `to-site`, then sort `to-site`.
+3. Remove the block from `from-site`: stage and `$H write` it.
+4. Append the block to `to-site`, sort it, stage and `$H write <to-site> <path> --verify <host-name>`.
 
 If `to-site` doesn't exist, suggest running `new-site <to-site>` first; don't auto-create here.
 
@@ -137,10 +151,10 @@ For each target file:
 
 1. Parse into header + blocks (Step 2).
 2. Sort blocks by host name (case-insensitive ASCII, stable).
-3. Rejoin: header (verbatim) + sorted blocks separated by a single blank line.
-4. Write back atomically (write to `<file>.tmp` then `mv`).
+3. Rejoin: header (verbatim) + sorted blocks separated by a single blank line, into a `$H tempfile <site>` path.
+4. `$H write <site> <path> --verify <first host>` installs it atomically; nothing temporary ever sits in `config.d/`.
 
-If `[site]` is omitted, run sort on every non-skipped site file.
+If `[site]` is omitted, run sort on every live site file (`$H sites`). Then print `$H dupes` (or `$H dupes <site>`) under the report.
 
 #### `list [site]`
 
@@ -156,6 +170,8 @@ cypress (35 hosts):
 df-austin (52 hosts):
   ...
 ```
+
+Then print the duplicate report from `$H dupes` (or `$H dupes <site>`): each `DUPLICATE` line names a Host defined twice in one site with both line numbers, and each `CROSS-SITE` line a Host defined in more than one site. Both accumulate options in ssh. `list` writes nothing.
 
 #### `new-site <name> [description]`
 
@@ -181,6 +197,7 @@ df-austin (52 hosts):
    ```
 
    (One trailing blank line so the first added host has spacing.)
+   Write the banner into a `$H tempfile <name>` path and install it with `$H write <name> <path>`.
 4. Report the file path so the user can immediately follow up with `add`.
 
 #### `speedup <host-name> [<host-name> ...]`
@@ -198,9 +215,9 @@ For each `<host-name>` in the argument list, run the per-host flow below:
    - If any of the three is present but not all (partial state) → ask by asking the user to choose from a short numbered list: "Partial speedup config exists. Replace with defaults?" Default yes. On yes: remove the existing controlmaster/controlpath/controlpersist lines (Step 4 will re-insert). On no: skip this host.
    - If none present → proceed.
 
-3. **Backup the file** to `<file>.bak.skill` (per the main workflow's Step 6).
+3. **Stage the edit** in a `$H tempfile <site>` copy of the file; `$H write` takes the backup (Step 6).
 
-4. **Edit the block in place.** Insert these three option lines inside the `Host <name>` block, between the last existing option line and the next `Host ` line (or EOF). Use 4-space indentation to match the block's existing style:
+4. **Edit the block in the staged copy.** Insert these three option lines inside the `Host <name>` block, between the last existing option line and the next `Host ` line (or EOF). Use 4-space indentation to match the block's existing style:
    ```
        controlmaster auto
        controlpath ~/.ssh/cm-%C
@@ -214,7 +231,7 @@ For each `<host-name>` in the argument list, run the per-host flow below:
    ```bash
    ssh -G <name> 2>&1 | grep -iE '^(controlmaster|controlpath|controlpersist) '
    ```
-   Expect all three lines: `controlmaster auto`, `controlpath <expanded-absolute-path>`, `controlpersist 600`. If any missing or wrong: **restore from `<file>.bak.skill`** and report the parse error.
+   after `$H write <site> <path> --verify <name>`. Expect all three lines: `controlmaster auto`, `controlpath <expanded-absolute-path>`, `controlpersist 600`. If any missing or wrong: **`$H restore <site>`** and report the parse error.
 
 6. **Measure the speedup** (informative; skip on unreachable host):
    ```bash
@@ -232,7 +249,7 @@ For each `<host-name>` in the argument list, run the per-host flow below:
    Added:          controlmaster auto
                    controlpath ~/.ssh/cm-%C
                    controlpersist 10m
-   Backup:         ~/.ssh/config.d/<site>.bak.skill
+   Backup:         ~/.ssh/config.d-backups/<site>.<UTC>
    Verified with:  ssh -G <name>
    
    Speedup measured:
@@ -256,13 +273,17 @@ After any `add` or `move`, always run the sort routine on the modified file(s). 
 
 ### Step 5: Verify
 
-After any write, run `ssh -G <one-affected-host>` to confirm the file still parses (ssh prints the resolved config). If `ssh -G` fails, **restore from a backup** (Step 6) and report the parse error to the user. Don't leave the file broken.
+After any write, run `$H verify <one-affected-host>`:
+
+- **Exit 3** — ssh cannot parse the configuration. `$H write --verify` has already restored the site file; report the parse error. Don't leave the file broken.
+- **Exit 1** — a file other than a live site file loads as live configuration (or applied options to the host). The report says `Verify: FAILED` and lists each `APPLIES` / `LOADED` line with the `mv` that moves the file into `~/.ssh/config.d-backups/`. The skill moves only backups it made itself (`$H migrate`); a user's file is the user's to move.
+- **Exit 0** — options come only from live site files.
 
 ### Step 6: Backup before destructive ops
 
-Before any `add`, `delete`, `move`, or `sort` that touches a site file, copy the file to `<file>.bak.skill` (overwriting the previous skill-backup). This is distinct from the existing `.bak` files (which are user-managed). Restore by `mv <file>.bak.skill <file>` if verification fails.
+`$H write` backs up the current site file to `~/.ssh/config.d-backups/<site>.<UTC>` before installing the new one, keeping the newest 20 per site; `$H backup <site>` takes one by hand. Backups never land in `config.d/`, where ssh would load them. `$H restore <site>` reinstalls the newest.
 
-Don't commit these `.bak.skill` files anywhere — they're working scratch only.
+Don't commit backups anywhere — they're working scratch only.
 
 ### Step 7: Report
 
@@ -276,9 +297,13 @@ Hosts before: 35
 Hosts after: 36
 Added: bryanLab (proxyjump fieldstone)
 
-Verified with: ssh -G bryanLab
+Backup: ~/.ssh/config.d-backups/cypress.20261022T214954420475Z
+Verify: ok (sshcfg.py verify bryanLab)
 Sorted: yes
+Duplicates: none
 ```
+
+A failed check reads `Verify: FAILED` followed by the helper's `APPLIES` / `LOADED` lines.
 
 ## Common scenarios
 
@@ -289,7 +314,7 @@ $ssh-config new-site brian "bryan's house"
 $ssh-config move bryanHouse cypress brian
 ```
 
-After this, `cypress` no longer contains `bryanHouse`, and `brian` contains it as the first (only) block, sorted alphabetically.
+After this, `bryanHouse` lives only in `brian`, as its first (only) block, sorted alphabetically.
 
 ### Adding a node to an existing site
 
@@ -320,11 +345,11 @@ Adds ControlMaster multiplexing to each named host's block. First ssh opens a ma
 
 - **Never overwrite an existing host block silently.** Refuse with a pointer to where the name already lives.
 - **Never delete a file** in `~/.ssh/config.d/` even on `new-site` collision — refuse and report.
-- **Always verify with `ssh -G`** after writing. A broken file breaks every shell that touches SSH.
-- **Always backup to `<file>.bak.skill`** before any write. Restore on verification failure.
+- **Always verify with `$H verify`** after writing. A broken file breaks every shell that touches SSH.
+- **Every write goes through `$H write`**, which backs up to `~/.ssh/config.d-backups/` first. Nothing but site files is ever written into `config.d/`.
 - **Preserve banner headers verbatim.** Don't reformat, re-wrap, or strip comments above the first `Host` line.
 - **Don't touch `~/.ssh/config` itself** — only files in `config.d/`. The main config's `Include` line already wires everything together.
-- **Skip junk files** listed in "Files to ignore". If user names one explicitly, ask once whether to proceed.
+- **Never edit the files** listed in "Files the skill never edits". If the user names one explicitly, ask once whether to proceed.
 - **Lowercase host names** are preferred when adding (`bryanlab` not `BryanLab`), but if the user gives a specific case, honor it.
 - **Don't rewrite a block's option style** when moving — preserve original indentation, casing, and option ordering. Sort operates at the block level, not inside blocks.
 
