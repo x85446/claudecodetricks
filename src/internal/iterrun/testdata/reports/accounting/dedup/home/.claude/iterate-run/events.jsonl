@@ -1,0 +1,6 @@
+{"session_id":"dun-coord","tool_name":"Agent","tool_use_id":"d1","plan":"dunlin","cwd":"{{PROJECT}}","ts":"2026-10-21T10:01:00Z","hook":"pre"}
+{"session_id":"dun-coord","tool_name":"Agent","tool_use_id":"d1","plan":"dunlin","cwd":"{{PROJECT}}","ts":"2026-10-21T10:01:05Z","hook":"post","duration_ms":5000,"success":true}
+{"session_id":"dun-coord","tool_name":"Write","tool_use_id":"d2","plan":"dunlin","agent_id":"adunlin-app-0123456789abcdef","ts":"2026-10-21T10:10:00Z","hook":"pre"}
+{"session_id":"dun-coord","tool_name":"Write","tool_use_id":"d2","plan":"dunlin","agent_id":"adunlin-app-0123456789abcdef","ts":"2026-10-21T10:10:05Z","hook":"post","duration_ms":5000,"success":true}
+{"session_id":"dun-coord-2","tool_name":"Bash","tool_use_id":"d3","plan":"dunlin","cwd":"{{PROJECT}}","ts":"2026-10-21T11:01:00Z","hook":"pre"}
+{"session_id":"dun-coord-2","tool_name":"Bash","tool_use_id":"d3","plan":"dunlin","cwd":"{{PROJECT}}","ts":"2026-10-21T11:01:05Z","hook":"post","duration_ms":5000,"success":true}

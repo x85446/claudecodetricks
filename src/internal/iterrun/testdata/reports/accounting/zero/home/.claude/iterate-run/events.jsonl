@@ -1,0 +1,2 @@
+{"session_id":"heron-coord","tool_name":"Read","tool_use_id":"h1","plan":"heron","cwd":"{{PROJECT}}","ts":"2026-10-21T10:05:00Z","hook":"pre"}
+{"session_id":"heron-coord","tool_name":"Read","tool_use_id":"h1","plan":"heron","cwd":"{{PROJECT}}","ts":"2026-10-21T10:05:05Z","hook":"post","duration_ms":5000,"success":true}

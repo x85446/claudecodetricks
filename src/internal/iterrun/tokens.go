@@ -27,6 +27,14 @@ import (
 // <agent-id> is byte-for-byte the agent_id the hook already recorded for
 // every tool call that teammate made. So "which lane spent this" needs no
 // inference: the filename says it.
+//
+// A Codex session reaches the same hook log under its own session id, and
+// its usage lives in a rollout file instead:
+// $CODEX_HOME/sessions/YYYY/MM/DD/rollout-<time>-<session-id>.jsonl. One
+// token_usage_record per provider response carries that response's exact
+// counters; older rollouts carry only token_count events, whose
+// last_token_usage is the same figure. Both are normalized into the same
+// sample shape, so a Codex lane and a Claude lane report equivalent fields.
 
 // Price ratios inside one model's own pricing. Anthropic publishes a cache
 // read at 10% of a fresh input token, a cache write at 125%, and an output
@@ -101,6 +109,42 @@ type LaneTokens struct {
 	// requests and never come near the wall.
 	PeakContext int64 `json:"peak_context"`
 	Missing     bool  `json:"missing"` // lane had hook activity but no transcript was found
+
+	// Observed counts the identities the hook log saw for this lane — a
+	// coordinator's sessions, a team's agent/session pairs — and Found the
+	// ones whose transcript was read. Found < Observed is partial capture.
+	Observed int `json:"observed"`
+	Found    int `json:"found"`
+	// Sessions are the sessions whose transcript was read for this lane;
+	// Agents are the subagent ids folded into it.
+	Sessions []string `json:"sessions,omitempty"`
+	Agents   []string `json:"agents,omitempty"`
+	// AgentsFound are the agents at least one of whose transcripts was read.
+	AgentsFound []string `json:"agents_found,omitempty"`
+	// Engines and Providers name what wrote the transcripts: claude-code /
+	// anthropic for a Claude Code transcript, codex / the rollout's
+	// model_provider for a Codex session.
+	Engines   []string `json:"engines,omitempty"`
+	Providers []string `json:"providers,omitempty"`
+	// ReasoningKnown counts requests that reported a reasoning (thinking)
+	// figure. Usage.Thinking is a complete total only when it equals
+	// Usage.Messages; otherwise the figure is partial.
+	ReasoningKnown int `json:"reasoning_known"`
+}
+
+// AllowanceObservation is one subscription-allowance reading a provider
+// reported alongside its usage. It describes the account's whole window,
+// shared with every other session using that account, so it is never
+// converted into this plan's usage.
+type AllowanceObservation struct {
+	At            time.Time  `json:"at"`
+	Provider      string     `json:"provider"`
+	Limit         string     `json:"limit"`
+	Window        string     `json:"window"` // primary | secondary
+	WindowMinutes int        `json:"window_minutes"`
+	UsedPercent   float64    `json:"used_percent"`
+	ResetsAt      *time.Time `json:"resets_at,omitempty"`
+	PlanType      string     `json:"plan_type,omitempty"`
 }
 
 // ToolTokens is one row of the "what it was spent on" table.
@@ -183,6 +227,34 @@ type PlanTokens struct {
 	CostUSD     float64 `json:"cost_usd"`
 	CostPartial bool    `json:"cost_partial"`
 	HaveCost    bool    `json:"have_cost"`
+	// CostSessions counts the sessions whose cost-state record was read.
+	CostSessions int `json:"cost_sessions"`
+
+	// From and To are the attribution window: the plan's own execution
+	// span. ToOpen is set when the plan has not finished and To is the
+	// time of the read.
+	From   *time.Time `json:"from,omitempty"`
+	To     time.Time  `json:"to"`
+	ToOpen bool       `json:"to_open"`
+
+	// Duplicates counts requests seen in more than one transcript — a
+	// subagent's request echoed into its parent's file, or history copied
+	// into a resumed session — that were counted once.
+	Duplicates int `json:"duplicates"`
+	// Allowance holds the first and last in-window reading of each
+	// subscription window a provider reported.
+	Allowance []AllowanceObservation `json:"allowance,omitempty"`
+	// Models splits the counted requests by model.
+	Models []ModelTokens `json:"models,omitempty"`
+}
+
+// ModelTokens is the plan's counted usage for one model.
+type ModelTokens struct {
+	Model          string     `json:"model"`
+	Provider       string     `json:"provider"`
+	Engine         string     `json:"engine"`
+	Usage          TokenUsage `json:"usage"`
+	ReasoningKnown int        `json:"reasoning_known"`
 }
 
 // transcriptSample is one retained record from a transcript: an assistant
@@ -191,12 +263,16 @@ type PlanTokens struct {
 // makes windowing a plan out of a months-long session cheap.
 type transcriptSample struct {
 	At      time.Time
+	ID      string // provider message or response id; "" when the record has none
 	Model   string
 	Usage   TokenUsage
 	Ctx     int64    // context this request paid for; diffed to get growth
 	Tools   []string // tool_use blocks this message emitted
 	Tick    string   // non-empty: this sample is a prompt, not a request
 	Skipped bool     // a duplicate transcript write, already counted
+	// ReasoningKnown is set when the record reported a reasoning figure,
+	// so a missing figure is never read as zero reasoning.
+	ReasoningKnown bool
 }
 
 // transcriptDoc is the subset of a transcript line this file reads.
@@ -207,6 +283,62 @@ type transcriptDoc struct {
 	Message   json.RawMessage `json:"message"`
 	// cost-state fields
 	TotalCostUSD float64 `json:"totalCostUSD"`
+	// Payload is a Codex rollout line's body.
+	Payload json.RawMessage `json:"payload"`
+}
+
+// codexPayload is the subset of a Codex rollout payload this file reads.
+type codexPayload struct {
+	Type          string      `json:"type"`
+	Model         string      `json:"model"`
+	ModelProvider string      `json:"model_provider"`
+	Name          string      `json:"name"`
+	Message       string      `json:"message"`
+	ResponseID    string      `json:"response_id"`
+	Usage         *codexUsage `json:"usage"`
+	Info          *struct {
+		Total *codexUsage `json:"total_token_usage"`
+		Last  *codexUsage `json:"last_token_usage"`
+	} `json:"info"`
+	RateLimits *struct {
+		LimitID   string       `json:"limit_id"`
+		PlanType  string       `json:"plan_type"`
+		Primary   *codexWindow `json:"primary"`
+		Secondary *codexWindow `json:"secondary"`
+	} `json:"rate_limits"`
+}
+
+// codexUsage is one Codex usage object. Input includes cached input, and
+// output includes reasoning: total_tokens is input + output.
+type codexUsage struct {
+	InputTokens           int64  `json:"input_tokens"`
+	CachedInputTokens     int64  `json:"cached_input_tokens"`
+	CacheWriteInputTokens int64  `json:"cache_write_input_tokens"`
+	OutputTokens          int64  `json:"output_tokens"`
+	ReasoningOutputTokens *int64 `json:"reasoning_output_tokens"`
+	TotalTokens           int64  `json:"total_tokens"`
+}
+
+type codexWindow struct {
+	UsedPercent   float64 `json:"used_percent"`
+	WindowMinutes int     `json:"window_minutes"`
+	ResetsAt      int64   `json:"resets_at"`
+}
+
+// usage normalizes a Codex usage object to the Claude-shaped counters:
+// Input is fresh (uncached) input, and the cache figures are carved out of
+// Codex's input rather than added to it.
+func (u codexUsage) usage() (TokenUsage, bool) {
+	fresh := u.InputTokens - u.CachedInputTokens - u.CacheWriteInputTokens
+	if fresh < 0 {
+		fresh = 0
+	}
+	t := TokenUsage{Input: fresh, CacheRead: u.CachedInputTokens, CacheWrite: u.CacheWriteInputTokens, Output: u.OutputTokens, Messages: 1}
+	if u.ReasoningOutputTokens != nil {
+		t.Thinking = *u.ReasoningOutputTokens
+		return t, true
+	}
+	return t, false
 }
 
 type transcriptMessage struct {
@@ -223,8 +355,8 @@ type transcriptMessage struct {
 		CacheReadTokens     int64 `json:"cache_read_input_tokens"`
 		CacheCreationTokens int64 `json:"cache_creation_input_tokens"`
 		OutputTokens        int64 `json:"output_tokens"`
-		OutputDetails       struct {
-			ThinkingTokens int64 `json:"thinking_tokens"`
+		OutputDetails       *struct {
+			ThinkingTokens *int64 `json:"thinking_tokens"`
 		} `json:"output_tokens_details"`
 	} `json:"usage"`
 }
@@ -327,24 +459,42 @@ func promptTick(text string) string {
 	return tickHuman
 }
 
-// scanTranscriptFrom parses new lines of a transcript starting at offset,
-// returning the samples found, the last cost-state total seen, and the
-// offset just past the last COMPLETE line. Stopping at the last newline is
-// what makes this safe to run against a file Claude Code is still
-// appending to: a torn final line is left for the next pass.
-func scanTranscriptFrom(path string, offset int64, idx map[string]int, base []transcriptSample) (out []transcriptSample, cost float64, haveCost bool, next int64, err error) {
+// transcriptState is one transcript file's parsed state: every retained
+// sample, the keep-last index, the last cost-state total, the allowance
+// readings, and the Codex context a later line needs (the current model,
+// tool calls waiting for the usage record of the response that made them).
+type transcriptState struct {
+	offset    int64
+	samples   []transcriptSample
+	idx       map[string]int // message id -> position in samples, for keep-last
+	cost      float64
+	haveCost  bool
+	allowance []AllowanceObservation
+
+	engine, provider string
+	codexModel       string
+	codexTools       []string
+	codexRecords     bool  // the rollout carries token_usage_record lines
+	codexLastTotal   int64 // token_count total already counted
+}
+
+// scanTranscriptFrom parses new lines of a transcript starting at the
+// state's offset, appending samples and advancing the offset just past the
+// last COMPLETE line. Stopping at the last newline is what makes this safe
+// to run against a file Claude Code or Codex is still appending to: a torn
+// final line is left for the next pass.
+func scanTranscriptFrom(path string, st *transcriptState) error {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, 0, false, offset, err
+		return err
 	}
 	defer f.Close()
 
-	if offset > 0 {
-		if _, err := f.Seek(offset, 0); err != nil {
-			return nil, 0, false, offset, err
+	if st.offset > 0 {
+		if _, err := f.Seek(st.offset, 0); err != nil {
+			return err
 		}
 	}
-	next = offset
 
 	// Read newline-terminated lines only. bufio.Scanner would hand back a
 	// final unterminated line as though it were complete, which is
@@ -360,11 +510,12 @@ func scanTranscriptFrom(path string, offset int64, idx map[string]int, base []tr
 			break
 		}
 		raw := []byte(strings.TrimRight(line, "\n"))
-		next += int64(len(line))
+		st.offset += int64(len(line))
 
 		interesting := bytes.Contains(raw, []byte(`"usage"`)) ||
 			bytes.Contains(raw, []byte(`"cost-state"`)) ||
-			(bytes.Contains(raw, []byte(`"type":"user"`)) && !bytes.Contains(raw, []byte(`"tool_result"`)))
+			(bytes.Contains(raw, []byte(`"type":"user"`)) && !bytes.Contains(raw, []byte(`"tool_result"`))) ||
+			bytes.Contains(raw, []byte(`"payload"`))
 		if !interesting {
 			continue
 		}
@@ -376,7 +527,7 @@ func scanTranscriptFrom(path string, offset int64, idx map[string]int, base []tr
 
 		switch doc.Type {
 		case "cost-state":
-			cost, haveCost = doc.TotalCostUSD, true
+			st.cost, st.haveCost = doc.TotalCostUSD, true
 			continue
 		case "user":
 			at, ok := parseTranscriptTime(doc.Timestamp)
@@ -384,10 +535,13 @@ func scanTranscriptFrom(path string, offset int64, idx map[string]int, base []tr
 				continue
 			}
 			if label := promptTick(contentText(doc.Message)); label != "" {
-				out = append(out, transcriptSample{At: at, Tick: label})
+				st.samples = append(st.samples, transcriptSample{At: at, Tick: label})
 			}
 			continue
 		case "assistant":
+		case "session_meta", "turn_context", "response_item", "event_msg", "token_usage_record":
+			scanCodexLine(st, doc)
+			continue
 		default:
 			continue
 		}
@@ -413,6 +567,9 @@ func scanTranscriptFrom(path string, offset int64, idx map[string]int, base []tr
 			msg.Usage.CacheCreationTokens == 0 && msg.Usage.OutputTokens == 0 {
 			continue
 		}
+		if st.engine == "" {
+			st.engine, st.provider = "claude-code", "anthropic"
+		}
 
 		s := transcriptSample{
 			At:    at,
@@ -422,11 +579,12 @@ func scanTranscriptFrom(path string, offset int64, idx map[string]int, base []tr
 				CacheRead:  msg.Usage.CacheReadTokens,
 				CacheWrite: msg.Usage.CacheCreationTokens,
 				Output:     msg.Usage.OutputTokens,
-				Thinking:   msg.Usage.OutputDetails.ThinkingTokens,
 				Messages:   1,
 			},
 		}
-		s.Ctx = s.Usage.Context()
+		if d := msg.Usage.OutputDetails; d != nil && d.ThinkingTokens != nil {
+			s.Usage.Thinking, s.ReasoningKnown = *d.ThinkingTokens, true
+		}
 		for _, c := range msg.Content {
 			if c.Type == "tool_use" && c.Name != "" {
 				s.Tools = append(s.Tools, c.Name)
@@ -449,20 +607,147 @@ func scanTranscriptFrom(path string, offset int64, idx map[string]int, base []tr
 		if key == "" {
 			key = doc.RequestID
 		}
-		if key != "" {
-			if at, ok := idx[key]; ok {
-				if at < len(base) {
-					base[at] = s
-				} else if j := at - len(base); j < len(out) {
-					out[j] = s
-				}
-				continue
-			}
-			idx[key] = len(base) + len(out)
-		}
-		out = append(out, s)
+		s.ID = key
+		st.add(s)
 	}
-	return out, cost, haveCost, next, nil
+	return nil
+}
+
+// add appends a request sample, or replaces the earlier write of the same
+// id in place.
+func (st *transcriptState) add(s transcriptSample) {
+	s.Ctx = s.Usage.Context()
+	if s.ID != "" {
+		if at, ok := st.idx[s.ID]; ok {
+			st.samples[at] = s
+			return
+		}
+		st.idx[s.ID] = len(st.samples)
+	}
+	st.samples = append(st.samples, s)
+}
+
+// scanCodexLine folds one Codex rollout line into the state.
+func scanCodexLine(st *transcriptState, doc transcriptDoc) {
+	var p codexPayload
+	if len(doc.Payload) == 0 || json.Unmarshal(doc.Payload, &p) != nil {
+		return
+	}
+	st.engine = "codex"
+	if st.provider == "" {
+		st.provider = "openai"
+	}
+	at, ok := parseTranscriptTime(doc.Timestamp)
+	switch doc.Type {
+	case "session_meta":
+		if p.ModelProvider != "" {
+			st.provider = p.ModelProvider
+		}
+	case "turn_context":
+		if p.Model != "" {
+			st.codexModel = p.Model
+		}
+	case "response_item":
+		switch p.Type {
+		case "function_call", "custom_tool_call":
+			if p.Name != "" {
+				st.codexTools = append(st.codexTools, p.Name)
+			}
+		case "local_shell_call":
+			st.codexTools = append(st.codexTools, "shell")
+		}
+	case "token_usage_record":
+		if !ok || p.Usage == nil {
+			return
+		}
+		st.codexRecords = true
+		st.codexUsage(at, p.ResponseID, *p.Usage)
+	case "event_msg":
+		switch p.Type {
+		case "user_message":
+			if ok {
+				if label := promptTick(p.Message); label != "" {
+					st.samples = append(st.samples, transcriptSample{At: at, Tick: label})
+				}
+			}
+		case "token_count":
+			if !ok {
+				return
+			}
+			if rl := p.RateLimits; rl != nil {
+				for _, w := range []struct {
+					name string
+					win  *codexWindow
+				}{{"primary", rl.Primary}, {"secondary", rl.Secondary}} {
+					if w.win != nil {
+						st.observeAllowance(AllowanceObservation{At: at, Provider: st.provider, Limit: rl.LimitID, Window: w.name,
+							WindowMinutes: w.win.WindowMinutes, UsedPercent: w.win.UsedPercent, ResetsAt: unixTime(w.win.ResetsAt), PlanType: rl.PlanType})
+					}
+				}
+			}
+			// Rollouts with per-response records count those; token_count
+			// repeats them and is counted only in older rollouts, once per
+			// growth of the session total.
+			if st.codexRecords || p.Info == nil || p.Info.Last == nil || p.Info.Total == nil {
+				return
+			}
+			if p.Info.Total.TotalTokens <= st.codexLastTotal {
+				return
+			}
+			st.codexLastTotal = p.Info.Total.TotalTokens
+			st.codexUsage(at, fmt.Sprintf("token_count:%d", p.Info.Total.TotalTokens), *p.Info.Last)
+		}
+	}
+}
+
+// codexUsage records one Codex response's usage and charges the tool calls
+// that response made.
+func (st *transcriptState) codexUsage(at time.Time, id string, u codexUsage) {
+	usage, known := u.usage()
+	if usage.Input == 0 && usage.CacheRead == 0 && usage.CacheWrite == 0 && usage.Output == 0 {
+		return
+	}
+	s := transcriptSample{At: at, ID: id, Model: st.codexModel, Usage: usage, ReasoningKnown: known, Tools: st.codexTools}
+	st.codexTools = nil
+	st.add(s)
+}
+
+// observeAllowance keeps an allowance reading when it differs from the
+// previous reading of the same window, so a long rollout keeps its changes
+// and not one copy per response.
+func (st *transcriptState) observeAllowance(a AllowanceObservation) {
+	for i := len(st.allowance) - 1; i >= 0; i-- {
+		prev := st.allowance[i]
+		if prev.Limit == a.Limit && prev.Window == a.Window {
+			if prev.UsedPercent == a.UsedPercent && prev.WindowMinutes == a.WindowMinutes && sameTime(prev.ResetsAt, a.ResetsAt) {
+				return
+			}
+			break
+		}
+	}
+	st.allowance = append(st.allowance, a)
+}
+
+func timeKey(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
+}
+
+func unixTime(sec int64) *time.Time {
+	if sec <= 0 {
+		return nil
+	}
+	t := time.Unix(sec, 0).UTC()
+	return &t
+}
+
+func sameTime(a, b *time.Time) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Equal(*b)
 }
 
 func parseTranscriptTime(s string) (time.Time, bool) {
@@ -482,44 +767,41 @@ func parseTranscriptTime(s string) (time.Time, bool) {
 // a full reparse per request is the difference between a panel and a
 // timeout. Keyed by path; invalidated when a file shrinks (truncated or
 // replaced), which is the only way an append-only log can go backwards.
-type transcriptCacheEntry struct {
-	offset  int64
-	samples []transcriptSample
-	idx     map[string]int // message id -> position in samples, for keep-last
-	cost    float64
-	haveCst bool
-}
-
 var transcriptCache = struct {
 	sync.Mutex
-	m map[string]*transcriptCacheEntry
-}{m: map[string]*transcriptCacheEntry{}}
+	m map[string]*transcriptState
+}{m: map[string]*transcriptState{}}
+
+// transcriptRead is a snapshot of one transcript's parsed state.
+type transcriptRead struct {
+	samples          []transcriptSample
+	cost             float64
+	haveCost         bool
+	allowance        []AllowanceObservation
+	engine, provider string
+}
 
 // readTranscript returns every sample in a transcript, parsing only what
 // has been appended since the last call.
-func readTranscript(path string) ([]transcriptSample, float64, bool) {
-	st, err := os.Stat(path)
+func readTranscript(path string) transcriptRead {
+	info, err := os.Stat(path)
 	if err != nil {
-		return nil, 0, false
+		return transcriptRead{}
 	}
 
 	transcriptCache.Lock()
 	defer transcriptCache.Unlock()
 
-	e := transcriptCache.m[path]
-	if e == nil || st.Size() < e.offset {
-		e = &transcriptCacheEntry{idx: map[string]int{}}
-		transcriptCache.m[path] = e
+	st := transcriptCache.m[path]
+	if st == nil || info.Size() < st.offset {
+		st = &transcriptState{idx: map[string]int{}}
+		transcriptCache.m[path] = st
 	}
-	if st.Size() > e.offset {
-		add, cost, haveCost, next, _ := scanTranscriptFrom(path, e.offset, e.idx, e.samples)
-		e.samples = append(e.samples, add...)
-		e.offset = next
-		if haveCost {
-			e.cost, e.haveCst = cost, true
-		}
+	if info.Size() > st.offset {
+		_ = scanTranscriptFrom(path, st)
 	}
-	return e.samples, e.cost, e.haveCst
+	return transcriptRead{samples: st.samples, cost: st.cost, haveCost: st.haveCost,
+		allowance: st.allowance, engine: st.engine, provider: st.provider}
 }
 
 // ResetTranscriptCache drops every cached transcript. Tests write a file,
@@ -528,7 +810,7 @@ func readTranscript(path string) ([]transcriptSample, float64, bool) {
 func ResetTranscriptCache() {
 	transcriptCache.Lock()
 	defer transcriptCache.Unlock()
-	transcriptCache.m = map[string]*transcriptCacheEntry{}
+	transcriptCache.m = map[string]*transcriptState{}
 }
 
 // projectsRoot is where Claude Code keeps its transcripts.
@@ -540,15 +822,52 @@ func projectsRoot() string {
 	return filepath.Join(home, ".claude", "projects")
 }
 
+// codexHome is where Codex keeps its sessions: $CODEX_HOME, else ~/.codex.
+func codexHome() string {
+	if dir := os.Getenv("CODEX_HOME"); dir != "" {
+		return dir
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, ".codex")
+}
+
+// globSafe reports whether an id from the hook log can be placed in a glob
+// pattern as a literal.
+func globSafe(id string) bool {
+	return id != "" && !strings.ContainsAny(id, `/\*?[]`) && id != "." && id != ".."
+}
+
 // coordinatorTranscript finds a session's own transcript. The directory is
 // a slug of the cwd the session started in, which is not reliably
 // derivable from anything the event log holds (a session that moved, a
 // slug rule that changed), so the session id is matched by glob instead.
+// A session with no Claude Code transcript is looked up as a Codex
+// session.
 func coordinatorTranscript(sessionID string) string {
-	if sessionID == "" {
+	if !globSafe(sessionID) {
 		return ""
 	}
 	hits, _ := filepath.Glob(filepath.Join(projectsRoot(), "*", sessionID+".jsonl"))
+	if len(hits) == 0 {
+		return codexTranscript(sessionID)
+	}
+	sort.Strings(hits)
+	return hits[0]
+}
+
+// codexTranscript finds a Codex session's rollout file, live or archived.
+func codexTranscript(sessionID string) string {
+	if !globSafe(sessionID) {
+		return ""
+	}
+	root := codexHome()
+	hits, _ := filepath.Glob(filepath.Join(root, "sessions", "*", "*", "*", "rollout-*-"+sessionID+".jsonl"))
+	if len(hits) == 0 {
+		hits, _ = filepath.Glob(filepath.Join(root, "archived_sessions", "rollout-*-"+sessionID+".jsonl"))
+	}
 	if len(hits) == 0 {
 		return ""
 	}
@@ -557,14 +876,14 @@ func coordinatorTranscript(sessionID string) string {
 }
 
 // subagentTranscript finds one teammate's transcript inside its parent
-// session's directory.
+// session's directory, or a Codex subagent's own rollout.
 func subagentTranscript(sessionID, agentID string) string {
-	if sessionID == "" || agentID == "" {
+	if !globSafe(sessionID) || !globSafe(agentID) {
 		return ""
 	}
 	hits, _ := filepath.Glob(filepath.Join(projectsRoot(), "*", sessionID, "subagents", "agent-"+agentID+".jsonl"))
 	if len(hits) == 0 {
-		return ""
+		return codexTranscript(agentID)
 	}
 	sort.Strings(hits)
 	return hits[0]
@@ -572,9 +891,15 @@ func subagentTranscript(sessionID, agentID string) string {
 
 // laneSource is one lane and the transcripts that hold its spend.
 type laneSource struct {
-	key   string
-	label string
-	paths []string
+	key      string
+	label    string
+	paths    []string
+	observed int      // identities the hook log saw
+	found    int      // identities whose transcript exists
+	sessions []string // sessions whose transcript was found
+	agents   []string
+	// agentsFound are agents with at least one transcript.
+	agentsFound []string
 }
 
 // planLaneSources resolves a plan's lanes from the hook event log: the
@@ -610,16 +935,18 @@ func planLaneSources(events []Event, labels map[string]string, plan, proj string
 	}
 	sort.Strings(sessions)
 
-	coord := laneSource{key: "", label: "coordinator"}
+	coord := laneSource{key: "", label: "coordinator", observed: len(sessions)}
 	for _, s := range sessions {
 		if p := coordinatorTranscript(s); p != "" {
 			coord.paths = append(coord.paths, p)
+			coord.sessions = append(coord.sessions, s)
+			coord.found++
 		}
 	}
 
 	// Fold every agent id onto its team name, so a re-dispatched team
 	// (badger-app-2) lands in the same lane as its first attempt.
-	byTeam := map[string][]string{}
+	byTeam := map[string]*laneSource{}
 	for agentID, sess := range agentSessions {
 		team := labels[agentID]
 		if team == "" {
@@ -631,11 +958,21 @@ func planLaneSources(events []Event, labels map[string]string, plan, proj string
 		}
 		team = strings.TrimPrefix(team, plan+"-")
 		team = redispatchSuffix.ReplaceAllString(team, "")
+		ls := byTeam[team]
+		if ls == nil {
+			ls = &laneSource{key: team, label: team}
+			byTeam[team] = ls
+		}
+		ls.agents = append(ls.agents, agentID)
 		for s := range sess {
+			ls.observed++
 			if p := subagentTranscript(s, agentID); p != "" {
-				byTeam[team] = append(byTeam[team], p)
-			} else {
-				byTeam[team] = append(byTeam[team], "")
+				ls.paths = append(ls.paths, p)
+				ls.sessions = append(ls.sessions, s)
+				ls.found++
+				if !containsString(ls.agentsFound, agentID) {
+					ls.agentsFound = append(ls.agentsFound, agentID)
+				}
 			}
 		}
 	}
@@ -647,16 +984,38 @@ func planLaneSources(events []Event, labels map[string]string, plan, proj string
 	}
 	sort.Strings(teams)
 	for _, t := range teams {
-		var paths []string
-		for _, p := range byTeam[t] {
-			if p != "" {
-				paths = append(paths, p)
-			}
-		}
-		sort.Strings(paths)
-		lanes = append(lanes, laneSource{key: t, label: t, paths: uniqueStrings(paths)})
+		ls := byTeam[t]
+		sort.Strings(ls.paths)
+		ls.paths = uniqueStrings(ls.paths)
+		sort.Strings(ls.sessions)
+		ls.sessions = uniqueStrings(ls.sessions)
+		sort.Strings(ls.agents)
+		sort.Strings(ls.agentsFound)
+		lanes = append(lanes, *ls)
 	}
 	return lanes, sessions
+}
+
+// planWindowEnd is when a plan execution ended: its Finished: value, or
+// for an archive that never recorded one, the archive filename's time. A
+// session that kept working after the archive did so for something else.
+func planWindowEnd(plan PlanSummary) (time.Time, bool) {
+	if t, ok := plan.FinishedAt(); ok {
+		return t, true
+	}
+	if !plan.Archived {
+		return time.Time{}, false
+	}
+	stamp, _, ok := strings.Cut(plan.ArchiveFile, "Z-")
+	if !ok {
+		return time.Time{}, false
+	}
+	for _, layout := range []string{"20060102T150405", "2006-01-02T150405", "2006-01-02T15-04-05"} {
+		if t, err := time.Parse(layout, stamp); err == nil {
+			return t.UTC(), true
+		}
+	}
+	return time.Time{}, false
 }
 
 func uniqueStrings(in []string) []string {
@@ -675,6 +1034,15 @@ func uniqueStrings(in []string) []string {
 	return out
 }
 
+func sortedKeys(m map[string]bool) []string {
+	var out []string
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
 // PlanTokenUsage builds the token panel for one plan: who spent it, what it
 // went on, and what each wake-up cost. Windowed to the plan's own execution
 // span, because a coordinator session routinely outlives many plans and an
@@ -683,10 +1051,14 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 	pt := PlanTokens{Plan: plan.Name}
 
 	from, hasFrom := plan.EffectiveStart()
-	to, hasTo := plan.FinishedAt()
+	to, hasTo := planWindowEnd(plan)
 	if !hasTo {
 		to = time.Now().UTC()
 	}
+	if hasFrom {
+		pt.From = &from
+	}
+	pt.To, pt.ToOpen = to, !hasTo
 	inWindow := func(t time.Time) bool {
 		if hasFrom && t.Before(from) {
 			return false
@@ -697,12 +1069,37 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 	lanes, sessions := planLaneSources(events, labels, plan.Name, plan.ProjectDir)
 	pt.Sessions = sessions
 
+	// A request can appear in more than one transcript: a subagent's
+	// requests echoed into its parent's file, or a resumed session that
+	// copies earlier history. Each provider request id is counted once,
+	// and a request a team's own transcript holds belongs to that team,
+	// so the team lanes claim their ids before the coordinator is read.
+	claimed := map[string]string{} // request id -> lane key
+	for _, ls := range lanes {
+		if ls.key == "" {
+			continue
+		}
+		for _, path := range ls.paths {
+			for _, s := range readTranscript(path).samples {
+				if s.ID != "" && s.Tick == "" {
+					if _, ok := claimed[s.ID]; !ok {
+						claimed[s.ID] = ls.key
+					}
+				}
+			}
+		}
+	}
+	counted := map[string]bool{}
+	byModel := map[string]*ModelTokens{}
+	allowance := map[string][]AllowanceObservation{}
+	var allowanceOrder []string
+
 	toolGrowth := map[string]int64{}
 	toolEmit := map[string]int64{}
 	toolCalls := map[string]int{}
 
 	for _, ls := range lanes {
-		lane := LaneTokens{Key: ls.key, Label: ls.label}
+		lane := LaneTokens{Key: ls.key, Label: ls.label, Observed: ls.observed, Found: ls.found, Sessions: ls.sessions, Agents: ls.agents, AgentsFound: ls.agentsFound}
 		if len(ls.paths) == 0 {
 			lane.Missing = true
 			pt.Lanes = append(pt.Lanes, lane)
@@ -710,13 +1107,33 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 		}
 
 		models := map[string]bool{}
+		engines := map[string]bool{}
+		providers := map[string]bool{}
 		var tick *TickTokens
 
 		for _, path := range ls.paths {
-			samples, cost, haveCost := readTranscript(path)
-			if haveCost {
-				pt.CostUSD += cost
+			tr := readTranscript(path)
+			if tr.haveCost {
+				pt.CostUSD += tr.cost
 				pt.HaveCost = true
+				pt.CostSessions++
+			}
+			if tr.engine != "" {
+				engines[tr.engine] = true
+			}
+			if tr.provider != "" {
+				providers[tr.provider] = true
+			}
+			for _, a := range tr.allowance {
+				if !inWindow(a.At) {
+					continue
+				}
+				// A reading after a reset belongs to a new window.
+				k := a.Provider + "\x00" + a.Limit + "\x00" + a.Window + "\x00" + timeKey(a.ResetsAt)
+				if _, ok := allowance[k]; !ok {
+					allowanceOrder = append(allowanceOrder, k)
+				}
+				allowance[k] = append(allowance[k], a)
 			}
 
 			// Growth attribution walks the lane in order and needs the
@@ -726,7 +1143,7 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 			var prevCtx int64 = -1
 			var prevTools []string
 
-			for _, s := range samples {
+			for _, s := range tr.samples {
 				if s.Tick != "" {
 					if inWindow(s.At) {
 						if tick != nil {
@@ -735,6 +1152,20 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 						tick = &TickTokens{At: s.At, Label: s.Tick, Lane: ls.label}
 					}
 					continue
+				}
+				if s.ID != "" {
+					if owner, ok := claimed[s.ID]; ok && owner != ls.key {
+						if inWindow(s.At) {
+							pt.Duplicates++
+						}
+						continue
+					}
+					if counted[s.ID] {
+						if inWindow(s.At) {
+							pt.Duplicates++
+						}
+						continue
+					}
 				}
 				if prevCtx >= 0 && len(prevTools) > 0 && inWindow(s.At) {
 					if growth := s.Ctx - prevCtx; growth > 0 {
@@ -749,12 +1180,28 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 				if !inWindow(s.At) {
 					continue
 				}
+				if s.ID != "" {
+					counted[s.ID] = true
+				}
 				lane.Usage.add(s.Usage)
+				if s.ReasoningKnown {
+					lane.ReasoningKnown++
+				}
 				if s.Ctx > lane.PeakContext {
 					lane.PeakContext = s.Ctx
 				}
 				if s.Model != "" {
 					models[s.Model] = true
+				}
+				mk := tr.provider + "\x00" + s.Model
+				mt := byModel[mk]
+				if mt == nil {
+					mt = &ModelTokens{Model: s.Model, Provider: tr.provider, Engine: tr.engine}
+					byModel[mk] = mt
+				}
+				mt.Usage.add(s.Usage)
+				if s.ReasoningKnown {
+					mt.ReasoningKnown++
 				}
 				if tick != nil {
 					tick.Usage.add(s.Usage)
@@ -773,12 +1220,28 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 			pt.Ticks = append(pt.Ticks, *tick)
 		}
 
-		for m := range models {
-			lane.Models = append(lane.Models, m)
-		}
-		sort.Strings(lane.Models)
+		lane.Models = sortedKeys(models)
+		lane.Engines = sortedKeys(engines)
+		lane.Providers = sortedKeys(providers)
 		pt.Total.add(lane.Usage)
 		pt.Lanes = append(pt.Lanes, lane)
+	}
+	for _, mt := range byModel {
+		pt.Models = append(pt.Models, *mt)
+	}
+	sort.SliceStable(pt.Models, func(i, j int) bool {
+		if pt.Models[i].Usage.Weighted() != pt.Models[j].Usage.Weighted() {
+			return pt.Models[i].Usage.Weighted() > pt.Models[j].Usage.Weighted()
+		}
+		return pt.Models[i].Model < pt.Models[j].Model
+	})
+	for _, k := range allowanceOrder {
+		obs := allowance[k]
+		sort.SliceStable(obs, func(i, j int) bool { return obs[i].At.Before(obs[j].At) })
+		pt.Allowance = append(pt.Allowance, obs[0])
+		if len(obs) > 1 {
+			pt.Allowance = append(pt.Allowance, obs[len(obs)-1])
+		}
 	}
 
 	// A session's cost covers the whole session, and a coordinator session
