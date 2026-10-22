@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-22T04:58:04Z",
+  "updated": "2026-10-22T05:00:08Z",
   "sources": [
     {
       "kind": "go",
@@ -8,10 +8,10 @@
     }
   ],
   "last_run": {
-    "ts": "2026-10-22T04:58:04Z",
-    "selection": "fast+standard",
-    "ms": 65224,
-    "passed": 316,
+    "ts": "2026-10-22T05:00:08Z",
+    "selection": "*TestNativePromptFileCheckpoint*",
+    "ms": 4541,
+    "passed": 1,
     "failed": 0,
     "skipped": 0,
     "missing": 0,
@@ -1194,12 +1194,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestNativePromptFileCheckpoint$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 3,
-      "avg_ms": 3893,
-      "last_ms": 3930,
+      "runs": 4,
+      "avg_ms": 3914,
+      "last_ms": 3980,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:00:08Z"
     },
     "conductor.settings-ui": {
       "kind": "shell",

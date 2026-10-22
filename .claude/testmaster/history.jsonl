@@ -7022,3 +7022,5 @@
 {"id":"testmaster.TestWindowsShellResolution","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T04:58:04Z"}
 {"id":"tutorial.box-test","ms":5831,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T04:58:04Z"}
 {"batch":"fast+standard","failed":0,"missing":0,"ms":65224,"not_run":0,"passed":316,"runner":"testmaster","skipped":0,"ts":"2026-10-22T04:58:04Z"}
+{"id":"conductor.TestNativePromptFileCheckpoint","ms":3980,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T05:00:08Z"}
+{"batch":"*TestNativePromptFileCheckpoint*","failed":0,"missing":0,"ms":4541,"not_run":0,"passed":1,"runner":"testmaster","skipped":0,"ts":"2026-10-22T05:00:08Z"}
