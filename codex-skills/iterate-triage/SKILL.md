@@ -102,6 +102,11 @@ up to four questions per call, header `Fix N`, options `y` and `n`.
 - `You can fix`: `N. queue this fix in script?`
 - A choice asks the choice itself — its options (`land`, `drop`) plus `n`.
 
+Every question keeps its `Type something.` row, where the user answers
+anything that is not on the list. **Never give an option a `preview`:** a
+single-select question with one renders side by side, and that layout has no
+`Type something.` row. Put the route in the option's `description` instead.
+
 Without `AskUserQuestion`, print `queue this fix? y/n` (or `queue this fix in
 script? y/n`) under each line and end the turn; read the reply's answers in
 list order (`y n y y n y y`). `fix all [<plan>]` answers `y` to every question

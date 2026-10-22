@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, then asks which fixes to queue. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: "[fix all [<plan>]]"
-version: 5.25.0
+version: 5.25.1
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -77,6 +77,11 @@ up to four questions per call, header `Fix N`, options `y` and `n`.
 - `I can fix`: `N. queue this fix?`
 - `You can fix`: `N. queue this fix in script?`
 - A choice asks the choice itself — its options (`land`, `drop`) plus `n`.
+
+Every question keeps its `Type something.` row, where the user answers
+anything that is not on the list. **Never give an option a `preview`:** a
+single-select question with one renders side by side, and that layout has no
+`Type something.` row. Put the route in the option's `description` instead.
 
 Without `AskUserQuestion`, print `queue this fix? y/n` (or `queue this fix in
 script? y/n`) under each line and end the turn; read the reply's answers in
