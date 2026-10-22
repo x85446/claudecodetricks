@@ -13059,6 +13059,109 @@
           "validity": "unverified"
         }
       ]
+    },
+    {
+      "id": "req-lapwing-ssh-config-backups",
+      "statement": "Keep skill backups out of the include glob, for example in ~/.ssh/config.d-backups/<site>.<UTC>. Make the verify step fail when ssh -G resolves options from any file other than the live site files. Have list or sort report duplicate Host names within a site.",
+      "source": "inbox 20261022T165251Z-symterm-ssh-config-skill-writes-bak (symterm); plan:lapwing",
+      "cases": [
+        {
+          "id": "sshbak-1",
+          "given": "a site file in ~/.ssh/config.d",
+          "when": "ssh-config add writes it",
+          "then": "the pre-write backup is ~/.ssh/config.d-backups/<site>.<UTC> and ls ~/.ssh/config.d shows no *.bak.skill",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-2",
+          "given": "site files in ~/.ssh/config.d",
+          "when": "each other write path runs: delete, move (both sites), sort (every site), speedup",
+          "then": "every backup lands in ~/.ssh/config.d-backups/ and none in ~/.ssh/config.d",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-3",
+          "given": "site files in ~/.ssh/config.d",
+          "when": "list runs (no write)",
+          "then": "no backup is created anywhere (negative case)",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-4",
+          "given": "a loaded non-site file in ~/.ssh/config.d with a Host block: <site>.bak.skill, <site>~, <site>.bak.*, *.sync-conflict-*, *.tmp",
+          "when": "the verify step runs",
+          "then": "verify fails and names each such file",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-5",
+          "given": "only live site files, zero-byte files and the named groupings (gke, incus-uc-vms) in ~/.ssh/config.d",
+          "when": "the verify step runs",
+          "then": "verify passes with no flagged file (negative case)",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-6",
+          "given": "a non-empty non-site file such as `old` in ~/.ssh/config.d",
+          "when": "the verify step runs",
+          "then": "AMBIGUOUS — flag it (ssh loads it) or skip it (user-managed, listed under Files to ignore)",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-7",
+          "given": "a site that defines the same Host name twice",
+          "when": "list or sort runs",
+          "then": "the output reports the duplicate name with both line numbers",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-8",
+          "given": "no site defines a Host name twice",
+          "when": "list or sort runs",
+          "then": "no duplicate line is printed (negative case)",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-9",
+          "given": "the same Host name defined in two different sites",
+          "when": "list or sort runs",
+          "then": "AMBIGUOUS — report it as a cross-site duplicate or stay silent (request names only within-site duplicates)",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-10",
+          "given": "a write whose result fails ssh -G",
+          "when": "the skill restores from its backup",
+          "then": "the site file is byte-identical to its pre-write state and nothing loadable is left in ~/.ssh/config.d",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-11",
+          "given": "a write interrupted after the temp file is written but before the rename",
+          "when": "ssh next reads the config",
+          "then": "no partial or temp file sits inside the include glob, and the audit flags any leftover",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "sshbak-12",
+          "given": "*.bak.skill files left in ~/.ssh/config.d by an earlier skill version",
+          "when": "the skill next writes or verifies",
+          "then": "they are moved into ~/.ssh/config.d-backups/ and ssh no longer loads them",
+          "tier": "?",
+          "validity": "unverified"
+        }
+      ]
     }
   ],
   "schema": 1,
