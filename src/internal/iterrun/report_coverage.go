@@ -458,6 +458,9 @@ func buildCoverageSection(in ReportInput) CoverageSection {
 			Note: "the run record could not be read: " + in.RecordErr.Error()})
 	}
 
+	if s.Lanes == nil {
+		s.Lanes = []CoverageLane{}
+	}
 	s.Breakdowns = coverageBreakdowns(in, c)
 	s.Summary = coverageSummary(s, c)
 	return s
@@ -672,7 +675,7 @@ func writeCoverageSection(b *strings.Builder, s CoverageSection) {
 		}
 		b.WriteString(`<p class="ra-note">` + msg + `</p>`)
 	} else {
-		labels := []string{"Lane", "Kind", "Engine / provider", "Capture", "Transcripts read", "Requests"}
+		labels := []string{"Lane", "Kind", "Engine / provider", "Capture", "Session transcripts read", "Requests"}
 		tableOpen(b, "Usage capture per lane", labels...)
 		for _, l := range s.Lanes {
 			eng := joinOr(append(append([]string{}, l.Engines...), l.Providers...), "unknown")

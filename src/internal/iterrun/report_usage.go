@@ -392,6 +392,26 @@ func buildUsageSection(in ReportInput) UsageSection {
 	}
 
 	s.Operations = usageOperations(in, plan)
+	for _, list := range []*[]UsageRow{&s.Agents, &s.Models} {
+		if *list == nil {
+			*list = []UsageRow{}
+		}
+	}
+	if s.Tools == nil {
+		s.Tools = []UsageToolRow{}
+	}
+	if s.Wakeups == nil {
+		s.Wakeups = []UsageWakeRow{}
+	}
+	if s.Operations == nil {
+		s.Operations = []UsageOperation{}
+	}
+	if s.SessionCost.Items == nil {
+		s.SessionCost.Items = []UsageSessionItem{}
+	}
+	if s.Allowance.Observations == nil {
+		s.Allowance.Observations = []UsageAllowanceItem{}
+	}
 	s.State = c.requestState
 	if c.requestState == stateComplete && plan.Requests == 0 && !c.knownZero {
 		s.State = stateUnavailable
@@ -636,7 +656,7 @@ func writeUsageSection(b *strings.Builder, s UsageSection) {
 	}
 
 	// By source.
-	figLabels := []string{"Name", "State", "Requests", "Input tokens", "Cache read", "Cache write", "Output tokens", "Reasoning", "Cost"}
+	figLabels := []string{"Name", "State", "Requests", "Input tokens", "Cache read tokens", "Cache write tokens", "Output tokens", "Reasoning tokens", "Cost (USD)"}
 	b.WriteString(`<h3>By source</h3>`)
 	tableOpen(b, "Exact usage per source; sources overlap only where noted", figLabels...)
 	for _, src := range s.Sources {
@@ -653,7 +673,7 @@ func writeUsageSection(b *strings.Builder, s UsageSection) {
 	if len(s.Agents) > 0 {
 		b.WriteString(`<h3>By coordinator, team and agent</h3>`)
 		labels := append([]string{"Lane"}, figLabels[1:]...)
-		labels = append(labels, "Peak request input")
+		labels = append(labels, "Peak request input tokens")
 		tableOpen(b, "Exact usage per lane", labels...)
 		for _, r := range s.Agents {
 			name := html.EscapeString(laneLabel(r.Label)) + ` <span class="ra-note">` + html.EscapeString(r.Kind)
@@ -693,7 +713,7 @@ func writeUsageSection(b *strings.Builder, s UsageSection) {
 	// Estimated breakdowns.
 	if len(s.Tools) > 0 {
 		fmt.Fprintf(b, `<details><summary>By tool (estimated, %s)</summary>`, html.EscapeString(countText(len(s.Tools), "tool", "tools")))
-		labels := []string{"Tool", "Calls", "Share", "Context growth tokens", "Output tokens writing the call"}
+		labels := []string{"Tool", "Calls", "Share of attributed usage", "Context growth tokens", "Output tokens writing the call"}
 		tableOpen(b, "Estimated allocation per tool", labels...)
 		for _, t := range s.Tools {
 			tableRow(b, labels, html.EscapeString(laneLabel(t.Tool)), num(groupDigits(int64(t.Calls))+" calls"), num(fmt.Sprintf("%.1f%%", t.SharePercent)),
@@ -704,7 +724,7 @@ func writeUsageSection(b *strings.Builder, s UsageSection) {
 	}
 	if len(s.Wakeups) > 0 {
 		fmt.Fprintf(b, `<details><summary>By wake-up (estimated, %s)</summary>`, html.EscapeString(countText(len(s.Wakeups), "kind", "kinds")))
-		labels := []string{"Wake-up", "Fired", "Ran", "Idle", "Coalesced", "Requests", "Input tokens", "Median request input", "Share"}
+		labels := []string{"Wake-up", "Fired (wake-ups)", "Ran", "Idle", "Coalesced", "Requests", "Input tokens", "Median request input tokens", "Share of plan usage"}
 		tableOpen(b, "Estimated allocation per wake-up kind", labels...)
 		for _, w := range s.Wakeups {
 			tableRow(b, labels, html.EscapeString(w.Label), num(groupDigits(int64(w.Fired))), num(groupDigits(int64(w.Ran))), num(groupDigits(int64(w.Idle))),

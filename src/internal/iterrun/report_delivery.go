@@ -201,6 +201,9 @@ func buildDeliverySection(in ReportInput) DeliverySection {
 	default:
 		s.State = statePartial
 	}
+	if s.Outstanding == nil {
+		s.Outstanding = []DeliveryGate{}
+	}
 	s.Summary = deliverySummary(s)
 	return s
 }
