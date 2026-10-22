@@ -728,6 +728,13 @@ func (st *transcriptState) observeAllowance(a AllowanceObservation) {
 	st.allowance = append(st.allowance, a)
 }
 
+func timeKey(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
+}
+
 func unixTime(sec int64) *time.Time {
 	if sec <= 0 {
 		return nil
@@ -989,6 +996,28 @@ func planLaneSources(events []Event, labels map[string]string, plan, proj string
 	return lanes, sessions
 }
 
+// planWindowEnd is when a plan execution ended: its Finished: value, or
+// for an archive that never recorded one, the archive filename's time. A
+// session that kept working after the archive did so for something else.
+func planWindowEnd(plan PlanSummary) (time.Time, bool) {
+	if t, ok := plan.FinishedAt(); ok {
+		return t, true
+	}
+	if !plan.Archived {
+		return time.Time{}, false
+	}
+	stamp, _, ok := strings.Cut(plan.ArchiveFile, "Z-")
+	if !ok {
+		return time.Time{}, false
+	}
+	for _, layout := range []string{"20060102T150405", "2006-01-02T150405", "2006-01-02T15-04-05"} {
+		if t, err := time.Parse(layout, stamp); err == nil {
+			return t.UTC(), true
+		}
+	}
+	return time.Time{}, false
+}
+
 func uniqueStrings(in []string) []string {
 	if len(in) == 0 {
 		return nil
@@ -1022,7 +1051,7 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 	pt := PlanTokens{Plan: plan.Name}
 
 	from, hasFrom := plan.EffectiveStart()
-	to, hasTo := plan.FinishedAt()
+	to, hasTo := planWindowEnd(plan)
 	if !hasTo {
 		to = time.Now().UTC()
 	}
@@ -1099,7 +1128,8 @@ func PlanTokenUsage(plan PlanSummary, events []Event, labels map[string]string) 
 				if !inWindow(a.At) {
 					continue
 				}
-				k := a.Provider + "\x00" + a.Limit + "\x00" + a.Window
+				// A reading after a reset belongs to a new window.
+				k := a.Provider + "\x00" + a.Limit + "\x00" + a.Window + "\x00" + timeKey(a.ResetsAt)
 				if _, ok := allowance[k]; !ok {
 					allowanceOrder = append(allowanceOrder, k)
 				}

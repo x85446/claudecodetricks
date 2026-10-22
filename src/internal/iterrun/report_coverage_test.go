@@ -132,6 +132,25 @@ func TestKrCoverageMissing(t *testing.T) {
 		}
 	})
 
+	t.Run("an unattributed coordinator leaves the session count unknown", func(t *testing.T) {
+		// The real Albatross: the hook log attributes no coordinator
+		// session at all, so how many sessions ran is unknown.
+		pt := &PlanTokens{Plan: "albatross", Total: TokenUsage{Messages: 3},
+			Lanes: []LaneTokens{{Key: "", Label: "coordinator", Missing: true},
+				{Key: "index", Label: "index", Observed: 1, Found: 1, Agents: []string{"a1"}, AgentsFound: []string{"a1"}, Sessions: []string{"s1"}, Usage: TokenUsage{Messages: 3}}}}
+		rep := BuildPlanReport(ReportInput{Plan: PlanSummary{Name: "albatross", Teamed: true}, Tokens: pt, HistoryLoaded: true})
+		s := count(t, rep.Coverage, "sessions")
+		if s.Observed != nil || s.Percent != nil || s.State == stateComplete {
+			t.Errorf("sessions %+v: the denominator is unknown", s)
+		}
+		if l := lane(t, rep.Coverage.Lanes, "coordinator"); l.State != "missing" || !strings.Contains(l.Note, "attributes no session") {
+			t.Errorf("coordinator %+v", l)
+		}
+		if rep.Coverage.State != statePartial {
+			t.Errorf("coverage %s, want partial", rep.Coverage.State)
+		}
+	})
+
 	t.Run("an unreadable record stays explicit", func(t *testing.T) {
 		in := ReportInput{Plan: PlanSummary{Name: "ghost"}, RecordErr: errors.New("store unreadable")}
 		rep := BuildPlanReport(in)

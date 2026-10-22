@@ -416,7 +416,7 @@ func allowanceItems(obs []AllowanceObservation) []UsageAllowanceItem {
 	var out []UsageAllowanceItem
 	idx := map[string]int{}
 	for _, a := range obs {
-		k := a.Provider + "\x00" + a.Limit + "\x00" + a.Window
+		k := a.Provider + "\x00" + a.Limit + "\x00" + a.Window + "\x00" + timeKey(a.ResetsAt)
 		i, ok := idx[k]
 		if !ok {
 			idx[k] = len(out)
@@ -430,7 +430,7 @@ func allowanceItems(obs []AllowanceObservation) []UsageAllowanceItem {
 			it.FirstAt, it.FirstPercent = a.At, a.UsedPercent
 		}
 		if !a.At.Before(it.LastAt) {
-			it.LastAt, it.LastPercent, it.ResetsAt = a.At, a.UsedPercent, a.ResetsAt
+			it.LastAt, it.LastPercent = a.At, a.UsedPercent
 		}
 	}
 	return out
@@ -617,8 +617,12 @@ func writeUsageSection(b *strings.Builder, s UsageSection) {
 			if a.PlanType != "" {
 				plan = ", plan " + a.PlanType
 			}
-			fmt.Fprintf(b, `<li>%s %s%s: %.0f%% used at %s, %.0f%% at %s</li>`, html.EscapeString(a.Provider), html.EscapeString(win), html.EscapeString(plan),
-				a.FirstPercent, timeTag(a.FirstAt), a.LastPercent, timeTag(a.LastAt))
+			resets := ""
+			if a.ResetsAt != nil {
+				resets = ", resets " + timeTag(*a.ResetsAt)
+			}
+			fmt.Fprintf(b, `<li>%s %s%s%s: %.0f%% used at %s, %.0f%% at %s</li>`, html.EscapeString(a.Provider), html.EscapeString(win), html.EscapeString(plan),
+				resets, a.FirstPercent, timeTag(a.FirstAt), a.LastPercent, timeTag(a.LastAt))
 		}
 		b.WriteString(`</ul>`)
 	}

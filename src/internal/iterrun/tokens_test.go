@@ -650,3 +650,35 @@ func TestLongLaneLabelsAreTrimmedToFitAColumn(t *testing.T) {
 		}
 	}
 }
+
+// TESTMASTER: id=tokens-archive-window-end tier=fast parallel=yes
+//
+// An archive that never recorded Finished: ends at its archive time, so a
+// coordinator session that kept working afterwards is not charged to it.
+func TestArchivedPlanWindowEndsAtTheArchiveTime(t *testing.T) {
+	for file, want := range map[string]string{
+		"20261020T094038Z-gemsbok.md":            "2026-10-20T09:40:38Z",
+		"2026-09-11T02-27-19Z-albatross-done.md": "2026-09-11T02:27:19Z",
+		"2026-09-11T022719Z-albatross.md":        "2026-09-11T02:27:19Z",
+	} {
+		got, ok := planWindowEnd(PlanSummary{Archived: true, ArchiveFile: file})
+		if !ok || got.Format(time.RFC3339) != want {
+			t.Errorf("%s: %v %v, want %s", file, got, ok, want)
+		}
+	}
+	if _, ok := planWindowEnd(PlanSummary{Name: "live"}); ok {
+		t.Error("a live plan without Finished: has an open window")
+	}
+
+	write := tokenTestHome(t)
+	proj := t.TempDir()
+	write("slug", "sess1", "",
+		assistantLine("2026-10-20T09:10:00Z", "in", "claude-opus-5", 1, 100, 0, 10, 0),
+		assistantLine("2026-10-20T11:00:00Z", "after", "claude-opus-5", 1, 900, 0, 90, 0),
+	)
+	plan := PlanSummary{Name: "gemsbok", ProjectDir: proj, Executing: "2026-10-20T08:59:23Z", Archived: true, ArchiveFile: "20261020T094038Z-gemsbok.md"}
+	pt := PlanTokenUsage(plan, []Event{coordEvent("gemsbok", proj, "sess1")}, nil)
+	if pt.Total.Messages != 1 || pt.ToOpen {
+		t.Errorf("counted %d requests (open %v); the request after the archive belongs to other work", pt.Total.Messages, pt.ToOpen)
+	}
+}

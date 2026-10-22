@@ -56,9 +56,13 @@ func accountingWindow(in ReportInput) *AccountingWindow {
 	}
 	if to, ok := in.Plan.FinishedAt(); ok {
 		w.To = &to
+	} else if to, ok := planWindowEnd(in.Plan); ok {
+		w.To = &to
+		w.Basis = "plan Executing: (or Started:) to the archive time; the plan recorded no Finished:"
 	} else {
 		now := in.Now.UTC()
 		w.To, w.Open = &now, true
+		w.Basis = "plan Executing: (or Started:) to the time of this read; the plan has not finished"
 	}
 	if w.From == nil {
 		w.Basis = "plan start not recorded; the window has no lower bound"

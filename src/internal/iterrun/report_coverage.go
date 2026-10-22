@@ -115,6 +115,10 @@ type capture struct {
 	observedSessions, capturedSessions map[string]bool
 	observedAgents, capturedAgents     map[string]bool
 	sessionsKnown, agentsKnown         bool
+	// coordinatorUnattributed is set when no coordinator session was
+	// attributed to the plan at all: there was one, so the session count
+	// has no known denominator.
+	coordinatorUnattributed bool
 
 	// transcriptSessions are sessions whose transcript was read; record
 	// usage for those sessions is the same spend seen twice.
@@ -157,6 +161,13 @@ func assessCapture(in ReportInput) capture {
 			lane := CoverageLane{Key: l.Key, Label: l.Label, Kind: laneKind(l.Key, in.Plan), Engines: l.Engines, Providers: l.Providers,
 				Observed: l.Observed, Found: l.Found, Source: "transcript"}
 			switch {
+			case l.Missing && l.Observed == 0:
+				lane.State = "missing"
+				lane.Note = "the hook log attributes no session to this lane, so its transcripts cannot be located; usage unknown"
+				allFound = false
+				if l.Key == "" {
+					c.coordinatorUnattributed = true
+				}
 			case l.Missing:
 				lane.State = "missing"
 				lane.Note = "no transcript found; this lane's usage is unknown"
@@ -306,8 +317,16 @@ func buildCoverageSection(in ReportInput) CoverageSection {
 		cnt      *CoverageCount
 		observed map[string]bool
 		known    bool
-	}{{&sessions, c.observedSessions, c.sessionsKnown}, {&agents, c.observedAgents, c.agentsKnown}} {
+	}{{&sessions, c.observedSessions, c.sessionsKnown && !c.coordinatorUnattributed}, {&agents, c.observedAgents, c.agentsKnown}} {
 		cnt := x.cnt
+		if cnt.Kind == "sessions" && c.coordinatorUnattributed {
+			cnt.State = statePartial
+			if cnt.Captured == 0 {
+				cnt.State = stateUnavailable
+			}
+			cnt.Note = "no coordinator session was attributed to this plan, so the number of sessions is unknown"
+			continue
+		}
 		if !x.known {
 			cnt.State = stateUnavailable
 			cnt.Note = "no source has observed them yet"
@@ -496,19 +515,20 @@ func coverageBreakdowns(in ReportInput, c capture) []CoverageBreakdown {
 	out = append(out, team, agent)
 
 	for _, x := range []struct {
-		name string
-		n    int
-		what string
+		name, what, none string
+		n                int
 	}{
-		{"tool", lenTools(pt), "tool attribution is an estimate: context growth after each call, split evenly between calls one request made"},
-		{"wake-up", lenGroups(pt), "wake-up allocation is an estimate: everything a lane spent until the next wake-up"},
+		{"tool", "tool attribution is an estimate: context growth after each call, split evenly between calls one request made",
+			"no counted request made a tool call", lenTools(pt)},
+		{"wake-up", "wake-up allocation is an estimate: everything a lane spent until the next wake-up",
+			"no prompt or wake-up was recorded in the attribution window", lenGroups(pt)},
 	} {
 		b := CoverageBreakdown{Name: x.name}
 		switch {
 		case pt == nil || !in.HistoryLoaded:
 			b.State, b.Note = notLoaded.State, notLoaded.Note
 		case x.n == 0:
-			b.State, b.Note = stateUnavailable, "no counted request made a tool call or followed a wake-up"
+			b.State, b.Note = stateUnavailable, x.none
 		default:
 			b.State, b.Note = "estimated", x.what
 		}
