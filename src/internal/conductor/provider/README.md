@@ -2,7 +2,7 @@
 
 `Compile` returns executable plus ordered literal argv. The supervisor executes these tokens directly, sets the assignment working directory, and uses `ExecutionEnv` for built-in subscription adapters. `CommandPreview` renders the same argv for display. Model and reasoning controls compile into provider flags; permission presets and additional arguments retain their order and repeated values. Reserved working-directory, prompt/result transport and account-provider switches fail before execution.
 
-Codex uses JSONL and `--output-last-message` for the result file. Claude uses stream-json; the assignment prompt instructs the child to write its result destination. `ExtractResult` also exposes a terminal JSON candidate for supervisor validation. An exit code or terminal event never validates an assignment. The supervisor checks result identity, source digest, task/validation status and evidence before advancing a plan.
+Codex uses JSONL, a supervisor-owned `--output-schema`, and `--output-last-message` for the result file. Native Codex and Claude assignments always receive the result contract, including subscriptions configured with `prompt_file`. Claude uses stream-json; the assignment prompt instructs the child to write its result destination. `ExtractResult` also exposes a terminal JSON candidate for supervisor validation. An exit code or terminal event never validates an assignment. The supervisor checks result identity, source digest, task/validation status and evidence before advancing a plan.
 
 `Decode` drains records incrementally, bounds each record to 1 MiB, and emits diagnostics for malformed or unknown events. Malformed streams return an error after draining. Tool input/output bodies are omitted from public activity. Allowance observations and execution-token totals have separate event kinds. The supervisor supplies durable event identity, retention, redaction and cumulative usage reconciliation.
 
@@ -22,7 +22,7 @@ Templates are disabled, editable starting points. Registry presence does not pro
 
 | Template | Noninteractive invocation | Reference |
 |---|---|---|
-| Codex | `exec --json --output-last-message` | Installed `codex exec --help`; [official example](https://developers.openai.com/cookbook/examples/codex/build_iterative_repair_loops_with_codex) |
+| Codex | `exec --json --output-schema --output-last-message` | Installed `codex exec --help`; [official example](https://developers.openai.com/cookbook/examples/codex/build_iterative_repair_loops_with_codex) |
 | Claude Code | `--print --output-format stream-json --verbose` | Installed `claude --help` |
 | Gemini CLI | `-p` | [Headless mode](https://google-gemini.github.io/gemini-cli/docs/cli/headless.html) |
 | Kimi CLI | `--print -p` | [Print mode](https://moonshotai.github.io/kimi-cli/en/customization/print-mode.html) |

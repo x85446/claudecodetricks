@@ -2577,3 +2577,85 @@ func TestConductorUnblockedFreshProgressBudget(t *testing.T) {
 		t.Fatal("checkpoint not validated", src.checkpoints)
 	}
 }
+
+// TESTMASTER: id=conductor-native-prompt-file-checkpoint tier=? parallel=yes
+func TestNativePromptFileCheckpoint(t *testing.T) {
+	// The local executors model native argv/result transports without paid calls.
+	for _, adapter := range []string{"codex", "claude", "claude-code"} {
+		for _, bad := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/bad=%v", adapter, bad), func(t *testing.T) {
+				s, src, c := fixture(t, "")
+				src.plans = src.plans[:1]
+				code := `import sys,json,re
+args=sys.argv[1:]
+prompt=args[-1]
+m=re.search(r'identity fields in this template: (\{.*?\})\.',prompt)
+assert m, 'native assignment omitted result contract'
+r=json.loads(m.group(1))
+assert 'Recovery: inspect the existing implementation' in prompt
+assert 'Do not redo implementation' in prompt
+if '--output-last-message' in args:
+ path=args[args.index('--output-last-message')+1]
+ schema=json.load(open(args[args.index('--output-schema')+1]))
+ assert schema['additionalProperties'] is False
+ assert set(schema['required'])==set(schema['properties'])
+ assert schema['properties']['assignment_id']['enum']==[r['assignment_id']]
+ assert schema['properties']['evidence']['items']=={'type':'string'}
+ assert schema['properties']['task_complete']['type']=='boolean'
+else:
+ path=re.search(r'write one JSON object to (.*?)\. Preserve',prompt).group(1)
+r.update(outcome='completed',task_complete=True,validation_met=True,evidence=['existing implementation revalidated'])
+if ` + fmt.Sprintf("%v", bad) + `: pass
+`
+				// Use Python booleans in the child rather than Go's spelling.
+				code = strings.ReplaceAll(code, "if true: pass", "r['assignment_id']='wrong'")
+				code = strings.ReplaceAll(code, "if false: pass", "pass")
+				code += "\nwith open(path,'w') as f: json.dump(r,f)\n"
+				script := filepath.Join(t.TempDir(), "native.py")
+				if e := os.WriteFile(script, []byte(code), 0600); e != nil {
+					t.Fatal(e)
+				}
+				wrapper := filepath.Join(t.TempDir(), "native")
+				body := fmt.Sprintf("#!/bin/sh\nexec '%s' '%s' \"$@\"\n", c.Subscriptions[0].Executable, script)
+				if e := os.WriteFile(wrapper, []byte(body), 0700); e != nil {
+					t.Fatal(e)
+				}
+				c.Subscriptions[0].Adapter = adapter
+				c.Subscriptions[0].Executable = wrapper
+				c.Subscriptions[0].Args = nil
+				c.Subscriptions[0].ResultTransport = "prompt_file"
+				if _, e := s.Apply(c.Revision, c); e != nil {
+					t.Fatal(e)
+				}
+				e := s.withLock(func() error {
+					r, e := s.runtime()
+					if e != nil {
+						return e
+					}
+					r.Progress[PlanID(c.Projects[0].Path, "alpha")] = Progress{LastProgress: s.now(), LastResult: &model.Result{RunID: "run-prior", Outcome: "retry", Blocker: "assignment result unavailable"}}
+					return s.saveRuntime(&r)
+				})
+				if e != nil {
+					t.Fatal(e)
+				}
+				out, e := s.Tick(context.Background())
+				if e != nil && !bad {
+					t.Fatal(e)
+				}
+				if bad && (e == nil || !strings.Contains(e.Error(), "identity or digest mismatch")) {
+					t.Fatal("expected rejected identity", e)
+				}
+				if out.Result == nil {
+					t.Fatal("missing result", out)
+				}
+				if bad {
+					if out.Result.Outcome != "retry" || src.checkpoints != 0 {
+						t.Fatal("invalid identity advanced", out, src.checkpoints)
+					}
+				} else if out.Result.Outcome != "completed" || src.checkpoints != 1 {
+					t.Fatal("native result did not checkpoint", out.Result, src.checkpoints)
+				}
+			})
+		}
+	}
+}
