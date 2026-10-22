@@ -500,3 +500,15 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - rule: —
 - status: fixed
 - verification: With no stage recorded the stage list folds into "Stages and the proof each needs (8)"; Delivery measures 276px at 320px on Albatross and Waterbuck (1416px before). TestKrDeliveryStages and TestKrDeliveryUnknown pass.
+
+## Automation editor pointer presses (killdeer navtest) — 2026-10-22
+
+### F61 — Save or Cancel pressed straight after typing a name does nothing
+- surface: /settings?section=automations&automation=<id> and the project Automations tab editor — Save automation, Cancel / Discard draft
+- kind: ux
+- severity: high
+- evidence: Headless Chrome on 47b48274 with a 120 ms pointer press: type a new name, press Save. The press moves focus off the name field, its change handler calls renderAutomationTester(), which swaps the band table for a one-line "Evaluating…" (scroll anchoring holds Save in place), then the preview answers within a few milliseconds and the table re-expands without anchoring, so Save drops from y=666 to y=876. The release lands on a tester TD, the click goes to DIV.panel and the form never submits; 3 of 3 presses lost, Cancel the same. A 0 ms synthetic press (el.click()) never shows it. It is the "Save appears to do nothing" symptom of steps 2 and 4.
+- fix: renderAutomationTester pins #automation-tester to its current height while it re-evaluates; evaluateAutomation releases the pin when the answer or the error lands.
+- rule: — (a control must not move between pointer down and pointer up)
+- status: fixed
+- verification: 120 ms pointer presses in headless Chrome: Save of a rename and Cancel after typing both land; Save and Cancel measure y=666 before, on focus and after the answer (876 without the fix). conductor.automation-navigation asserts both presses and the positions, and fails 8 checks with the fix reverted.
