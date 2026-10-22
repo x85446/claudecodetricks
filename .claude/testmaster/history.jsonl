@@ -7349,3 +7349,20 @@
 {"id":"conductor.TestIndigobirdStreamDrain","ms":19250,"result":"pass","runner":"testmaster","tier":"standard","ts":"2026-10-22T05:52:09Z"}
 {"id":"iterrun.TestConductorDetailIndependentHistory","ms":110,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T05:52:09Z"}
 {"batch":"iterrun.TestConductorDetailIndependentHistory+conductor.TestIndigobirdStreamDrain","failed":0,"missing":0,"ms":27681,"not_run":0,"passed":2,"runner":"testmaster","skipped":0,"ts":"2026-10-22T05:52:09Z"}
+{"id":"conductor.report-navigation","ms":27033,"result":"pass","runner":"testmaster","tier":"standard","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestConductorDetailIndependentHistory","ms":230,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestConductorUnifiedDetailPreservesTimeline","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestElapsedFallsBackToEarliestActivityWhenExecutingMissing","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestElapsedHandlesZeroConfirmedActivity","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestElapsedPrefersExecutingOverStarted","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestElapsedPrefersFinishedOverActivityForArchivedPlans","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestKrReportLegacy","ms":30,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestKrReportNavigation","ms":490,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestLaneListShowsFullDependsOnListNotJustPrimary","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestRequirementGridFollowsTheProgressModel","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestRequirementGridOmittedWhenNoStepDetail","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestStatuslessActiveLaneCountsAsActive","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestTeamValidationNotesReachEvidenceNotAModal","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestUsageIsUnknownWhenThereIsNothingMeasured","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"id":"iterrun.TestUsageSectionRendersLanesToolsAndWakeups","ms":30,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T20:34:50Z"}
+{"batch":"13 patterns","failed":0,"missing":0,"ms":31305,"not_run":0,"passed":16,"runner":"testmaster","skipped":0,"ts":"2026-10-22T20:34:50Z"}
