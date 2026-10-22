@@ -473,6 +473,20 @@ func buildProgressSection(in ReportInput) ProgressSection {
 			s.Attempts.ByOutcome[a.Outcome]++
 		}
 	}
+	// Plan-level attempts (delivery) count as attempts too.
+	if in.RecordErr == nil {
+		for _, run := range in.Record.Runs {
+			for _, q := range run.Requirements {
+				if q.Number > 0 {
+					continue
+				}
+				for _, a := range q.Attempts {
+					s.Attempts.Total++
+					s.Attempts.ByOutcome[a.Outcome]++
+				}
+			}
+		}
+	}
 	s.Attempts.Captured = s.Attempts.Total > 0
 	if !s.Attempts.Captured {
 		s.Attempts.Note = "No attempt was recorded for this execution, so attempt counts are unknown."

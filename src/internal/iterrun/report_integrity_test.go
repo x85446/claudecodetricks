@@ -574,3 +574,43 @@ func TestKrEvidenceFreshness(t *testing.T) {
 		t.Fatalf("injected change: r1 %s r2 %s calls %d", p[1].Proof, p[2].Proof, calls)
 	}
 }
+
+// TESTMASTER: id=report-integrity-log-split tier=fast parallel=yes
+func TestReportIntegrityLogSplit(t *testing.T) {
+	known := map[int]bool{}
+	for n := 1; n <= 12; n++ {
+		known[n] = true
+	}
+	cases := []struct {
+		text string
+		want [][]int
+	}{
+		{"steps 2-3 DONE: bridge up. step 5 partial: VM on bridge", [][]int{{2, 3}, {5}}},
+		{"steps6/12 validation met at head e59399e", [][]int{{6, 12}}},
+		{"Steps 3, 4, 12 done (3b/4b/12b met)", [][]int{{3, 4, 12}}},
+		{"preamble passes 24 PDFs. All original step1acceptancepasses.", [][]int{nil, {1}}},
+		{"step 40 is not a requirement here", [][]int{nil}},
+	}
+	for _, c := range cases {
+		segs := splitLogEntry(c.text, known)
+		if len(segs) != len(c.want) {
+			t.Fatalf("%q: %d segments %+v", c.text, len(segs), segs)
+		}
+		for i, s := range segs {
+			if len(s.Steps) != len(c.want[i]) {
+				t.Fatalf("%q segment %d: steps %v, want %v", c.text, i, s.Steps, c.want[i])
+			}
+			for j := range s.Steps {
+				if s.Steps[j] != c.want[i][j] {
+					t.Fatalf("%q segment %d: steps %v, want %v", c.text, i, s.Steps, c.want[i])
+				}
+			}
+		}
+	}
+	if got := reportedClaim("step 4 bake.cleanup.green rerun passed in 2.6s"); got != "met" {
+		t.Fatalf("claim: %q", got)
+	}
+	if got := reportedClaim("Step 7 fixture execution: 2 passed, 0 failed"); got != "" {
+		t.Fatalf("a result count after the clause is not a claim: %q", got)
+	}
+}
