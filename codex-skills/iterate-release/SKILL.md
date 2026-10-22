@@ -11,7 +11,7 @@ description: "Plans a production release of this project — version, per-platfo
 
 # $iterate-release — plan a production release
 
-**Version:** iterate family 5.23.0
+**Version:** iterate family 5.25.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
