@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const elements = new Map();
-const element = () => ({ innerHTML: '', textContent: '', className: '', value: '', dataset: {}, disabled: false, focused: false, focus() { this.focused = true; }, classList: { add() {}, remove() {} }, querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, closest: () => null });
+const element = () => ({ innerHTML: '', textContent: '', className: '', value: '', dataset: {}, style: {}, disabled: false, focused: false, focus() { this.focused = true; }, classList: { add() {}, remove() {} }, querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, closest: () => null });
 const node = s => { if (!elements.has(s)) elements.set(s, element()); return elements.get(s); };
 const storage = new Map();
 const sessionStorage = { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, String(v)), removeItem: k => storage.delete(k) };
