@@ -538,18 +538,17 @@ func writePlanDetail(w http.ResponseWriter, r *http.Request, proj string, rows [
 	q := pageURL.Query()
 	q.Del("history")
 	pageURL.RawQuery = q.Encode()
-	page := RenderTimelineWithChrome(rows, plan, "/project?project="+url.QueryEscape(proj)+"&tab=plans", tokens, conductorDetailHeader(proj, plan.Name, pageURL.RequestURI()))
 	in := ReportInput{Plan: plan, Rows: rows, Tokens: tokens, HistoryLoaded: tokens != nil, Now: time.Now()}
 	in.Record, in.RecordErr = ReadRecordReport(proj, plan.Name, plan.ArchiveFile)
-	// The report sits inside #plan-recorded-content so detail.js replaces it
-	// together with the rest of the recorded content when history loads.
-	page = strings.Replace(page, `<div id="plan-recorded-content">`, `<div id="plan-recorded-content">`+RenderPlanReport(BuildPlanReport(in)), 1)
+	opt := PlanPageOptions{Chrome: conductorDetailHeader(proj, plan.Name, pageURL.RequestURI())}
 	if tokens == nil {
+		// detail.js fetches this URL and replaces #plan-recorded-content, the
+		// report included, with the history-enriched render.
 		q.Set("history", "1")
 		pageURL.RawQuery = q.Encode()
-		notice := `<p id="plan-history-status" role="status" data-history-url="` + html.EscapeString(pageURL.RequestURI()) + `">Plan details are ready. Loading tool history and token usage…</p><noscript><p><a href="` + html.EscapeString(pageURL.RequestURI()) + `">Load complete tool history and token usage</a></p></noscript>`
-		page = strings.Replace(page, `<div id="plan-recorded-content">`, notice+`<div id="plan-recorded-content">`, 1)
+		opt.HistoryURL = pageURL.RequestURI()
 	}
+	page := RenderPlanPage(in, opt)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	_, _ = w.Write([]byte(page))

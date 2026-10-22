@@ -1134,546 +1134,11 @@ func planMetaLine(plan PlanSummary) string {
 	return b.String()
 }
 
-// RenderTimelineHTML builds a self-contained Gantt-style timeline page: one
-// row per agent, busy spans as bars, gaps left visibly blank (and colored
-// when severe) so downtime is something you SEE, not something you
-// reconstruct from timestamps by hand. Pure string building — no file I/O —
-// so it's equally usable for iterate-run timeline's file output and the
-// dashboard server's inline HTTP responses.
+// RenderTimelineHTML renders the plan page from rows and the plan file
+// alone, with no run record or tool history read. Pure string building, so
+// tests and callers holding only rows can render it.
 func RenderTimelineHTML(rows []Row, plan PlanSummary, homeURL string) string {
-	return RenderTimelineHTMLWithTokens(rows, plan, homeURL, nil)
-}
-
-// RenderTimelineHTMLWithTokens is RenderTimelineHTML plus the token-spend
-// panel. Split rather than folded into one signature because the timeline
-// is renderable from the filesystem alone, while tokens need session
-// transcripts that may not exist — a plan from before this data was kept,
-// or one whose teams ran on another machine. A nil *PlanTokens renders
-// exactly the page that shipped before.
-func RenderTimelineHTMLWithTokens(rows []Row, plan PlanSummary, homeURL string, tokens *PlanTokens) string {
-	return renderTimelinePage(rows, plan, homeURL, tokens, "")
-}
-
-// RenderTimelineWithChrome embeds trusted application navigation above the complete timeline.
-func RenderTimelineWithChrome(rows []Row, plan PlanSummary, homeURL string, tokens *PlanTokens, chrome string) string {
-	return renderTimelinePage(rows, plan, homeURL, tokens, chrome)
-}
-
-func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *PlanTokens, chrome string) string {
-	planName := plan.Name
-	title := "iterate-run timeline"
-	if planName != "" {
-		title = planName + " — iterate-run timeline"
-	}
-	backLink := ""
-	if homeURL != "" && chrome == "" {
-		backLink = `<a class="back" href="` + html.EscapeString(homeURL) + `">&larr; Dashboard</a>`
-	}
-	eyebrow := `<div class="eyebrow">iterate plan</div>`
-	if plan.Archived {
-		eyebrow = `<div class="eyebrow">iterate plan <span class="archived-chip">archived</span></div>`
-	}
-	header := backLink + eyebrow + `<h1>` + html.EscapeString(planName) + `</h1>`
-	header += planMetaLine(plan)
-	if plan.Blocked() && plan.NextAttempt != "" {
-		// The most urgent thing on the page, so it goes first — a plan can
-		// have every team done and still be sitting here waiting on one
-		// thing only a human can do (confirmed live: GitHub Actions billing
-		// on the account, which no agent may touch).
-		header += `<div class="blocked-banner"><div class="blocked-label">Needs you</div><p>` + html.EscapeString(plan.NextAttempt) + `</p></div>`
-	}
-	if plan.GoalFull != "" {
-		header += `<div class="goal"><div class="goal-label">Goal</div><p>` + html.EscapeString(plan.GoalFull) + `</p></div>`
-	}
-	activity := ""
-	if chrome != "" && !plan.Archived {
-		activity = `<section id="conductor-live-detail" aria-labelledby="conductor-activity-title"><h2 id="conductor-activity-title">Conductor activity</h2><div data-status aria-live="polite"><p>Loading activity…</p></div><details class="conductor-events" open><summary>Event log</summary><div class="conductor-event-scroll" role="region" aria-label="Conductor event log" tabindex="0"><p>Loading events…</p></div></details><details class="conductor-usage"><summary>Usage observations</summary><div data-usage></div></details></section>`
-	}
-	if len(rows) == 0 {
-		var b strings.Builder
-		b.WriteString(timelinePageHead(title, chrome) + header + `<div id="plan-recorded-content">` + activity + `<p class="empty">no activity recorded yet</p></div>`)
-		writeNoteModal(&b)
-		b.WriteString(`</div></body></html>`)
-		return b.String()
-	}
-
-	var minT, maxT time.Time
-	for _, r := range rows {
-		for _, s := range r.spans {
-			if minT.IsZero() || s.start.Before(minT) {
-				minT = s.start
-			}
-			if s.end.After(maxT) {
-				maxT = s.end
-			}
-		}
-	}
-	// hasActivity distinguishes "rows exist but none of them have any
-	// CONFIRMED span yet" from real activity — a real, live gap confirmed
-	// live: a flat plan with no hooks wired and no iterate-run-wrapped
-	// commands has a coordinator row (it owns unassigned Steps/Validation
-	// detail — see BuildRowsFromFilesystem) but zero spans, so minT/maxT
-	// both stayed at Go's zero time.Time. That zero value used to leak
-	// straight into the page — "0000-12-31 18:09:24" as the activity
-	// span, "Running for 0s" (maxT.Sub(started) went hugely NEGATIVE,
-	// clamped to 0) — reading as "just started" or "stuck" when the truth
-	// was simply "no hook/registry data exists for this plan at all."
-	// minT/maxT still get used below purely for bar positioning math
-	// (pct), which is harmless with no spans to plot regardless.
-	hasActivity := !minT.IsZero()
-	total := maxT.Sub(minT)
-	if total <= 0 {
-		total = time.Second
-	}
-	pct := func(t time.Time) float64 {
-		return 100 * float64(t.Sub(minT)) / float64(total)
-	}
-
-	var done, running, queued, severeGaps int
-	var gapCallouts []struct {
-		label string
-		g     gap
-	}
-	for _, r := range rows {
-		// Reuse statusPill's own classification instead of a second,
-		// separately-maintained switch — the old duplicate had only three
-		// cases and silently counted a row toward NONE of done/running/
-		// queued whenever status=="" and it had activity, which is exactly
-		// the coordinator's own permanent state (it never gets a status
-		// field at all) plus any orphan dispatch before its terminal line
-		// arrives. That made a plan with real work still in flight read as
-		// fully accounted-for at the top even while its own coordinator
-		// section showed hours of live activity.
-		switch pillClass, _ := statusPill(r.status, len(r.spans) > 0); pillClass {
-		case "p-done", "p-blocked":
-			done++
-		case "p-running":
-			running++
-		case "p-queued":
-			queued++
-		}
-		for _, g := range r.gaps {
-			if g.dur() >= SevereGap {
-				severeGaps++
-				gapCallouts = append(gapCallouts, struct {
-					label string
-					g     gap
-				}{r.label, g})
-			}
-		}
-	}
-	sort.Slice(gapCallouts, func(i, j int) bool { return gapCallouts[i].g.dur() > gapCallouts[j].g.dur() })
-
-	var b strings.Builder
-	b.WriteString(timelinePageHead(title, chrome))
-	b.WriteString(header)
-	b.WriteString(`<div id="plan-recorded-content">`)
-	if hasActivity {
-		fmt.Fprintf(&b, `<div class="sub">%s &rarr; %s (%s of recorded activity)</div>`+"\n",
-			minT.Local().Format("2006-01-02 15:04:05"), maxT.Local().Format("15:04:05"), total.Round(time.Second))
-	} else {
-		b.WriteString(`<div class="sub">no confirmed activity yet — this plan has no hook or iterate-run-wrapped registry data on this machine</div>` + "\n")
-	}
-
-	// A separate, explicitly-labeled "running for" figure — deliberately
-	// NOT the same number as the activity span above. That span is the
-	// earliest-to-latest timestamp across every row's recorded spans,
-	// which can include a genuinely long-running plan's real early
-	// history; conflating the two read as "the coordinator has been
-	// silently stuck for days" when what actually happened was a plan
-	// that's been going for a while. So this box anchors to an explicit
-	// "execution began" instant instead of the activity span — but that
-	// instant is Executing:, NOT Started:. Started: is drafting time (set
-	// once by /iterate-planner and, per its own doc, "kept forever, never
-	// reset on refinement") — for any plan that went through the planner
-	// before execution actually began, Started: can predate real work by
-	// hours (confirmed live: a plan drafted at 13:59, then not actually
-	// run until 16:32, showed "running for 2h36m" the instant /iterate
-	// was invoked — that's elapsed planning time, not elapsed execution
-	// time). Executing: is set once, by /iterate itself, at the moment
-	// phase flips from planned to executing, and is never touched again —
-	// exactly the "timestamp the invocation" anchor this box needs. Plans
-	// written before that field existed fall back to the earliest
-	// recorded activity (minT) — real tool-call data already on disk,
-	// still far closer to true execution start than a stale planning
-	// timestamp — and only fall all the way back to Started: when there's
-	// no activity at all yet to measure from.
-	started, ok := plan.ExecutingAt()
-	if !ok && !minT.IsZero() {
-		started, ok = minT, true
-	}
-	if !ok {
-		started, ok = plan.StartedAt()
-	}
-	if ok {
-		// "Running for" implies still in flight — actively misleading for
-		// an archived plan (exactly the class of bug this whole box exists
-		// to fix elsewhere: language that reads as live when the thing it
-		// describes is over). "Ran for" for a finished run, same figure.
-		label := "Running for"
-		if chrome != "" {
-			label = "Recorded execution span"
-		}
-		if plan.Archived {
-			label = "Ran for"
-		}
-		// The end-of-range for this duration, in preference order:
-		//   1. Finished: — set once by /iterate right before archiving,
-		//      the real "done at" instant. Only meaningful once the plan
-		//      IS archived (a live plan's Finished: is by definition
-		//      unset).
-		//   2. maxT — the latest CONFIRMED activity span, when any exist.
-		//   3. time.Now() — when hasActivity is false there's no maxT to
-		//      fall back to at all (Go's zero time.Time otherwise leaks
-		//      straight into this math as a wildly negative duration,
-		//      clamped to a misleading flat 0s — confirmed live on a flat
-		//      plan with no hook/registry data, correct Executing: and
-		//      all, still showing "Running for 0s"). "Right now" is the
-		//      only honest answer available for a plan that's still live
-		//      with zero confirmed activity anywhere.
-		activityEnd := maxT
-		if plan.Archived {
-			if fin, finOK := plan.FinishedAt(); finOK {
-				activityEnd = fin
-			}
-		}
-		if !hasActivity && activityEnd.IsZero() {
-			activityEnd = time.Now()
-		}
-		runDur := max(activityEnd.Sub(started), 0)
-		fmt.Fprintf(&b, `<div class="runbox"><span class="runbox-label">%s</span><span class="runbox-dur">%s</span><span class="runbox-since">since %s</span></div>`+"\n",
-			label, runDur.Round(time.Second), started.Local().Format("2006-01-02 15:04:05"))
-	}
-
-	b.WriteString(`<div class="stats">`)
-	fmt.Fprintf(&b, `<div class="stat s-good"><div class="n">%d</div><div class="l">done</div></div>`, done)
-	runningLabel := "running"
-	if plan.Archived || chrome != "" {
-		runningLabel = "recorded open"
-	}
-	fmt.Fprintf(&b, `<div class="stat s-warn"><div class="n">%d</div><div class="l">%s</div></div>`, running, runningLabel)
-	fmt.Fprintf(&b, `<div class="stat"><div class="n">%d</div><div class="l">queued</div></div>`, queued)
-	fmt.Fprintf(&b, `<div class="stat s-bad"><div class="n">%d</div><div class="l">severe gap%s</div></div>`, severeGaps, plural(severeGaps))
-	b.WriteString(`</div>`)
-	b.WriteString(activity)
-
-	// The coordinator isn't a team — it's the orchestrator dispatching and
-	// merging everyone else — so it gets its own section above the team
-	// list rather than sorting in among them wherever its timestamps land.
-	var coordRow *Row
-	var teamRows []Row
-	for i := range rows {
-		if rows[i].key == "" {
-			r := rows[i]
-			coordRow = &r
-		} else {
-			teamRows = append(teamRows, rows[i])
-		}
-	}
-	teamRows = orderTeamRows(teamRows)
-
-	if coordRow != nil {
-		b.WriteString(`<h2>Coordinator</h2><div class="gantt">`)
-		writeGanttRow(&b, *coordRow, pct, false, plan.Archived || chrome != "")
-		if hasActivity {
-			writeTimeAxis(&b, minT.Local(), maxT.Local(), pct)
-		}
-		b.WriteString(`</div>`)
-	}
-
-	writeBurndownChart(&b, rows)
-
-	// The divider line goes ONLY between separate root-level groups, not
-	// between a parent and its own nested children — a dependency chain
-	// (e.g. cli-frame -> selection -> reports) is one visual unit now that
-	// orderTeamRows nests it together, so a line splitting it back apart
-	// would undo the point of the nesting.
-	// An unteamed plan has exactly one row — the coordinator — already
-	// rendered above. Emitting this heading anyway left a section with a
-	// title and nothing under it, which reads as missing data rather than
-	// as "this plan has no teams".
-	if len(teamRows) > 0 {
-		b.WriteString(`<h2>Activity by team</h2><div class="gantt">`)
-		firstRoot := true
-		for _, r := range teamRows {
-			divider := false
-			if r.depth == 0 {
-				divider = !firstRoot
-				firstRoot = false
-			}
-			writeGanttRow(&b, r, pct, divider, plan.Archived || chrome != "")
-		}
-		if hasActivity {
-			writeTimeAxis(&b, minT.Local(), maxT.Local(), pct)
-			fmt.Fprintf(&b, `<div class="axis"><span>%s</span><span>%s</span></div>`,
-				minT.Local().Format("15:04:05"), maxT.Local().Format("15:04:05")+" (latest)")
-		}
-		b.WriteString(`</div>`)
-	}
-
-	openLabel := "still running"
-	if plan.Archived || chrome != "" {
-		openLabel = "open at last recorded observation"
-	}
-	b.WriteString(`<div class="legend"><span><span class="sw" style="background:var(--busy)"></span>confirmed activity</span><span><span class="sw sw-open"></span>` + openLabel + `</span><span><span class="sw" style="background:var(--danger)"></span>severe gap (5m+)</span><span>unmarked gaps under 5m are normal think-time</span></div>`)
-
-	if len(gapCallouts) > 0 {
-		b.WriteString(`<h2>Where the time actually went</h2><div class="gaplist">`)
-		for _, gc := range gapCallouts {
-			fmt.Fprintf(&b, `<div class="gap-item"><span class="dur">%s</span><span class="ctx">%s, %s &rarr; %s</span></div>`,
-				gc.g.dur().Round(time.Second), html.EscapeString(gc.label),
-				gc.g.start.Local().Format("15:04:05"), gc.g.end.Local().Format("15:04:05"))
-		}
-		b.WriteString(`</div>`)
-	}
-
-	writeTokenPanel(&b, tokens)
-
-	b.WriteString(`<footer>Built from what's already on disk — each team's own log file plus any iterate-run-wrapped unit's registry timestamps, merged with hook-derived tool-call data wherever it's been captured.</footer>`)
-	b.WriteString(`</div>`)
-	writeNoteModal(&b)
-	b.WriteString(`</div></body></html>`)
-
-	return b.String()
-}
-
-// writeNoteModal renders the one shared popup every clickable validation
-// glyph (see validationGlyph) opens — a real, readable box instead of a
-// native title tooltip. Confirmed live as a real usability gap: a note is
-// often several sentences of explanation (why a check is only partial,
-// what a perf-check failure actually means on this machine), and a
-// tooltip truncates, can't be selected/copied, and vanishes the instant
-// the mouse moves off it. One shared modal (not one per glyph) keeps the
-// page light regardless of how many notes exist — content is read
-// straight off the clicked element's own data-* attributes at click time,
-// no per-glyph JSON payload needed.
-func writeNoteModal(b *strings.Builder) {
-	b.WriteString(`<div id="note-modal" class="note-modal" style="display:none" onclick="if(event.target===this)noteModalClose()"><div class="note-modal-box"><button type="button" class="note-modal-close" onclick="noteModalClose()" aria-label="Close">&times;</button><div class="note-modal-label"></div><div class="note-modal-text"></div></div></div>
-<script>
-function bdEsc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
-function bdShow(num){
-  var data=document.getElementById('bd-data');
-  var d=data?JSON.parse(data.textContent)[num]:null;
-  var el=document.getElementById('bd-detail');
-  if(!el)return;
-  if(!d){el.style.display='none';return;}
-  var stateLabel={done:'done',active:'active',gaveup:'gave up',queued:'not yet worked on'}[d.state]||d.state;
-  // The orange bucket covers two different outcomes and "gave up" is only
-  // one of them: a validation reported not-met was attempted and failed,
-  // while a step ticked off whose validation is still unticked was done
-  // but never proven — which is what a plan blocked on its operator looks
-  // like, and calling that "gave up" is simply false.
-  if(d.state==='gaveup'&&d.vstatus!=='not-met'){stateLabel='done, not yet proven';}
-  var html='<div class="bd-detail-num bd-detail-'+d.state+'">Requirement '+num+' &middot; '+bdEsc(d.team)+' &middot; '+bdEsc(stateLabel)+'</div>';
-  html+='<div class="bd-detail-chain">depends on: '+bdEsc(d.dependsOn.length?d.dependsOn.join(', '):'none')+'</div>';
-  if(d.step){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'a.</span><span>'+bdEsc(d.step)+'</span></div>';}
-  if(d.validation){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'b.</span><span>'+bdEsc(d.validation)+'</span></div>';}
-  if(d.note){html+='<div class="bd-detail-note"><div class="bd-detail-note-label">note</div><div>'+bdEsc(d.note)+'</div></div>';}
-  el.innerHTML=html;
-  el.style.display='block';
-  document.querySelectorAll('.bd-cell').forEach(function(c){c.classList.toggle('bd-selected',c.dataset.num===String(num));});
-}
-
-function showNote(el){
-  var modal=document.getElementById('note-modal');
-  var label=modal.querySelector('.note-modal-label');
-  label.textContent=el.dataset.label||'';
-  label.className='note-modal-label '+(el.dataset.cls||'');
-  modal.querySelector('.note-modal-text').textContent=el.dataset.note||'';
-  modal.style.display='flex';
-}
-function noteModalClose(){ document.getElementById('note-modal').style.display='none'; }
-document.addEventListener('keydown',function(e){ if(e.key==='Escape')noteModalClose(); });
-</script>`)
-}
-
-// writeGanttRow renders one team (or the coordinator's) row: the status
-// pill and label — indented by dependency depth, so a two-independent-
-// track plan like finch (engine's Rust chain vs. win-media's Windows
-// chain) reads as two visual hierarchies instead of one flat list — the
-// activity track with its bars and severe-gap markers, and, if the plan's
-// Teams table gave this team any Steps/Validation detail, an expandable
-// "Na./Nb." panel underneath (native <details>, no JS). divider draws the
-// light top rule the caller uses to separate one root-level group (a
-// dependency chain, nested together) from the next — never set within a
-// group, only between them; the coordinator's own single-row block always
-// passes false, having no siblings to separate from.
-// currentWorkingStepNum returns the step number a row is presumed to be
-// actively working on right now, or 0 if none. The mark is inferred, not
-// self-reported — teams only file a ##ITERATE-VALIDATION## marker once a
-// step is actually resolved (met/partial/not-met), so there's no "I just
-// started this" signal to read directly. The best available proxy: for a
-// row whose overall status is in-progress, the first step in Num order
-// that hasn't reported anything yet is the one it's presumably on right
-// now. Everything after that is just queued behind it, not "in progress."
-// Shared by writeGanttRow's per-team panel and the burndown chart so both
-// agree on which cell is "active" instead of drifting independently.
-func currentWorkingStepNum(r Row) int {
-	if !rowIsRunning(r) {
-		return 0
-	}
-	for _, sd := range r.steps {
-		if sd.VStatus == "" {
-			return sd.Num
-		}
-	}
-	return 0
-}
-
-// rowIsRunning reuses statusPill's own definition of "currently running"
-// instead of a second, separately-maintained check — a named team row
-// always has an explicit status (in-progress, done, pending, ...) so this
-// behaves exactly like the old literal `status == "in-progress"` check
-// for those. The coordinator row is the one case that differs: it never
-// gets an explicit status field at all (see BuildRowsFromFilesystem), so
-// a literal-string check could never recognize it as "working on
-// something right now" — needed so the burndown chart's "active" cell
-// inference (currentWorkingStepNum) also works for a flat plan's
-// unassigned steps, attributed to the coordinator.
-func rowIsRunning(r Row) bool {
-	class, _ := statusPill(r.status, len(r.spans) > 0)
-	return class == "p-running"
-}
-
-// burnStep is one numbered requirement's flattened view for the burndown
-// chart — a step number can only belong to one team (per Teams-table row),
-// so unlike Row.steps (grouped per-team), this is one entry per requirement
-// across the WHOLE plan, sorted by Num, letting the chart answer "where do
-// we stand on requirement N" without knowing which team owns it first.
-type burnStep struct {
-	Num        int
-	Step       string
-	Validation string
-	Team       string
-	DependsOn  []string // this step's owning team's OWN full Depends-on list from the Teams table, resolved to display labels — every team that must finish first, not just one. A team can list several (tech-debt genuinely depends on all seven of the others in a real plan); showing only a single "primary" parent (the shortcut orderTeamRows takes purely for indentation) would silently hide the rest.
-	VNote      string   // the team's own explanation for why this landed where it did (##ITERATE-VALIDATION## note, or the coordinator's own inline log text on a flat plan) — empty when nothing was reported. This is the actual "what happened" a click on the cell should surface, not just the bare status.
-	VStatus    string   // the raw validation status this State was derived from — kept because the orange bucket has two different causes
-	State      string   // "done" (met), "active" (currently being worked, or reported partial), "gaveup" (reported not-met — attempted and failed, or a hard blocker; NOT the same bucket as "still working"), "queued" (white — no signal yet)
-}
-
-// collectSteps flattens every row's Steps/Validation detail into one
-// Num-ordered list spanning the whole plan, each carrying its owning row's
-// label and full Depends-on list — the data the burndown chart and its
-// click-through detail panel are built from. Rows with no steps (flat/
-// unteamed plans have none at all — see BuildRowsFromFilesystem) contribute
-// nothing, same limitation as the existing per-team panel.
-func collectSteps(rows []Row) []burnStep {
-	labelOf := map[string]string{}
-	for _, r := range rows {
-		labelOf[r.key] = r.label
-	}
-	resolveDeps := func(keys []string) []string {
-		labels := make([]string, len(keys))
-		for i, k := range keys {
-			if l, ok := labelOf[k]; ok {
-				labels[i] = l
-			} else {
-				labels[i] = k
-			}
-		}
-		return labels
-	}
-
-	var out []burnStep
-	for _, r := range rows {
-		working := currentWorkingStepNum(r)
-		deps := resolveDeps(r.dependsOn)
-		for _, sd := range r.steps {
-			state := "queued"
-			switch {
-			case sd.VStatus == "met":
-				state = "done"
-			case sd.VStatus == "not-met":
-				// Attempted and reported failed (or a hard blocker) — a
-				// real, considered outcome, not "still working on it."
-				state = "gaveup"
-			case sd.VStatus == "partial" && rowIsRunning(r):
-				// The team is still actively on this — genuinely "still
-				// going," the one case "partial" really does mean active.
-				state = "active"
-			case sd.VStatus == "partial":
-				// "Partial" alone doesn't say whether work is ongoing or
-				// over — that depends on whether the OWNING TEAM is still
-				// running. Confirmed live: a team that finished (Teams
-				// table status "done") had reported one of its own steps
-				// "partial" (a perf-check clause failing for a documented,
-				// accepted reason — the recorded baseline is a
-				// GitHub-runner figure, doesn't apply on a laptop) and
-				// moved on regardless. That's a settled outcome the team
-				// isn't coming back to, not a step "still going" — sharing
-				// the same amber bucket as a step actually in flight read
-				// as "still working" for something already wrapped up.
-				state = "gaveup"
-			case sd.Num == working:
-				state = "active"
-			}
-			out = append(out, burnStep{Num: sd.Num, Step: sd.Step, Validation: sd.Validation, Team: r.label, DependsOn: deps, VNote: sd.VNote, State: state, VStatus: sd.VStatus})
-		}
-	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Num < out[j].Num })
-	return out
-}
-
-// writeBurndownChart renders one numbered cell per requirement across the
-// whole plan — white for untouched, yellow for active, green for done —
-// between the Coordinator section and the per-team Activity breakdown.
-// Clicking a cell (vanilla JS, no round trip — the detail data is embedded
-// as JSON right below the grid) opens a panel showing that requirement's
-// owning team, everything that team depends on, and its Step/Validation
-// text: "what accomplishing this task means and what it depends on."
-// Silently renders nothing for a plan with no per-team step detail (flat/
-// unteamed plans — see collectSteps).
-func writeBurndownChart(b *strings.Builder, rows []Row) {
-	steps := collectSteps(rows)
-	if len(steps) == 0 {
-		return
-	}
-
-	b.WriteString(`<h2>Requirements</h2><div class="burndown">`)
-	for _, s := range steps {
-		cls := "bd-queued"
-		switch s.State {
-		case "done":
-			cls = "bd-done"
-		case "active":
-			cls = "bd-active"
-		case "gaveup":
-			cls = "bd-gaveup"
-		}
-		// The little flag: a real reported note (why a step is active,
-		// partial, or given up on) is exactly the feedback worth a click
-		// — mark it BEFORE the click, not just after, so a note isn't
-		// something you find only by clicking every cell to check.
-		flag := ""
-		if s.VNote != "" {
-			flag = `<span class="bd-flag" title="has a note"></span>`
-		}
-		fmt.Fprintf(b, `<div class="bd-cell %s" data-num="%d" onclick="bdShow(%d)" title="%d &middot; %s">%d%s</div>`,
-			cls, s.Num, s.Num, s.Num, html.EscapeString(s.Team), s.Num, flag)
-	}
-	b.WriteString(`</div><div id="bd-detail" class="bd-detail" style="display:none"></div>`)
-
-	type burnStepJSON struct {
-		Step       string   `json:"step"`
-		Validation string   `json:"validation"`
-		Team       string   `json:"team"`
-		DependsOn  []string `json:"dependsOn"`
-		VNote      string   `json:"note"`
-		State      string   `json:"state"`
-		VStatus    string   `json:"vstatus"`
-	}
-	data := make(map[string]burnStepJSON, len(steps))
-	for _, s := range steps {
-		data[strconv.Itoa(s.Num)] = burnStepJSON{Step: s.Step, Validation: s.Validation, Team: s.Team, DependsOn: s.DependsOn, VNote: s.VNote, State: s.State, VStatus: s.VStatus}
-	}
-	// json.Marshal HTML-escapes '<', '>' and '&' by default — exactly what
-	// keeps a plan's own step/validation text (arbitrary markdown, could
-	// itself contain "</script>") from breaking out of this script block.
-	encoded, err := json.Marshal(data)
-	if err != nil {
-		return
-	}
-	b.WriteString(`<script id="bd-data" type="application/json">` + string(encoded) + `</script>`)
+	return RenderPlanPage(ReportInput{Plan: plan, Rows: rows, Now: time.Now()}, PlanPageOptions{HomeURL: homeURL})
 }
 
 // tickIntervals are the only spacings a clock axis may use: each one is a
@@ -1775,9 +1240,18 @@ func writeTimeAxis(b *strings.Builder, minT, maxT time.Time, pct func(time.Time)
 	b.WriteString(`</div><div class="ax-pad-r"></div></div>`)
 }
 
-func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divider bool, recorded ...bool) {
+// writeGanttRow renders one team's (or the coordinator's) row: the status
+// pill and label, indented by dependency depth so two independent tracks
+// read as two hierarchies, the activity track with its bars, and, when the
+// plan gives the row any Steps/Validation detail, a native disclosure
+// listing each Na/Nb pair. Each pair carries its requirement's state from
+// the progress model and a link to its evidence. divider draws the top rule
+// that separates one root-level dependency group from the next. recorded
+// labels an open row "recorded open": the page shows recorded observations,
+// not a live executor.
+func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divider, recorded bool, reqs map[int]ProgressRequirement) {
 	pillClass, pillLabel := statusPill(r.status, len(r.spans) > 0)
-	if len(recorded) > 0 && recorded[0] && pillClass == "p-running" {
+	if recorded && pillClass == "p-running" {
 		pillLabel = "recorded open"
 	}
 	busy := busyDuration(r.spans)
@@ -1790,8 +1264,8 @@ func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divid
 	rowOpen, rowClose := `<div class="row`+dividerClass+`">`, `</div>`
 	teamLabel := html.EscapeString(r.label)
 	if hasSteps {
-		rowOpen, rowClose = `<details class="row-d`+dividerClass+`"><summary class="row">`, `</summary>`
-		teamLabel += `<span class="chev">&rsaquo;</span>`
+		rowOpen, rowClose = `<details class="row-d`+dividerClass+`" data-key="lane:`+html.EscapeString(r.label)+`"><summary class="row">`, `</summary>`
+		teamLabel += `<span class="chev" aria-hidden="true">&rsaquo;</span>`
 	}
 
 	pillStyle := ""
@@ -1799,8 +1273,8 @@ func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divid
 		pillStyle = fmt.Sprintf(` style="margin-left:%dpx"`, r.depth*14)
 	}
 
-	fmt.Fprintf(b, `%s<div class="label-col"><span class="pill %s" title="%s"%s></span><span class="team">%s</span></div><div class="track">`,
-		rowOpen, pillClass, html.EscapeString(pillLabel), pillStyle, teamLabel)
+	fmt.Fprintf(b, `%s<div class="label-col"><span class="pill %s" title="%s"%s></span><span class="vh">%s: </span><span class="team">%s</span></div><div class="track">`,
+		rowOpen, pillClass, html.EscapeString(pillLabel), pillStyle, html.EscapeString(pillLabel), teamLabel)
 	for i, s := range r.spans {
 		left := pct(s.start)
 		width := pct(s.end) - left
@@ -1808,65 +1282,36 @@ func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divid
 			width = 0.15 // keep even instant calls visible
 		}
 		cls := "bar"
-		// "still running" belongs to the LAST span of THIS row, not to
-		// whichever single span across the ENTIRE plan happens to share
-		// the plan-wide maxT timestamp — that old check only ever matched
-		// one row (whoever's tool call finished most recently), so every
-		// other genuinely in-progress team's bar just stopped short and
-		// looked done even while its own status was still "in-progress"
-		// (confirmed live: prd sitting on step 16 with no bar-open stripe
-		// while audio-filters, whose last call happened to land on maxT,
-		// was the only row ever marked still-running).
+		// The open stripe belongs to the last span of each in-progress row,
+		// not to whichever span shares the plan-wide latest timestamp.
 		if i == len(r.spans)-1 && r.status == "in-progress" {
 			cls = "bar bar-open"
 		}
 		fmt.Fprintf(b, `<div class="%s" style="left:%.3f%%;width:%.3f%%" title="%s: %s"></div>`,
 			cls, left, width, html.EscapeString(s.tool), html.EscapeString(s.summary))
 	}
-	for _, g := range r.gaps {
-		if g.dur() < SevereGap {
-			continue // only the severe tier gets a visible downtime marker; short gaps are normal think-time
-		}
-		left := pct(g.start)
-		width := pct(g.end) - left
-		fmt.Fprintf(b, `<div class="gapmark" style="left:%.3f%%;width:%.3f%%" title="downtime: %s"></div>`,
-			left, width, g.dur().Round(time.Second))
-	}
 	if len(r.spans) == 0 && (strings.HasPrefix(r.status, "done") || strings.HasPrefix(r.status, "blocked")) {
-		// Done with an empty track is a real, recurring shape here — a step
-		// can be marked done in the Teams table while its actual work ran
-		// inside another team's reused agent (confirmed live: cli's work
-		// landed in engine's log). Say so instead of leaving a blank bar
-		// that looks identical to "something's wrong."
+		// Done with an empty track is a real shape: a step's work can run
+		// inside another team's reused agent. Say so instead of leaving a
+		// blank bar that looks like missing data.
 		b.WriteString(`<div class="track-note">done — activity recorded under another team</div>`)
 	}
 	b.WriteString(`</div>`)
 	if len(r.spans) > 0 {
-		fmt.Fprintf(b, `<div class="busy">%s</div>`, busy.Round(time.Second))
+		fmt.Fprintf(b, `<div class="busy"><span class="vh">busy </span>%s</div>`, busy.Round(time.Second))
 	} else {
-		b.WriteString(`<div class="busy">—</div>`)
+		b.WriteString(`<div class="busy"><span class="vh">busy </span>—</div>`)
 	}
 	b.WriteString(rowClose + "\n")
 
 	if hasSteps {
-		working := currentWorkingStepNum(r)
-
 		b.WriteString(`<div class="steps-detail">`)
 		for _, sd := range r.steps {
-			// Each step's Na/Nb pair is its own group, set off from the
-			// next step's pair by a light divider — the visual grouping
-			// IS the "12a and 12b belong together, and 12 as a whole is
-			// done" signal, so it has to read as one unit at a glance
-			// instead of just more lines in a flat stack. The status
-			// glyph sits in its own column at the left of the WHOLE
-			// group, vertically centered against both lines — not
-			// trailing after the Nb text, where it read as punctuation
-			// rather than a status mark.
-			glyph := validationGlyph(sd.VStatus, sd.VNote)
-			if glyph == "" && sd.Num == working {
-				glyph = `<span class="vmark v-working" title="in progress">&#9679;</span>`
-			}
-			fmt.Fprintf(b, `<div class="step-group"><div class="step-glyph">%s</div><div class="step-lines">`, glyph)
+			// Each Na/Nb pair is one group with its state glyph at the left.
+			// State comes from the progress model, so the lane and the
+			// summary never disagree about a requirement.
+			req, known := reqs[sd.Num]
+			fmt.Fprintf(b, `<div class="step-group"><div class="step-glyph">%s</div><div class="step-lines">`, requirementGlyph(req.State))
 			if sd.Step != "" {
 				fmt.Fprintf(b, `<div class="step-pair"><span class="stepnum">%da.</span><span class="step-text">%s</span></div>`, sd.Num, html.EscapeString(sd.Step))
 			}
@@ -1874,48 +1319,32 @@ func writeGanttRow(b *strings.Builder, r Row, pct func(time.Time) float64, divid
 				fmt.Fprintf(b, `<div class="step-pair val"><span class="stepnum">%db.</span><span class="step-text">%s</span></div>`,
 					sd.Num, html.EscapeString(sd.Validation))
 			}
+			if known {
+				fmt.Fprintf(b, `<a class="step-ev" href="#%s">Evidence for requirement %d</a>`, html.EscapeString(req.EvidenceAnchor), sd.Num)
+			}
 			b.WriteString(`</div></div>`)
 		}
 		b.WriteString(`</div></details>` + "\n")
 	}
 }
 
-// validationGlyph renders the team's own ##ITERATE-VALIDATION## report for
-// this Nb, if it wrote one — nothing at all when it hasn't, since "not yet
-// reported" and "reported not-met" are different facts and only one of
-// them is worth a red mark. A real note (the actual, often multi-sentence,
-// explanation of why the check landed where it did) opens the shared
-// #note-modal on click instead of a native title tooltip — confirmed live
-// as a real usability gap: a tooltip truncates, can't be selected/copied,
-// and disappears the instant the mouse moves off it, exactly wrong for a
-// note that's the whole point of clicking through (a real one seen live:
-// several sentences of retention/perf-check detail, cut off mid-word in
-// the tooltip). A status with no note (met with nothing further to say)
-// stays a plain, non-interactive glyph — nothing to show in a popup.
-func validationGlyph(status, note string) string {
-	var cls, symbol, label string
-	switch status {
-	case "met":
-		cls, symbol, label = "v-met", "&#10003;", "met"
-	case "partial":
-		cls, symbol, label = "v-partial", "&#8776;", "partial"
-	case "not-met":
-		cls, symbol, label = "v-not-met", "&#10007;", "not met"
+// requirementGlyph marks a requirement's progress state with a shape as
+// well as a colour, and names it for screen readers.
+func requirementGlyph(state string) string {
+	var cls, symbol string
+	switch state {
+	case "complete":
+		cls, symbol = "v-met", "&#10003;"
+	case "in-progress":
+		cls, symbol = "v-working", "&#9679;"
+	case "blocked":
+		cls, symbol = "v-not-met", "&#10007;"
+	case "not-started":
+		return `<span class="vh">Not started</span>`
 	default:
 		return ""
 	}
-	if note == "" {
-		return fmt.Sprintf(`<span class="vmark %s" title="%s">%s</span>`, cls, html.EscapeString(label), symbol)
-	}
-	return fmt.Sprintf(`<span class="vmark %s vmark-clickable" onclick="showNote(this)" data-cls="%s" data-label="%s" data-note="%s" title="click for details">%s</span>`,
-		cls, cls, html.EscapeString(label), html.EscapeString(note), symbol)
-}
-
-func plural(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
+	return fmt.Sprintf(`<span class="vmark %s" aria-hidden="true">%s</span><span class="vh">%s</span>`, cls, symbol, requirementStateLabel(state))
 }
 
 func statusPill(status string, hasActivity bool) (class, label string) {
@@ -1936,35 +1365,13 @@ func statusPill(status string, hasActivity bool) (class, label string) {
 	}
 }
 
-func timelinePageHead(title, chrome string) string {
-	if chrome == "" {
-		return timelineHead(title)
-	}
-	return timelineHeadCSS(title) + tokenPanelCSS + `</style><meta name="viewport" content="width=device-width,initial-scale=1"><style>.conductor-detail-header,.conductor-detail-nav{max-width:900px;margin:0 auto 20px;overflow-wrap:anywhere}.conductor-detail-header{display:flex;justify-content:space-between}.conductor-detail-header a,.conductor-detail-nav a{color:var(--accent)}.conductor-detail-nav{font-size:14px;line-height:1.8}.conductor-detail-nav p{font-size:12px;margin:2px 0;color:var(--text-dim)}.conductor-detail-nav{padding-bottom:16px;border-bottom:1px solid var(--border)}
-#conductor-live-detail{margin:22px 0;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px;overflow-wrap:anywhere}
-#conductor-live-detail h2{margin:0 0 10px}
-#conductor-live-detail p{margin:6px 0;color:var(--text-dim)}
-#conductor-live-detail summary{cursor:pointer;padding:10px 0;color:var(--accent);font-weight:600}
-.conductor-events{margin-top:12px;border-top:1px solid var(--border)}
-.conductor-event-scroll{height:260px;max-height:40vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:10px 12px}
-.conductor-event-scroll:focus-visible,#conductor-live-detail summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.conductor-event-scroll h3{font-size:13px;margin:14px 0 8px}
-.conductor-event-scroll h3:first-child{margin-top:0}
-.conductor-event-scroll p{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.conductor-usage{font-size:12px}body{overflow-x:hidden}</style></head><body>` + chrome + `<div>`
-}
-
-func timelineHead(title string) string {
-	return timelineHeadCSS(title) + tokenPanelCSS + timelineHeadTail()
-}
-
 func timelineHeadCSS(title string) string {
-	return `<!doctype html><html><head><meta charset="utf-8"><title>` + html.EscapeString(title) + `</title><style>
+	return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>` + html.EscapeString(title) + `</title><style>
 :root{
   --bg:#f7f4ef; --surface:#fff; --surface-2:#fbf9f5; --border:#e4ddd0;
-  --text:#1c1a17; --text-dim:#6b6459; --text-faint:#a29b8d;
+  --text:#1c1a17; --text-dim:#6b6459; --text-faint:#736b5e;
   --busy:#0891b2; --busy-dim:#cceff5;
-  --good:#059669; --good-bg:#e3f6ee;
+  --good:#059669; --good-bg:#e3f6ee; --good-text:#047857;
   --warn:#b45309; --warn-bg:#fbecd5;
   --queued:#a29b8d; --queued-bg:#f0ece2;
   --danger:#dc2626; --danger-a:#f3b8b8; --danger-b:#fbe1e1;
@@ -1973,9 +1380,9 @@ func timelineHeadCSS(title string) string {
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0f1215; --surface:#171b1f; --surface-2:#1d2227; --border:#262c31;
-  --text:#e8e6e1; --text-dim:#8b9198; --text-faint:#565d64;
+  --text:#e8e6e1; --text-dim:#8b9198; --text-faint:#8a929a;
   --busy:#2dd4bf; --busy-dim:#144e49;
-  --good:#34d399; --good-bg:#0d2b21;
+  --good:#34d399; --good-bg:#0d2b21; --good-text:#34d399;
   --warn:#f59e0b; --warn-bg:#3a2705;
   --queued:#565d64; --queued-bg:#1d2227;
   --danger:#ef4444; --danger-a:#5a1414; --danger-b:#2c0a0a;
@@ -1984,7 +1391,7 @@ func timelineHeadCSS(title string) string {
 }}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:28px 20px 50px;line-height:1.45}
-.wrap,body>div{max-width:900px;margin:0 auto}
+.wrap{max-width:900px;margin:0 auto}
 .mono,.n,.dur,.busy,.axis,.pmeta{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
 .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
 .archived-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.02em;background:var(--surface-2);color:var(--text-faint);border:1px solid var(--border)}
@@ -1993,16 +1400,12 @@ h1{font-size:24px;font-weight:700;margin:2px 0 8px;text-wrap:balance;letter-spac
 .hbadge{font-size:10px;letter-spacing:.02em;padding:3px 8px;border-radius:4px;text-align:center;font-weight:600;border:1px solid transparent}
 .h-claude{background:var(--accent-bg);color:var(--accent)}
 .h-codex{background:var(--good-bg);color:var(--good)}
-.h-unknown{background:var(--queued-bg);color:var(--queued);border-color:var(--border)}
+.h-unknown{background:var(--queued-bg);color:var(--text-dim);border-color:var(--border)}
 .planmeta-version{font-size:11px;color:var(--text-faint);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .launch-cmd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;color:var(--text)}
 .launch-tag{color:var(--text-faint);margin-right:4px}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin:26px 0 12px}
 .sub{color:var(--text-dim);font-size:12px;margin-bottom:10px}
-.runbox{display:flex;align-items:baseline;gap:8px;margin:0 0 18px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px}
-.runbox-label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);font-weight:600}
-.runbox-dur{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-size:16px;font-weight:700;color:var(--accent)}
-.runbox-since{font-size:11.5px;color:var(--text-faint)}
 .back{display:inline-block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-bottom:10px}
 .back:hover{text-decoration:underline}
 .goal{margin:0 0 18px;padding:14px 16px;background:var(--accent-bg);border:1px solid var(--border);border-radius:8px}
@@ -2012,13 +1415,6 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .blocked-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);font-weight:700;margin-bottom:5px}
 .blocked-banner p{color:var(--text);font-size:13.5px;margin:0}
 .empty{color:var(--text-faint);font-style:italic}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.stat{background:var(--surface);padding:12px 16px}
-.stat .n{font-size:20px;font-weight:700}
-.stat .l{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
-.s-good .n{color:var(--good)}
-.s-warn .n{color:var(--warn)}
-.s-bad .n{color:var(--danger)}
 .gantt{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:6px}
 .row{display:flex;align-items:center;gap:14px;padding:9px 10px}
 .row-divider,.row-divider>.row{border-top:1px solid var(--border)}
@@ -2038,7 +1434,6 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .bar{position:absolute;top:0;height:100%;background:var(--busy);border-radius:3px}
 .bar:hover{background:var(--good);z-index:2}
 .bar-open{background:repeating-linear-gradient(115deg,var(--busy),var(--busy) 7px,var(--busy-dim) 7px,var(--busy-dim) 14px)}
-.gapmark{position:absolute;top:-3px;height:calc(100% + 6px);background:repeating-linear-gradient(45deg,var(--danger-a),var(--danger-a) 4px,var(--danger-b) 4px,var(--danger-b) 8px);border-radius:3px;border:1px solid var(--danger)}
 .busy{width:60px;flex:0 0 auto;text-align:right;font-size:12px;color:var(--text-dim)}
 .track-note{position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;padding-left:8px;font-size:11px;font-style:italic;color:var(--text-faint)}
 .axis{display:flex;justify-content:space-between;padding:2px 10px 2px;font-size:10.5px;color:var(--text-faint)}
@@ -2063,67 +1458,27 @@ details[open]>summary .chev{transform:rotate(90deg)}
 .step-pair .stepnum{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600;min-width:28px}
 .step-pair .step-text{flex:1 1 auto}
 .vmark{display:inline-block;font-weight:700}
-.vmark.v-met{color:var(--good)}
+.vmark.v-met{color:var(--good-text)}
 .vmark.v-partial{color:var(--warn)}
 .vmark.v-not-met{color:var(--gaveup)}
 .vmark.v-working{color:var(--warn);animation:vworking 1.4s ease-in-out infinite}
-.vmark-clickable{cursor:pointer}
-.vmark-clickable:hover{opacity:.7}
 @keyframes vworking{0%,100%{opacity:1}50%{opacity:.3}}
-.burndown{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.bd-cell{position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:700;cursor:pointer;color:var(--text-dim);background:var(--surface);transition:transform .1s}
-.bd-cell:hover{transform:translateY(-1px);border-color:var(--accent)}
-.bd-cell.bd-queued{background:var(--surface);color:var(--text-faint)}
-.bd-cell.bd-active{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
-.bd-cell.bd-done{background:var(--good-bg);color:var(--good);border-color:var(--good)}
-.bd-cell.bd-gaveup{background:var(--gaveup-bg);color:var(--gaveup);border-color:var(--gaveup)}
-.bd-cell.bd-selected{box-shadow:0 0 0 2px var(--accent)}
-.bd-flag{position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:1.5px solid var(--surface)}
-.bd-detail{margin:0 0 22px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px}
-.bd-detail-num{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
-.bd-detail-num.bd-detail-gaveup{color:var(--gaveup)}
-.bd-detail-num.bd-detail-done{color:var(--good)}
-.bd-detail-num.bd-detail-active{color:var(--warn)}
-.bd-detail-chain{font-size:12px;color:var(--text-dim);margin-bottom:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-.bd-detail-row{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:6px;color:var(--text)}
-.bd-detail-row .bd-detail-label{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-weight:600;min-width:28px}
-.bd-detail-note{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;color:var(--text)}
-.bd-detail-note-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);font-weight:600;margin-bottom:4px}
-.note-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
-.note-modal-box{position:relative;max-width:480px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px 22px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:70vh;overflow-y:auto}
-.note-modal-close{position:absolute;top:8px;right:10px;background:none;border:none;font-size:22px;line-height:1;color:var(--text-faint);cursor:pointer;padding:6px}
-.note-modal-close:hover{color:var(--text)}
-.note-modal-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:10px}
-.note-modal-label.v-met{color:var(--good)}
-.note-modal-label.v-partial{color:var(--warn)}
-.note-modal-label.v-not-met{color:var(--gaveup)}
-.note-modal-text{font-size:13.5px;line-height:1.55;color:var(--text);white-space:pre-wrap}
-.gaplist{display:flex;flex-direction:column;gap:8px}
-.gap-item{display:flex;gap:10px;align-items:baseline;font-size:13px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:6px}
-.gap-item .dur{font-weight:700;color:var(--danger)}
-.gap-item .ctx{color:var(--text-dim);font-size:12px}
 footer{margin-top:32px;font-size:11.5px;color:var(--text-faint);border-top:1px solid var(--border);padding-top:14px}
 `
 }
 
-func timelineHeadTail() string {
-	return `</style></head><body><div>
-`
-}
-
-// WriteTimelineHTML renders and writes the timeline to
-// <cwd>/.claude/iterate/timeline.html — the file-output counterpart to
-// RenderTimelineHTML, kept separate since a live dashboard shouldn't write
-// to disk on every request.
-func WriteTimelineHTML(cwd string, rows []Row, plan PlanSummary) (string, error) {
-	if len(rows) == 0 {
+// WriteTimelineHTML renders the plan page and writes it to
+// <cwd>/.claude/iterate/timeline.html: the file-output counterpart to the
+// dashboard page, kept separate since a live dashboard never writes to disk.
+func WriteTimelineHTML(cwd string, in ReportInput) (string, error) {
+	if len(in.Rows) == 0 {
 		return "", fmt.Errorf("no events to render")
 	}
 	path := filepath.Join(cwd, ".claude", "iterate", "timeline.html")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(path, []byte(RenderTimelineHTML(rows, plan, "")), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(RenderPlanPage(in, PlanPageOptions{})), 0o644); err != nil {
 		return "", err
 	}
 	return path, nil

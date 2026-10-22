@@ -510,16 +510,23 @@ func TestALaneWithNoTranscriptIsReportedNotZeroed(t *testing.T) {
 	if !ghost.Missing {
 		t.Error("ghost lane should be flagged Missing, not shown as zero spend")
 	}
-	out := RenderTimelineHTMLWithTokens(
-		[]Row{{key: "", label: "coordinator", spans: []span{{start: time.Now().Add(-time.Hour), end: time.Now()}}}},
-		planFor("badger", proj, "2026-09-15T09:00:00Z", "2026-09-15T11:00:00Z"), "", &pt)
-	if !strings.Contains(out, "no transcript found") {
-		t.Error("page should say the ghost lane's spend is uncounted")
+	out := RenderPlanPage(ReportInput{
+		Plan:   planFor("badger", proj, "2026-09-15T09:00:00Z", "2026-09-15T11:00:00Z"),
+		Rows:   []Row{{key: "", label: "coordinator", spans: []span{{start: time.Now().Add(-time.Hour), end: time.Now()}}}},
+		Tokens: &pt, HistoryLoaded: true, Now: time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC),
+	}, PlanPageOptions{})
+	usage := out[strings.Index(out, `id="report-usage"`):]
+	if !strings.Contains(usage, "no transcript found; usage unknown") {
+		t.Error("the Usage section should say the ghost lane's spend is uncounted")
 	}
 }
 
 // TESTMASTER: id=tokens-panel-render tier=fast parallel=yes
-func TestTokenPanelRendersLanesToolsAndWakeups(t *testing.T) {
+//
+// The plan page's Usage section carries what the token panel showed: usage
+// per lane, per tool and per wake-up, and no second panel puts a
+// session-cost tile beside plan totals.
+func TestUsageSectionRendersLanesToolsAndWakeups(t *testing.T) {
 	write := tokenTestHome(t)
 	proj := t.TempDir()
 	write("slug", "sess1", "",
@@ -538,43 +545,50 @@ func TestTokenPanelRendersLanesToolsAndWakeups(t *testing.T) {
 	}, nil)
 
 	rows := []Row{{key: "", label: "coordinator", spans: []span{{start: time.Now().Add(-time.Hour), end: time.Now()}}}}
-	out := RenderTimelineHTMLWithTokens(rows, plan, "", &pt)
-
+	out := RenderPlanPage(ReportInput{Plan: plan, Rows: rows, Tokens: &pt, HistoryLoaded: true, Now: time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC)}, PlanPageOptions{})
+	usage := out[strings.Index(out, `id="report-usage"`):]
+	usage = usage[:strings.Index(usage, "</section>")]
 	for _, want := range []string{
-		"Token spend", "context sent", "Who spent it", "coordinator",
-		"What it went on, by tool", "Read", "What each wake-up cost", "/iterate",
-		"tk-bar", "peak ctx",
+		"By coordinator, team and agent", "coordinator", "Peak request input tokens",
+		"By tool (estimated", "Read", "By wake-up (estimated", "/iterate",
 	} {
-		if !strings.Contains(out, want) {
-			t.Errorf("page missing %q", want)
+		if !strings.Contains(usage, want) {
+			t.Errorf("Usage section missing %q", want)
 		}
 	}
-	// The panel's CSS must actually be in the page's stylesheet.
-	if !strings.Contains(out, "table.tk{") {
-		t.Error("token panel CSS not present in the page head")
-	}
-	// Rendered before the footer, inside the wrapper.
-	if strings.Index(out, "Token spend") > strings.Index(out, "<footer>") {
-		t.Error("token panel must render above the footer")
+	for _, gone := range []string{"Token spend", "tk-top", "table.tk{"} {
+		if strings.Contains(out, gone) {
+			t.Errorf("the page carries a token panel beside the Usage section: %q", gone)
+		}
 	}
 }
 
 // TESTMASTER: id=tokens-panel-omitted tier=fast parallel=yes
 //
-// The panel is omitted entirely when nothing was measured. An empty table
-// implying zero spend would be a lie about a plan that simply predates
+// With nothing measured the Usage section says usage is unknown and why; an
+// empty table implying zero spend would be a lie about a plan that predates
 // this data or whose teams ran on another machine.
-func TestTokenPanelIsOmittedWhenThereIsNothingMeasured(t *testing.T) {
+func TestUsageIsUnknownWhenThereIsNothingMeasured(t *testing.T) {
 	tokenTestHome(t)
 	plan := PlanSummary{Name: "badger"}
 	rows := []Row{{key: "", label: "coordinator", spans: []span{{start: time.Now().Add(-time.Hour), end: time.Now()}}}}
-
-	if out := RenderTimelineHTMLWithTokens(rows, plan, "", nil); strings.Contains(out, "Token spend") {
-		t.Error("nil tokens must render no panel")
-	}
+	now := time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC)
 	empty := PlanTokens{Plan: "badger"}
-	if out := RenderTimelineHTMLWithTokens(rows, plan, "", &empty); strings.Contains(out, "Token spend") {
-		t.Error("an empty PlanTokens must render no panel, not a zero table")
+	for name, in := range map[string]ReportInput{
+		"history not loaded": {Plan: plan, Rows: rows, Now: now},
+		"nothing measured":   {Plan: plan, Rows: rows, Tokens: &empty, HistoryLoaded: true, Now: now},
+	} {
+		out := RenderPlanPage(in, PlanPageOptions{})
+		if strings.Contains(out, "Token spend") {
+			t.Errorf("%s: a token panel rendered beside the Usage section", name)
+		}
+		u := BuildPlanReport(in).Usage
+		if u.Plan.State == stateComplete {
+			t.Errorf("%s: plan usage reads complete with nothing measured: %+v", name, u.Plan)
+		}
+		if !strings.Contains(out, `id="report-usage"`) {
+			t.Errorf("%s: the Usage section must stay on the page and say why it is empty", name)
+		}
 	}
 }
 

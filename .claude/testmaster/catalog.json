@@ -587,11 +587,11 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
-          "validity": "valid"
+          "id": "iterrun.TestStatuslessActiveLaneCountsAsActive",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestStatuslessActiveLaneCountsAsActive",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -600,11 +600,11 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRunboxPrefersExecutingOverStarted",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRunboxPrefersExecutingOverStarted",
-          "validity": "valid"
+          "id": "iterrun.TestElapsedPrefersExecutingOverStarted",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestElapsedPrefersExecutingOverStarted",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -613,11 +613,11 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
-          "validity": "valid"
+          "id": "iterrun.TestElapsedFallsBackToEarliestActivityWhenExecutingMissing",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestElapsedFallsBackToEarliestActivityWhenExecutingMissing",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -626,11 +626,11 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
-          "validity": "valid"
+          "id": "iterrun.TestElapsedHandlesZeroConfirmedActivity",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestElapsedHandlesZeroConfirmedActivity",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -639,11 +639,11 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
-          "validity": "valid"
+          "id": "iterrun.TestElapsedPrefersFinishedOverActivityForArchivedPlans",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestElapsedPrefersFinishedOverActivityForArchivedPlans",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -665,11 +665,11 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestBurndownChartShadesByValidationState",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestBurndownChartShadesByValidationState",
-          "validity": "valid"
+          "id": "iterrun.TestRequirementGridFollowsTheProgressModel",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestRequirementGridFollowsTheProgressModel",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -678,11 +678,11 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestBurndownChartDistinguishesGaveUpFromActive",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestBurndownChartDistinguishesGaveUpFromActive",
-          "validity": "valid"
+          "id": "iterrun.TestLaneListShowsFullDependsOnListNotJustPrimary",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestLaneListShowsFullDependsOnListNotJustPrimary",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -691,35 +691,22 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary",
-          "validity": "valid"
-        },
-        {
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "id": "iterrun.TestBurndownChartOmittedWhenNoStepDetail",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestBurndownChartOmittedWhenNoStepDetail",
-          "validity": "valid"
+          "id": "iterrun.TestRequirementGridOmittedWhenNoStepDetail",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestRequirementGridOmittedWhenNoStepDetail",
+          "validity": "unverified"
         },
         {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists",
-          "validity": "valid"
+          "id": "iterrun.TestTeamValidationNotesReachEvidenceNotAModal",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestTeamValidationNotesReachEvidenceNotAModal",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -1135,11 +1122,11 @@
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestTokenPanelRendersLanesToolsAndWakeups",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestTokenPanelRendersLanesToolsAndWakeups",
-          "validity": "valid"
+          "id": "iterrun.TestUsageSectionRendersLanesToolsAndWakeups",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestUsageSectionRendersLanesToolsAndWakeups",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -1150,11 +1137,11 @@
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
-          "validity": "valid"
+          "id": "iterrun.TestUsageIsUnknownWhenThereIsNothingMeasured",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": "iterrun.TestUsageIsUnknownWhenThereIsNothingMeasured",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -11541,8 +11528,8 @@
           "covers_source": "coverage",
           "given": "a project has queued and active plans",
           "id": "indigobird-unified-detail",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
           "test": [
             "iterrun.TestConductorUnifiedDetailPreservesTimeline"
           ],
@@ -11586,8 +11573,8 @@
           ],
           "given": "a project has the gar archive fixture with existing timeline data",
           "id": "indigobird-unified-archive",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
           "test": [
             "iterrun.TestConductorUnifiedDetailPreservesTimeline"
           ],
@@ -11756,6 +11743,8 @@
         {
           "given": "running and archived plans with a blocked or unreadable shared history log",
           "id": "conductor-detail-independent-history",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
           "test": "iterrun.TestConductorDetailIndependentHistory",
           "then": "goals and requirements render without history; enrichment retains unlabelled completions, reports read errors, cancels waits and follows archived bookmarks",
           "when": "open the plan and request history separately"
@@ -12894,274 +12883,286 @@
       "statement": "Native Codex and Claude assignments receive typed result contracts with prompt_file; accepted identity and verification advance one checkpoint, rejected identity never advances it. Recovery inspects prior artifacts."
     },
     {
-      "id": "req-killdeer-report-integrity",
-      "statement": "Our tooling has degraded significantly in what we track and how we track it. $ip add all this to newest plan that we are designing.",
-      "source": "plan:killdeer steps 5-14; user-approved report comparison and metric recommendations",
       "cases": [
         {
-          "id": "kr-record-replay",
           "given": "accepted run events and an interrupted write",
-          "when": "restart and replay duplicates",
+          "id": "kr-record-replay",
           "then": "durable history is recovered once with original identities",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "restart and replay duplicates"
         },
         {
-          "id": "kr-record-isolation",
           "given": "two projects with the same plan name",
-          "when": "read and archive their reports",
+          "id": "kr-record-isolation",
           "then": "events and evidence stay with their own project/run",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "read and archive their reports"
         },
         {
-          "id": "kr-coverage-missing",
           "given": "absent, known-zero and partial usage",
-          "when": "open each report",
+          "id": "kr-coverage-missing",
           "then": "availability distinguishes unknown, zero and partial with missing sources",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "open each report"
         },
         {
-          "id": "kr-coverage-providers",
           "given": "recorded Codex and Claude runs and flat/teamed plans",
-          "when": "load usage and activity",
+          "id": "kr-coverage-providers",
           "then": "equivalent fields survive and unsupported data is explicit without fabricated teams",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "load usage and activity"
         },
         {
-          "id": "kr-progress-complete",
           "given": "a complete four-requirement archive",
-          "when": "read summary and detail",
+          "id": "kr-progress-complete",
           "then": "four completed requirements and terminal outcome agree",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "read summary and detail"
         },
         {
-          "id": "kr-progress-partial",
           "given": "mixed blocked, active, queued and completed records",
-          "when": "refresh report",
+          "id": "kr-progress-partial",
           "then": "requirement counts and lane counts remain separate and labelled",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "refresh report"
         },
         {
-          "id": "kr-evidence-binding",
           "given": "results for several steps and attempts",
-          "when": "open each requirement",
+          "id": "kr-evidence-binding",
           "then": "each result binds only to its matching requirement/attempt",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "open each requirement"
         },
         {
-          "id": "kr-evidence-freshness",
           "given": "proof for a prior revision and subsequent covered-code edits",
-          "when": "read current acceptance",
+          "id": "kr-evidence-freshness",
           "then": "original proof remains accessible and stale status is explicit",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "read current acceptance"
         },
         {
-          "id": "kr-handoff-resume",
           "given": "CLI clears a blocker and releases ownership with eligible automation",
-          "when": "advance bounded scheduler clock",
+          "id": "kr-handoff-resume",
           "then": "ordered ownership transitions and actual resumption delay are reported",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "advance bounded scheduler clock"
         },
         {
-          "id": "kr-handoff-gated",
           "given": "live CLI owner or disabled/scheduled/budget-gated automation",
-          "when": "read report after blocker clearance",
+          "id": "kr-handoff-gated",
           "then": "report preserves ownership and explains why admission waits",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "read report after blocker clearance"
         },
         {
-          "id": "kr-time-partition",
           "given": "overlapping work plus queue/blocked/paused intervals",
-          "when": "aggregate timeline",
+          "id": "kr-time-partition",
           "then": "wall time is not inflated by parallel work and categories have explicit boundaries",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "aggregate timeline"
         },
         {
-          "id": "kr-time-unknown",
           "given": "a long unobserved interval",
-          "when": "open gap detail",
+          "id": "kr-time-unknown",
           "then": "unknown remains unknown rather than an inferred execution failure",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "open gap detail"
         },
         {
-          "id": "kr-rework-retries",
           "given": "failed validation followed by a successful retry and duplicate events",
-          "when": "read attempt metrics",
+          "id": "kr-rework-retries",
           "then": "two attempts and one recovery are counted once",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "read attempt metrics"
         },
         {
-          "id": "kr-rework-interrupted",
           "given": "an interrupted or reopened requirement",
-          "when": "resume and complete",
+          "id": "kr-rework-interrupted",
           "then": "earlier outcome and attributable recovery cost remain recorded",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "resume and complete"
         },
         {
-          "id": "kr-usage-scopes",
           "given": "plan usage within a longer mixed-work session",
-          "when": "read cost and usage",
+          "id": "kr-usage-scopes",
           "then": "plan, session, allowance and estimated values have distinct scopes",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "read cost and usage"
         },
         {
-          "id": "kr-usage-dedup",
           "given": "streamed usage, retries, caching and parent/child records",
-          "when": "aggregate usage",
+          "id": "kr-usage-dedup",
           "then": "no duplicate request/output/reasoning accounting and missing price stays unknown",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "aggregate usage"
         },
         {
-          "id": "kr-delivery-stages",
           "given": "tested, merged, installed and verified evidence at different revisions",
-          "when": "read delivery report",
+          "id": "kr-delivery-stages",
           "then": "each stage carries its own evidence and revision",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "read delivery report"
         },
         {
-          "id": "kr-delivery-unknown",
           "given": "green CI without deployment evidence",
-          "when": "open report",
+          "id": "kr-delivery-unknown",
           "then": "runtime proof remains unknown and read causes no deployment",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "open report"
         },
         {
-          "id": "kr-report-navigation",
           "given": "live and archived reports with large logs",
-          "when": "navigate requirements while history loads",
+          "id": "kr-report-navigation",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": [
+            "iterrun.TestKrReportNavigation",
+            "conductor.report-navigation"
+          ],
           "then": "bounded logs preserve headers, focus and working detail navigation",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "navigate requirements while history loads"
         },
         {
-          "id": "kr-report-legacy",
           "given": "copied Albatross/Gemsbok/Waterbuck historical records",
-          "when": "render and compare browser views",
+          "id": "kr-report-legacy",
+          "last_validated": "2026-10-22T20:34:50Z",
+          "last_validated_commit": "13d7a270",
+          "test": [
+            "iterrun.TestKrReportLegacy",
+            "conductor.report-navigation"
+          ],
           "then": "available detail survives and partial data is clearly identified without modifying sources",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "render and compare browser views"
         }
-      ]
+      ],
+      "id": "req-killdeer-report-integrity",
+      "source": "plan:killdeer steps 5-14; user-approved report comparison and metric recommendations",
+      "statement": "Our tooling has degraded significantly in what we track and how we track it. $ip add all this to newest plan that we are designing."
     },
     {
-      "id": "req-lapwing-ssh-config-backups",
-      "statement": "Keep skill backups out of the include glob, for example in ~/.ssh/config.d-backups/<site>.<UTC>. Make the verify step fail when ssh -G resolves options from any file other than the live site files. Have list or sort report duplicate Host names within a site.",
-      "source": "inbox 20261022T165251Z-symterm-ssh-config-skill-writes-bak (symterm); plan:lapwing",
       "cases": [
         {
-          "id": "sshbak-1",
           "given": "a site file in ~/.ssh/config.d",
-          "when": "ssh-config add writes it",
+          "id": "sshbak-1",
           "then": "the pre-write backup is ~/.ssh/config.d-backups/<site>.<UTC> and ls ~/.ssh/config.d shows no *.bak.skill",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "ssh-config add writes it"
         },
         {
-          "id": "sshbak-2",
           "given": "site files in ~/.ssh/config.d",
-          "when": "each other write path runs: delete, move (both sites), sort (every site), speedup",
+          "id": "sshbak-2",
           "then": "every backup lands in ~/.ssh/config.d-backups/ and none in ~/.ssh/config.d",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "each other write path runs: delete, move (both sites), sort (every site), speedup"
         },
         {
-          "id": "sshbak-3",
           "given": "site files in ~/.ssh/config.d",
-          "when": "list runs (no write)",
+          "id": "sshbak-3",
           "then": "no backup is created anywhere (negative case)",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "list runs (no write)"
         },
         {
-          "id": "sshbak-4",
           "given": "a loaded non-site file in ~/.ssh/config.d with a Host block: <site>.bak.skill, <site>~, <site>.bak.*, *.sync-conflict-*, *.tmp",
-          "when": "the verify step runs",
+          "id": "sshbak-4",
           "then": "verify fails and names each such file",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "the verify step runs"
         },
         {
-          "id": "sshbak-5",
           "given": "only live site files, zero-byte files and the named groupings (gke, incus-uc-vms) in ~/.ssh/config.d",
-          "when": "the verify step runs",
+          "id": "sshbak-5",
           "then": "verify passes with no flagged file (negative case)",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "the verify step runs"
         },
         {
-          "id": "sshbak-6",
           "given": "a non-empty non-site file such as `old` in ~/.ssh/config.d",
-          "when": "the verify step runs",
+          "id": "sshbak-6",
           "then": "AMBIGUOUS — flag it (ssh loads it) or skip it (user-managed, listed under Files to ignore)",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "the verify step runs"
         },
         {
-          "id": "sshbak-7",
           "given": "a site that defines the same Host name twice",
-          "when": "list or sort runs",
+          "id": "sshbak-7",
           "then": "the output reports the duplicate name with both line numbers",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "list or sort runs"
         },
         {
-          "id": "sshbak-8",
           "given": "no site defines a Host name twice",
-          "when": "list or sort runs",
+          "id": "sshbak-8",
           "then": "no duplicate line is printed (negative case)",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "list or sort runs"
         },
         {
-          "id": "sshbak-9",
           "given": "the same Host name defined in two different sites",
-          "when": "list or sort runs",
+          "id": "sshbak-9",
           "then": "AMBIGUOUS — report it as a cross-site duplicate or stay silent (request names only within-site duplicates)",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "list or sort runs"
         },
         {
-          "id": "sshbak-10",
           "given": "a write whose result fails ssh -G",
-          "when": "the skill restores from its backup",
+          "id": "sshbak-10",
           "then": "the site file is byte-identical to its pre-write state and nothing loadable is left in ~/.ssh/config.d",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "the skill restores from its backup"
         },
         {
-          "id": "sshbak-11",
           "given": "a write interrupted after the temp file is written but before the rename",
-          "when": "ssh next reads the config",
+          "id": "sshbak-11",
           "then": "no partial or temp file sits inside the include glob, and the audit flags any leftover",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "ssh next reads the config"
         },
         {
-          "id": "sshbak-12",
           "given": "*.bak.skill files left in ~/.ssh/config.d by an earlier skill version",
-          "when": "the skill next writes or verifies",
+          "id": "sshbak-12",
           "then": "they are moved into ~/.ssh/config.d-backups/ and ssh no longer loads them",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "when": "the skill next writes or verifies"
         }
-      ]
+      ],
+      "id": "req-lapwing-ssh-config-backups",
+      "source": "inbox 20261022T165251Z-symterm-ssh-config-skill-writes-bak (symterm); plan:lapwing",
+      "statement": "Keep skill backups out of the include glob, for example in ~/.ssh/config.d-backups/<site>.<UTC>. Make the verify step fail when ssh -G resolves options from any file other than the live site files. Have list or sort report duplicate Host names within a site."
     }
   ],
   "schema": 1,

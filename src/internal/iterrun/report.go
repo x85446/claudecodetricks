@@ -61,20 +61,34 @@ func BuildPlanReport(in ReportInput) PlanReport {
 	}
 }
 
-// RenderPlanReport writes every section's HTML in page order.
+// RenderPlanReport writes every section's HTML in page order. The plan page
+// places the execution timeline between the summary and the breakdowns.
 func RenderPlanReport(rep PlanReport) string {
 	var b strings.Builder
 	b.WriteString(`<div id="plan-report">`)
-	writeProgressSection(&b, rep.Progress)
-	writeEvidenceSection(&b, rep.Evidence)
-	writeCoverageSection(&b, rep.Coverage)
-	writeUsageSection(&b, rep.Usage)
-	writeTimeSection(&b, rep.Time)
-	writeOwnershipSection(&b, rep.Ownership)
-	writeReworkSection(&b, rep.Rework)
-	writeDeliverySection(&b, rep.Delivery)
+	writeReportSummary(&b, rep)
+	writeReportBreakdowns(&b, rep)
 	b.WriteString(`</div>`)
 	return b.String()
+}
+
+// writeReportSummary writes the sections a reader needs first: the plan's
+// outcome and progress, then the evidence behind each requirement.
+func writeReportSummary(b *strings.Builder, rep PlanReport) {
+	writeProgressSection(b, rep.Progress)
+	writeEvidenceSection(b, rep.Evidence)
+}
+
+// writeReportBreakdowns writes the sections that explain the timeline:
+// time, ownership and rework read best directly under it, then usage,
+// tracking coverage and delivery.
+func writeReportBreakdowns(b *strings.Builder, rep PlanReport) {
+	writeTimeSection(b, rep.Time)
+	writeOwnershipSection(b, rep.Ownership)
+	writeReworkSection(b, rep.Rework)
+	writeUsageSection(b, rep.Usage)
+	writeCoverageSection(b, rep.Coverage)
+	writeDeliverySection(b, rep.Delivery)
 }
 
 // errReportNotFound reports a project/plan/archive identity with no plan file.
