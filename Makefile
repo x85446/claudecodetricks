@@ -255,6 +255,10 @@ report-test: build  ## Verify the run record and plan report (kr-* cases, headle
 	$(Q)testmaster suite discover
 	$(Q)testmaster suite run 'iterate-run.TestKr*' 'iterate-run.TestRecord*' 'iterrun.TestKr*' 'runrecord.*' conductor.report-navigation
 
+.PHONY: ssh-config-test
+ssh-config-test:  ## Verify the ssh-config helper keeps backups out of the include glob (sshbak-1..12)
+	$(Q)python3 -m unittest skills/ssh-config/tests/test_sshcfg.py
+
 
 test: test-unit test-hook  ## Run all tests
 	$(Q)echo -e "$(COLOR_GREEN)✓ All tests passed$(COLOR_RESET)"
