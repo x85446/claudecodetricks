@@ -94,17 +94,6 @@ func loadReport(t *testing.T, project, plan, archive string) (ReportInput, PlanR
 	return in, BuildPlanReport(in)
 }
 
-func sectionHTML(t *testing.T, rep PlanReport, id string) string {
-	t.Helper()
-	page := RenderPlanReport(rep)
-	start := strings.Index(page, `<section class="report-section" id="`+id+`"`)
-	if start < 0 {
-		t.Fatalf("section %s missing from the rendered report", id)
-	}
-	end := strings.Index(page[start:], `</section>`)
-	return page[start : start+end+len(`</section>`)]
-}
-
 func mustContain(t *testing.T, where, text string, wants ...string) {
 	t.Helper()
 	for _, w := range wants {

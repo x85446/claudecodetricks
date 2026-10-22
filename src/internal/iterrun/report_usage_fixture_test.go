@@ -113,15 +113,15 @@ func (e acctEnv) input(plan, archive string, history bool) ReportInput {
 	return in
 }
 
-// apiReport is the /api/report envelope.
-type apiReport struct {
+// acctAPIReport is the /api/report envelope.
+type acctAPIReport struct {
 	Source  string     `json:"source"`
 	History bool       `json:"history"`
 	Report  PlanReport `json:"report"`
 }
 
 // api reads GET /api/report for a plan or an archive.
-func (e acctEnv) api(plan, archive string, history bool) apiReport {
+func (e acctEnv) api(plan, archive string, history bool) acctAPIReport {
 	e.t.Helper()
 	q := url.Values{"project": {e.project}}
 	if plan != "" {
@@ -138,7 +138,7 @@ func (e acctEnv) api(plan, archive string, history bool) apiReport {
 	if w.Code != http.StatusOK {
 		e.t.Fatalf("GET /api/report?%s: %d %s", q.Encode(), w.Code, w.Body)
 	}
-	var out apiReport
+	var out acctAPIReport
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
 		e.t.Fatal(err)
 	}
