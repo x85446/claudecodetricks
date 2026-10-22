@@ -500,3 +500,35 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - rule: —
 - status: fixed
 - verification: With no stage recorded the stage list folds into "Stages and the proof each needs (8)"; Delivery measures 276px at 320px on Albatross and Waterbuck (1416px before). TestKrDeliveryStages and TestKrDeliveryUnknown pass.
+
+## Automation editor pointer presses (killdeer navtest) — 2026-10-22
+
+### F61 — Save or Cancel pressed straight after typing a name does nothing
+- surface: /settings?section=automations&automation=<id> and the project Automations tab editor — Save automation, Cancel / Discard draft
+- kind: ux
+- severity: high
+- evidence: Headless Chrome on 47b48274 with a 120 ms pointer press: type a new name, press Save. The press moves focus off the name field, its change handler calls renderAutomationTester(), which swaps the band table for a one-line "Evaluating…" (scroll anchoring holds Save in place), then the preview answers within a few milliseconds and the table re-expands without anchoring, so Save drops from y=666 to y=876. The release lands on a tester TD, the click goes to DIV.panel and the form never submits; 3 of 3 presses lost, Cancel the same. A 0 ms synthetic press (el.click()) never shows it. It is the "Save appears to do nothing" symptom of steps 2 and 4.
+- fix: renderAutomationTester pins #automation-tester to its current height while it re-evaluates; evaluateAutomation releases the pin when the answer or the error lands.
+- rule: — (a control must not move between pointer down and pointer up)
+- status: fixed
+- verification: 120 ms pointer presses in headless Chrome: Save of a rename and Cancel after typing both land; Save and Cancel measure y=666 before, on focus and after the answer (876 without the fix). conductor.automation-navigation asserts both presses and the positions; with the height hold removed both presses report "produced no click; the release landed on TD".
+
+### F62 — The 3-second refresh swaps the pressed control, so the press does nothing
+- surface: every Conductor dashboard page (/, /project, /settings) — any button, link or switch pressed while the poll repaints
+- kind: ux
+- severity: high
+- evidence: refresh() replaces #app whenever the config, status, queues, occurrences, usage, runs or visibility differ from the last paint, and commit() leaves the last paint stale, so the first poll after any save repaints the page. Headless Chrome on 40544d9e: after another writer's change, a pointer press on Edit held across one poll lost its click 2 of 2 times (the release lands on the new copy of the button, the press started on the detached old one); Space held on a focused Edit button across one poll lost it 2 of 2 times (focus moves to the copy, keyup on the copy activates nothing). With 120 ms presses on list pages the test lost about one click in three runs.
+- fix: A pointer press (pointerdown until pointerup, pointercancel or window blur) and a Space press on a button, summary, checkbox or radio (keydown until keyup) defer render(); the deferred paint runs once in a task after the release, so the click lands on the pressed element first. The poll's scroll- and focus-preserving repaint is deferred the same way and rechecks the open-draft, dialog, drag and focused-field rules when it runs.
+- rule: WCAG 2.2 SC 3.2.2 On Input (no change of context the user did not request); SC 2.5.2 Pointer Cancellation (the up event completes the function)
+- status: fixed
+- verification: conductor.automation-navigation holds a pointer press, and then a Space press, until every endpoint the poll reads has answered a request sent after another writer's change; both open their editors. With the deferral removed the pointer press reports "produced no click; the page replaced the element during the press", and with only the Space half removed the Space check fails. 3/3 sequential and 12/12 six-way concurrent runs green with no re-press.
+
+### F63 — On a project's Automations tab, the press after typing a priority does nothing
+- surface: /project?…&tab=automations — Priority field, then Edit shared rules or Remove from project
+- kind: ux
+- severity: medium
+- evidence: Headless Chrome with 120 ms presses on 47b48274 and 40544d9e: type a priority, press Edit shared rules or Remove from project. The press moves focus off the field, its change handler saves through toggleConfig, whose render() replaces the row while the button is still held; the release lands on the new copy and nothing happens, although the priority is saved. Lost 2 of 2 times for each button.
+- fix: The press deferral of F62: render() waits for the release, then paints once.
+- rule: WCAG 2.2 SC 3.2.2 On Input
+- status: fixed
+- verification: conductor.automation-navigation types priority 3 then presses Edit shared rules (editor opens, priority 3 saved), and types priority 4 then presses Remove from project (attachment removed, tab shows no attached automations). With the deferral removed both presses report "produced no click; the page replaced the element during the press".
