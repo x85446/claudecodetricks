@@ -141,8 +141,20 @@ func (s *Service) TickProject(ctx context.Context, projectID string) (out TickRe
 		dir, _ := s.runDir(a.RunID)
 		a.ResultPath = filepath.Join(dir, "result.json")
 		a.Prompt = "Read .claude/iterate/plans/" + a.Plan + ".md for the goal, constraints, accepted decisions and branch policy. Do not invoke the whole iterate/conductor skill.\nAssignment kind: " + kind + "\nTask: " + a.Task + "\nRequired validation: " + a.Validation + "\nWork only on this bounded assignment. Do not edit plan checkboxes or start another pair. Preserve unrelated changes. Resolve implementation choices within the assignment yourself. A required API or contract expansion, parity repair, or regression in this assigned work is work to fix and validate; continue instead of requesting a human decision. Escalate only for a secret no agent has, physical access, or an external party."
-		if a.Subscription.ResultTransport != "prompt_file" {
+		if previous := pg.LastResult; previous != nil && previous.RunID != "" && previous.Outcome != "completed" {
+			previousDir, err := s.runDir(previous.RunID)
+			if err != nil {
+				return err
+			}
+			a.Prompt += "\nRecovery: inspect the existing implementation and the prior assignment artifacts in " + previousDir + ". Previous outcome: " + previous.Outcome + "; reason: " + previous.Blocker + ". Preserve completed work. Re-run the required validation against current files before reporting completion; prose in a prior result is not proof. Do not redo implementation that already satisfies this pair."
+		}
+		if a.Subscription.ResultTransport != "prompt_file" || a.Subscription.Adapter == "codex" || a.Subscription.Adapter == "claude" || a.Subscription.Adapter == "claude-code" {
 			a.Prompt = provider.AssignmentPrompt(a)
+		}
+		if a.Subscription.Adapter == "codex" {
+			if e = atomicJSON(a.ResultPath+".schema.json", provider.ResultSchema(a)); e != nil {
+				return e
+			}
 		}
 		if _, e = provider.Compile(a.Subscription, a.Sequence, a); e != nil {
 			return e

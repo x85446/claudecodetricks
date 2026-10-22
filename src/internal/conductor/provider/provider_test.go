@@ -98,7 +98,7 @@ func TestReadinessTemplates(t *testing.T) {
 			t.Fatal("template dispatch enabled")
 		}
 	}
-	s := model.Subscription{Executable: script(t, "echo '--json --output-last-message'\n"), Adapter: "codex"}
+	s := model.Subscription{Executable: script(t, "echo '--json --output-last-message --output-schema'\n"), Adapter: "codex"}
 	r := Probe(context.Background(), s)
 	if !r.Installed || !r.Stream || !r.ResultContract {
 		t.Fatalf("%+v", r)

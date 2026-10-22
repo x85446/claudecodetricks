@@ -50,7 +50,7 @@ func Compile(s model.Subscription, q model.Sequence, a model.Assignment) ([]stri
 	cmd := []string{s.Executable}
 	switch s.Adapter {
 	case "codex":
-		cmd = append(cmd, "exec", "--json", "--color", "never", "--cd", cwd, "--output-last-message", result)
+		cmd = append(cmd, "exec", "--json", "--color", "never", "--cd", cwd, "--output-last-message", result, "--output-schema", result+".schema.json")
 		if q.Model != "" {
 			cmd = append(cmd, "--model", q.Model)
 		}
@@ -218,7 +218,7 @@ func Probe(ctx context.Context, s model.Subscription) model.Readiness {
 	switch s.Adapter {
 	case "codex":
 		r.Stream = strings.Contains(string(b), "--json")
-		r.ResultContract = strings.Contains(string(b), "--output-last-message")
+		r.ResultContract = strings.Contains(string(b), "--output-last-message") && strings.Contains(string(b), "--output-schema")
 		r.Telemetry = true
 	case "claude", "claude-code":
 		r.Stream = strings.Contains(string(b), "stream-json")
@@ -300,4 +300,22 @@ func AssignmentPrompt(a model.Assignment) string {
 		transport = "return exactly one JSON object as your final message, without markdown fences or surrounding text. The supervisor-owned CLI output transport saves that final message to " + destination + "; do not write the result file through a tool."
 	}
 	return prompt + "\n\nAssignment result contract: " + transport + " Preserve all identity fields in this template: " + string(b) + ". The evidence field must be an array of plain strings, never objects. The task_complete and validation_met fields must be JSON booleans. Preserve all field names and identity value types exactly. Set task_complete and validation_met only after doing the assigned work and its required verification. Record concrete evidence. Use outcome completed only when both are true; otherwise use blocked, retry, partial, or interrupted and explain blocker. This is one bounded assignment; do not advance another pair or claim whole-plan completion."
+}
+
+// ResultSchema constrains the final response; the supervisor independently
+// validates identity, completion flags and evidence before checkpointing.
+func ResultSchema(a model.Assignment) map[string]any {
+	properties := map[string]any{}
+	for key, value := range map[string]string{"assignment_id": a.ID, "run_id": a.RunID, "project_path": a.ProjectPath, "plan": a.Plan, "source_digest": a.SourceDigest} {
+		properties[key] = map[string]any{"type": "string", "enum": []string{value}}
+	}
+	properties["version"] = map[string]any{"type": "integer", "enum": []int{model.ProtocolVersion}}
+	properties["step"] = map[string]any{"type": "integer", "enum": []int{a.Step}}
+	properties["outcome"] = map[string]any{"type": "string", "enum": []string{"completed", "blocked", "retry", "partial", "interrupted"}}
+	properties["task_complete"] = map[string]any{"type": "boolean"}
+	properties["validation_met"] = map[string]any{"type": "boolean"}
+	properties["evidence"] = map[string]any{"type": "array", "items": map[string]any{"type": "string"}}
+	properties["blocker"] = map[string]any{"type": "string"}
+	return map[string]any{"type": "object", "additionalProperties": false, "properties": properties,
+		"required": []string{"version", "assignment_id", "run_id", "project_path", "plan", "step", "source_digest", "outcome", "task_complete", "validation_met", "evidence", "blocker"}}
 }
