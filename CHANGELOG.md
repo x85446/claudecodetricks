@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [lapwing] - 2026-10-22
+
+### Added
+- `skills/ssh-config/scripts/sshcfg.py`: `backup`, `tempfile`, `write --verify`, `restore`, `verify`, `audit`, `dupes`, `migrate` and `sites` keep every backup and staged write in `~/.ssh/config.d-backups/` (newest 20 per site), install site files atomically, and attribute each applied option with `ssh -G -vvv`.
+- `make ssh-config-test` and TESTMASTER cases sshbak-1..12.
+
+### Changed
+- The ssh-config skill routes every write through the helper, fails verify when a backup, editor or temp copy loads as live config, prints duplicate Host names (within and across sites) in `list` and `sort`, and moves its leftover `*.bak.skill` files out of `~/.ssh/config.d/` before its first write.
+
+### Fixed
+- Skill backups no longer load as live SSH configuration through `Include ~/.ssh/config.d/*`, so a stale backup cannot re-add a LocalForward the live file removed.
+
 ## [killdeer] - 2026-10-22
 
 ### Added

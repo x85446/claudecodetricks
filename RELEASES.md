@@ -2,6 +2,14 @@
 
 What changed, for people who use this.
 
+## 2026-10-22 — SSH config edits that stay clean
+
+**Fixed**
+- Editing your SSH sites with `/ssh-config` keeps its backups out of the folder ssh reads, so an old backup can't quietly bring back a port forward you removed.
+
+**Improved**
+- `/ssh-config` tells you when a backup or editor copy in `~/.ssh/config.d` is being loaded as live config, and `list` and `sort` point out hosts defined twice.
+
 ## 2026-10-22 — Plan reports you can trust, and simpler automations
 
 **New**
