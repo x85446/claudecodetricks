@@ -7,7 +7,7 @@
 #               landing test's Fails paragraph makes clauses 3 and 4 work
 #   contract-3  the conductor client delegates lifecycle and returns after
 #               one bounded assignment; the runtime test covers repair policy
-#   contract-4  triage has the Executor-defect row with `fix problem N`
+#   contract-4  triage has the Executor-defect row with `I can fix`
 #   contract-5  every family member carries the family version and its
 #               installed copy matches the source
 #
@@ -67,10 +67,10 @@ fi
 # contract-4
 rows=$(grep -c 'Executor defect' "$SK/iterate-triage/SKILL.md")
 row=$(grep 'Executor defect' "$SK/iterate-triage/SKILL.md")
-if [ "$rows" -eq 1 ] && printf '%s' "$row" | grep -q 'fix problem N' && printf '%s' "$row" | grep -q 'unblocked'; then
+if [ "$rows" -eq 1 ] && printf '%s' "$row" | grep -q 'I can fix' && printf '%s' "$row" | grep -q 'unblocked'; then
     pass contract-4
 else
-    fail contract-4 "Executor-defect rows: $rows (want 1, with fix problem N and unblocked)"
+    fail contract-4 "Executor-defect rows: $rows (want 1, with I can fix and unblocked)"
 fi
 
 # contract-5
