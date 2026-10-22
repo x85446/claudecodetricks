@@ -287,3 +287,23 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - rule: HTML Living Standard session history (pushState); WCAG 2.2 SC 3.2.3 Consistent Navigation
 - status: fixed
 - verification: Opening an automation pushes `automation=<id>`; Back returned to the list without an editor and Forward reopened the same editor.
+
+## Report integrity (killdeer integrity team) — 2026-10-22
+
+### F40 — An earlier "partial" log line overrides a requirement's checked boxes
+- surface: live Waterbuck requirement detail
+- kind: mistake
+- severity: high
+- evidence: GET localhost:8420/plan for Waterbuck with history, `bdShow(4)`: the detail reads "REQUIREMENT 4 · COORDINATOR · ACTIVE" although the plan file has `- [x] 4.` in both Steps and Validation. The 07:00:30Z Status/Log line "step 4 partial: …" is the latest line the step-status pattern matches; the later "step 4 bake.cleanup.green rerun passed" does not match it, so the stale partial wins over the checkboxes.
+- fix: Derive requirement state from the plan's checkboxes first and treat prose step reports as imported evidence for that requirement, not as state. A report only sets state on a plan that has no checkbox for it.
+- rule: —
+- status: open
+
+### F41 — Requirement cells open their detail by mouse only
+- surface: plan/archive Requirements grid (`.bd-cell`)
+- kind: a11y
+- severity: high
+- evidence: Headless Chrome on Waterbuck: each requirement cell is a `<div onclick="bdShow(N)">` with tabIndex -1 and no role, so Tab never reaches it and Enter/Space cannot open the detail that carries the step, its validation and its note.
+- fix: Give every requirement a keyboard-operable disclosure (native `<details>`/`<summary>`) that holds its acceptance text and observed evidence; replace or convert the click-only cells.
+- rule: WCAG 2.2 SC 2.1.1 Keyboard; SC 4.1.2 Name, Role, Value
+- status: open
