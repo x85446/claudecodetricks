@@ -541,7 +541,9 @@ func writePlanDetail(w http.ResponseWriter, r *http.Request, proj string, rows [
 	page := RenderTimelineWithChrome(rows, plan, "/project?project="+url.QueryEscape(proj)+"&tab=plans", tokens, conductorDetailHeader(proj, plan.Name, pageURL.RequestURI()))
 	in := ReportInput{Plan: plan, Rows: rows, Tokens: tokens, HistoryLoaded: tokens != nil, Now: time.Now()}
 	in.Record, in.RecordErr = ReadRecordReport(proj, plan.Name, plan.ArchiveFile)
-	page = strings.Replace(page, `<div id="plan-recorded-content">`, RenderPlanReport(BuildPlanReport(in))+`<div id="plan-recorded-content">`, 1)
+	// The report sits inside #plan-recorded-content so detail.js replaces it
+	// together with the rest of the recorded content when history loads.
+	page = strings.Replace(page, `<div id="plan-recorded-content">`, `<div id="plan-recorded-content">`+RenderPlanReport(BuildPlanReport(in)), 1)
 	if tokens == nil {
 		q.Set("history", "1")
 		pageURL.RawQuery = q.Encode()
