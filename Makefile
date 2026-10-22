@@ -248,7 +248,7 @@ conductor-settings-test:  ## Verify Conductor settings interactions through TEST
 .PHONY: automation-test
 automation-test:  ## Verify Named Automations (editor, band tester, associations) through TESTMASTER
 	$(Q)testmaster suite discover
-	$(Q)testmaster suite run conductor.automations-ui conductor.settings-ui 'conductor.TestKilldeer*' 'iterrun.TestConductorAPIAutomationPreview'
+	$(Q)testmaster suite run conductor.automations-ui conductor.automation-navigation conductor.settings-ui 'conductor.TestKilldeer*' 'iterrun.TestConductorAPIAutomationPreview'
 
 .PHONY: report-test
 report-test: build  ## Verify the run record and plan report (kr-* cases, headless-Chrome page test) through TESTMASTER

@@ -7625,3 +7625,16 @@
 {"id":"conductor.report-navigation","ms":5593,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:11:47Z"}
 {"id":"conductor.settings-ui","ms":52,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:11:47Z"}
 {"batch":"4 patterns","failed":0,"missing":0,"ms":15585,"not_run":0,"passed":4,"runner":"testmaster","skipped":0,"ts":"2026-10-22T21:11:47Z"}
+{"id":"conductor.automation-navigation","ms":16439,"result":"pass","runner":"testmaster","tier":"standard","ts":"2026-10-22T21:35:15Z"}
+{"id":"conductor.report-navigation","ms":4924,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:15Z"}
+{"batch":"conductor.automation-navigation+conductor.report-navigation","failed":0,"missing":0,"ms":21364,"not_run":0,"passed":2,"runner":"testmaster","skipped":0,"ts":"2026-10-22T21:35:15Z"}
+{"id":"conductor.TestKilldeerPreviewBands","ms":20,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:42Z"}
+{"id":"conductor.TestKilldeerPreviewFirstEligibleRow","ms":20,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:42Z"}
+{"id":"conductor.TestKilldeerPreviewIgnoresLiveState","ms":30,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:42Z"}
+{"id":"conductor.TestKilldeerPreviewOverdriveParticipants","ms":40,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:42Z"}
+{"id":"conductor.TestKilldeerPreviewScheduleAndOverdrive","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:42Z"}
+{"id":"conductor.automation-navigation","ms":15694,"result":"pass","runner":"testmaster","tier":"standard","ts":"2026-10-22T21:35:42Z"}
+{"id":"conductor.automations-ui","ms":46,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:42Z"}
+{"id":"conductor.settings-ui","ms":60,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:42Z"}
+{"id":"iterrun.TestConductorAPIAutomationPreview","ms":20,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:35:42Z"}
+{"batch":"5 patterns","failed":0,"missing":0,"ms":16315,"not_run":0,"passed":9,"runner":"testmaster","skipped":0,"ts":"2026-10-22T21:35:42Z"}

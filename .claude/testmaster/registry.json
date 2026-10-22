@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-22T21:11:55Z",
+  "updated": "2026-10-22T21:35:42Z",
   "sources": [
     {
       "kind": "go",
@@ -8,10 +8,10 @@
     }
   ],
   "last_run": {
-    "ts": "2026-10-22T21:11:47Z",
-    "selection": "4 patterns",
-    "ms": 15585,
-    "passed": 4,
+    "ts": "2026-10-22T21:35:42Z",
+    "selection": "5 patterns",
+    "ms": 16315,
+    "passed": 9,
     "failed": 0,
     "skipped": 0,
     "missing": 0,
@@ -1194,12 +1194,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestKilldeerPreviewBands$' ./src/internal/conductor",
       "file": "src/internal/conductor/automation_preview_test.go",
-      "runs": 2,
-      "avg_ms": 25,
-      "last_ms": 30,
+      "runs": 3,
+      "avg_ms": 23,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "conductor.TestKilldeerPreviewFirstEligibleRow": {
       "kind": "go",
@@ -1207,12 +1207,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestKilldeerPreviewFirstEligibleRow$' ./src/internal/conductor",
       "file": "src/internal/conductor/automation_preview_test.go",
-      "runs": 2,
+      "runs": 3,
       "avg_ms": 20,
       "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "conductor.TestKilldeerPreviewIgnoresLiveState": {
       "kind": "go",
@@ -1220,12 +1220,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestKilldeerPreviewIgnoresLiveState$' ./src/internal/conductor",
       "file": "src/internal/conductor/automation_preview_test.go",
-      "runs": 2,
-      "avg_ms": 20,
-      "last_ms": 20,
+      "runs": 3,
+      "avg_ms": 23,
+      "last_ms": 30,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "conductor.TestKilldeerPreviewOverdriveParticipants": {
       "kind": "go",
@@ -1233,12 +1233,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestKilldeerPreviewOverdriveParticipants$' ./src/internal/conductor",
       "file": "src/internal/conductor/automation_preview_test.go",
-      "runs": 2,
-      "avg_ms": 30,
-      "last_ms": 30,
+      "runs": 3,
+      "avg_ms": 33,
+      "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "conductor.TestKilldeerPreviewScheduleAndOverdrive": {
       "kind": "go",
@@ -1246,12 +1246,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestKilldeerPreviewScheduleAndOverdrive$' ./src/internal/conductor",
       "file": "src/internal/conductor/automation_preview_test.go",
-      "runs": 2,
-      "avg_ms": 15,
+      "runs": 3,
+      "avg_ms": 13,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "conductor.TestNativePromptFileCheckpoint": {
       "kind": "go",
@@ -1271,45 +1271,45 @@
       "cmd": "node --experimental-websocket tests/conductor/automation-navigation.test.mjs",
       "file": "tests/conductor/automation-navigation.test.mjs",
       "parallel_safe": false,
-      "runs": 1,
-      "avg_ms": 9939,
-      "last_ms": 9939,
-      "tier": "fast",
+      "runs": 3,
+      "avg_ms": 14024,
+      "last_ms": 15694,
+      "tier": "standard",
       "last_result": "pass",
-      "updated": "2026-10-22T21:11:47Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "conductor.automations-ui": {
       "kind": "shell",
       "cmd": "node tests/conductor/automations.test.cjs",
-      "runs": 3,
-      "avg_ms": 48,
-      "last_ms": 44,
+      "runs": 4,
+      "avg_ms": 47,
+      "last_ms": 46,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T21:11:47Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "conductor.report-navigation": {
       "kind": "shell",
       "cmd": "node --experimental-websocket tests/conductor/report-navigation.test.mjs",
       "file": "tests/conductor/report-navigation.test.mjs",
       "parallel_safe": false,
-      "runs": 5,
-      "avg_ms": 9834,
-      "last_ms": 5593,
+      "runs": 6,
+      "avg_ms": 9015,
+      "last_ms": 4924,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T21:11:47Z"
+      "updated": "2026-10-22T21:35:15Z"
     },
     "conductor.settings-ui": {
       "kind": "shell",
       "cmd": "node tests/conductor/settings.test.cjs",
       "parallel_safe": true,
-      "runs": 16,
-      "avg_ms": 364,
-      "last_ms": 52,
+      "runs": 17,
+      "avg_ms": 346,
+      "last_ms": 60,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T21:11:47Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "conductor.skill-clients": {
       "kind": "shell",
@@ -1785,12 +1785,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIAutomationPreview$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_api_test.go",
-      "runs": 2,
-      "avg_ms": 15,
-      "last_ms": 10,
+      "runs": 3,
+      "avg_ms": 16,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T20:46:44Z"
+      "updated": "2026-10-22T21:35:42Z"
     },
     "iterrun.TestConductorAPICumulativeDraftSamples": {
       "kind": "go",
