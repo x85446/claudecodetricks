@@ -587,11 +587,10 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
+          "id": "iterrun.TestStatuslessActiveLaneCountsAsActive",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
-          "validity": "valid"
+          "test": "iterrun.TestStatuslessActiveLaneCountsAsActive",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -600,11 +599,10 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRunboxPrefersExecutingOverStarted",
+          "id": "iterrun.TestElapsedPrefersExecutingOverStarted",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRunboxPrefersExecutingOverStarted",
-          "validity": "valid"
+          "test": "iterrun.TestElapsedPrefersExecutingOverStarted",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -613,11 +611,10 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
+          "id": "iterrun.TestElapsedFallsBackToEarliestActivityWhenExecutingMissing",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
-          "validity": "valid"
+          "test": "iterrun.TestElapsedFallsBackToEarliestActivityWhenExecutingMissing",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -626,11 +623,10 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
+          "id": "iterrun.TestElapsedHandlesZeroConfirmedActivity",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRunboxHandlesZeroConfirmedActivity",
-          "validity": "valid"
+          "test": "iterrun.TestElapsedHandlesZeroConfirmedActivity",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -639,11 +635,10 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
+          "id": "iterrun.TestElapsedPrefersFinishedOverActivityForArchivedPlans",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans",
-          "validity": "valid"
+          "test": "iterrun.TestElapsedPrefersFinishedOverActivityForArchivedPlans",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -665,11 +660,10 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestBurndownChartShadesByValidationState",
+          "id": "iterrun.TestRequirementGridFollowsTheProgressModel",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestBurndownChartShadesByValidationState",
-          "validity": "valid"
+          "test": "iterrun.TestRequirementGridFollowsTheProgressModel",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -678,11 +672,10 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestBurndownChartDistinguishesGaveUpFromActive",
+          "id": "iterrun.TestLaneListShowsFullDependsOnListNotJustPrimary",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestBurndownChartDistinguishesGaveUpFromActive",
-          "validity": "valid"
+          "test": "iterrun.TestLaneListShowsFullDependsOnListNotJustPrimary",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -691,35 +684,20 @@
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary",
+          "id": "iterrun.TestRequirementGridOmittedWhenNoStepDetail",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary",
-          "validity": "valid"
-        },
-        {
-          "covers": [
-            "src/internal/iterrun/plans.go",
-            "src/internal/iterrun/serve.go",
-            "src/internal/iterrun/timeline.go"
-          ],
-          "covers_source": "coverage",
-          "id": "iterrun.TestBurndownChartOmittedWhenNoStepDetail",
-          "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestBurndownChartOmittedWhenNoStepDetail",
-          "validity": "valid"
+          "test": "iterrun.TestRequirementGridOmittedWhenNoStepDetail",
+          "validity": "unverified"
         },
         {
           "covers": [
             "src/internal/iterrun/timeline.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists",
+          "id": "iterrun.TestTeamValidationNotesReachEvidenceNotAModal",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists",
-          "validity": "valid"
+          "test": "iterrun.TestTeamValidationNotesReachEvidenceNotAModal",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -1135,11 +1113,10 @@
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestTokenPanelRendersLanesToolsAndWakeups",
+          "id": "iterrun.TestUsageSectionRendersLanesToolsAndWakeups",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestTokenPanelRendersLanesToolsAndWakeups",
-          "validity": "valid"
+          "test": "iterrun.TestUsageSectionRendersLanesToolsAndWakeups",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -1150,11 +1127,10 @@
             "src/internal/iterrun/tokens_html.go"
           ],
           "covers_source": "coverage",
-          "id": "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
+          "id": "iterrun.TestUsageIsUnknownWhenThereIsNothingMeasured",
           "last_validated": "2026-10-22T05:51:16Z",
-          "last_validated_commit": "1fa8f369",
-          "test": "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
-          "validity": "valid"
+          "test": "iterrun.TestUsageIsUnknownWhenThereIsNothingMeasured",
+          "validity": "unverified"
         },
         {
           "covers": [
@@ -13048,7 +13024,11 @@
           "when": "navigate requirements while history loads",
           "then": "bounded logs preserve headers, focus and working detail navigation",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "test": [
+            "iterrun.TestKrReportNavigation",
+            "conductor.report-navigation"
+          ]
         },
         {
           "id": "kr-report-legacy",
@@ -13056,7 +13036,11 @@
           "when": "render and compare browser views",
           "then": "available detail survives and partial data is clearly identified without modifying sources",
           "tier": "?",
-          "validity": "unverified"
+          "validity": "unverified",
+          "test": [
+            "iterrun.TestKrReportLegacy",
+            "conductor.report-navigation"
+          ]
         }
       ]
     },

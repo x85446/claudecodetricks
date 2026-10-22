@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-22T05:52:09Z",
+  "updated": "2026-10-22T20:28:20Z",
   "sources": [
     {
       "kind": "go",
@@ -1188,6 +1188,61 @@
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
     },
+    "conductor.TestKilldeerPreviewBands": {
+      "kind": "go",
+      "name": "TestKilldeerPreviewBands",
+      "pkg": "./src/internal/conductor",
+      "cmd": "go test -count=1 -run '^TestKilldeerPreviewBands$' ./src/internal/conductor",
+      "file": "src/internal/conductor/automation_preview_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "conductor.TestKilldeerPreviewFirstEligibleRow": {
+      "kind": "go",
+      "name": "TestKilldeerPreviewFirstEligibleRow",
+      "pkg": "./src/internal/conductor",
+      "cmd": "go test -count=1 -run '^TestKilldeerPreviewFirstEligibleRow$' ./src/internal/conductor",
+      "file": "src/internal/conductor/automation_preview_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "conductor.TestKilldeerPreviewIgnoresLiveState": {
+      "kind": "go",
+      "name": "TestKilldeerPreviewIgnoresLiveState",
+      "pkg": "./src/internal/conductor",
+      "cmd": "go test -count=1 -run '^TestKilldeerPreviewIgnoresLiveState$' ./src/internal/conductor",
+      "file": "src/internal/conductor/automation_preview_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "conductor.TestKilldeerPreviewOverdriveParticipants": {
+      "kind": "go",
+      "name": "TestKilldeerPreviewOverdriveParticipants",
+      "pkg": "./src/internal/conductor",
+      "cmd": "go test -count=1 -run '^TestKilldeerPreviewOverdriveParticipants$' ./src/internal/conductor",
+      "file": "src/internal/conductor/automation_preview_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "conductor.TestKilldeerPreviewScheduleAndOverdrive": {
+      "kind": "go",
+      "name": "TestKilldeerPreviewScheduleAndOverdrive",
+      "pkg": "./src/internal/conductor",
+      "cmd": "go test -count=1 -run '^TestKilldeerPreviewScheduleAndOverdrive$' ./src/internal/conductor",
+      "file": "src/internal/conductor/automation_preview_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
     "conductor.TestNativePromptFileCheckpoint": {
       "kind": "go",
       "name": "TestNativePromptFileCheckpoint",
@@ -1200,6 +1255,16 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
+    },
+    "conductor.report-navigation": {
+      "kind": "shell",
+      "cmd": "node --experimental-websocket tests/conductor/report-navigation.test.mjs",
+      "file": "tests/conductor/report-navigation.test.mjs",
+      "parallel_safe": false,
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "conductor.settings-ui": {
       "kind": "shell",
@@ -1419,6 +1484,39 @@
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
     },
+    "iterate-run.TestKrRecordIsolation": {
+      "kind": "go",
+      "name": "TestKrRecordIsolation",
+      "pkg": "./src/cmd/iterate-run",
+      "cmd": "go test -count=1 -run '^TestKrRecordIsolation$' ./src/cmd/iterate-run",
+      "file": "src/cmd/iterate-run/record_cmd_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterate-run.TestKrRecordReplay": {
+      "kind": "go",
+      "name": "TestKrRecordReplay",
+      "pkg": "./src/cmd/iterate-run",
+      "cmd": "go test -count=1 -run '^TestKrRecordReplay$' ./src/cmd/iterate-run",
+      "file": "src/cmd/iterate-run/record_cmd_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterate-run.TestRecordCLIUsageErrors": {
+      "kind": "go",
+      "name": "TestRecordCLIUsageErrors",
+      "pkg": "./src/cmd/iterate-run",
+      "cmd": "go test -count=1 -run '^TestRecordCLIUsageErrors$' ./src/cmd/iterate-run",
+      "file": "src/cmd/iterate-run/record_cmd_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
     "iterate.contract-test": {
       "kind": "shell",
       "name": "contract-test",
@@ -1510,6 +1608,17 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
+    },
+    "iterrun.TestArchivedPlanWindowEndsAtTheArchiveTime": {
+      "kind": "go",
+      "name": "TestArchivedPlanWindowEndsAtTheArchiveTime",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestArchivedPlanWindowEndsAtTheArchiveTime$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/tokens_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "iterrun.TestArchivedProjectAccordionOmittedWhenNoArchivedPlans": {
       "kind": "go",
@@ -1615,58 +1724,6 @@
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
     },
-    "iterrun.TestBurndownChartDistinguishesGaveUpFromActive": {
-      "kind": "go",
-      "name": "TestBurndownChartDistinguishesGaveUpFromActive",
-      "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestBurndownChartDistinguishesGaveUpFromActive$'",
-      "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 56,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
-    },
-    "iterrun.TestBurndownChartOmittedWhenNoStepDetail": {
-      "kind": "go",
-      "name": "TestBurndownChartOmittedWhenNoStepDetail",
-      "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestBurndownChartOmittedWhenNoStepDetail$'",
-      "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 53,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
-    },
-    "iterrun.TestBurndownChartShadesByValidationState": {
-      "kind": "go",
-      "name": "TestBurndownChartShadesByValidationState",
-      "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestBurndownChartShadesByValidationState$'",
-      "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 55,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
-    },
-    "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary": {
-      "kind": "go",
-      "name": "TestBurndownChartShowsFullDependsOnListNotJustPrimary",
-      "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestBurndownChartShowsFullDependsOnListNotJustPrimary$'",
-      "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 56,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
-    },
     "iterrun.TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet": {
       "kind": "go",
       "name": "TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet",
@@ -1679,6 +1736,17 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
+    },
+    "iterrun.TestConductorAPIAutomationPreview": {
+      "kind": "go",
+      "name": "TestConductorAPIAutomationPreview",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestConductorAPIAutomationPreview$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/conductor_api_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "iterrun.TestConductorAPICumulativeDraftSamples": {
       "kind": "go",
@@ -1835,6 +1903,17 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
+    },
+    "iterrun.TestConductorAssignmentsLandInTheRunRecord": {
+      "kind": "go",
+      "name": "TestConductorAssignmentsLandInTheRunRecord",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestConductorAssignmentsLandInTheRunRecord$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/record_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "iterrun.TestConductorDetailIdentityAndMissingSource": {
       "kind": "go",
@@ -2294,6 +2373,50 @@
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
     },
+    "iterrun.TestElapsedFallsBackToEarliestActivityWhenExecutingMissing": {
+      "kind": "go",
+      "name": "TestElapsedFallsBackToEarliestActivityWhenExecutingMissing",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestElapsedFallsBackToEarliestActivityWhenExecutingMissing$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/timeline_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestElapsedHandlesZeroConfirmedActivity": {
+      "kind": "go",
+      "name": "TestElapsedHandlesZeroConfirmedActivity",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestElapsedHandlesZeroConfirmedActivity$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/timeline_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestElapsedPrefersExecutingOverStarted": {
+      "kind": "go",
+      "name": "TestElapsedPrefersExecutingOverStarted",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestElapsedPrefersExecutingOverStarted$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/timeline_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestElapsedPrefersFinishedOverActivityForArchivedPlans": {
+      "kind": "go",
+      "name": "TestElapsedPrefersFinishedOverActivityForArchivedPlans",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestElapsedPrefersFinishedOverActivityForArchivedPlans$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/timeline_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
     "iterrun.TestEnrollWithdrawRoundTrip": {
       "kind": "go",
       "name": "TestEnrollWithdrawRoundTrip",
@@ -2528,6 +2651,215 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
+    },
+    "iterrun.TestKrCoverageMissing": {
+      "kind": "go",
+      "name": "TestKrCoverageMissing",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrCoverageMissing$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_coverage_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrCoverageProviders": {
+      "kind": "go",
+      "name": "TestKrCoverageProviders",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrCoverageProviders$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_coverage_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrDeliveryStages": {
+      "kind": "go",
+      "name": "TestKrDeliveryStages",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrDeliveryStages$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_delivery_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrDeliveryUnknown": {
+      "kind": "go",
+      "name": "TestKrDeliveryUnknown",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrDeliveryUnknown$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_delivery_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrEvidenceBinding": {
+      "kind": "go",
+      "name": "TestKrEvidenceBinding",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrEvidenceBinding$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_integrity_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrEvidenceFreshness": {
+      "kind": "go",
+      "name": "TestKrEvidenceFreshness",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrEvidenceFreshness$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_integrity_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrHandoffGated": {
+      "kind": "go",
+      "name": "TestKrHandoffGated",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrHandoffGated$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_ownership_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrHandoffResume": {
+      "kind": "go",
+      "name": "TestKrHandoffResume",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrHandoffResume$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_ownership_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrProgressComplete": {
+      "kind": "go",
+      "name": "TestKrProgressComplete",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrProgressComplete$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_integrity_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrProgressPartial": {
+      "kind": "go",
+      "name": "TestKrProgressPartial",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrProgressPartial$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_integrity_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrReportLegacy": {
+      "kind": "go",
+      "name": "TestKrReportLegacy",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrReportLegacy$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_layout_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrReportNavigation": {
+      "kind": "go",
+      "name": "TestKrReportNavigation",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrReportNavigation$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_layout_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrReworkInterrupted": {
+      "kind": "go",
+      "name": "TestKrReworkInterrupted",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrReworkInterrupted$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_rework_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrReworkRetries": {
+      "kind": "go",
+      "name": "TestKrReworkRetries",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrReworkRetries$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_rework_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrTimePartition": {
+      "kind": "go",
+      "name": "TestKrTimePartition",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrTimePartition$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_time_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrTimeUnknown": {
+      "kind": "go",
+      "name": "TestKrTimeUnknown",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrTimeUnknown$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_time_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrUsageDedup": {
+      "kind": "go",
+      "name": "TestKrUsageDedup",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrUsageDedup$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_usage_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestKrUsageScopes": {
+      "kind": "go",
+      "name": "TestKrUsageScopes",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestKrUsageScopes$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_usage_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestLaneListShowsFullDependsOnListNotJustPrimary": {
+      "kind": "go",
+      "name": "TestLaneListShowsFullDependsOnListNotJustPrimary",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestLaneListShowsFullDependsOnListNotJustPrimary$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/timeline_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "iterrun.TestListArchivedPlans": {
       "kind": "go",
@@ -3192,6 +3524,28 @@
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
     },
+    "iterrun.TestRecordAdmissionGatesFromCandidates": {
+      "kind": "go",
+      "name": "TestRecordAdmissionGatesFromCandidates",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestRecordAdmissionGatesFromCandidates$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_ownership_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestRecordHookObservesOnlyExecutingPlanInItsProject": {
+      "kind": "go",
+      "name": "TestRecordHookObservesOnlyExecutingPlanInItsProject",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestRecordHookObservesOnlyExecutingPlanInItsProject$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/record_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
     "iterrun.TestRedispatchedTeamsShareOneLane": {
       "kind": "go",
       "name": "TestRedispatchedTeamsShareOneLane",
@@ -3218,70 +3572,38 @@
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
     },
-    "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning": {
+    "iterrun.TestReportIntegrityLogSplit": {
       "kind": "go",
-      "name": "TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning",
+      "name": "TestReportIntegrityLogSplit",
       "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning$'",
-      "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 32,
-      "avg_ms": 75,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
+      "cmd": "go test -count=1 -run '^TestReportIntegrityLogSplit$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/report_integrity_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
-    "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing": {
+    "iterrun.TestRequirementGridFollowsTheProgressModel": {
       "kind": "go",
-      "name": "TestRunboxFallsBackToEarliestActivityWhenExecutingMissing",
+      "name": "TestRequirementGridFollowsTheProgressModel",
       "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestRunboxFallsBackToEarliestActivityWhenExecutingMissing$'",
+      "cmd": "go test -count=1 -run '^TestRequirementGridFollowsTheProgressModel$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 32,
-      "avg_ms": 75,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
-    "iterrun.TestRunboxHandlesZeroConfirmedActivity": {
+    "iterrun.TestRequirementGridOmittedWhenNoStepDetail": {
       "kind": "go",
-      "name": "TestRunboxHandlesZeroConfirmedActivity",
+      "name": "TestRequirementGridOmittedWhenNoStepDetail",
       "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestRunboxHandlesZeroConfirmedActivity$'",
+      "cmd": "go test -count=1 -run '^TestRequirementGridOmittedWhenNoStepDetail$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 32,
-      "avg_ms": 76,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
-    },
-    "iterrun.TestRunboxPrefersExecutingOverStarted": {
-      "kind": "go",
-      "name": "TestRunboxPrefersExecutingOverStarted",
-      "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestRunboxPrefersExecutingOverStarted$'",
-      "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 32,
-      "avg_ms": 88,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
-    },
-    "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans": {
-      "kind": "go",
-      "name": "TestRunboxPrefersFinishedOverActivityForArchivedPlans",
-      "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestRunboxPrefersFinishedOverActivityForArchivedPlans$'",
-      "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 32,
-      "avg_ms": 77,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "iterrun.TestScheduleDatesMatchOpeningDay": {
       "kind": "go",
@@ -3374,6 +3696,17 @@
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
     },
+    "iterrun.TestStatuslessActiveLaneCountsAsActive": {
+      "kind": "go",
+      "name": "TestStatuslessActiveLaneCountsAsActive",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestStatuslessActiveLaneCountsAsActive$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/timeline_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
     "iterrun.TestSyntheticZeroUsageRecordsAreNotCountedAsRequests": {
       "kind": "go",
       "name": "TestSyntheticZeroUsageRecordsAreNotCountedAsRequests",
@@ -3386,6 +3719,17 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
+    },
+    "iterrun.TestTeamValidationNotesReachEvidenceNotAModal": {
+      "kind": "go",
+      "name": "TestTeamValidationNotesReachEvidenceNotAModal",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestTeamValidationNotesReachEvidenceNotAModal$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/timeline_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "iterrun.TestThinLetterKeepsItsLetter": {
       "kind": "go",
@@ -3423,32 +3767,6 @@
       "runs": 31,
       "avg_ms": 68,
       "last_ms": 10,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
-    },
-    "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured": {
-      "kind": "go",
-      "name": "TestTokenPanelIsOmittedWhenThereIsNothingMeasured",
-      "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestTokenPanelIsOmittedWhenThereIsNothingMeasured$'",
-      "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 31,
-      "avg_ms": 48,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
-    },
-    "iterrun.TestTokenPanelRendersLanesToolsAndWakeups": {
-      "kind": "go",
-      "name": "TestTokenPanelRendersLanesToolsAndWakeups",
-      "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestTokenPanelRendersLanesToolsAndWakeups$'",
-      "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 31,
-      "avg_ms": 59,
-      "last_ms": 60,
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
@@ -3518,18 +3836,27 @@
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
     },
-    "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists": {
+    "iterrun.TestUsageIsUnknownWhenThereIsNothingMeasured": {
       "kind": "go",
-      "name": "TestValidationGlyphOpensModalOnlyWhenNoteExists",
+      "name": "TestUsageIsUnknownWhenThereIsNothingMeasured",
       "pkg": "./src/internal/iterrun",
-      "cmd": "go test ./src/internal/iterrun -run '^TestValidationGlyphOpensModalOnlyWhenNoteExists$'",
-      "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 51,
-      "last_ms": 0,
-      "tier": "fast",
-      "last_result": "pass",
-      "updated": "2026-10-22T05:51:16Z"
+      "cmd": "go test -count=1 -run '^TestUsageIsUnknownWhenThereIsNothingMeasured$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/tokens_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "iterrun.TestUsageSectionRendersLanesToolsAndWakeups": {
+      "kind": "go",
+      "name": "TestUsageSectionRendersLanesToolsAndWakeups",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestUsageSectionRendersLanesToolsAndWakeups$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/tokens_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen": {
       "kind": "go",
@@ -3788,6 +4115,138 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-22T05:51:16Z"
+    },
+    "runrecord.TestAppendAllValidatesWholeBatchFirst": {
+      "kind": "go",
+      "name": "TestAppendAllValidatesWholeBatchFirst",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestAppendAllValidatesWholeBatchFirst$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestAppendRejectsInvalidEvents": {
+      "kind": "go",
+      "name": "TestAppendRejectsInvalidEvents",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestAppendRejectsInvalidEvents$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestAttemptsCountDistinctAttemptsOnly": {
+      "kind": "go",
+      "name": "TestAttemptsCountDistinctAttemptsOnly",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestAttemptsCountDistinctAttemptsOnly$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestConcurrentWritersNeverInterleave": {
+      "kind": "go",
+      "name": "TestConcurrentWritersNeverInterleave",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestConcurrentWritersNeverInterleave$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestFoldOrdersOutOfOrderEventsAndDropsDuplicates": {
+      "kind": "go",
+      "name": "TestFoldOrdersOutOfOrderEventsAndDropsDuplicates",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestFoldOrdersOutOfOrderEventsAndDropsDuplicates$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestLegacyEventsCarryProvenanceAndStableIDs": {
+      "kind": "go",
+      "name": "TestLegacyEventsCarryProvenanceAndStableIDs",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestLegacyEventsCarryProvenanceAndStableIDs$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestReadsNeverCreateState": {
+      "kind": "go",
+      "name": "TestReadsNeverCreateState",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestReadsNeverCreateState$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestRunIdentityAcrossArchiveAndRerun": {
+      "kind": "go",
+      "name": "TestRunIdentityAcrossArchiveAndRerun",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestRunIdentityAcrossArchiveAndRerun$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestTornTailIgnoredOnReadRepairedOnAppend": {
+      "kind": "go",
+      "name": "TestTornTailIgnoredOnReadRepairedOnAppend",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestTornTailIgnoredOnReadRepairedOnAppend$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestUnknownsListedNeverZero": {
+      "kind": "go",
+      "name": "TestUnknownsListedNeverZero",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestUnknownsListedNeverZero$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestUnterminatedCompleteLineIsKept": {
+      "kind": "go",
+      "name": "TestUnterminatedCompleteLineIsKept",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestUnterminatedCompleteLineIsKept$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
+    },
+    "runrecord.TestUsageIdempotentPerRequestAndScopesSeparate": {
+      "kind": "go",
+      "name": "TestUsageIdempotentPerRequestAndScopesSeparate",
+      "pkg": "./src/internal/runrecord",
+      "cmd": "go test -count=1 -run '^TestUsageIdempotentPerRequestAndScopesSeparate$' ./src/internal/runrecord",
+      "file": "src/internal/runrecord/store_test.go",
+      "runs": 0,
+      "avg_ms": null,
+      "last_ms": null,
+      "tier": "?"
     },
     "testmaster.TestBlockingFailureStopsTheRunButIndependentFailuresDoNot": {
       "kind": "go",
