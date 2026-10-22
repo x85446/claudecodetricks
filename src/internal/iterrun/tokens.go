@@ -1383,3 +1383,39 @@ func PrintPlanTokens(w io.Writer, pt PlanTokens) {
 		}
 	}
 }
+
+// humanTokens renders a token count the way a reader scans it. Exact below
+// 10,000 — a 900-token difference matters when you are looking at one
+// wake-up — then k and M, the granularity these figures are trustworthy
+// at anyway.
+func humanTokens(n int64) string {
+	switch {
+	case n < 0:
+		return "0"
+	case n < 10_000:
+		return fmt.Sprintf("%d", n)
+	case n < 1_000_000:
+		return fmt.Sprintf("%.0fk", float64(n)/1000)
+	case n < 100_000_000:
+		return fmt.Sprintf("%.1fM", float64(n)/1e6)
+	default:
+		return fmt.Sprintf("%.0fM", float64(n)/1e6)
+	}
+}
+
+// laneLabel trims a lane name to something a table column can hold. Most
+// lanes are short team names, but a plain Agent-tool dispatch is labelled
+// with its own description — "Map profile editor for Destination control"
+// — which is a sentence, not a name. Seen live on newcorder's xenops.
+func laneLabel(s string) string {
+	const max = 26
+	if len(s) <= max {
+		return s
+	}
+	cut := s[:max-1]
+	// Prefer a word boundary, but only if it does not eat most of the name.
+	if i := strings.LastIndexByte(cut, ' '); i > max/2 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,-") + "\u2026"
+}

@@ -346,7 +346,18 @@ func writeDeliverySection(b *strings.Builder, s DeliverySection) {
 		b.WriteString(`</ul>`)
 	}
 
-	b.WriteString(`<h3>Stages</h3><ol class="rd-stages">`)
+	// With nothing recorded at any stage the summary already says every
+	// stage is unknown; the list of what each stage needs folds into one
+	// disclosure instead of repeating that eight times.
+	recorded := false
+	for _, st := range s.Stages {
+		recorded = recorded || st.Latest != nil
+	}
+	if recorded {
+		b.WriteString(`<h3>Stages</h3><ol class="rd-stages">`)
+	} else {
+		fmt.Fprintf(b, `<details class="rd-all"><summary>Stages and the proof each needs (%d)</summary><ol class="rd-stages">`, len(s.Stages))
+	}
 	for _, st := range s.Stages {
 		fmt.Fprintf(b, `<li><div class="rd-head">%s %s</div>`, html.EscapeString(st.Label), stateBadge(st.State))
 		b.WriteString(`<p class="ra-note">Proof required: ` + html.EscapeString(st.Proof) + `.</p>`)
@@ -371,6 +382,9 @@ func writeDeliverySection(b *strings.Builder, s DeliverySection) {
 		b.WriteString(`</li>`)
 	}
 	b.WriteString(`</ol>`)
+	if !recorded {
+		b.WriteString(`</details>`)
+	}
 
 	if len(s.Imported) > 0 {
 		b.WriteString(`<h3>Plan-file notes that mention delivery</h3><p class="ra-note">Imported prose, not recorded observations: these never set a stage's state.</p><ul class="ra-list">`)

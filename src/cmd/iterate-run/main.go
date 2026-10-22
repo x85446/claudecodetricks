@@ -257,7 +257,17 @@ func timelineCmd(args []string) {
 
 	iterrun.PrintTimelineSummary(os.Stdout, rows)
 
-	path, err := iterrun.WriteTimelineHTML(cwd, rows, planSummary)
+	// A named plan's page carries its report: the run record and, when the
+	// hook log reads, transcript usage, the same inputs the dashboard uses.
+	in := iterrun.ReportInput{Plan: planSummary, Rows: rows, Now: time.Now()}
+	if plan != "" {
+		in.Record, in.RecordErr = iterrun.ReadRecordReport(home, planSummary.Name, planSummary.ArchiveFile)
+		if eventsErr == nil && labelsErr == nil {
+			pt := iterrun.PlanTokenUsage(planSummary, events, labels)
+			in.Tokens, in.HistoryLoaded = &pt, true
+		}
+	}
+	path, err := iterrun.WriteTimelineHTML(cwd, in)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "iterate-run: could not write HTML timeline: %v\n", err)
 		return

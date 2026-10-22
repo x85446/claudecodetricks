@@ -138,7 +138,9 @@ type ProgressLane struct {
 	State        string `json:"state"` // completed | active | blocked | queued | unknown
 	Basis        string `json:"basis"`
 	Requirements []int  `json:"requirements,omitempty"`
-	Activity     bool   `json:"activity"`
+	// DependsOn is the team's own Depends-on list from the Teams table.
+	DependsOn []string `json:"depends_on,omitempty"`
+	Activity  bool     `json:"activity"`
 }
 
 // reportRequirement is one requirement merged from the plan file, the run
@@ -643,11 +645,22 @@ func progressLanes(in ReportInput, src reportPlanSource, o ProgressOutcome) []Pr
 		coordinator  bool
 		activity     bool
 		steps        []int
+		dependsOn    []string
 	}
 	var lanes []lane
 	seen := map[string]int{}
+	labelOf := map[string]string{}
+	for _, row := range in.Rows {
+		labelOf[row.key] = row.label
+	}
 	for _, row := range in.Rows {
 		l := lane{name: row.label, status: row.status, coordinator: row.key == "", activity: len(row.spans) > 0}
+		for _, k := range row.dependsOn {
+			if label, ok := labelOf[k]; ok {
+				k = label
+			}
+			l.dependsOn = append(l.dependsOn, k)
+		}
 		for _, sd := range row.steps {
 			l.steps = append(l.steps, sd.Num)
 		}
@@ -667,7 +680,7 @@ func progressLanes(in ReportInput, src reportPlanSource, o ProgressOutcome) []Pr
 		sort.Strings(names)
 		for _, name := range names {
 			meta := src.Teams[name]
-			lanes = append(lanes, lane{name: name, status: meta.status, steps: meta.stepNums})
+			lanes = append(lanes, lane{name: name, status: meta.status, steps: meta.stepNums, dependsOn: meta.dependsOn})
 			for _, n := range meta.stepNums {
 				owned[n] = true
 			}
@@ -686,7 +699,7 @@ func progressLanes(in ReportInput, src reportPlanSource, o ProgressOutcome) []Pr
 
 	var out []ProgressLane
 	for _, l := range lanes {
-		p := ProgressLane{Name: l.name, Kind: "team", Requirements: l.steps, Activity: l.activity}
+		p := ProgressLane{Name: l.name, Kind: "team", Requirements: l.steps, DependsOn: l.dependsOn, Activity: l.activity}
 		status := strings.ToLower(strings.TrimSpace(l.status))
 		end := src.TeamEnds[l.name]
 		if l.coordinator {
@@ -825,6 +838,7 @@ func writeProgressSection(b *strings.Builder, s ProgressSection) {
 		tile("pg-t-warn", "In progress", of(c.InProgress), "requirements")
 		tile("", "Not started", of(c.NotStarted), "requirements")
 		b.WriteString(`</dl>`)
+		writeRequirementGrid(b, s.RequirementItems)
 		fmt.Fprintf(b, `<details class="pg-more"><summary>Requirement by requirement (%d)</summary><ul class="pg-list">`, c.Total)
 		for _, r := range s.RequirementItems {
 			fmt.Fprintf(b, `<li><span class="pg-badge pg-b-%s">%s</span> <a href="#%s">Requirement %d</a> <span class="pg-dim">· lane %s</span><span class="pg-basis">%s</span></li>`,
@@ -857,6 +871,9 @@ func writeProgressSection(b *strings.Builder, s ProgressSection) {
 					nums = append(nums, fmt.Sprint(n))
 				}
 				reqs = unitWord(len(ln.Requirements), "requirement ", "requirements ") + strings.Join(nums, ", ")
+			}
+			if len(ln.DependsOn) > 0 {
+				reqs += " · depends on " + strings.Join(ln.DependsOn, ", ")
 			}
 			fmt.Fprintf(b, `<li><span class="pg-badge pg-l-%s">%s</span> <strong>%s</strong> <span class="pg-dim">· %s · %s</span><span class="pg-basis">%s</span></li>`,
 				esc(ln.State), esc(laneStateLabel(ln.State)), esc(ln.Name), esc(ln.Kind), esc(reqs), esc(ln.Basis))
@@ -901,6 +918,25 @@ func writeProgressSection(b *strings.Builder, s ProgressSection) {
 		fmt.Fprintf(b, `<dt>%s</dt><dd>%s</dd>`, esc(d[0]), esc(d[1]))
 	}
 	b.WriteString(`</dl></details></section>`)
+}
+
+// writeRequirementGrid writes one cell per requirement, coloured and shaped
+// by its progress state. Each cell is a link to that requirement's evidence,
+// so the grid is reachable and operable from the keyboard.
+func writeRequirementGrid(b *strings.Builder, items []ProgressRequirement) {
+	if len(items) == 0 {
+		return
+	}
+	b.WriteString(`<ul class="bd-grid" aria-label="Requirements by state; each opens its evidence">`)
+	for _, r := range items {
+		label := fmt.Sprintf("Requirement %d, %s", r.Number, requirementStateLabel(r.State))
+		if r.Lane != "" {
+			label += ", lane " + r.Lane
+		}
+		fmt.Fprintf(b, `<li><a class="bd-cell bd-%s" href="#%s" title="%s" aria-label="%s">%d</a></li>`,
+			html.EscapeString(r.State), html.EscapeString(r.EvidenceAnchor), html.EscapeString(label), html.EscapeString(label), r.Number)
+	}
+	b.WriteString(`</ul><p class="bd-key" aria-hidden="true"><span class="bd-k bd-complete">&#10003;</span> complete <span class="bd-k bd-in-progress">&#9679;</span> in progress <span class="bd-k bd-blocked">&#10007;</span> blocked or not met <span class="bd-k bd-not-started"></span> not started</p>`)
 }
 
 func describeProgressEvent(ev ProgressEvent) string {
@@ -1033,6 +1069,20 @@ const progressCSS = `<style>
 #report-progress .pg-b-in-progress,#report-progress .pg-l-active{color:var(--warn)}
 #report-progress .pg-b-blocked,#report-progress .pg-l-blocked{color:var(--danger)}
 #report-progress .pg-b-not-started,#report-progress .pg-l-queued,#report-progress .pg-l-unknown{color:var(--text-dim)}
+#report-progress .bd-grid{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px;padding:0;list-style:none}
+#report-progress .bd-cell{position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:700;color:var(--text);background:var(--surface);text-decoration:none}
+#report-progress .bd-cell:hover{border-color:var(--accent)}
+#report-progress .bd-cell::after,#report-progress .bd-k::after{position:absolute;top:-6px;right:-5px;font-size:10px;line-height:1;padding:1px;border-radius:50%;background:var(--surface)}
+#report-progress .bd-k{position:relative;display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--border);margin:0 2px 0 8px;vertical-align:-2px;font-size:0}
+#report-progress .bd-complete{background:var(--good-bg);border-color:var(--ri-good)}
+#report-progress .bd-complete::after{content:'\2713';color:var(--ri-good)}
+#report-progress .bd-in-progress{background:var(--warn-bg);border-color:var(--warn)}
+#report-progress .bd-in-progress::after{content:'\25CF';color:var(--warn)}
+#report-progress .bd-blocked{background:var(--danger-b,var(--surface-2));border-color:var(--danger)}
+#report-progress .bd-blocked::after{content:'\2717';color:var(--danger)}
+#report-progress .bd-not-started{border-style:dashed}
+#report-progress .bd-cell.bd-selected{box-shadow:0 0 0 2px var(--accent)}
+#report-progress .bd-key{margin:4px 0 0;font-size:12px;color:var(--text-dim)}
 #report-progress .pg-defs dl{margin:6px 0 0;font-size:12.5px}
 #report-progress .pg-defs dt{font-weight:600;margin-top:6px}
 #report-progress .pg-defs dd{margin:0;color:var(--text-dim)}
