@@ -85,6 +85,23 @@ func TestRecordHookObservesOnlyExecutingPlanInItsProject(t *testing.T) {
 	if err != nil || len(otherRep.Runs) != 1 || otherRep.Runs[0].RunID == r.RunID || otherRep.Runs[0].Sessions[0].SessionID != "s-other" {
 		t.Fatalf("other project: %+v %v", otherRep, err)
 	}
+
+	// A completed plan file records completion into its run and opens none.
+	writeRecordPlan(t, project, "alpha", "phase: complete\nExecuting: 2026-10-20T10:00:00Z\nFinished: 2026-10-20T12:00:00Z")
+	recordHook(t, project, "s1", "")
+	rep, _ = ReadRecordReport(project, "alpha", "")
+	if len(rep.Runs) != 1 || rep.Runs[0].RunID != r.RunID || rep.Runs[0].State != "completed" {
+		t.Fatalf("completion: %+v", rep.Runs)
+	}
+	fresh := t.TempDir()
+	writeRecordPlan(t, fresh, "alpha", "phase: complete\nExecuting: 2026-10-20T10:00:00Z")
+	if err := os.WriteFile(filepath.Join(fresh, ".claude", "iterate", "current"), []byte("alpha\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	recordHook(t, fresh, "s-late", "")
+	if runs, _ := RecordStore().Runs(fresh, "alpha"); len(runs) != 0 {
+		t.Fatalf("a completed plan opened a run: %+v", runs)
+	}
 }
 
 // recordAgentScript is a /bin/sh fixture agent: it streams a session and

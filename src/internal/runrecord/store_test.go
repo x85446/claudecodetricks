@@ -310,6 +310,30 @@ func TestAppendRejectsInvalidEvents(t *testing.T) {
 	}
 }
 
+// TESTMASTER: id=runrecord-batch-append tier=fast parallel=yes
+func TestAppendAllValidatesWholeBatchFirst(t *testing.T) {
+	s, project := testStore(t)
+	run := openRun(t, s, project, "alpha", "")
+	good := ev(project, "alpha", run, "g1", TypeLifecycle, time.Time{})
+	good.Lifecycle = &Lifecycle{State: "executing"}
+	bad := ev(project, "alpha", run, "b1", TypeLifecycle, time.Time{})
+	bad.Lifecycle = &Lifecycle{State: "nope"}
+	if n, err := s.AppendAll([]Event{good, bad}); n != 0 || err == nil {
+		t.Fatalf("partial batch written: %d %v", n, err)
+	}
+	other := ev(project, "beta", "run-other", "g1", TypeLifecycle, time.Time{})
+	other.Lifecycle = &Lifecycle{State: "queued"}
+	if n, err := s.AppendAll([]Event{good, good, other}); n != 2 || err != nil {
+		t.Fatalf("batch: %d %v", n, err)
+	}
+	if r, _ := s.Find(run); r.Events != 2 || r.Duplicates != 0 {
+		t.Fatalf("run after batch: %+v", r)
+	}
+	if r, _ := s.Find("run-other"); r.Events != 1 || r.Plan != "beta" {
+		t.Fatalf("second run in batch: %+v", r)
+	}
+}
+
 // TESTMASTER: id=runrecord-unknowns tier=fast parallel=yes
 func TestUnknownsListedNeverZero(t *testing.T) {
 	s, project := testStore(t)

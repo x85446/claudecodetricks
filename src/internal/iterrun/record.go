@@ -101,15 +101,16 @@ func recordLifecycleState(ps PlanSummary) string {
 // worked on, and records the plan file's state when it differs from the
 // run's latest lifecycle state. Only an executing plan whose file lives in
 // the hook's project is observed, so drafting activity opens no run and a
-// same-named plan in another project is never touched. Best-effort: a
-// record failure never affects the tool call.
+// same-named plan in another project is never touched. A completed plan
+// file records completion into its existing run and opens none.
+// Best-effort: a record failure never affects the tool call.
 func observeRecordHook(root, plan, team string, in hookInput) {
 	if plan == "" || !runrecord.ValidName(plan) {
 		return
 	}
 	path := filepath.Join(root, ".claude", "iterate", "plans", plan+".md")
 	ps, err := parsePlanFile(path, root)
-	if err != nil || (ps.Phase != "executing" && ps.Executing == "") || recordLifecycleState(ps) == "completed" {
+	if err != nil || (ps.Phase != "executing" && ps.Executing == "" && recordLifecycleState(ps) != "completed") {
 		return
 	}
 	now := time.Now().UTC()
@@ -118,6 +119,7 @@ func observeRecordHook(root, plan, team string, in hookInput) {
 		Key:    runrecord.PlanKey{ProjectPath: root, Plan: plan},
 		Marker: recordMarker(ps), Source: runrecord.SourceHook,
 		Versions: recordVersions(path, ps), At: now,
+		NoOpen: recordLifecycleState(ps) == "completed",
 	}
 	_, _, _ = RecordStore().Observe(req, func(run runrecord.Run) []runrecord.Event {
 		var out []runrecord.Event
@@ -152,7 +154,9 @@ func observeRecordHook(root, plan, team string, in hookInput) {
 // record. The Conductor's leases and checkpoints stay authoritative; the
 // record observes them.
 func (ConductorPlanSource) RecordAssignment(phase string, a model.Assignment, result *model.Result, ev *model.Event) {
-	if !runrecord.ValidName(a.Plan) || a.ProjectPath == "" {
+	// Intake triages an issue into a new plan; it executes no plan, so it
+	// opens no run.
+	if !runrecord.ValidName(a.Plan) || a.ProjectPath == "" || a.Kind == "intake" {
 		return
 	}
 	engine := recordEngine(a.Subscription.Adapter)

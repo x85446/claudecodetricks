@@ -230,7 +230,7 @@ func runRecordCLI(args []string, input io.Reader, out, diag io.Writer) int {
 			}
 			return 0
 		}
-		if defaultPlan() == "" && f.values["archive"] == "" {
+		if f.values["archive"] == "" && defaultPlan() == "" {
 			return recordFail(out, diag, asJSON, 2, errors.New("no plan named and the project has no current plan"), "Name one: iterate-run record show --plan <name>")
 		}
 		rep, err := iterrun.ReadRecordReport(project, plan, f.values["archive"])
@@ -332,7 +332,7 @@ func runRecordCLI(args []string, input io.Reader, out, diag io.Writer) int {
 		return 0
 
 	case "import":
-		if defaultPlan() == "" && f.values["archive"] == "" {
+		if f.values["archive"] == "" && defaultPlan() == "" {
 			return recordFail(out, diag, asJSON, 2, errors.New("no plan named and the project has no current plan"), "Name one: iterate-run record import --plan <name>")
 		}
 		run, n, err := iterrun.ImportLegacyRecord(project, plan, f.values["archive"], f.bools["dry-run"])

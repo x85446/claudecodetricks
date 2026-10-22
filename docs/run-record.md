@@ -83,11 +83,20 @@ A read folds a run's lines into one view (`runrecord.Run`, also `schema_version`
 
 | Owner | Path | Records |
 |---|---|---|
-| CLI hooks | `iterate-run hook pre/post` (`observeRecordHook`) | The session and subagent working on an executing plan, at most once per five minutes each, and the plan file's state when it differs from the run's latest lifecycle state. Only a plan whose file lives in the hook's own project is observed; a plan still in drafting opens no run. |
+| CLI hooks | `iterate-run hook pre/post` (`observeRecordHook`) | The session and subagent working on an executing plan, at most once per five minutes each, and the plan file's state when it differs from the run's latest lifecycle state. Only a plan whose file lives in the hook's own project is observed; a plan still in drafting opens no run, and a completed plan records completion into its existing run without opening one. |
 | CLI explicit | `iterate-run record append` | Any event a skill states directly: lifecycle, ownership, blockers, attempts, evidence, delivery, intervals. |
 | Conductor | `RecordSource` phases in `supervisor.go` and `events.go` | `admitted` (lifecycle admitted, ownership acquired), `started` (attempt started, lifecycle executing), `event` (provider session and cumulative usage), `finished` (attempt outcome, result evidence with the checked-out git revision, requirement checkpoint, blocker, completion, archive, ownership released). |
 
-Run resolution: a writer appends to the plan's newest run that is not archived and whose marker matches the plan file's `Executing:` value; with none, it opens a new run. A Conductor observation of an assignment always lands in the run holding that assignment's attempt, even after delivery archived the plan.
+Run resolution: a writer appends to the plan's newest run that is not archived and whose marker matches the plan file's `Executing:` value; with none, it opens a new run. A Conductor observation of an assignment always lands in the run holding that assignment's attempt, even after delivery archived the plan. Intake assignments triage an issue into a new plan and open no run.
+
+The CLI owner records archiving explicitly, after moving the plan file:
+
+```
+echo '{"lifecycle":{"state":"archived","archive_file":"<archive filename>"}}' \
+  | iterate-run record append --plan <name> --type run.lifecycle
+```
+
+A report for an archive with no `archived` event still finds its run through the marker the archive file carries.
 
 Conductor evidence comes from the result's prose and is marked `imported`; its result is `passed` only when the Conductor validated a completed result with `validation_met`. Conductor input tokens include cache tokens, which the usage `note` states.
 

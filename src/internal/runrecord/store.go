@@ -420,22 +420,50 @@ func readFile(path string) ([]Event, fileRead, error) {
 	return out, info, sc.Err()
 }
 
-func appendLine(path string, e Event) error {
-	data, err := json.Marshal(e)
-	if err != nil {
-		return err
+func appendLine(path string, e Event) error { return appendLines(path, []Event{e}) }
+
+// appendLines writes whole lines in one append and syncs once. An
+// interrupted write can tear only the final line, which the next writer
+// repairs; every complete line before it stands.
+func appendLines(path string, events []Event) error {
+	if len(events) == 0 {
+		return nil
+	}
+	var buf bytes.Buffer
+	for _, e := range events {
+		data, err := json.Marshal(e)
+		if err != nil {
+			return err
+		}
+		buf.Write(data)
+		buf.WriteByte('\n')
 	}
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return err
 	}
-	if _, err = f.Write(append(data, '\n')); err == nil {
+	if _, err = f.Write(buf.Bytes()); err == nil {
 		err = f.Sync()
 	}
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}
 	return err
+}
+
+// freshEvents drops events whose id the run file or an earlier event in
+// the batch already holds.
+func freshEvents(ids map[string]bool, events []Event) []Event {
+	var out []Event
+	batch := map[string]bool{}
+	for _, e := range events {
+		if ids[e.ID] || batch[e.ID] {
+			continue
+		}
+		batch[e.ID] = true
+		out = append(out, e)
+	}
+	return out
 }
 
 // Append durably writes one event. It returns accepted=false, with no
@@ -445,17 +473,36 @@ func (s *Store) Append(e Event) (bool, error) {
 	return n == 1, err
 }
 
-// AppendAll writes events that may span several runs. Each event is atomic
-// on its own; duplicates are skipped. It returns how many were accepted.
+// AppendAll writes events that may span several runs. Every event is
+// validated before anything is written; each run's new events then land in
+// one append under that plan's lock. Duplicates are skipped. It returns how
+// many were accepted.
 func (s *Store) AppendAll(events []Event) (int, error) {
-	accepted := 0
+	type group struct {
+		projectKey, project, plan, run string
+		events                         []Event
+	}
+	groups := map[string]*group{}
+	var order []string
 	for i := range events {
 		e := events[i]
 		if err := s.normalize(&e); err != nil {
-			return accepted, err
+			return 0, err
 		}
-		err := s.withPlanLock(e.ProjectKey, e.Plan, e.ProjectPath, func() error {
-			path := s.runPath(e.ProjectKey, e.Plan, e.RunID)
+		k := e.ProjectKey + "\x00" + e.Plan + "\x00" + e.RunID
+		g, ok := groups[k]
+		if !ok {
+			g = &group{projectKey: e.ProjectKey, project: e.ProjectPath, plan: e.Plan, run: e.RunID}
+			groups[k] = g
+			order = append(order, k)
+		}
+		g.events = append(g.events, e)
+	}
+	accepted := 0
+	for _, k := range order {
+		g := groups[k]
+		err := s.withPlanLock(g.projectKey, g.plan, g.project, func() error {
+			path := s.runPath(g.projectKey, g.plan, g.run)
 			if err := repairTail(path); err != nil {
 				return err
 			}
@@ -463,13 +510,11 @@ func (s *Store) AppendAll(events []Event) (int, error) {
 			if err != nil {
 				return err
 			}
-			if ids[e.ID] {
-				return nil
-			}
-			if err := appendLine(path, e); err != nil {
+			fresh := freshEvents(ids, g.events)
+			if err := appendLines(path, fresh); err != nil {
 				return err
 			}
-			accepted++
+			accepted += len(fresh)
 			return nil
 		})
 		if err != nil {
@@ -493,6 +538,9 @@ type OpenRequest struct {
 	// attempt, archived or not, so a late observation of an attempt (a
 	// result recorded after delivery archived the plan) stays with it.
 	AttemptKey string
+	// NoOpen appends only to an existing run: with no matching run, Observe
+	// writes nothing and returns an empty run id.
+	NoOpen bool
 }
 
 // Observe resolves the open run for a plan (opening one when needed), folds
@@ -503,6 +551,11 @@ func (s *Store) Observe(req OpenRequest, fn func(Run) []Event) (string, int, err
 	key, projectKey, err := req.Key.canonical()
 	if err != nil {
 		return "", 0, err
+	}
+	if req.NoOpen {
+		if _, err := os.Stat(s.planDir(projectKey, key.Plan)); os.IsNotExist(err) {
+			return "", 0, nil
+		}
 	}
 	var runID string
 	accepted := 0
@@ -528,6 +581,9 @@ func (s *Store) Observe(req OpenRequest, fn func(Run) []Event) (string, int, err
 				continue
 			}
 			open = &runs[i]
+		}
+		if open == nil && req.NoOpen {
+			return nil
 		}
 		if open == nil {
 			at := req.At
@@ -561,7 +617,9 @@ func (s *Store) Observe(req OpenRequest, fn func(Run) []Event) (string, int, err
 		if err != nil {
 			return err
 		}
-		for _, e := range fn(*open) {
+		derived := fn(*open)
+		for i := range derived {
+			e := &derived[i]
 			e.ProjectPath, e.ProjectKey, e.Plan, e.RunID = key.ProjectPath, projectKey, key.Plan, runID
 			if e.ProjectID == "" {
 				e.ProjectID = key.ProjectID
@@ -569,18 +627,15 @@ func (s *Store) Observe(req OpenRequest, fn func(Run) []Event) (string, int, err
 			if e.Source == "" {
 				e.Source = req.Source
 			}
-			if err := s.normalize(&e); err != nil {
+			if err := s.normalize(e); err != nil {
 				return err
 			}
-			if ids[e.ID] {
-				continue
-			}
-			if err := appendLine(path, e); err != nil {
-				return err
-			}
-			ids[e.ID] = true
-			accepted++
 		}
+		fresh := freshEvents(ids, derived)
+		if err := appendLines(path, fresh); err != nil {
+			return err
+		}
+		accepted = len(fresh)
 		return nil
 	})
 	return runID, accepted, err
