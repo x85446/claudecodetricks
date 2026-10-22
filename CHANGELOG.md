@@ -3,6 +3,34 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [killdeer] - 2026-10-22
+
+### Added
+- Durable, versioned run record shared by CLI hooks, `/iterate` and the Conductor: one append-only log per execution keyed by canonical project, event-id deduplication, torn-write repair, a deterministic fold with explicit unknowns, `iterate-run record list|show|append|import|types`, and read-only `GET /api/record`; plans that predate it get a labelled read-only legacy view.
+- Plan report model and read-only `GET /api/report`: verified progress, validation evidence with freshness against covered code, tracking coverage, plan-scoped usage by scope (plan, estimated, whole-session cost, allowance), time partitioned by cause, ownership and handoffs with admission gates, attempts and rework, and delivery stages.
+- The record observes CLI ownership from the plan's running lock, blocker detection and clearance, pause and resume, and each Conductor admission decision with the gate that decided it.
+- Codex session usage counts toward plan usage; a request counts once across parent, resumed and recorded copies.
+- `POST /api/conductor/automation-preview`: the automation tester evaluates draft rows for a hypothetical eligible project.
+- Settings → Project Associations: drag-and-drop attach and detach with keyboard and touch Attach, Detach and Enabled controls; new associations start disabled and duplicate drops write nothing.
+- Make targets `automation-test`, `report-test`, `preview`, `record-list`, `record-show`, `record-import` and `report-json`.
+- Headless-Chrome tests for plan report navigation and Named Automations navigation, and the kr-* report cases.
+
+### Changed
+- Plan and archive pages lead with the plan header, outcome and progress; requirement cells link to their evidence; one elapsed clock; the Conductor activity log stays in a bounded scroller; a main landmark and skip link.
+- `/iterate` appends attempts, validation evidence, the PR, the merge and the archive to the run record (iterate family 5.23.0).
+- Automation labels show the saved name everywhere with an ID prefix for duplicate names; unsaved edits are per-automation drafts; Save rebases onto the newest revision.
+
+### Fixed
+- The Named Automations rail link shows the list while an editor is open; Save returns to the refreshed list; Back and Forward move between list and editor.
+- A Save click survives the band tester re-evaluating on blur and the dashboard poll repainting during the press.
+- Completed plans report requirement counts instead of unlabelled lane cards that read zero done.
+- Missing usage keeps the accounting section with an unavailable state; whole-session cost is labelled apart from plan usage.
+- Long stretches without execution show their recorded cause, or unknown, instead of a severe-gap judgment.
+- Archived usage windows end at the archive time.
+
+### Removed
+- The token spend panel, lane-count stat cards, Running for box and severe-gap markers from plan pages.
+
 ## [javelina] - 2026-10-21
 
 ### Added
