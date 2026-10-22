@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -24,18 +25,32 @@ import (
 // store, a canonical project with a current-plan pointer, and a bounded
 // clock the record's observations use.
 
-type lcClock struct{ now time.Time }
+type lcClock struct {
+	mu  sync.Mutex
+	now time.Time
+}
 
 func lcUseClock(t *testing.T, start time.Time) *lcClock {
 	t.Helper()
 	c := &lcClock{now: start}
-	prev := recordNow
-	recordNow = func() time.Time { return c.now }
-	t.Cleanup(func() { recordNow = prev })
+	fn := c.get
+	prev := recordClock.Swap(&fn)
+	t.Cleanup(func() { recordClock.Store(prev) })
 	return c
 }
 
-func (c *lcClock) set(t time.Time) time.Time { c.now = t; return t }
+func (c *lcClock) get() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.now
+}
+
+func (c *lcClock) set(t time.Time) time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.now = t
+	return t
+}
 
 func lcEnv(t *testing.T) {
 	t.Helper()
@@ -185,13 +200,13 @@ func TestKrHandoffResume(t *testing.T) {
 	writeRecordPlan(t, project, "heron", lcExec+lcRunning(t0))
 	lcHook(t, project, "s1")
 	at(time.Minute)
-	writeRecordPlan(t, project, "heron", lcExec+lcRunning(clock.now))
+	writeRecordPlan(t, project, "heron", lcExec+lcRunning(clock.get()))
 	lcHook(t, project, "s1")
 	at(2 * time.Minute)
-	writeRecordPlan(t, project, "heron", lcExec+"\nstatus: blocked-on-operator: needs a signing token"+lcRunning(clock.now))
+	writeRecordPlan(t, project, "heron", lcExec+"\nstatus: blocked-on-operator: needs a signing token"+lcRunning(clock.get()))
 	lcHook(t, project, "s1")
 	at(10 * time.Minute)
-	writeRecordPlan(t, project, "heron", lcExec+"\nstatus: unblocked: token supplied"+lcRunning(clock.now))
+	writeRecordPlan(t, project, "heron", lcExec+"\nstatus: unblocked: token supplied"+lcRunning(clock.get()))
 	lcHook(t, project, "s1")
 	at(12 * time.Minute)
 	writeRecordPlan(t, project, "heron", lcExec+"\nstatus: unblocked: token supplied\nrunning: false")
@@ -206,7 +221,7 @@ func TestKrHandoffResume(t *testing.T) {
 	at(13*time.Minute + 2*time.Second)
 	src.RecordAssignment(conductor.RecordStarted, a, nil, nil)
 	// While the Conductor holds the marker, a CLI hook is not an owner.
-	writeRecordPlan(t, project, "heron", lcExec+lcRunning(clock.now)+"\nconductor-assignment: "+a.ID)
+	writeRecordPlan(t, project, "heron", lcExec+lcRunning(clock.get())+"\nconductor-assignment: "+a.ID)
 	lcHook(t, project, "s2")
 	at(20 * time.Minute)
 	src.RecordAssignment(conductor.RecordFinished, a, &model.Result{Outcome: "completed", ValidationMet: true, Evidence: []string{"receipt read back"}}, nil)
@@ -291,10 +306,10 @@ func TestKrHandoffGated(t *testing.T) {
 		writeRecordPlan(t, project, "heron", lcExec+lcRunning(t0))
 		lcHook(t, project, "s1")
 		at(2 * time.Minute)
-		writeRecordPlan(t, project, "heron", lcExec+"\nstatus: blocked-on-operator: needs a token"+lcRunning(clock.now))
+		writeRecordPlan(t, project, "heron", lcExec+"\nstatus: blocked-on-operator: needs a token"+lcRunning(clock.get()))
 		lcHook(t, project, "s1")
 		at(5 * time.Minute)
-		writeRecordPlan(t, project, "heron", lcExec+"\nstatus: unblocked"+lcRunning(clock.now))
+		writeRecordPlan(t, project, "heron", lcExec+"\nstatus: unblocked"+lcRunning(clock.get()))
 		lcHook(t, project, "s1")
 		// The Conductor sees the CLI holding the plan and defers to it.
 		d := conductor.Decision{At: at(6 * time.Minute), Queues: []conductor.Queue{{ProjectID: "p1", RunningOwners: map[string]string{"heron": "cli"}}}}
@@ -349,10 +364,10 @@ func TestKrHandoffGated(t *testing.T) {
 		writeRecordPlan(t, project, "egret", lcExec+lcRunning(t0))
 		lcHook(t, project, "s1")
 		at(time.Minute)
-		writeRecordPlan(t, project, "egret", lcExec+"\nstatus: blocked-on-operator: approve the spend"+lcRunning(clock.now))
+		writeRecordPlan(t, project, "egret", lcExec+"\nstatus: blocked-on-operator: approve the spend"+lcRunning(clock.get()))
 		lcHook(t, project, "s1")
 		at(3 * time.Minute)
-		writeRecordPlan(t, project, "egret", lcExec+"\nstatus: unblocked"+lcRunning(clock.now))
+		writeRecordPlan(t, project, "egret", lcExec+"\nstatus: unblocked"+lcRunning(clock.get()))
 		lcHook(t, project, "s1")
 		at(4 * time.Minute)
 		writeRecordPlan(t, project, "egret", lcExec+"\nstatus: unblocked\nrunning: false")

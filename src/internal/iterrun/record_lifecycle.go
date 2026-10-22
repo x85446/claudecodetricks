@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/x85446/claudecodetricks/src/internal/conductor"
@@ -13,9 +14,17 @@ import (
 	"github.com/x85446/claudecodetricks/src/internal/runrecord"
 )
 
-// recordNow is the run record's observation clock. Tests replace it with a
-// bounded clock.
-var recordNow = func() time.Time { return time.Now().UTC() }
+// recordClock replaces the run record's observation clock; tests store a
+// bounded clock in it. Nil is the wall clock.
+var recordClock atomic.Pointer[func() time.Time]
+
+// recordNow is the run record's observation clock.
+func recordNow() time.Time {
+	if f := recordClock.Load(); f != nil {
+		return (*f)().UTC()
+	}
+	return time.Now().UTC()
+}
 
 // cliLockStale is /iterate's own stale-lock rule: a running: timestamp
 // older than this belongs to a run that died, and the next run may take
