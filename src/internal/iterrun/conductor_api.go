@@ -241,6 +241,13 @@ func ConductorAPI(s *conductor.Service) http.Handler {
 					data, err = s.Evaluate(r.Context(), req)
 				}
 			}
+		case "automation-preview":
+			if post() {
+				var req conductor.AutomationPreviewRequest
+				if err = conductorDecode(r, &req); err == nil {
+					data, err = s.PreviewAutomation(r.Context(), req)
+				}
+			}
 		case "policy-preview":
 			if post() {
 				var req budget.PolicySample
