@@ -658,15 +658,6 @@ func timeSweep(start, end time.Time, spans []timeSpan) []timeStretch {
 	return out
 }
 
-func containsString(list []string, v string) bool {
-	for _, x := range list {
-		if x == v {
-			return true
-		}
-	}
-	return false
-}
-
 // timeOwnerAt says who held the plan at an instant, from recorded
 // ownership only.
 func timeOwnerAt(runs []runrecord.Run, at time.Time) string {
