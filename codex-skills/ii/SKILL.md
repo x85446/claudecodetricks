@@ -6,7 +6,7 @@ description: "Alias for $mailbox send --kind inform. Typing $ii <project> <what 
 
 # $ii — alias for $mailbox send --kind inform
 
-**Version:** iterate family 5.22.0
+**Version:** iterate family 5.23.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

@@ -7,7 +7,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.22.0
+**Version:** iterate family 5.23.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -190,7 +190,7 @@ Every plan in a git repo runs on its own feature branch — `branch: feature/<na
 1. **Commit the work yourself — the hook will not have.** The auto-commit hook snapshots to `refs/snapshots/` and never moves HEAD, so nothing it does is on the branch: any uncommitted work is still uncommitted. Stage and commit it with a real message describing what the plan actually did (the reasoning belongs in history, not only in the run log). `snapshots.py list` in the project shows anything a dead session left behind.
 2. `$feature-branch finish` — pushes the branch and opens the PR/MR.
 3. **Merge it.** An all-green plan is standing approval to land: `gh pr merge --squash --delete-branch` (or `glab mr merge` + branch deletion on GitLab). Then confirm you're back on the default branch, pulled, with the feature branch gone local + remote.
-4. Report the merge in the success summary: PR URL, merge commit, branch deleted.
+4. Report the merge in the success summary: PR URL, merge commit, branch deleted. Append the PR and the merge to the run record as `delivery.observed` events (see "Run record").
 5. **If the merge itself fails** (conflicts with a moved main, required CI checks, protected-branch rules): the PLAN is still complete — don't un-archive, don't count it as a failed validation, don't retry-loop the merge. Report success WITH a plainly-flagged exception: "⚠ plan complete but NOT merged — PR <url> open, blocked by <reason>; branch `<branch>` preserved." Resolving that is the user's call.
 
 ## Running resources — the ledger (what this plan has left running on the machine)
@@ -246,6 +246,34 @@ one nothing can stop.
 - **`$iterate-conductor kill`** stops `scratch` entries the same way — halting
   the plan and leaving its VMs running would keep the machine exactly as
   unusable as before.
+
+## Run record — append what only the executor observes
+
+`iterate-run` keeps one durable run record per execution, shared with the
+Conductor; the plan report reads progress, evidence, rework, time and delivery
+from it. Codex runs no hooks, so nothing else records a Codex execution: the
+executor appends every event below as it happens, plus
+`{"lifecycle":{"state":"executing"}}` (`--type run.lifecycle`) when the plan
+starts executing and on each resume, one JSON event on stdin per call, from the
+project directory:
+
+```bash
+echo '<event>' | iterate-run record append --plan <name> --type <type>
+```
+
+| When | `--type` | Event |
+|---|---|---|
+| a step's validation cycle begins | `attempt.started` | `{"requirement":N,"attempt":K,"attempt_info":{"kind":"validation"}}` |
+| that cycle is assessed | `attempt.finished` | same identity, `"attempt_info":{"kind":"validation","outcome":"passed\|failed\|retry\|blocked\|partial\|interrupted","reason":"<one line>"}` |
+| each command a validation runs | `evidence.observed` | `{"requirement":N,"attempt":K,"evidence":{"result":"passed\|failed","command":"<cmd>","exit_status":E,"revision":"<git rev-parse HEAD>","artifact_path":"<path, when one exists>","summary":"<one line>"}}` |
+| the PR opens, then merges | `delivery.observed` | `{"delivery":{"stage":"pr\|merge","result":"opened\|merged","ref":"<PR url>","revision":"<merge commit>"}}` |
+| the plan file has moved to `archive/` | `run.lifecycle` | `{"lifecycle":{"state":"archived","archive_file":"<archive filename>"}}` |
+
+`K` counts that step's validation cycles from 1, so a retry is attempt 2. A
+team adds `"team":"<team>"` to each event. Append only what was observed: a
+checked box is not evidence, and a figure nobody measured stays out. A failed
+append is one Status/Log line and never stops the run; the report shows the gap
+as unknown.
 
 ## Changelog (drafted while working, published once at the end)
 
@@ -308,6 +336,7 @@ When a plan IS teamed, on each `$iterate` entry (a fresh dispatch, the return of
    - **Structured per-validation reporting, not just a final summary.** As each numbered Validation (Nb) is actually assessed — not reconstructed retroactively at the end — append a line to this team's own log: `##ITERATE-VALIDATION## {"step":N,"status":"met|partial|not-met","note":"one line, specific"}`. `met` = the validation's own wording is satisfied in full. `partial` = some of it is proven and the rest is either infeasible as written or genuinely not yet attempted — say which, specifically, in the note (e.g. "file push/pull and SSH login both proven; utmctl exec cannot return output on this host, no invocation satisfies that clause"). `not-met` = attempted and failed, or not yet attempted at all. This is what lets anything reading the plan — a dashboard, a status check, the next agent — see real per-step state instead of one blanket team-level status; a team can be `in-progress` overall while several of its own validations are already `met`.
    - A condensed restatement of `$iterate`'s own non-negotiable execution rules (see "Rules" below) — never ask a question, Nb is the contract and Na is a hint, pick the most reasonable default and log it, validation must exercise the system not just read code, 5-cycle cap per failing check, pre-existing breakage isn't a blocker, "more of the same shape" is never a stop reason.
    - **Record every VM, container, background process, or agent the team starts** under a `## Running resources` heading in its own log, in the ledger's one-line shape (see "Running resources") — the moment it is up, with the exact stop and start commands. The coordinator folds these into the plan's ledger; a team that starts something and does not write it down has hidden a cost nothing can stop.
+   - **Append its attempts and validation evidence to the run record** as "Run record" describes, each event carrying `"team":"<team-name>"`.
    - The instruction to end its log file with exactly one terminal line when finished: `TEAM DONE: <one-line summary>` or `TEAM BLOCKED: <specific reason + what's needed>`.
    - Name each dispatched agent `<plan-name>-<team-name>` (e.g. `owl-database`) — this is how you tell whose result is whose in the consolidated response, and how you address one directly via `/agent` if you need to steer or stop it mid-run.
 5. **Log the dispatch** in the main plan file's Status/Log: `dispatched teams: <names> (parallel)`. Update the heartbeat and write the file before the dispatch returns.
@@ -512,7 +541,7 @@ If any check fails:
 - **Stop every `scratch` entry in `## Running resources`** still up (see "Running resources") and name any `deliverable` left running in the report.
 - **Add a `Finished: <UTC timestamp now>` line** (same `date -u +%Y-%m-%dT%H:%M:%SZ` format as `Executing:`) right before archiving — this is the real "done at" instant the dashboard's "Ran for" figure reads once archived. Without it, that figure falls back to the latest CONFIRMED activity span (hook/registry data), which can simply not exist for a project with neither wired up — confirmed live: a flat plan showed "Running for 0s" despite a correct `Executing:`, because there was no activity data to compute a span against at all. Set once, never touched again.
 - Cancel the auto-resume loop — the exact mechanism recorded in `loop-mechanism:`, per "Auto-resume" — nothing was armed by this skill, so clear the field and tell the user if their Automation is still firing.
-- Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`. If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it. If the plan was teamed, also move `./.claude/iterate/plans/<name>.teams/` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.teams/` (the per-team logs are already merged into the archived plan file — this just keeps the raw team logs around for audit, don't leave the working `.teams/` dir behind).
+- Move `./.claude/iterate/plans/<name>.md` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.md`, then append the `archived` lifecycle event naming that file (see "Run record"). If `current` pointed at this plan, repoint it to the sole remaining plan (if exactly one) else clear it. If the plan was teamed, also move `./.claude/iterate/plans/<name>.teams/` to `./.claude/iterate/archive/<UTC-timestamp>-<name>-done.teams/` (the per-team logs are already merged into the archived plan file — this just keeps the raw team logs around for audit, don't leave the working `.teams/` dir behind).
 - Report a 3-5 line summary: goal, what was done, validation results (with `left for the nightly: <slow case ids>` when the plan drifted any), time taken, **and the merge result** (`merged to <default> via PR <url>, branch deleted` — or the ⚠ not-merged flag with reason). On a teamed plan, name which teams ran (and, if any ran concurrently, say so — that's the payoff of teaming).
 - **Suggest `$oracle harvest`** to the user — one line at end of report: "If anything in this run is worth remembering for next time, run `$oracle harvest`." Don't auto-invoke; oracle harvesting is opt-in.
 
