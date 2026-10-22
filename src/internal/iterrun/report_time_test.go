@@ -228,7 +228,7 @@ func TestKrTimeUnknown(t *testing.T) {
 	// No record explains the overnight silence: it stays unknown.
 	rep, page := lcReport(t, project, "waterbuck", "", true, end.Add(48*time.Hour))
 	s := rep.Time
-	if s.WallMS == nil || *s.WallMS != (22 * time.Hour).Milliseconds() || s.Clock.Open {
+	if s.WallMS == nil || *s.WallMS != (22*time.Hour).Milliseconds() || s.Clock.Open {
 		t.Fatalf("wall: %v clock %+v", s.WallMS, s.Clock)
 	}
 	if len(s.Intervals) == 0 {
@@ -238,7 +238,7 @@ func TestKrTimeUnknown(t *testing.T) {
 	if first.Cause != "unobserved" || !first.Start.Equal(silenceFrom) || !first.End.Equal(silenceTo) || first.MS != (7*time.Hour+21*time.Minute+30*time.Second).Milliseconds() {
 		t.Fatalf("longest interval: %+v", first)
 	}
-	if !strings.Contains(strings.Join(first.Evidence, " "), "unknown, not a failure") || first.Owner != "ownership not recorded" {
+	if !strings.Contains(strings.Join(first.Evidence, " "), "unknown, not a failure") || first.Owner != "ownership not recorded by then" || first.Before == nil || first.After == nil {
 		t.Fatalf("unknown interval explained as %+v", first)
 	}
 	quiet := false

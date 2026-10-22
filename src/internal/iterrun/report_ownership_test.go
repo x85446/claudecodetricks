@@ -105,7 +105,13 @@ func lcReport(t *testing.T, project, plan, archive string, history bool, now tim
 		t.Fatalf("load report: %v", err)
 	}
 	rep := BuildPlanReport(in)
-	return rep, RenderPlanReport(rep)
+	page := RenderPlanReport(rep)
+	// LC_REPORT_DUMP=<dir> keeps each rendered report for a reviewer.
+	if dir := os.Getenv("LC_REPORT_DUMP"); dir != "" {
+		name := plan + archive
+		_ = os.WriteFile(filepath.Join(dir, t.Name()[strings.LastIndex(t.Name(), "/")+1:]+"-"+name+".html"), []byte(`<!doctype html><meta charset="utf-8">`+timelineHeadCSS(name)+`</style><body><div>`+page+`</div>`), 0o644)
+	}
+	return rep, page
 }
 
 // lcAPI reads the report through the dashboard route.
@@ -197,6 +203,7 @@ func TestKrHandoffResume(t *testing.T) {
 	a := model.Assignment{ID: "assignment-heron-1", RunID: "run-c1", ProjectID: "p1", ProjectPath: project, Plan: "heron", Step: 1, Kind: "pair", Task: "Write receipt", Validation: "Read receipt"}
 	at(13*time.Minute + time.Second)
 	src.RecordAssignment(conductor.RecordAdmitted, a, nil, nil)
+	at(13*time.Minute + 2*time.Second)
 	src.RecordAssignment(conductor.RecordStarted, a, nil, nil)
 	// While the Conductor holds the marker, a CLI hook is not an owner.
 	writeRecordPlan(t, project, "heron", lcExec+lcRunning(clock.now)+"\nconductor-assignment: "+a.ID)

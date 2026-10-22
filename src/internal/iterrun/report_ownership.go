@@ -27,6 +27,7 @@ type OwnershipSection struct {
 	LastActivity     *time.Time         `json:"last_activity,omitempty"`
 	LastActivityWhat string             `json:"last_activity_what,omitempty"`
 	Pending          *OwnershipPending  `json:"pending,omitempty"`
+	LastRelease      *OwnershipRelease  `json:"last_release,omitempty"`
 	Holds            int                `json:"holds"`
 	Handoffs         []OwnershipHandoff `json:"handoffs"`
 	Blockers         []OwnershipBlocker `json:"blockers"`
@@ -49,6 +50,13 @@ type OwnershipHolder struct {
 	// reconciles it.
 	Stale     bool   `json:"stale"`
 	StaleNote string `json:"stale_note,omitempty"`
+}
+
+// OwnershipRelease is the latest recorded release.
+type OwnershipRelease struct {
+	By     string    `json:"by"`
+	At     time.Time `json:"at"`
+	Reason string    `json:"reason,omitempty"`
 }
 
 // OwnershipPending explains a plan that no owner holds and that has not
@@ -86,7 +94,14 @@ type OwnershipHandoff struct {
 	ClearToResumeMS   *int64 `json:"clear_to_resume_ms,omitempty"`
 	// Gates lists the admission decisions that held the plan while it
 	// waited.
-	Gates []string `json:"gates"`
+	Gates []OwnershipGate `json:"gates"`
+}
+
+// OwnershipGate is one admission decision that held a waiting plan.
+type OwnershipGate struct {
+	At     time.Time `json:"at"`
+	Gate   string    `json:"gate"`
+	Reason string    `json:"reason,omitempty"`
 }
 
 // OwnershipBlocker is one blocker and its recorded span.
@@ -114,8 +129,9 @@ type OwnershipEvent struct {
 
 const (
 	// handoffMinGap separates a handoff from back-to-back holds by the
-	// same kind of owner (one Conductor assignment after another).
-	handoffMinGap = time.Minute
+	// same kind of owner (one Conductor assignment after another, one
+	// /loop tick after another).
+	handoffMinGap = 5 * time.Minute
 	// ownershipTransitionCap bounds the transitions listed.
 	ownershipTransitionCap = 60
 )
@@ -124,7 +140,7 @@ var ownershipTerms = []LifecycleTerm{
 	{"Owner", "The CLI /iterate session holding the plan's running: lock, or the Conductor assignment holding its lease."},
 	{"Heartbeat", "A newer running: timestamp written by the CLI owner, or provider output from the Conductor assignment (at most one per five minutes)."},
 	{"Stale owner", "An owner with no heartbeat or activity for the live window and no recorded release. The owner's own authority reconciles it — /iterate's stale-lock rule or the Conductor's lease reconciliation. Reading this report never releases it."},
-	{"Handoff", "An owner released the plan and an owner acquired it again after at least a minute, or after a blocker cleared."},
+	{"Handoff", "A release and the next acquisition, when the owner kind changed, a blocker cleared between them, the release was interrupted, blocked or partial, or at least five minutes passed. Back-to-back holds by the same kind of owner are one stretch of work."},
 	{"Blocker cleared to released", "From the recorded blocker clearance to the owner's release of the plan."},
 	{"Released to resumed", "From the release to the next recorded acquisition: the actual resumption delay."},
 	{"Admission decision", "The Conductor's verdict on a waiting plan and the gate that held it: automation_disabled, schedule, budget, ownership, queue or other."},
@@ -137,7 +153,7 @@ func actorName(source string) string {
 	case strings.HasPrefix(source, "cli"):
 		return "CLI"
 	case source == runrecord.SourceImport:
-		return "import"
+		return "legacy history"
 	}
 	return "unknown"
 }
@@ -271,15 +287,11 @@ func buildOwnershipSection(in ReportInput) OwnershipSection {
 		}
 		return found
 	}
-	gatesIn := func(after, before time.Time) []string {
-		out := []string{}
+	gatesIn := func(after, before time.Time) []OwnershipGate {
+		out := []OwnershipGate{}
 		for _, a := range admissions {
 			if a.Decision == "gated" && a.At.After(after) && (before.IsZero() || a.At.Before(before)) {
-				g := a.Gate
-				if a.Reason != "" {
-					g += " (" + a.Reason + ")"
-				}
-				out = append(out, g+" at "+a.At.UTC().Format(time.RFC3339))
+				out = append(out, OwnershipGate{At: a.At, Gate: a.Gate, Reason: a.Reason})
 			}
 		}
 		return out
@@ -292,7 +304,7 @@ func buildOwnershipSection(in ReportInput) OwnershipSection {
 		}
 		blocker := clearedIn(h.acquired, next.acquired)
 		gap := next.acquired.Sub(end)
-		if h.released != nil && h.kind == next.kind && gap < handoffMinGap && blocker == nil {
+		if h.released != nil && h.kind == next.kind && gap < handoffMinGap && blocker == nil && !handoffReason(h.releaseReason) {
 			continue
 		}
 		ho := OwnershipHandoff{From: ownerName(h.kind, h.id), FromKind: h.kind, To: ownerName(next.kind, next.id), ToKind: next.kind, ResumedAt: lcPtr(next.acquired), Gates: gatesIn(end, next.acquired)}
@@ -349,7 +361,8 @@ func buildOwnershipSection(in ReportInput) OwnershipSection {
 		s.Unknown = append(s.Unknown, "ownership")
 	} else {
 		h := holds[len(holds)-1]
-		s.CurrentNote = fmt.Sprintf("No owner holds the plan; %s released it at %s.", ownerName(h.kind, h.id), h.released.UTC().Format(time.RFC3339))
+		s.CurrentNote = "No owner holds the plan."
+		s.LastRelease = &OwnershipRelease{By: ownerName(h.kind, h.id), At: *h.released, Reason: h.releaseReason}
 		if !ended {
 			s.Pending = ownershipPending(*h.released, h, s.Blockers, admissions, now)
 			ho := OwnershipHandoff{From: ownerName(h.kind, h.id), FromKind: h.kind, ReleasedAt: h.released, ReleaseReason: h.releaseReason, Gates: gatesIn(*h.released, time.Time{})}
@@ -398,7 +411,15 @@ func buildOwnershipSection(in ReportInput) OwnershipSection {
 		}
 		events = append(events, OwnershipEvent{At: l.At, Actor: actorName(l.Source), Event: "lifecycle." + l.State, Summary: summary, Provenance: l.Provenance})
 	}
-	sort.SliceStable(events, func(i, j int) bool { return events[i].At.Before(events[j].At) })
+	// At one instant a release precedes the admission it enables, and the
+	// admission precedes the acquisition it grants.
+	tie := map[string]int{"blocker.detected": 0, "blocker.cleared": 1, "ownership.released": 2, "admission.considered": 3, "ownership.acquired": 4}
+	sort.SliceStable(events, func(i, j int) bool {
+		if !events[i].At.Equal(events[j].At) {
+			return events[i].At.Before(events[j].At)
+		}
+		return tie[events[i].Event] < tie[events[j].Event]
+	})
 	s.TransitionsTotal = len(events)
 	if len(events) > ownershipTransitionCap {
 		events = events[len(events)-ownershipTransitionCap:]
@@ -458,6 +479,16 @@ func ownershipPending(released time.Time, h *ownershipHold, blockers []Ownership
 		p.DecidedAt = lcPtr(latest.At)
 	}
 	return p
+}
+
+// handoffReason reports a release that stopped work short of success,
+// so the next hold resumes it even when the same kind of owner follows.
+func handoffReason(reason string) bool {
+	switch reason {
+	case "interrupted", "blocked", "partial":
+		return true
+	}
+	return false
 }
 
 func attachClearance(ho *OwnershipHandoff, b *OwnershipBlocker) {
@@ -537,14 +568,25 @@ func writeOwnershipSection(b *strings.Builder, s OwnershipSection) {
 		}
 	} else {
 		b.WriteString(lcEsc(lcOr(s.CurrentNote, "Unknown.")))
+		if r := s.LastRelease; r != nil {
+			fmt.Fprintf(b, ` %s released it %s`, lcEsc(r.By), lcTime(r.At))
+			if r.Reason != "" {
+				fmt.Fprintf(b, ` (%s)`, lcEsc(r.Reason))
+			}
+			b.WriteString(`.`)
+		}
 	}
+	recorded := s.Holds > 0
 	b.WriteString(`</dd><dt>Last heartbeat</dt><dd>`)
-	if s.Current != nil && s.Current.LastHeartbeat != nil {
+	switch {
+	case s.Current != nil && s.Current.LastHeartbeat != nil:
 		b.WriteString(lcTime(*s.Current.LastHeartbeat))
-	} else if s.Current != nil {
+	case s.Current != nil:
 		b.WriteString(`none recorded since the acquisition`)
-	} else {
-		b.WriteString(`no owner`)
+	case recorded:
+		b.WriteString(`no owner holds the plan`)
+	default:
+		b.WriteString(`not recorded`)
 	}
 	b.WriteString(`</dd><dt>Last activity</dt><dd>`)
 	if s.LastActivity != nil {
@@ -560,7 +602,11 @@ func writeOwnershipSection(b *strings.Builder, s OwnershipSection) {
 		}
 		b.WriteString(`</dd>`)
 	}
-	fmt.Fprintf(b, `<dt>Holds</dt><dd>%s, %s</dd></dl>`, lcCount(s.Holds, "ownership hold"), lcCount(len(s.Blockers), "blocker"))
+	if recorded || len(s.Blockers) > 0 {
+		fmt.Fprintf(b, `<dt>Recorded</dt><dd>%s, %s</dd></dl>`, lcCount(s.Holds, "ownership hold"), lcCount(len(s.Blockers), "blocker"))
+	} else {
+		b.WriteString(`<dt>Recorded</dt><dd>no ownership or blocker events</dd></dl>`)
+	}
 
 	b.WriteString(`<h3>Handoffs</h3>`)
 	if len(s.Handoffs) == 0 {
@@ -602,7 +648,11 @@ func writeOwnershipSection(b *strings.Builder, s OwnershipSection) {
 				fmt.Fprintf(b, `<li>Released to resumed: <span class="ro-delay">%s</span></li>`, lcDur(*h.ReleaseToResumeMS))
 			}
 			for _, g := range h.Gates {
-				fmt.Fprintf(b, `<li>Held by %s</li>`, lcEsc(g))
+				fmt.Fprintf(b, `<li>Held by gate %s %s`, lcEsc(g.Gate), lcTime(g.At))
+				if g.Reason != "" {
+					fmt.Fprintf(b, `: %s`, lcEsc(g.Reason))
+				}
+				b.WriteString(`</li>`)
 			}
 			b.WriteString(`</ul></li>`)
 		}

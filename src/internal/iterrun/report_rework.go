@@ -102,7 +102,7 @@ var reworkTerms = []LifecycleTerm{
 	{"Retry", "Any attempt after a requirement's first."},
 	{"Restart", "An attempt that began after an interrupted attempt of the same requirement."},
 	{"Reopened requirement", "A requirement with an attempt that began after one of its attempts had passed. The earlier success stays recorded."},
-	{"Repeated validation", "Per requirement, attempts carrying validation evidence beyond the first."},
+	{"Repeated validation", "Per requirement, every attempt carrying validation evidence after the first such attempt."},
 	{"First-pass success", "Requirements whose first attempt passed, out of requirements whose first attempt has a recorded outcome."},
 	{"Recovered", "Requirements whose first unsuccessful attempt was followed by a passed attempt, out of requirements with an unsuccessful attempt."},
 	{"Recovery cost", "Duration and tokens of every attempt after a requirement's first unsuccessful attempt, through the attempt that passed, or through the latest when none passed. An attempt without a recorded duration or usage is counted as unknown, never zero."},
@@ -132,7 +132,7 @@ func reworkAttempt(a runrecord.AttemptView) ReworkAttempt {
 			t += *a.Usage.OutputTokens
 		}
 		ra.Tokens = &t
-		ra.TokensPartial = len(a.Usage.Partial) > 0
+		ra.TokensPartial = containsString(a.Usage.Partial, "input_tokens") || containsString(a.Usage.Partial, "output_tokens")
 	}
 	return ra
 }
@@ -307,7 +307,7 @@ func buildReworkSection(in ReportInput) ReworkSection {
 	}
 	if len(gaps) > 0 {
 		s.Status = sectionPartial
-		s.StatusNote = "Partial: " + strings.Join(gaps, "; ") + "."
+		s.StatusNote = lcSentence(strings.Join(gaps, "; "))
 	} else {
 		s.Status = sectionAvailable
 		s.StatusNote = "Every attempt has a recorded outcome."
@@ -411,7 +411,7 @@ func writeReworkSection(b *strings.Builder, s ReworkSection) {
 	stat("Unsuccessful attempts", lcCount(s.Unsuccessful, "attempt"))
 	stat("Retries and restarts", lcCount(s.Retries, "retry")+", "+lcCount(s.Restarts, "restart"))
 	stat("Reopened", lcCount(s.Reopened, "requirement"))
-	stat("Repeated validations", lcCount(s.RepeatedValidations, "attempt"))
+	stat("Repeated validations", lcCount(s.RepeatedValidations, "validation"))
 	stat("First-pass success", reworkRatioText(s.FirstPass, "requirement"))
 	stat("Recovered", reworkRatioText(s.Recovered, "requirement"))
 	stat("Recovery cost", reworkCostText(s.RecoveryCost))
@@ -456,7 +456,7 @@ func writeReworkSection(b *strings.Builder, s ReworkSection) {
 					cls += " rw-unsuccessful"
 				}
 				parts := []string{}
-				if a.Kind != "" {
+				if a.Kind != "" && a.Kind != "pair" {
 					parts = append(parts, a.Kind)
 				}
 				if a.DurationMS != nil {

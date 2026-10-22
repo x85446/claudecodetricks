@@ -58,8 +58,11 @@ type TimeShare struct {
 type TimeLaneTotal struct {
 	Kind  string `json:"kind"`
 	Label string `json:"label"`
-	// MS is nil when this kind was not captured at all.
+	// MS is nil when nothing of this kind was measured; State says
+	// whether that is a capture gap ("unknown") or a capture that saw
+	// none ("none").
 	MS    *int64 `json:"ms,omitempty"`
+	State string `json:"state"`
 	Lanes int    `json:"lanes"`
 	Spans int    `json:"spans"`
 	Note  string `json:"note,omitempty"`
@@ -75,8 +78,15 @@ type TimeInterval struct {
 	MS       int64     `json:"ms"`
 	Evidence []string  `json:"evidence"`
 	Owner    string    `json:"owner"`
-	Before   string    `json:"before,omitempty"`
-	After    string    `json:"after,omitempty"`
+	// Before and After are the observed work bracketing the interval.
+	Before *TimeMark `json:"before,omitempty"`
+	After  *TimeMark `json:"after,omitempty"`
+}
+
+// TimeMark is one observed piece of work at an instant.
+type TimeMark struct {
+	What string    `json:"what"`
+	At   time.Time `json:"at"`
 }
 
 // Causes in precedence order: where causes overlap, the instant counts
@@ -474,15 +484,18 @@ func buildTimeSection(in ReportInput) TimeSection {
 
 	for _, kind := range laneOrder {
 		t := *lane[kind]
+		t.State = "measured"
 		switch {
 		case kind == "tool" && !hookSpans && !in.HistoryLoaded:
-			t.MS, t.Note = nil, "tool history is not loaded"
+			t.MS, t.State, t.Note = nil, "unknown", "tool history is not loaded"
 		case kind == "tool" && !hookSpans:
-			t.MS, t.Note = nil, "no tool calls were captured for this plan"
+			t.MS, t.State, t.Note = nil, "unknown", "no tool calls were captured for this plan"
 		case kind == "between" && !hookSpans:
-			t.MS, t.Note = nil, "inferred only from captured tool calls"
+			t.MS, t.State, t.Note = nil, "unknown", "inferred only from captured tool calls"
+		case t.MS == nil && (kind == "dispatch" || kind == "build") && !in.HistoryLoaded && !hookSpans:
+			t.State, t.Note = "unknown", "tool history is not loaded"
 		case t.MS == nil:
-			t.Note = "not captured"
+			t.State = "none"
 		}
 		if kind == "between" && t.MS != nil {
 			t.Note = "inferred from adjacent tool calls; no model timing is recorded"
@@ -501,10 +514,13 @@ func buildTimeSection(in ReportInput) TimeSection {
 		if iv.Evidence == nil {
 			iv.Evidence = []string{}
 		}
-		if st.cause == "unobserved" {
-			iv.Evidence = append(iv.Evidence, "No record covers this interval; it is unknown, not a failure.")
-		}
 		iv.Owner = timeOwnerAt(in.Record.Runs, st.start)
+		if st.cause != "unobserved" {
+			s.Intervals = append(s.Intervals, iv)
+			continue
+		}
+		// An unexplained interval gets the observed work on either side.
+		iv.Evidence = append(iv.Evidence, "No record covers this interval; it is unknown, not a failure.")
 		var before, after *timeSpan
 		for i := range execution {
 			e := &execution[i]
@@ -516,10 +532,10 @@ func buildTimeSection(in ReportInput) TimeSection {
 			}
 		}
 		if before != nil {
-			iv.Before = before.evidence + " ended " + before.end.UTC().Format(time.RFC3339)
+			iv.Before = &TimeMark{What: before.evidence + " ended", At: before.end}
 		}
 		if after != nil {
-			iv.After = after.evidence + " started " + after.start.UTC().Format(time.RFC3339)
+			iv.After = &TimeMark{What: after.evidence + " started", At: after.start}
 		}
 		s.Intervals = append(s.Intervals, iv)
 	}
@@ -550,12 +566,20 @@ func buildTimeSection(in ReportInput) TimeSection {
 	}
 	if len(gaps) > 0 {
 		s.Status = sectionPartial
-		s.StatusNote = "Partial: " + strings.Join(gaps, "; ") + "."
+		s.StatusNote = lcSentence(strings.Join(gaps, "; "))
 	} else {
 		s.Status = sectionAvailable
 		s.StatusNote = "Every instant of the execution window is counted once, under one cause."
 	}
 	return s
+}
+
+// lcSentence capitalizes a clause and ends it with a period.
+func lcSentence(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:] + "."
 }
 
 // timeStretch is a maximal run of the window under one cause.
@@ -651,10 +675,10 @@ func timeOwnerAt(runs []runrecord.Run, at time.Time) string {
 	for _, r := range runs {
 		for i := range r.Ownership {
 			o := &r.Ownership[i]
-			seen = true
 			if o.At.After(at) {
 				break
 			}
+			seen = true
 			switch o.Event {
 			case "acquired":
 				current = o
@@ -667,7 +691,7 @@ func timeOwnerAt(runs []runrecord.Run, at time.Time) string {
 	}
 	switch {
 	case !seen:
-		return "ownership not recorded"
+		return "ownership not recorded by then"
 	case current == nil:
 		return "no owner held the plan"
 	}
@@ -684,6 +708,8 @@ func ownerName(kind, id string) string {
 	}
 	return kind + " " + id
 }
+
+var timeLaneUnit = map[string]string{"tool": "call", "dispatch": "dispatch", "build": "unit", "attempt": "attempt", "recorded": "interval"}
 
 var timeCauseColor = map[string]string{
 	"execution": "var(--busy)", "blocked": "var(--warn)", "paused": "var(--accent)",
@@ -743,23 +769,27 @@ func writeTimeSection(b *strings.Builder, s TimeSection) {
 		if p.Stretches > 0 && p.Cause != "unobserved" {
 			stretches = `<span class="rt-note">` + lcCount(p.Stretches, "interval") + `</span>`
 		}
+		value, share := lcDur(p.MS), lcPercent(p.MS, wall)
+		if p.MS == 0 && p.Cause != "unobserved" {
+			value, share = "none recorded", "—"
+		}
 		fmt.Fprintf(b, `<tr data-cause="%s"><th scope="row"><span class="rt-sw" style="background:%s" aria-hidden="true"></span>%s%s</th><td class="num">%s</td><td class="num">%s</td></tr>`,
-			p.Cause, timeCauseColor[p.Cause], lcEsc(p.Label), stretches, lcDur(p.MS), lcPercent(p.MS, wall))
+			p.Cause, timeCauseColor[p.Cause], lcEsc(p.Label), stretches, value, share)
 	}
 	fmt.Fprintf(b, `</tbody><tfoot><tr><th scope="row">Elapsed</th><td class="num">%s</td><td class="num">100%%</td></tr></tfoot></table>`, lcDur(wall))
 
 	b.WriteString(`<h3>Lane-time, not part of elapsed</h3><table class="rt-lanes"><caption class="vh">Lane-time by kind; lanes overlap, so these figures are not added to elapsed time</caption><thead><tr><th scope="col">Kind</th><th scope="col" class="num">Lane-time</th></tr></thead><tbody>`)
 	for _, t := range s.LaneTime {
-		value := "not captured"
+		value := map[string]string{"unknown": "unknown", "none": "none observed"}[t.State]
 		if t.MS != nil {
 			value = lcDur(*t.MS)
 		}
 		var notes []string
-		if t.Lanes > 0 {
+		if t.Lanes > 0 && t.Kind != "attempt" && t.Kind != "recorded" {
 			notes = append(notes, lcCount(t.Lanes, "lane"))
 		}
 		if t.Spans > 0 {
-			notes = append(notes, lcCount(t.Spans, "span"))
+			notes = append(notes, lcCount(t.Spans, timeLaneUnit[t.Kind]))
 		}
 		if t.Note != "" {
 			notes = append(notes, t.Note)
@@ -772,9 +802,9 @@ func writeTimeSection(b *strings.Builder, s TimeSection) {
 	}
 	b.WriteString(`</tbody></table>`)
 
-	fmt.Fprintf(b, `<h3>Intervals without execution, %s or longer</h3>`, lcDur(lcMS(timeIntervalMin)))
+	fmt.Fprintf(b, `<h3>Intervals without execution, %d minutes or longer</h3>`, int(timeIntervalMin/time.Minute))
 	if len(s.Intervals) == 0 {
-		b.WriteString(`<p class="rt-dim">None: every stretch of 5 minutes or more had observed execution.</p>`)
+		b.WriteString(`<p class="rt-dim">None: every stretch of 5 minutes or longer had observed execution.</p>`)
 	} else {
 		if s.IntervalsTotal > len(s.Intervals) {
 			fmt.Fprintf(b, `<p class="rt-dim">The %d longest of %s.</p>`, len(s.Intervals), lcCount(s.IntervalsTotal, "interval"))
@@ -787,11 +817,11 @@ func writeTimeSection(b *strings.Builder, s TimeSection) {
 				fmt.Fprintf(b, `<li>%s</li>`, lcEsc(e))
 			}
 			fmt.Fprintf(b, `<li>Ownership: %s.</li>`, lcEsc(iv.Owner))
-			if iv.Before != "" {
-				fmt.Fprintf(b, `<li>Before: %s.</li>`, lcEsc(iv.Before))
+			if iv.Before != nil {
+				fmt.Fprintf(b, `<li>Before: %s %s.</li>`, lcEsc(iv.Before.What), lcTime(iv.Before.At))
 			}
-			if iv.After != "" {
-				fmt.Fprintf(b, `<li>After: %s.</li>`, lcEsc(iv.After))
+			if iv.After != nil {
+				fmt.Fprintf(b, `<li>After: %s %s.</li>`, lcEsc(iv.After.What), lcTime(iv.After.At))
 			}
 			b.WriteString(`</ul></li>`)
 		}

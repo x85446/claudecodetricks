@@ -42,8 +42,8 @@ func lcDur(ms int64) string {
 		d = d.Round(time.Minute)
 		return fmt.Sprintf("%dh %dm", int64(d/time.Hour), int64(d%time.Hour/time.Minute))
 	}
-	d = d.Round(time.Hour)
-	return fmt.Sprintf("%dd %dh", int64(d/(24*time.Hour)), int64(d%(24*time.Hour)/time.Hour))
+	d = d.Round(time.Minute)
+	return fmt.Sprintf("%dd %dh %dm", int64(d/(24*time.Hour)), int64(d%(24*time.Hour)/time.Hour), int64(d%time.Hour/time.Minute))
 }
 
 func lcMS(d time.Duration) int64 { return d.Milliseconds() }
@@ -58,6 +58,9 @@ func lcTime(t time.Time) string {
 func lcCount(n int, unit string) string {
 	if n == 1 {
 		return "1 " + unit
+	}
+	if strings.HasSuffix(unit, "y") && !strings.ContainsAny(unit[len(unit)-2:len(unit)-1], "aeiou") {
+		return fmt.Sprintf("%d %sies", n, unit[:len(unit)-1])
 	}
 	return fmt.Sprintf("%d %ss", n, unit)
 }
@@ -83,7 +86,7 @@ func writeLcStatus(b *strings.Builder, prefix, status, note string) {
 	if label == "" {
 		label = "Unavailable"
 	}
-	fmt.Fprintf(b, `<p class="%s-status %s-%s"><strong>%s.</strong> %s</p>`, prefix, prefix, status, label, lcEsc(note))
+	fmt.Fprintf(b, `<p class="%s-status %s-%s" data-status="%s"><strong>%s.</strong> %s</p>`, prefix, prefix, status, status, label, lcEsc(note))
 }
 
 // writeLcTerms writes a section's definitions as a disclosure.

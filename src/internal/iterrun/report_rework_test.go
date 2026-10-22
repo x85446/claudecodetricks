@@ -17,8 +17,9 @@ func lcAttempt(t *testing.T, clock *lcClock, project, plan string, step int, id 
 	t.Helper()
 	src := ConductorPlanSource{}
 	a := model.Assignment{ID: id, RunID: "run-" + id, ProjectID: "p1", ProjectPath: project, Plan: plan, Step: step, Kind: "pair", Task: "step task", Validation: "step check"}
-	clock.set(start)
+	clock.set(start.Add(-time.Second))
 	src.RecordAssignment(conductor.RecordAdmitted, a, nil, nil)
+	clock.set(start)
 	src.RecordAssignment(conductor.RecordStarted, a, nil, nil)
 	if in > 0 || out > 0 {
 		clock.set(start.Add(end.Sub(start) / 2))
