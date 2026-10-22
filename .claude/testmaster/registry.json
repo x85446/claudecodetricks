@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-22T21:39:11Z",
+  "updated": "2026-10-22T21:42:43Z",
   "sources": [
     {
       "kind": "go",
@@ -8,11 +8,11 @@
     }
   ],
   "last_run": {
-    "ts": "2026-10-22T21:39:11Z",
-    "selection": "fast+standard",
-    "ms": 89389,
-    "passed": 362,
-    "failed": 1,
+    "ts": "2026-10-22T21:42:43Z",
+    "selection": "iterate.contract-test+conductor.TestIndigobirdBoundedContractExpansion",
+    "ms": 1250,
+    "passed": 2,
+    "failed": 0,
     "skipped": 0,
     "missing": 0,
     "not_run": 0
@@ -453,12 +453,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdBoundedContractExpansion$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 428,
+      "runs": 17,
+      "avg_ms": 424,
       "last_ms": 360,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T21:39:11Z"
+      "updated": "2026-10-22T21:42:43Z"
     },
     "conductor.TestIndigobirdBoundedIntake": {
       "kind": "go",
@@ -1566,12 +1566,12 @@
       "cmd": "make iterate-contract-test",
       "file": "skills/iterate/tests/contract-test.sh",
       "parallel_safe": true,
-      "runs": 33,
-      "avg_ms": 1526,
-      "last_ms": 1028,
+      "runs": 35,
+      "avg_ms": 1468,
+      "last_ms": 539,
       "tier": "fast",
-      "last_result": "fail",
-      "updated": "2026-10-22T21:39:11Z"
+      "last_result": "pass",
+      "updated": "2026-10-22T21:42:43Z"
     },
     "iterrun.TestABoxedUnteamedPlanStillGetsItsRequirements": {
       "kind": "go",
