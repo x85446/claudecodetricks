@@ -158,3 +158,132 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: live Caiman and archived Javelina requests exceeded 20 seconds without response bytes while handlers decoded the 160 MB shared hook log.
 - fix: filesystem plan details render immediately; tool history and token usage load separately with retry feedback, cancellation and one concurrent history reader. Live activity keeps its polling nodes and scroll position. Archive redirects preserve history requests.
 - verification: installed localhost:8420 returns Caiman in 0.281 seconds and Javelina in 0.278 seconds. Chrome displays initial goals and requirements while history loads, then the completed history; requirement details remain interactive. Handler regression covers blocked history, missing history, unlabelled completion pairs, cancellation and archive redirects.
+
+## Run-report comparison — 2026-10-22
+
+### F19 — Missing usage hides the accounting section
+- surface: archived Gemsbok report; Albatross and Waterbuck comparison
+- kind: mistake
+- severity: high
+- evidence: Chrome reports history loaded on all three pages. Gemsbok has no Token spend section; Albatross has 236 requests with a missing coordinator transcript; Waterbuck has five requests. The token renderer returns without an empty-state explanation when Messages is zero.
+- fix: Always show accounting availability, capture coverage and missing sources. Distinguish unavailable usage from zero usage, and preserve a durable plan-scoped record across providers and archives.
+- rule: —
+- status: open
+
+### F20 — Completion cards count lanes without naming that unit
+- surface: plan/archive completion cards
+- kind: mistake
+- severity: high
+- evidence: Fully loaded Gemsbok shows 0 DONE and 1 RECORDED OPEN while all four clickable requirements show DONE and its archive records complete with merged PR28. Albatross shows one queued lane despite all 20 requirements showing DONE. Source counts row states rather than requirement completion.
+- fix: Separate plan outcome, task completion, validation completion and lane state. Close recorded lanes from authoritative terminal events; label unknown termination explicitly.
+- rule: —
+- status: open
+
+### F21 — Requirement detail omits recorded acceptance evidence
+- surface: requirement detail and expanded coordinator
+- kind: ux
+- severity: high
+- evidence: Clicking Albatross requirement 3 shows a result NOTE. Clicking Gemsbok requirement 1 and expanding its coordinator shows the contract and checkmark without the actual result; its saved log contains 24-PDF acceptance, artifact identity, 299-case validation and merge evidence. Waterbuck requirement 4 carries a note mixing steps 4, 6 and 7.
+- fix: Store and display evidence per requirement and attempt: result, command, timestamp, exit status, artifact and source revision. Keep intended acceptance separate from observed proof.
+- rule: —
+- status: open
+
+### F22 — Session cost and plan usage use different scopes
+- surface: Waterbuck Token spend
+- kind: ux
+- severity: high
+- evidence: Chrome shows 893k context, 725 generated tokens, five requests and $784.89 SESSION COST together. Supporting prose says the dollar amount includes unrelated work in the same sessions. The report provides no coverage measure reconciling these totals with its 22h7m59s execution span.
+- fix: Group plan-attributed usage separately from whole-session cost. Show the attribution interval, coverage and estimated versus provider-reported amounts beside each total.
+- rule: —
+- status: open
+
+### F23 — Time gaps have severity without a recorded cause
+- surface: Waterbuck timeline
+- kind: ux
+- severity: medium
+- evidence: After history loads, the report labels a 7h21m30s interval a severe gap under Where the time actually went. The report does not identify whether that interval represents an operator wait, a schedule, a running external process or missing capture.
+- fix: Show elapsed, observed execution, blocked, queued, paused and unobserved time separately. Reserve failure severity for evidence of a failure; show unknown intervals as unknown.
+- rule: —
+- status: open
+
+## Named Automations audit — 2026-10-22
+
+### F24 — Named Automations link cannot show the list while an editor is open
+- surface: Settings / Named Automations
+- kind: mistake
+- severity: high
+- evidence: Isolated preview (fixture revision 1). Opened Edit on "Run yellow (Codex)", renamed it, then selected Named Automations in the settings rail. The URL changed but the page still rendered the editor and 0 list rows; only Cancel revealed the list. The unsaved draft persists in sessionStorage, so a reload reopens the editor instead of the list.
+- fix: Drive the editor from the URL (`automation=<id>`). The rail link always renders the complete list; an unsaved draft appears there as a recoverable row with Resume and Discard. Save returns to the refreshed list; Cancel discards and returns. Back and forward restore the matching view.
+- rule: —
+- status: fixed
+- verification: Headless Chrome on the isolated preview: with "Run yellow (Codex)" renamed in the editor, the rail link showed all automations, the row marked Unsaved changes with its draft name, and Resume restored the edit; Cancel kept the saved name; Back/Forward toggled list and editor; reload kept the draft.
+
+### F25 — Save fails silently after an unrelated configuration change
+- surface: automation editor Save
+- kind: mistake
+- severity: high
+- evidence: With the editor open, a tag change on another project raised the revision from 1 to 2. Save then failed with "configuration revision conflict"; the message rendered at y=500 while the Save button sat at y=1296, so the user scrolled to Save sees nothing happen. The automation itself was unchanged by the other edit.
+- fix: Rebase the draft onto the latest configuration when the saved automation and its time window are unchanged since the draft began; report a real conflict beside the Save button and move focus to it.
+- rule: —
+- status: fixed
+- verification: After a project tag change raised the revision, Save of a band change on "Run yellow (Codex)" persisted red and returned to the list. A same-automation conflict reports beside Save and focuses the message.
+
+### F26 — One project's tab shows a different automation's unsaved editor
+- surface: project Automations tab
+- kind: mistake
+- severity: high
+- evidence: A draft opened from Settings binds to the first configured project (Filemaster). Filemaster's Automations tab then rendered the "Run yellow (Codex)" editor in place of its attachment list, while Filemaster's only attachment is "yellow go"; Cancel restored the list showing "yellow go". The editor heading showed the unsaved rename with no draft marker.
+- fix: Render an editor only for the automation named in the URL. Label every unsaved name as a draft beside its saved name, and show saved names in lists, pickers and attached rows.
+- rule: —
+- status: fixed
+- verification: Unsaved rename of "Green and go" showed Unsaved changes in the editor, the Named list and Symmail's attached row, which kept "Green and go"; project tabs render an editor only for the automation in the URL.
+
+### F27 — Duplicate automation names are indistinguishable in pickers
+- surface: project attachment picker, Named Automations list
+- kind: ux
+- severity: medium
+- evidence: Duplicated "yellow go", renamed the copy to "yellow go" and saved. Symmail's picker listed two options with the identical text "yellow go" (different IDs); the settings list showed two identical rows.
+- fix: When names collide, append a short stable ID to every affected label; warn in the editor that the name is shared.
+- rule: —
+- status: fixed
+- verification: Two "Night owl" automations render as "Night owl · #07a933" and "Night owl · #b9ec1e" in the list, izcrOS picker and association cards; attaching the second stored definition b9ec1e…, disabled.
+
+### F28 — Automation tester reports live project and account state instead of the rules
+- surface: Try this automation
+- kind: ux
+- severity: high
+- evidence: For "yellow go" (Claude build through Green → Codex fast through Yellow) every sample band, Green, Yellow and Red, produced "Conductor disabled" on both rows; switching the sample project to disabled izcrOS produced the same. The tester asks for a sample project, account availability, Project already running and Queued work available, none of which are automation rules.
+- fix: Evaluate the draft rows for a hypothetical eligible project: one sample band input (plus the sample time for schedules and the overdrive state when honored), one outcome naming the matched row or the reason no row permits the band, and a per-band summary. Production admission keeps every live gate.
+- rule: —
+- status: fixed
+- verification: Run yellow (Codex) (Green + Yellow): Green and Yellow would launch row 1, Red waits; Green and go waits for Yellow; yellow go launches row 1 for Green and row 2 for Yellow. Outcomes were identical with stale/blocked usage, a parked plan and zero saved projects; config.json and runtime.json bytes unchanged. Go tests killdeer-preview-* and killdeer-api-automation-preview cover the contract.
+
+### F29 — Rule summary ignores unsaved band changes
+- surface: automation editor summary
+- kind: ux
+- severity: medium
+- evidence: Changed row 1 of "yellow go" from Green only to Green + Yellow + Red; the summary still read "Claude Code · build through green → …" until Save. Band values also appear as raw ids ("through yellow").
+- fix: Recompute the summary on every draft change and name bands the way the row selector does ("Green + Yellow").
+- rule: —
+- status: fixed
+- verification: Changing Green and go row 1 to Green + Yellow updated the summary to "Codex · build through Green + Yellow" and the Yellow row to Would launch before Save; the saved band stayed green.
+
+### F30 — Managing which projects use an automation requires visiting every project
+- surface: Named Automations, project Automations tab
+- kind: ux
+- severity: medium
+- evidence: The only attach control is a per-project picker. Attaching "Green and go" to three projects took three project visits; the Named Automations list shows Used by as text with no way to change it.
+- fix: Add a Project Associations screen: drag a project onto an automation to attach (disabled by default), drag it back to detach, with equivalent Attach/Detach controls for keyboard and touch, live status feedback, and both automation and project orientations.
+- rule: —
+- status: fixed
+- verification: Real pointer drags (CDP drag interception) attached Symmail and Filemaster to Run yellow (Codex) disabled, a duplicate drop changed nothing, a drag back detached; Enter/Space/Enter attached, enabled and detached by keyboard; both orientations, the Symmail tab and Used by agreed after reload; a 320px viewport has no horizontal scroll.
+
+### F31 — Opening an automation creates no history entry
+- surface: automation editor, browser Back
+- kind: platform-convention
+- severity: medium
+- evidence: Headless Chrome on the preview: from /settings?section=automations, Edit "yellow go" kept the same URL and history length 3. Back then left Settings for All projects, with no editor and no list, while the unsaved draft stayed in sessionStorage. The editor cannot be deep-linked or restored by Forward.
+- fix: Give the editor its own URL (`automation=<id>` or `automation=new`) pushed on open, so Back returns to the list and Forward reopens the same draft.
+- rule: HTML Living Standard session history (pushState); WCAG 2.2 SC 3.2.3 Consistent Navigation
+- status: fixed
+- verification: Opening an automation pushes `automation=<id>`; Back returned to the list without an editor and Forward reopened the same editor.
