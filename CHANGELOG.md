@@ -17,7 +17,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
 
 ### Changed
 - Plan and archive pages lead with the plan header, outcome and progress; requirement cells link to their evidence; one elapsed clock; the Conductor activity log stays in a bounded scroller; a main landmark and skip link.
-- `/iterate` appends attempts, validation evidence, the PR, the merge and the archive to the run record (iterate family 5.23.0).
+- `/iterate` appends attempts, validation evidence, the PR, the merge and the archive to the run record (iterate family 5.25.0).
 - Automation labels show the saved name everywhere with an ID prefix for duplicate names; unsaved edits are per-automation drafts; Save rebases onto the newest revision.
 
 ### Fixed
