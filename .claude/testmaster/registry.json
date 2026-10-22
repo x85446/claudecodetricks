@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-22T05:00:08Z",
+  "updated": "2026-10-22T05:52:09Z",
   "sources": [
     {
       "kind": "go",
@@ -8,10 +8,10 @@
     }
   ],
   "last_run": {
-    "ts": "2026-10-22T05:00:08Z",
-    "selection": "*TestNativePromptFileCheckpoint*",
-    "ms": 4541,
-    "passed": 1,
+    "ts": "2026-10-22T05:52:09Z",
+    "selection": "iterrun.TestConductorDetailIndependentHistory+conductor.TestIndigobirdStreamDrain",
+    "ms": 27681,
+    "passed": 2,
     "failed": 0,
     "skipped": 0,
     "missing": 0,
@@ -24,12 +24,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestAxisTicksLandOnWallClockBoundaries$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 77,
+      "runs": 31,
+      "avg_ms": 74,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestAxisTicksSurviveASpringForwardTransition": {
       "kind": "go",
@@ -37,12 +37,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestAxisTicksSurviveASpringForwardTransition$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 57,
-      "last_ms": 80,
+      "runs": 31,
+      "avg_ms": 55,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes": {
       "kind": "go",
@@ -50,12 +50,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestAxisTicksUseMinutesForShortSpansAndDatesForLongOnes$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 58,
+      "runs": 31,
+      "avg_ms": 56,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane": {
       "kind": "go",
@@ -63,12 +63,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromHookEventsGivesEachTeamItsOwnLane$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 57,
+      "runs": 31,
+      "avg_ms": 55,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents": {
       "kind": "go",
@@ -76,12 +76,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromHookEventsRecoversTheTeamFromAgentIDForOldEvents$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 58,
+      "runs": 31,
+      "avg_ms": 56,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestBusyAndGapsUseTheUnionOfOverlappingSpans": {
       "kind": "go",
@@ -89,12 +89,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBusyAndGapsUseTheUnionOfOverlappingSpans$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 58,
+      "runs": 31,
+      "avg_ms": 56,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestCoarseLogSpanIsAFallbackNotASupplement": {
       "kind": "go",
@@ -102,12 +102,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestCoarseLogSpanIsAFallbackNotASupplement$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 65,
+      "runs": 31,
+      "avg_ms": 62,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestParseAgentIDFoldsRedispatchesIntoOneTeam": {
       "kind": "go",
@@ -115,12 +115,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParseAgentIDFoldsRedispatchesIntoOneTeam$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 52,
+      "runs": 31,
+      "avg_ms": 50,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestPlanRouteFollowsAPlanIntoTheArchive": {
       "kind": "go",
@@ -128,12 +128,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPlanRouteFollowsAPlanIntoTheArchive$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 31,
-      "avg_ms": 2820,
-      "last_ms": 40,
+      "runs": 32,
+      "avg_ms": 2738,
+      "last_ms": 200,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack": {
       "kind": "go",
@@ -141,12 +141,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestRenderTimelineHTMLDrawsClockTicksAlignedToTheTrack$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 51,
+      "runs": 31,
+      "avg_ms": 49,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator": {
       "kind": "go",
@@ -154,12 +154,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestResolvePlanTeamNeverFilesASubagentUnderTheCoordinator$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 67,
-      "last_ms": 10,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdBudgetBands": {
       "kind": "go",
@@ -167,12 +167,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdBudgetBands$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/budget_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdDST": {
       "kind": "go",
@@ -180,12 +180,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdDST$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/recurrence_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdExplicitEndAndEpoch": {
       "kind": "go",
@@ -193,12 +193,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdExplicitEndAndEpoch$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/recurrence_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdOverdriveLifecycle": {
       "kind": "go",
@@ -206,12 +206,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdOverdriveLifecycle$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/budget_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdOverdriveTargets": {
       "kind": "go",
@@ -219,12 +219,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdOverdriveTargets$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/budget_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdOverdriveToggleResume": {
       "kind": "go",
@@ -232,12 +232,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdOverdriveToggleResume$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/budget_test.go",
-      "runs": 15,
+      "runs": 16,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdPowerbarGeometry": {
       "kind": "go",
@@ -245,12 +245,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdPowerbarGeometry$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/budget_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdProviderHardBlock": {
       "kind": "go",
@@ -258,12 +258,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdProviderHardBlock$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/budget_test.go",
-      "runs": 14,
+      "runs": 15,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdRecurrence": {
       "kind": "go",
@@ -271,12 +271,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdRecurrence$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/recurrence_test.go",
-      "runs": 16,
-      "avg_ms": 5,
-      "last_ms": 80,
+      "runs": 17,
+      "avg_ms": 4,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdResetRelative": {
       "kind": "go",
@@ -284,12 +284,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdResetRelative$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/recurrence_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdUnsupportedShortPool": {
       "kind": "go",
@@ -297,12 +297,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdUnsupportedShortPool$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/budget_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestIndigobirdUsageGates": {
       "kind": "go",
@@ -310,12 +310,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestIndigobirdUsageGates$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/budget_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestJavelinaHourlyAdmission": {
       "kind": "go",
@@ -323,12 +323,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestJavelinaHourlyAdmission$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/policy_preview_test.go",
-      "runs": 12,
+      "runs": 13,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "budget.TestJavelinaPolicyPreview": {
       "kind": "go",
@@ -336,12 +336,12 @@
       "pkg": "./src/internal/conductor/budget",
       "cmd": "go test -count=1 -run '^TestJavelinaPolicyPreview$' ./src/internal/conductor/budget",
       "file": "src/internal/conductor/budget/policy_preview_test.go",
-      "runs": 12,
+      "runs": 13,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "chainguard.TestLoadAllowedBashPrefixes": {
       "kind": "go",
@@ -349,12 +349,12 @@
       "pkg": "./src/internal/chainguard",
       "cmd": "go test -count=1 -run '^TestLoadAllowedBashPrefixes$' ./src/internal/chainguard",
       "file": "src/internal/chainguard/chainguard_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
-      "last_ms": 10,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "chainguard.TestMissingSettingsIsNotAnError": {
       "kind": "go",
@@ -362,12 +362,12 @@
       "pkg": "./src/internal/chainguard",
       "cmd": "go test -count=1 -run '^TestMissingSettingsIsNotAnError$' ./src/internal/chainguard",
       "file": "src/internal/chainguard/chainguard_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "chainguard.TestOffender": {
       "kind": "go",
@@ -375,12 +375,12 @@
       "pkg": "./src/internal/chainguard",
       "cmd": "go test -count=1 -run '^TestOffender$' ./src/internal/chainguard",
       "file": "src/internal/chainguard/chainguard_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "chainguard.TestSplitTopLevel": {
       "kind": "go",
@@ -388,12 +388,12 @@
       "pkg": "./src/internal/chainguard",
       "cmd": "go test -count=1 -run '^TestSplitTopLevel$' ./src/internal/chainguard",
       "file": "src/internal/chainguard/chainguard_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestConductorParkedPlanVisibility": {
       "kind": "go",
@@ -401,12 +401,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestConductorParkedPlanVisibility$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 6,
-      "avg_ms": 30,
-      "last_ms": 30,
+      "runs": 7,
+      "avg_ms": 35,
+      "last_ms": 70,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestConductorRunningOwners": {
       "kind": "go",
@@ -414,12 +414,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestConductorRunningOwners$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 6,
-      "avg_ms": 40,
-      "last_ms": 40,
+      "runs": 7,
+      "avg_ms": 45,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestConductorUnblockedFreshProgressBudget": {
       "kind": "go",
@@ -427,12 +427,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestConductorUnblockedFreshProgressBudget$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 5,
-      "avg_ms": 393,
-      "last_ms": 410,
+      "runs": 6,
+      "avg_ms": 594,
+      "last_ms": 1600,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdAdmission": {
       "kind": "go",
@@ -440,12 +440,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdAdmission$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 19,
-      "avg_ms": 59,
-      "last_ms": 40,
+      "runs": 20,
+      "avg_ms": 62,
+      "last_ms": 130,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdBoundedContractExpansion": {
       "kind": "go",
@@ -453,12 +453,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdBoundedContractExpansion$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 397,
-      "last_ms": 350,
+      "runs": 14,
+      "avg_ms": 439,
+      "last_ms": 990,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdBoundedIntake": {
       "kind": "go",
@@ -466,12 +466,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdBoundedIntake$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 420,
-      "last_ms": 430,
+      "runs": 17,
+      "avg_ms": 458,
+      "last_ms": 1070,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdCheckpointProfileHandoff": {
       "kind": "go",
@@ -479,12 +479,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdCheckpointProfileHandoff$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 1726,
-      "last_ms": 1630,
+      "runs": 14,
+      "avg_ms": 2059,
+      "last_ms": 6400,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdClaudeHookStreamDedupe": {
       "kind": "go",
@@ -492,12 +492,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdClaudeHookStreamDedupe$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 62,
-      "last_ms": 60,
+      "runs": 14,
+      "avg_ms": 65,
+      "last_ms": 110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdConfigReferences": {
       "kind": "go",
@@ -505,12 +505,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdConfigReferences$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 15,
+      "runs": 16,
       "avg_ms": 41,
-      "last_ms": 30,
+      "last_ms": 50,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdConfiguration": {
       "kind": "go",
@@ -518,12 +518,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdConfiguration$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 21,
-      "avg_ms": 49,
-      "last_ms": 60,
+      "runs": 22,
+      "avg_ms": 59,
+      "last_ms": 290,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdCrossBandFallbackAndShortRecovery": {
       "kind": "go",
@@ -531,12 +531,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdCrossBandFallbackAndShortRecovery$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 1862,
-      "last_ms": 1860,
+      "runs": 15,
+      "avg_ms": 2113,
+      "last_ms": 5630,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdDSTOccurrenceRestart": {
       "kind": "go",
@@ -544,12 +544,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdDSTOccurrenceRestart$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 1494,
-      "last_ms": 1460,
+      "runs": 14,
+      "avg_ms": 1728,
+      "last_ms": 4770,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdDisableAndKillSafety": {
       "kind": "go",
@@ -557,12 +557,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdDisableAndKillSafety$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 1867,
-      "last_ms": 1660,
+      "runs": 15,
+      "avg_ms": 2153,
+      "last_ms": 6170,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdDistinctRuleWindows": {
       "kind": "go",
@@ -570,12 +570,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdDistinctRuleWindows$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 15,
-      "avg_ms": 1116,
-      "last_ms": 1130,
+      "runs": 16,
+      "avg_ms": 1263,
+      "last_ms": 3470,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdDrainAndPoolIdentity": {
       "kind": "go",
@@ -583,12 +583,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdDrainAndPoolIdentity$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 2043,
-      "last_ms": 2009,
+      "runs": 17,
+      "avg_ms": 2343,
+      "last_ms": 7150,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdEventRedactionAndRecovery": {
       "kind": "go",
@@ -596,12 +596,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdEventRedactionAndRecovery$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 63,
-      "last_ms": 30,
+      "runs": 15,
+      "avg_ms": 61,
+      "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdFairProjects": {
       "kind": "go",
@@ -609,12 +609,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdFairProjects$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 1045,
-      "last_ms": 970,
+      "runs": 17,
+      "avg_ms": 1189,
+      "last_ms": 3500,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdFinishPlanHardGates": {
       "kind": "go",
@@ -622,12 +622,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdFinishPlanHardGates$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 9388,
-      "last_ms": 4030,
+      "runs": 15,
+      "avg_ms": 9591,
+      "last_ms": 12440,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdGenericDiagnostics": {
       "kind": "go",
@@ -635,12 +635,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdGenericDiagnostics$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 630,
-      "last_ms": 370,
+      "runs": 15,
+      "avg_ms": 656,
+      "last_ms": 1020,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdIdleAndIntakeDedupe": {
       "kind": "go",
@@ -648,12 +648,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdIdleAndIntakeDedupe$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 19,
-      "avg_ms": 235,
-      "last_ms": 90,
+      "runs": 20,
+      "avg_ms": 228,
+      "last_ms": 100,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdInFlightCheckpointWindow": {
       "kind": "go",
@@ -661,12 +661,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdInFlightCheckpointWindow$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 511,
-      "last_ms": 440,
+      "runs": 14,
+      "avg_ms": 561,
+      "last_ms": 1220,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdInterruptAndConcurrency": {
       "kind": "go",
@@ -674,12 +674,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdInterruptAndConcurrency$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 21,
-      "avg_ms": 400,
-      "last_ms": 290,
+      "runs": 22,
+      "avg_ms": 407,
+      "last_ms": 560,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdInvalidResults": {
       "kind": "go",
@@ -687,12 +687,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdInvalidResults$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 19,
-      "avg_ms": 2425,
-      "last_ms": 1020,
+      "runs": 20,
+      "avg_ms": 2509,
+      "last_ms": 4110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdLifecycleAndDraft": {
       "kind": "go",
@@ -700,12 +700,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdLifecycleAndDraft$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 48,
-      "last_ms": 50,
+      "runs": 17,
+      "avg_ms": 49,
+      "last_ms": 70,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdMigration": {
       "kind": "go",
@@ -713,12 +713,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdMigration$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 19,
-      "avg_ms": 70,
-      "last_ms": 50,
+      "runs": 20,
+      "avg_ms": 77,
+      "last_ms": 210,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdMigrationTargetsAndInterruptedWrite": {
       "kind": "go",
@@ -726,12 +726,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdMigrationTargetsAndInterruptedWrite$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
+      "runs": 14,
       "avg_ms": 67,
-      "last_ms": 70,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdMissingExecutableFallback": {
       "kind": "go",
@@ -739,12 +739,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdMissingExecutableFallback$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 15,
-      "avg_ms": 40,
-      "last_ms": 40,
+      "runs": 16,
+      "avg_ms": 43,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdMixedQueuePriority": {
       "kind": "go",
@@ -752,12 +752,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdMixedQueuePriority$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 1448,
-      "last_ms": 1350,
+      "runs": 17,
+      "avg_ms": 1604,
+      "last_ms": 4110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdNextResetOpportunity": {
       "kind": "go",
@@ -765,12 +765,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdNextResetOpportunity$' ./src/internal/conductor",
       "file": "src/internal/conductor/opportunity_test.go",
-      "runs": 12,
-      "avg_ms": 59,
-      "last_ms": 60,
+      "runs": 13,
+      "avg_ms": 94,
+      "last_ms": 520,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdNextScheduleIntersection": {
       "kind": "go",
@@ -778,12 +778,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdNextScheduleIntersection$' ./src/internal/conductor",
       "file": "src/internal/conductor/opportunity_test.go",
-      "runs": 12,
-      "avg_ms": 80,
-      "last_ms": 100,
+      "runs": 13,
+      "avg_ms": 119,
+      "last_ms": 590,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdNoProgressTimeout": {
       "kind": "go",
@@ -791,12 +791,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdNoProgressTimeout$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 276,
-      "last_ms": 270,
+      "runs": 17,
+      "avg_ms": 356,
+      "last_ms": 1650,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOnePlan": {
       "kind": "go",
@@ -804,12 +804,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOnePlan$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 19,
-      "avg_ms": 3706,
-      "last_ms": 1270,
+      "runs": 20,
+      "avg_ms": 3651,
+      "last_ms": 2610,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOnePlanRetryPark": {
       "kind": "go",
@@ -817,12 +817,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOnePlanRetryPark$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 3702,
-      "last_ms": 3600,
+      "runs": 14,
+      "avg_ms": 4143,
+      "last_ms": 9880,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOrphanIsolation": {
       "kind": "go",
@@ -830,12 +830,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOrphanIsolation$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 1892,
-      "last_ms": 470,
+      "runs": 14,
+      "avg_ms": 1827,
+      "last_ms": 990,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOverdriveCheckpointRetirement": {
       "kind": "go",
@@ -843,12 +843,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOverdriveCheckpointRetirement$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 2347,
-      "last_ms": 2310,
+      "runs": 15,
+      "avg_ms": 2575,
+      "last_ms": 5770,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOverdriveConversion": {
       "kind": "go",
@@ -856,12 +856,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOverdriveConversion$' ./src/internal/conductor",
       "file": "src/internal/conductor/conversion_test.go",
-      "runs": 15,
-      "avg_ms": 321,
-      "last_ms": 280,
+      "runs": 16,
+      "avg_ms": 390,
+      "last_ms": 1430,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOverdriveConversionRefusesLossySchedule": {
       "kind": "go",
@@ -869,12 +869,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOverdriveConversionRefusesLossySchedule$' ./src/internal/conductor",
       "file": "src/internal/conductor/conversion_test.go",
-      "runs": 13,
-      "avg_ms": 74,
-      "last_ms": 50,
+      "runs": 14,
+      "avg_ms": 92,
+      "last_ms": 330,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOverdriveProjectScope": {
       "kind": "go",
@@ -882,12 +882,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOverdriveProjectScope$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 1189,
-      "last_ms": 1220,
+      "runs": 14,
+      "avg_ms": 1353,
+      "last_ms": 3490,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOverdriveTickMatrix": {
       "kind": "go",
@@ -895,12 +895,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOverdriveTickMatrix$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 3376,
-      "last_ms": 3350,
+      "runs": 15,
+      "avg_ms": 3768,
+      "last_ms": 9260,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdOwnedDescendantCleanup": {
       "kind": "go",
@@ -908,12 +908,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdOwnedDescendantCleanup$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 369,
-      "last_ms": 390,
+      "runs": 15,
+      "avg_ms": 409,
+      "last_ms": 980,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdPartialDelivery": {
       "kind": "go",
@@ -921,12 +921,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdPartialDelivery$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 15,
-      "avg_ms": 709,
-      "last_ms": 700,
+      "runs": 16,
+      "avg_ms": 803,
+      "last_ms": 2220,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdRecovery": {
       "kind": "go",
@@ -934,12 +934,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdRecovery$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 20,
-      "avg_ms": 1550,
-      "last_ms": 390,
+      "runs": 21,
+      "avg_ms": 1517,
+      "last_ms": 860,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdResetMetadataPrecedence": {
       "kind": "go",
@@ -947,12 +947,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdResetMetadataPrecedence$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 402,
-      "last_ms": 400,
+      "runs": 15,
+      "avg_ms": 437,
+      "last_ms": 940,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdRetryParking": {
       "kind": "go",
@@ -960,12 +960,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdRetryParking$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 19,
-      "avg_ms": 2090,
-      "last_ms": 2550,
+      "runs": 20,
+      "avg_ms": 2276,
+      "last_ms": 5810,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdRuleOverlapSelection": {
       "kind": "go",
@@ -973,12 +973,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdRuleOverlapSelection$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 1075,
-      "last_ms": 1230,
+      "runs": 15,
+      "avg_ms": 1239,
+      "last_ms": 3540,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdSampleEpochAndDaySeven": {
       "kind": "go",
@@ -986,12 +986,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdSampleEpochAndDaySeven$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 15,
-      "avg_ms": 46,
-      "last_ms": 50,
+      "runs": 16,
+      "avg_ms": 49,
+      "last_ms": 100,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdSampleQueueOverride": {
       "kind": "go",
@@ -999,12 +999,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdSampleQueueOverride$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 82,
-      "last_ms": 90,
+      "runs": 14,
+      "avg_ms": 88,
+      "last_ms": 170,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdSeparateProcessLease": {
       "kind": "go",
@@ -1012,12 +1012,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdSeparateProcessLease$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 651,
-      "last_ms": 260,
+      "runs": 14,
+      "avg_ms": 640,
+      "last_ms": 500,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdSharedPoolAdmission": {
       "kind": "go",
@@ -1025,12 +1025,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdSharedPoolAdmission$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 648,
-      "last_ms": 690,
+      "runs": 14,
+      "avg_ms": 739,
+      "last_ms": 1930,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdStorageFailure": {
       "kind": "go",
@@ -1038,12 +1038,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdStorageFailure$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 15,
-      "avg_ms": 20,
-      "last_ms": 20,
+      "runs": 16,
+      "avg_ms": 24,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdStreamDrain": {
       "kind": "go",
@@ -1051,12 +1051,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdStreamDrain$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 20,
-      "avg_ms": 11258,
-      "last_ms": 9260,
+      "runs": 22,
+      "avg_ms": 12050,
+      "last_ms": 19250,
       "tier": "standard",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:52:09Z"
     },
     "conductor.TestIndigobirdSupervisor": {
       "kind": "go",
@@ -1064,12 +1064,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdSupervisor$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 19,
-      "avg_ms": 2965,
-      "last_ms": 1400,
+      "runs": 20,
+      "avg_ms": 3028,
+      "last_ms": 4240,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdUnapprovedPlanGates": {
       "kind": "go",
@@ -1077,12 +1077,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdUnapprovedPlanGates$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 13,
-      "avg_ms": 40,
-      "last_ms": 40,
+      "runs": 14,
+      "avg_ms": 42,
+      "last_ms": 70,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdUnorderedOverdriveSelection": {
       "kind": "go",
@@ -1090,12 +1090,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdUnorderedOverdriveSelection$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 14,
-      "avg_ms": 2625,
-      "last_ms": 2560,
+      "runs": 15,
+      "avg_ms": 2930,
+      "last_ms": 7200,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdWatchAndFreshness": {
       "kind": "go",
@@ -1103,12 +1103,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdWatchAndFreshness$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 442,
-      "last_ms": 450,
+      "runs": 17,
+      "avg_ms": 511,
+      "last_ms": 1630,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestIndigobirdWindowEndModes": {
       "kind": "go",
@@ -1116,12 +1116,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestIndigobirdWindowEndModes$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 16,
-      "avg_ms": 3739,
-      "last_ms": 1450,
+      "runs": 17,
+      "avg_ms": 3773,
+      "last_ms": 4330,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestJavelinaAchievement": {
       "kind": "go",
@@ -1129,12 +1129,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestJavelinaAchievement$' ./src/internal/conductor",
       "file": "src/internal/conductor/javelina_test.go",
-      "runs": 14,
-      "avg_ms": 52,
-      "last_ms": 70,
+      "runs": 15,
+      "avg_ms": 83,
+      "last_ms": 520,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestJavelinaFullDay": {
       "kind": "go",
@@ -1142,12 +1142,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestJavelinaFullDay$' ./src/internal/conductor",
       "file": "src/internal/conductor/javelina_test.go",
-      "runs": 13,
+      "runs": 14,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestJavelinaHourlyPersistence": {
       "kind": "go",
@@ -1155,12 +1155,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestJavelinaHourlyPersistence$' ./src/internal/conductor",
       "file": "src/internal/conductor/javelina_test.go",
-      "runs": 10,
-      "avg_ms": 28,
-      "last_ms": 30,
+      "runs": 11,
+      "avg_ms": 41,
+      "last_ms": 180,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestJavelinaMigration": {
       "kind": "go",
@@ -1168,12 +1168,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestJavelinaMigration$' ./src/internal/conductor",
       "file": "src/internal/conductor/javelina_test.go",
-      "runs": 13,
-      "avg_ms": 38,
-      "last_ms": 30,
+      "runs": 14,
+      "avg_ms": 46,
+      "last_ms": 150,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestJavelinaSharedExecution": {
       "kind": "go",
@@ -1181,12 +1181,12 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestJavelinaSharedExecution$' ./src/internal/conductor",
       "file": "src/internal/conductor/javelina_test.go",
-      "runs": 13,
-      "avg_ms": 772,
-      "last_ms": 800,
+      "runs": 14,
+      "avg_ms": 933,
+      "last_ms": 3030,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.TestNativePromptFileCheckpoint": {
       "kind": "go",
@@ -1194,35 +1194,35 @@
       "pkg": "./src/internal/conductor",
       "cmd": "go test -count=1 -run '^TestNativePromptFileCheckpoint$' ./src/internal/conductor",
       "file": "src/internal/conductor/engine_test.go",
-      "runs": 4,
-      "avg_ms": 3914,
-      "last_ms": 3980,
+      "runs": 5,
+      "avg_ms": 4647,
+      "last_ms": 7580,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T05:00:08Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.settings-ui": {
       "kind": "shell",
       "cmd": "node tests/conductor/settings.test.cjs",
       "parallel_safe": true,
-      "runs": 12,
-      "avg_ms": 230,
-      "last_ms": 635,
+      "runs": 13,
+      "avg_ms": 435,
+      "last_ms": 2899,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "conductor.skill-clients": {
       "kind": "shell",
       "cmd": "make conductor-skill-test",
       "file": "skills/iterate-conductor/tests/control_test.py",
       "parallel_safe": true,
-      "runs": 17,
-      "avg_ms": 3869,
-      "last_ms": 5743,
+      "runs": 18,
+      "avg_ms": 4865,
+      "last_ms": 21810,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "docguard.TestApplies": {
       "kind": "go",
@@ -1230,12 +1230,12 @@
       "pkg": "./src/internal/docguard",
       "cmd": "go test -count=1 -run '^TestApplies$' ./src/internal/docguard",
       "file": "src/internal/docguard/docguard_test.go",
-      "runs": 19,
+      "runs": 20,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "docguard.TestScanFlagsNarration": {
       "kind": "go",
@@ -1243,12 +1243,12 @@
       "pkg": "./src/internal/docguard",
       "cmd": "go test -count=1 -run '^TestScanFlagsNarration$' ./src/internal/docguard",
       "file": "src/internal/docguard/docguard_test.go",
-      "runs": 19,
+      "runs": 20,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "docguard.TestScanIgnoresPresentTenseAndQuotes": {
       "kind": "go",
@@ -1256,12 +1256,12 @@
       "pkg": "./src/internal/docguard",
       "cmd": "go test -count=1 -run '^TestScanIgnoresPresentTenseAndQuotes$' ./src/internal/docguard",
       "file": "src/internal/docguard/docguard_test.go",
-      "runs": 19,
+      "runs": 20,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "docguard.TestScanReportsLineNumbers": {
       "kind": "go",
@@ -1269,12 +1269,12 @@
       "pkg": "./src/internal/docguard",
       "cmd": "go test -count=1 -run '^TestScanReportsLineNumbers$' ./src/internal/docguard",
       "file": "src/internal/docguard/docguard_test.go",
-      "runs": 19,
+      "runs": 20,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "docguard.TestScanSkipsFencedCode": {
       "kind": "go",
@@ -1282,12 +1282,12 @@
       "pkg": "./src/internal/docguard",
       "cmd": "go test -count=1 -run '^TestScanSkipsFencedCode$' ./src/internal/docguard",
       "file": "src/internal/docguard/docguard_test.go",
-      "runs": 19,
+      "runs": 20,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "git.TestScreenPath": {
       "kind": "go",
@@ -1295,12 +1295,12 @@
       "pkg": "./src/internal/git",
       "cmd": "go test ./src/internal/git -run '^TestScreenPath$'",
       "file": "src/internal/git/screen_test.go",
-      "runs": 30,
-      "avg_ms": 69,
-      "last_ms": 0,
+      "runs": 31,
+      "avg_ms": 67,
+      "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "git.TestStageFilesKeepsBinaryOutOfObjectStore": {
       "kind": "go",
@@ -1308,12 +1308,12 @@
       "pkg": "./src/internal/git",
       "cmd": "go test ./src/internal/git -run '^TestStageFilesKeepsBinaryOutOfObjectStore$'",
       "file": "src/internal/git/screen_test.go",
-      "runs": 30,
-      "avg_ms": 213,
-      "last_ms": 120,
+      "runs": 31,
+      "avg_ms": 242,
+      "last_ms": 1120,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate-run.TestConductorCLIAtomicJSONWorkflow": {
       "kind": "go",
@@ -1321,12 +1321,12 @@
       "pkg": "./src/cmd/iterate-run",
       "cmd": "go test -count=1 -run '^TestConductorCLIAtomicJSONWorkflow$' ./src/cmd/iterate-run",
       "file": "src/cmd/iterate-run/conductor_cmd_test.go",
-      "runs": 13,
-      "avg_ms": 32,
-      "last_ms": 50,
+      "runs": 14,
+      "avg_ms": 31,
+      "last_ms": 30,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate-run.TestConductorCLIBinaryEntrypoint": {
       "kind": "go",
@@ -1334,12 +1334,12 @@
       "pkg": "./src/cmd/iterate-run",
       "cmd": "go test -count=1 -run '^TestConductorCLIBinaryEntrypoint$' ./src/cmd/iterate-run",
       "file": "src/cmd/iterate-run/conductor_cmd_test.go",
-      "runs": 12,
-      "avg_ms": 109,
-      "last_ms": 90,
+      "runs": 13,
+      "avg_ms": 113,
+      "last_ms": 170,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate-run.TestConductorCLIConversionReadOnly": {
       "kind": "go",
@@ -1347,12 +1347,12 @@
       "pkg": "./src/cmd/iterate-run",
       "cmd": "go test -count=1 -run '^TestConductorCLIConversionReadOnly$' ./src/cmd/iterate-run",
       "file": "src/cmd/iterate-run/conductor_cmd_test.go",
-      "runs": 14,
-      "avg_ms": 48,
-      "last_ms": 50,
+      "runs": 15,
+      "avg_ms": 50,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate-run.TestConductorCLIErrorsAndHelp": {
       "kind": "go",
@@ -1360,12 +1360,12 @@
       "pkg": "./src/cmd/iterate-run",
       "cmd": "go test -count=1 -run '^TestConductorCLIErrorsAndHelp$' ./src/cmd/iterate-run",
       "file": "src/cmd/iterate-run/conductor_cmd_test.go",
-      "runs": 13,
+      "runs": 14,
       "avg_ms": 9,
-      "last_ms": 0,
+      "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate-run.TestConductorCLIHTTPSharedDefinitions": {
       "kind": "go",
@@ -1373,12 +1373,12 @@
       "pkg": "./src/cmd/iterate-run",
       "cmd": "go test -count=1 -run '^TestConductorCLIHTTPSharedDefinitions$' ./src/cmd/iterate-run",
       "file": "src/cmd/iterate-run/conductor_cmd_test.go",
-      "runs": 12,
-      "avg_ms": 71,
-      "last_ms": 50,
+      "runs": 13,
+      "avg_ms": 103,
+      "last_ms": 490,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate-run.TestConductorCLIInterspersedFlags": {
       "kind": "go",
@@ -1386,12 +1386,12 @@
       "pkg": "./src/cmd/iterate-run",
       "cmd": "go test -count=1 -run '^TestConductorCLIInterspersedFlags$' ./src/cmd/iterate-run",
       "file": "src/cmd/iterate-run/conductor_cmd_test.go",
-      "runs": 13,
-      "avg_ms": 7,
-      "last_ms": 10,
+      "runs": 14,
+      "avg_ms": 14,
+      "last_ms": 110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate-run.TestConductorCLIProjectQueue": {
       "kind": "go",
@@ -1399,12 +1399,12 @@
       "pkg": "./src/cmd/iterate-run",
       "cmd": "go test -count=1 -run '^TestConductorCLIProjectQueue$' ./src/cmd/iterate-run",
       "file": "src/cmd/iterate-run/conductor_cmd_test.go",
-      "runs": 12,
-      "avg_ms": 89,
-      "last_ms": 30,
+      "runs": 13,
+      "avg_ms": 85,
+      "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate-run.TestConductorCLISixColorCases": {
       "kind": "go",
@@ -1412,12 +1412,12 @@
       "pkg": "./src/cmd/iterate-run",
       "cmd": "go test -count=1 -run '^TestConductorCLISixColorCases$' ./src/cmd/iterate-run",
       "file": "src/cmd/iterate-run/conductor_cmd_test.go",
-      "runs": 12,
-      "avg_ms": 1136,
-      "last_ms": 1540,
+      "runs": 13,
+      "avg_ms": 1280,
+      "last_ms": 3010,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterate.contract-test": {
       "kind": "shell",
@@ -1426,12 +1426,12 @@
       "cmd": "make iterate-contract-test",
       "file": "skills/iterate/tests/contract-test.sh",
       "parallel_safe": true,
-      "runs": 30,
-      "avg_ms": 1408,
-      "last_ms": 961,
+      "runs": 31,
+      "avg_ms": 1568,
+      "last_ms": 6379,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestABoxedUnteamedPlanStillGetsItsRequirements": {
       "kind": "go",
@@ -1439,12 +1439,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestABoxedUnteamedPlanStillGetsItsRequirements$'",
       "file": "src/internal/iterrun/planitems_test.go",
-      "runs": 30,
-      "avg_ms": 49,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 47,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestALaneWithNoTranscriptIsReportedNotZeroed": {
       "kind": "go",
@@ -1452,12 +1452,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestALaneWithNoTranscriptIsReportedNotZeroed$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 62,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 61,
+      "last_ms": 50,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem": {
       "kind": "go",
@@ -1465,12 +1465,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestAMixedFormatPlanGetsEveryRequirementNotSomeOfThem$'",
       "file": "src/internal/iterrun/planitems_test.go",
-      "runs": 30,
-      "avg_ms": 64,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 61,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestATornFinalLineIsPickedUpOnceItIsComplete": {
       "kind": "go",
@@ -1478,12 +1478,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestATornFinalLineIsPickedUpOnceItIsComplete$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 59,
+      "runs": 31,
+      "avg_ms": 57,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestAnExplicitStatusLogMarkOverridesTheCheckbox": {
       "kind": "go",
@@ -1491,12 +1491,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestAnExplicitStatusLogMarkOverridesTheCheckbox$'",
       "file": "src/internal/iterrun/planitems_test.go",
-      "runs": 30,
-      "avg_ms": 51,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 49,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestArchivedBadgeReflectsBlockedAndPhase": {
       "kind": "go",
@@ -1504,12 +1504,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestArchivedBadgeReflectsBlockedAndPhase$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 46,
+      "runs": 31,
+      "avg_ms": 44,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestArchivedProjectAccordionOmittedWhenNoArchivedPlans": {
       "kind": "go",
@@ -1517,12 +1517,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestArchivedProjectAccordionOmittedWhenNoArchivedPlans$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 43,
+      "runs": 31,
+      "avg_ms": 41,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBuildRowsFromArchivePreservesGoalAndSteps": {
       "kind": "go",
@@ -1530,12 +1530,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromArchivePreservesGoalAndSteps$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 54,
-      "last_ms": 10,
+      "last_ms": 70,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator": {
       "kind": "go",
@@ -1543,12 +1543,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromFilesystemAttributesUnassignedStepsToCoordinator$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 54,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 52,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBuildRowsFromFilesystemExcludesStaleRegistryEntries": {
       "kind": "go",
@@ -1556,12 +1556,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromFilesystemExcludesStaleRegistryEntries$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 55,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 56,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent": {
       "kind": "go",
@@ -1569,12 +1569,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 73,
-      "last_ms": 10,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag": {
       "kind": "go",
@@ -1582,12 +1582,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromHookEventsPairsAcrossMissingPostPlanTag$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 45,
+      "runs": 31,
+      "avg_ms": 43,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBuildRowsFromHookEventsScopesCoordinatorByProject": {
       "kind": "go",
@@ -1595,12 +1595,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsFromHookEventsScopesCoordinatorByProject$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 46,
+      "runs": 31,
+      "avg_ms": 44,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBuildRowsGapDetection": {
       "kind": "go",
@@ -1608,12 +1608,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBuildRowsGapDetection$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 45,
+      "runs": 31,
+      "avg_ms": 43,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBurndownChartDistinguishesGaveUpFromActive": {
       "kind": "go",
@@ -1621,12 +1621,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBurndownChartDistinguishesGaveUpFromActive$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 58,
+      "runs": 31,
+      "avg_ms": 56,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBurndownChartOmittedWhenNoStepDetail": {
       "kind": "go",
@@ -1634,12 +1634,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBurndownChartOmittedWhenNoStepDetail$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 55,
+      "runs": 31,
+      "avg_ms": 53,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBurndownChartShadesByValidationState": {
       "kind": "go",
@@ -1647,12 +1647,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBurndownChartShadesByValidationState$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 57,
+      "runs": 31,
+      "avg_ms": 55,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestBurndownChartShowsFullDependsOnListNotJustPrimary": {
       "kind": "go",
@@ -1660,12 +1660,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestBurndownChartShowsFullDependsOnListNotJustPrimary$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 58,
+      "runs": 31,
+      "avg_ms": 56,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet": {
       "kind": "go",
@@ -1673,12 +1673,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestCheckboxStatusNeverClaimsAnUnprovenStepIsMet$'",
       "file": "src/internal/iterrun/planitems_test.go",
-      "runs": 30,
-      "avg_ms": 52,
+      "runs": 31,
+      "avg_ms": 50,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPICumulativeDraftSamples": {
       "kind": "go",
@@ -1686,12 +1686,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPICumulativeDraftSamples$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 13,
-      "avg_ms": 37,
+      "runs": 14,
+      "avg_ms": 35,
       "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPICursorExpiryRecovery": {
       "kind": "go",
@@ -1699,12 +1699,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPICursorExpiryRecovery$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 13,
-      "avg_ms": 31,
-      "last_ms": 60,
+      "runs": 14,
+      "avg_ms": 36,
+      "last_ms": 110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIFieldErrorsAndRecurrenceRestore": {
       "kind": "go",
@@ -1712,12 +1712,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIFieldErrorsAndRecurrenceRestore$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 13,
-      "avg_ms": 41,
-      "last_ms": 60,
+      "runs": 14,
+      "avg_ms": 43,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIInvalidFoldersAndReadiness": {
       "kind": "go",
@@ -1725,12 +1725,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIInvalidFoldersAndReadiness$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 14,
+      "runs": 15,
       "avg_ms": 25,
-      "last_ms": 40,
+      "last_ms": 30,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIOverdriveWindowSamples": {
       "kind": "go",
@@ -1738,12 +1738,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIOverdriveWindowSamples$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 14,
-      "avg_ms": 99,
-      "last_ms": 130,
+      "runs": 15,
+      "avg_ms": 110,
+      "last_ms": 270,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIPrivateRunProjection": {
       "kind": "go",
@@ -1751,12 +1751,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIPrivateRunProjection$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_api_test.go",
-      "runs": 13,
+      "runs": 14,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIReferenceIntegrity": {
       "kind": "go",
@@ -1764,12 +1764,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIReferenceIntegrity$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 14,
-      "avg_ms": 32,
-      "last_ms": 30,
+      "runs": 15,
+      "avg_ms": 33,
+      "last_ms": 50,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIResourceLifecycle": {
       "kind": "go",
@@ -1777,12 +1777,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIResourceLifecycle$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 15,
-      "avg_ms": 818,
-      "last_ms": 630,
+      "runs": 16,
+      "avg_ms": 942,
+      "last_ms": 2810,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIRevisionSecurity": {
       "kind": "go",
@@ -1790,12 +1790,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIRevisionSecurity$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_api_test.go",
-      "runs": 14,
-      "avg_ms": 13,
-      "last_ms": 20,
+      "runs": 15,
+      "avg_ms": 12,
+      "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPISimulationPure": {
       "kind": "go",
@@ -1803,12 +1803,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPISimulationPure$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_api_test.go",
-      "runs": 13,
-      "avg_ms": 22,
-      "last_ms": 10,
+      "runs": 14,
+      "avg_ms": 24,
+      "last_ms": 50,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIVisibilityAndConversion": {
       "kind": "go",
@@ -1816,12 +1816,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIVisibilityAndConversion$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 16,
-      "avg_ms": 80,
-      "last_ms": 80,
+      "runs": 17,
+      "avg_ms": 92,
+      "last_ms": 290,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorAPIWindowControlsPersistence": {
       "kind": "go",
@@ -1829,12 +1829,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorAPIWindowControlsPersistence$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_acceptance_test.go",
-      "runs": 13,
-      "avg_ms": 132,
-      "last_ms": 90,
+      "runs": 14,
+      "avg_ms": 148,
+      "last_ms": 360,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorDetailIdentityAndMissingSource": {
       "kind": "go",
@@ -1842,12 +1842,26 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorDetailIdentityAndMissingSource$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_web_test.go",
-      "runs": 14,
-      "avg_ms": 27,
-      "last_ms": 40,
+      "runs": 15,
+      "avg_ms": 39,
+      "last_ms": 210,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
+    },
+    "iterrun.TestConductorDetailIndependentHistory": {
+      "kind": "go",
+      "name": "TestConductorDetailIndependentHistory",
+      "pkg": "./src/internal/iterrun",
+      "cmd": "go test -count=1 -run '^TestConductorDetailIndependentHistory$' ./src/internal/iterrun",
+      "file": "src/internal/iterrun/conductor_web_test.go",
+      "parallel_safe": false,
+      "runs": 4,
+      "avg_ms": 95,
+      "last_ms": 110,
+      "tier": "fast",
+      "last_result": "pass",
+      "updated": "2026-10-22T05:52:09Z"
     },
     "iterrun.TestConductorIntegrationCumulativeBandsAndSampleIsolation": {
       "kind": "go",
@@ -1855,12 +1869,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorIntegrationCumulativeBandsAndSampleIsolation$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_integration_test.go",
-      "runs": 15,
-      "avg_ms": 38,
-      "last_ms": 40,
+      "runs": 16,
+      "avg_ms": 42,
+      "last_ms": 110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorIntegrationNamedPolicyScopeAndSharedPool": {
       "kind": "go",
@@ -1868,12 +1882,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorIntegrationNamedPolicyScopeAndSharedPool$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_integration_test.go",
-      "runs": 14,
+      "runs": 15,
       "avg_ms": 76,
-      "last_ms": 130,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorIntegrationOverdriveGeometryAndAvailability": {
       "kind": "go",
@@ -1881,12 +1895,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorIntegrationOverdriveGeometryAndAvailability$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_integration_test.go",
-      "runs": 14,
-      "avg_ms": 58,
-      "last_ms": 60,
+      "runs": 15,
+      "avg_ms": 59,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorLegacyImportLiveOwnerAndPartialBackup": {
       "kind": "go",
@@ -1895,12 +1909,12 @@
       "cmd": "go test -count=1 -run '^TestConductorLegacyImportLiveOwnerAndPartialBackup$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_legacy_test.go",
       "parallel_safe": false,
-      "runs": 14,
-      "avg_ms": 31,
-      "last_ms": 50,
+      "runs": 15,
+      "avg_ms": 35,
+      "last_ms": 100,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorLegacyImportPreviewApplyIdempotence": {
       "kind": "go",
@@ -1909,12 +1923,12 @@
       "cmd": "go test -count=1 -run '^TestConductorLegacyImportPreviewApplyIdempotence$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_legacy_test.go",
       "parallel_safe": false,
-      "runs": 14,
-      "avg_ms": 70,
-      "last_ms": 70,
+      "runs": 15,
+      "avg_ms": 73,
+      "last_ms": 120,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorManualReleaseHandoff": {
       "kind": "go",
@@ -1922,12 +1936,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorManualReleaseHandoff$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 6,
-      "avg_ms": 217,
-      "last_ms": 180,
+      "runs": 7,
+      "avg_ms": 273,
+      "last_ms": 610,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorOwnedHookObservation": {
       "kind": "go",
@@ -1935,12 +1949,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorOwnedHookObservation$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_integration_test.go",
-      "runs": 13,
-      "avg_ms": 36,
-      "last_ms": 20,
+      "runs": 14,
+      "avg_ms": 35,
+      "last_ms": 30,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorProjectDirectoryAliases": {
       "kind": "go",
@@ -1948,12 +1962,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorProjectDirectoryAliases$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_web_test.go",
-      "runs": 5,
-      "avg_ms": 47,
+      "runs": 6,
+      "avg_ms": 49,
       "last_ms": 60,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorQueueWakeAfterClosedWindow": {
       "kind": "go",
@@ -1961,12 +1975,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorQueueWakeAfterClosedWindow$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_integration_test.go",
-      "runs": 13,
+      "runs": 14,
       "avg_ms": 103,
-      "last_ms": 130,
+      "last_ms": 110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorResourceAtomicOnboarding": {
       "kind": "go",
@@ -1974,12 +1988,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorResourceAtomicOnboarding$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_api_test.go",
-      "runs": 14,
-      "avg_ms": 15,
-      "last_ms": 20,
+      "runs": 15,
+      "avg_ms": 19,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorResourceReferenceDrafts": {
       "kind": "go",
@@ -1987,12 +2001,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorResourceReferenceDrafts$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_api_test.go",
-      "runs": 13,
-      "avg_ms": 18,
-      "last_ms": 10,
+      "runs": 14,
+      "avg_ms": 19,
+      "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorScheduleOnlyNarrows": {
       "kind": "go",
@@ -2000,12 +2014,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestConductorScheduleOnlyNarrows$'",
       "file": "src/internal/iterrun/schedule_test.go",
-      "runs": 33,
-      "avg_ms": 26,
+      "runs": 34,
+      "avg_ms": 25,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorSourceDependencyCheckpoint": {
       "kind": "go",
@@ -2013,12 +2027,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceDependencyCheckpoint$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 18,
-      "avg_ms": 59,
-      "last_ms": 170,
+      "runs": 19,
+      "avg_ms": 82,
+      "last_ms": 500,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorSourceIdentityAndArchive": {
       "kind": "go",
@@ -2026,12 +2040,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceIdentityAndArchive$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 18,
-      "avg_ms": 78,
-      "last_ms": 90,
+      "runs": 19,
+      "avg_ms": 81,
+      "last_ms": 140,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorSourceIntakeProvenance": {
       "kind": "go",
@@ -2039,12 +2053,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceIntakeProvenance$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 14,
-      "avg_ms": 27,
-      "last_ms": 40,
+      "runs": 15,
+      "avg_ms": 31,
+      "last_ms": 100,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorSourceMalformedPlanAdmission": {
       "kind": "go",
@@ -2052,12 +2066,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceMalformedPlanAdmission$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 3,
-      "avg_ms": 53,
-      "last_ms": 40,
+      "runs": 4,
+      "avg_ms": 79,
+      "last_ms": 160,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorSourceOwnTrail": {
       "kind": "go",
@@ -2065,12 +2079,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceOwnTrail$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 20,
-      "avg_ms": 91,
-      "last_ms": 110,
+      "runs": 21,
+      "avg_ms": 95,
+      "last_ms": 190,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorSourceParkedInterruption": {
       "kind": "go",
@@ -2078,12 +2092,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceParkedInterruption$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 6,
-      "avg_ms": 93,
-      "last_ms": 120,
+      "runs": 7,
+      "avg_ms": 151,
+      "last_ms": 500,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorSourceReleaseNextClaim": {
       "kind": "go",
@@ -2091,12 +2105,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceReleaseNextClaim$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 15,
-      "avg_ms": 323,
-      "last_ms": 260,
+      "runs": 16,
+      "avg_ms": 345,
+      "last_ms": 680,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorSourceTypedPlanExclusion": {
       "kind": "go",
@@ -2104,12 +2118,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceTypedPlanExclusion$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 14,
-      "avg_ms": 78,
-      "last_ms": 60,
+      "runs": 15,
+      "avg_ms": 86,
+      "last_ms": 200,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorStatusLineNoTrigger": {
       "kind": "go",
@@ -2117,12 +2131,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestConductorStatusLineNoTrigger$'",
       "file": "src/internal/iterrun/conductor_test.go",
-      "runs": 33,
-      "avg_ms": 47,
+      "runs": 34,
+      "avg_ms": 45,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorStatusLineNotEnabledHidden": {
       "kind": "go",
@@ -2130,12 +2144,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestConductorStatusLineNotEnabledHidden$'",
       "file": "src/internal/iterrun/conductor_test.go",
-      "runs": 33,
-      "avg_ms": 47,
+      "runs": 34,
+      "avg_ms": 45,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorStatusLineStoodDown": {
       "kind": "go",
@@ -2143,12 +2157,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestConductorStatusLineStoodDown$'",
       "file": "src/internal/iterrun/conductor_test.go",
-      "runs": 33,
-      "avg_ms": 47,
+      "runs": 34,
+      "avg_ms": 45,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorStatusLineWorkingShowsNextTickMinutes": {
       "kind": "go",
@@ -2156,12 +2170,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestConductorStatusLineWorkingShowsNextTickMinutes$'",
       "file": "src/internal/iterrun/conductor_test.go",
-      "runs": 33,
-      "avg_ms": 55,
+      "runs": 34,
+      "avg_ms": 53,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorUnenrolledQueueDiscovery": {
       "kind": "go",
@@ -2169,12 +2183,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorUnenrolledQueueDiscovery$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_web_test.go",
-      "runs": 14,
-      "avg_ms": 9,
-      "last_ms": 10,
+      "runs": 15,
+      "avg_ms": 14,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestConductorUnifiedDetailPreservesTimeline": {
       "kind": "go",
@@ -2182,12 +2196,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorUnifiedDetailPreservesTimeline$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_web_test.go",
-      "runs": 15,
+      "runs": 16,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject": {
       "kind": "go",
@@ -2195,12 +2209,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestCoordinatorLaneIgnoresASameNamedPlanInAnotherProject$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 61,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 62,
+      "last_ms": 100,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestDashboardSeparatesActiveAndArchivedTabs": {
       "kind": "go",
@@ -2208,12 +2222,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestDashboardSeparatesActiveAndArchivedTabs$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 50,
+      "runs": 31,
+      "avg_ms": 48,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestDecideProjectSchedules": {
       "kind": "go",
@@ -2221,12 +2235,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestDecideProjectSchedules$'",
       "file": "src/internal/iterrun/nightly_test.go",
-      "runs": 30,
-      "avg_ms": 35,
-      "last_ms": 20,
+      "runs": 31,
+      "avg_ms": 33,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestDecideProjectSkipOrder": {
       "kind": "go",
@@ -2234,12 +2248,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestDecideProjectSkipOrder$'",
       "file": "src/internal/iterrun/nightly_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 60,
       "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestDecideProjectSkipsReleasePlans": {
       "kind": "go",
@@ -2247,12 +2261,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestDecideProjectSkipsReleasePlans$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/nightly_test.go",
-      "runs": 12,
-      "avg_ms": 35,
-      "last_ms": 60,
+      "runs": 13,
+      "avg_ms": 33,
+      "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestEffectiveStartFallsBackToStartedWhenExecutingAbsent": {
       "kind": "go",
@@ -2260,12 +2274,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestEffectiveStartFallsBackToStartedWhenExecutingAbsent$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 43,
+      "runs": 31,
+      "avg_ms": 41,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestEffectiveStartPrefersExecutingOverStarted": {
       "kind": "go",
@@ -2273,12 +2287,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestEffectiveStartPrefersExecutingOverStarted$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 43,
+      "runs": 31,
+      "avg_ms": 41,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestEnrollWithdrawRoundTrip": {
       "kind": "go",
@@ -2287,12 +2301,12 @@
       "cmd": "go test ./src/internal/iterrun -run '^TestEnrollWithdrawRoundTrip$'",
       "file": "src/internal/iterrun/nightly_test.go",
       "parallel_safe": false,
-      "runs": 33,
-      "avg_ms": 49,
-      "last_ms": 40,
+      "runs": 34,
+      "avg_ms": 51,
+      "last_ms": 130,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestEveryLetterHasWords": {
       "kind": "go",
@@ -2300,12 +2314,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestEveryLetterHasWords$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/pools_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestFinishedAtParsesIndependentlyOfExecuting": {
       "kind": "go",
@@ -2313,12 +2327,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestFinishedAtParsesIndependentlyOfExecuting$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 45,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 43,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestGetArchivedPlanSummarySetsArchived": {
       "kind": "go",
@@ -2326,12 +2340,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestGetArchivedPlanSummarySetsArchived$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 46,
+      "runs": 31,
+      "avg_ms": 44,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHandleHookPostAgentToolStillResolvesLabelDirectly": {
       "kind": "go",
@@ -2339,12 +2353,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHandleHookPostAgentToolStillResolvesLabelDirectly$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 48,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 46,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHandleHookPostIgnoresNonSpawnToolForQueue": {
       "kind": "go",
@@ -2352,12 +2366,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHandleHookPostIgnoresNonSpawnToolForQueue$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 48,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 46,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel": {
       "kind": "go",
@@ -2365,12 +2379,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHandleHookPostRecognizesCodexSpawnToolAndQueuesLabel$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 49,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 47,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHandleHookSubagentStartClaimsQueuedLabel": {
       "kind": "go",
@@ -2378,12 +2392,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHandleHookSubagentStartClaimsQueuedLabel$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 74,
+      "runs": 31,
+      "avg_ms": 71,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHandleHookSubagentStartNoQueuedLabelIsNoop": {
       "kind": "go",
@@ -2391,12 +2405,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHandleHookSubagentStartNoQueuedLabelIsNoop$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 61,
+      "runs": 31,
+      "avg_ms": 59,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHandleHookSubagentStopIsNoop": {
       "kind": "go",
@@ -2404,12 +2418,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHandleHookSubagentStopIsNoop$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 45,
+      "runs": 31,
+      "avg_ms": 43,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHarnessBadgeCoversAllThreeValues": {
       "kind": "go",
@@ -2417,12 +2431,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHarnessBadgeCoversAllThreeValues$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 55,
+      "runs": 31,
+      "avg_ms": 53,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHarnessRollupOnlyWhenMixed": {
       "kind": "go",
@@ -2430,12 +2444,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHarnessRollupOnlyWhenMixed$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 57,
+      "runs": 31,
+      "avg_ms": 55,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHeartbeatKeyedOnProjectRootNotCWD": {
       "kind": "go",
@@ -2443,12 +2457,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestHeartbeatKeyedOnProjectRootNotCWD$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/projects_test.go",
-      "runs": 26,
-      "avg_ms": 1,
-      "last_ms": 10,
+      "runs": 27,
+      "avg_ms": 4,
+      "last_ms": 100,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHeartbeatPathIsShellComputable": {
       "kind": "go",
@@ -2456,12 +2470,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestHeartbeatPathIsShellComputable$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/heartbeat_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHeartbeatRoundTrip": {
       "kind": "go",
@@ -2469,12 +2483,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestHeartbeatRoundTrip$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/heartbeat_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 1,
-      "last_ms": 30,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestHumanTokensStaysExactWherePrecisionMatters": {
       "kind": "go",
@@ -2482,12 +2496,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestHumanTokensStaysExactWherePrecisionMatters$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 51,
+      "runs": 31,
+      "avg_ms": 49,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestIsQueuedAndStateLabel": {
       "kind": "go",
@@ -2495,12 +2509,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestIsQueuedAndStateLabel$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 48,
+      "runs": 31,
+      "avg_ms": 46,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestJavelinaPreviewAPI": {
       "kind": "go",
@@ -2508,12 +2522,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestJavelinaPreviewAPI$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/javelina_api_test.go",
-      "runs": 10,
-      "avg_ms": 29,
-      "last_ms": 50,
+      "runs": 11,
+      "avg_ms": 35,
+      "last_ms": 100,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestListArchivedPlans": {
       "kind": "go",
@@ -2521,12 +2535,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestListArchivedPlans$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 45,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 43,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestLiveBadgePrioritizesBlockedOverEverything": {
       "kind": "go",
@@ -2534,12 +2548,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestLiveBadgePrioritizesBlockedOverEverything$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 48,
+      "runs": 31,
+      "avg_ms": 46,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestLiveBadgeQueued": {
       "kind": "go",
@@ -2547,12 +2561,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestLiveBadgeQueued$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 30,
+      "runs": 31,
+      "avg_ms": 29,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestLivePlanCardsCarryHarnessBadge": {
       "kind": "go",
@@ -2560,12 +2574,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestLivePlanCardsCarryHarnessBadge$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 55,
+      "runs": 31,
+      "avg_ms": 53,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestLiveWindowOverride": {
       "kind": "go",
@@ -2573,12 +2587,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestLiveWindowOverride$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/heartbeat_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestLongLaneLabelsAreTrimmedToFitAColumn": {
       "kind": "go",
@@ -2586,12 +2600,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestLongLaneLabelsAreTrimmedToFitAColumn$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 72,
+      "runs": 31,
+      "avg_ms": 69,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestMigrateKeysKeepsHighestIndex": {
       "kind": "go",
@@ -2599,12 +2613,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestMigrateKeysKeepsHighestIndex$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestNextPlanNameConcurrentCallsNeverCollide": {
       "kind": "go",
@@ -2612,12 +2626,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestNextPlanNameConcurrentCallsNeverCollide$'",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 30,
-      "avg_ms": 135,
-      "last_ms": 110,
+      "runs": 31,
+      "avg_ms": 136,
+      "last_ms": 190,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestNextPlanNameNeverRepeats": {
       "kind": "go",
@@ -2625,12 +2639,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestNextPlanNameNeverRepeats$'",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 30,
-      "avg_ms": 303,
-      "last_ms": 340,
+      "runs": 31,
+      "avg_ms": 316,
+      "last_ms": 710,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestNextPlanNamePerProjectSequenceGloballyUniqueWords": {
       "kind": "go",
@@ -2638,12 +2652,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestNextPlanNamePerProjectSequenceGloballyUniqueWords$'",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 30,
-      "avg_ms": 65,
-      "last_ms": 20,
+      "runs": 31,
+      "avg_ms": 63,
+      "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestNextPlanNameSeedsFromDisk": {
       "kind": "go",
@@ -2651,12 +2665,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestNextPlanNameSeedsFromDisk$'",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 30,
-      "avg_ms": 143,
-      "last_ms": 120,
+      "runs": 31,
+      "avg_ms": 144,
+      "last_ms": 200,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestNextPlanNameWalksAlphabetInOrderPerProject": {
       "kind": "go",
@@ -2664,12 +2678,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestNextPlanNameWalksAlphabetInOrderPerProject$'",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 30,
-      "avg_ms": 52,
-      "last_ms": 20,
+      "runs": 31,
+      "avg_ms": 50,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestOrderTeamRowsNestsByDependency": {
       "kind": "go",
@@ -2677,12 +2691,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestOrderTeamRowsNestsByDependency$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 51,
+      "runs": 31,
+      "avg_ms": 49,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParallelCallsSplitTheirSharedContextGrowth": {
       "kind": "go",
@@ -2690,12 +2704,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParallelCallsSplitTheirSharedContextGrowth$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 74,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 72,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParseCoordinatorStepStatusCapturesNote": {
       "kind": "go",
@@ -2703,12 +2717,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParseCoordinatorStepStatusCapturesNote$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 48,
+      "runs": 31,
+      "avg_ms": 46,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParseCoordinatorStepStatusRangesAndCase": {
       "kind": "go",
@@ -2716,12 +2730,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParseCoordinatorStepStatusRangesAndCase$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 50,
+      "runs": 31,
+      "avg_ms": 48,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanFileBlockedOnOperator": {
       "kind": "go",
@@ -2729,12 +2743,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanFileBlockedOnOperator$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 54,
+      "runs": 31,
+      "avg_ms": 52,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanFileExecutingAbsent": {
       "kind": "go",
@@ -2742,12 +2756,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanFileExecutingAbsent$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 52,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 50,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanFileExecutingDistinctFromStarted": {
       "kind": "go",
@@ -2755,12 +2769,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanFileExecutingDistinctFromStarted$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 52,
-      "last_ms": 10,
+      "last_ms": 70,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanFileGoalTruncation": {
       "kind": "go",
@@ -2768,12 +2782,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanFileGoalTruncation$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 51,
-      "last_ms": 10,
+      "last_ms": 60,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanFileHarness": {
       "kind": "go",
@@ -2781,12 +2795,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanFileHarness$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 61,
-      "last_ms": 20,
+      "runs": 31,
+      "avg_ms": 59,
+      "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanFileNotBlocked": {
       "kind": "go",
@@ -2794,12 +2808,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanFileNotBlocked$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 57,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 55,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanFileVersion": {
       "kind": "go",
@@ -2807,12 +2821,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanFileVersion$'",
       "file": "src/internal/iterrun/plans_test.go",
-      "runs": 30,
-      "avg_ms": 61,
+      "runs": 31,
+      "avg_ms": 59,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanItemReadsEveryFormatTheFamilyWrites": {
       "kind": "go",
@@ -2820,12 +2834,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanItemReadsEveryFormatTheFamilyWrites$'",
       "file": "src/internal/iterrun/planitems_test.go",
-      "runs": 30,
-      "avg_ms": 75,
+      "runs": 31,
+      "avg_ms": 72,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanStarted": {
       "kind": "go",
@@ -2833,12 +2847,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanStarted$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 48,
+      "runs": 31,
+      "avg_ms": 46,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestParsePlanStartedRespectsUTCSuffix": {
       "kind": "go",
@@ -2846,12 +2860,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestParsePlanStartedRespectsUTCSuffix$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 47,
+      "runs": 31,
+      "avg_ms": 45,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPeekPlanNameClaimsNothing": {
       "kind": "go",
@@ -2859,12 +2873,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPeekPlanNameClaimsNothing$'",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 30,
-      "avg_ms": 87,
+      "runs": 31,
+      "avg_ms": 84,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPeekPlanNameHonoursSeedWithoutSaving": {
       "kind": "go",
@@ -2872,12 +2886,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPeekPlanNameHonoursSeedWithoutSaving$'",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 30,
-      "avg_ms": 53,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 51,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPendingSpawnLabelEmptyQueueUnknownSession": {
       "kind": "go",
@@ -2885,12 +2899,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPendingSpawnLabelEmptyQueueUnknownSession$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 76,
+      "runs": 31,
+      "avg_ms": 73,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPendingSpawnLabelFIFOOrdering": {
       "kind": "go",
@@ -2898,12 +2912,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPendingSpawnLabelFIFOOrdering$'",
       "file": "src/internal/iterrun/hookcmd_test.go",
-      "runs": 30,
-      "avg_ms": 78,
+      "runs": 31,
+      "avg_ms": 75,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPlainFormatPlansAreUnaffected": {
       "kind": "go",
@@ -2911,12 +2925,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPlainFormatPlansAreUnaffected$'",
       "file": "src/internal/iterrun/planitems_test.go",
-      "runs": 30,
-      "avg_ms": 55,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 53,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand": {
       "kind": "go",
@@ -2924,12 +2938,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPlanDetailShowsOnlyItsOwnHarnessLaunchCommand$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 71,
+      "runs": 31,
+      "avg_ms": 68,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPlanDetailShowsVersionFromEitherMarker": {
       "kind": "go",
@@ -2937,12 +2951,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPlanDetailShowsVersionFromEitherMarker$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 51,
+      "runs": 31,
+      "avg_ms": 49,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPlanTokenUsageExcludesSpendOutsideTheRunWindow": {
       "kind": "go",
@@ -2950,12 +2964,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPlanTokenUsageExcludesSpendOutsideTheRunWindow$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 52,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 53,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam": {
       "kind": "go",
@@ -2963,12 +2977,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPlanTokenUsageSplitsTheCoordinatorFromEachTeam$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 58,
-      "last_ms": 30,
+      "runs": 31,
+      "avg_ms": 57,
+      "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPlistXMLShape": {
       "kind": "go",
@@ -2976,12 +2990,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPlistXMLShape$'",
       "file": "src/internal/iterrun/nightly_test.go",
-      "runs": 30,
-      "avg_ms": 24,
+      "runs": 31,
+      "avg_ms": 23,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPoolTables": {
       "kind": "go",
@@ -2989,12 +3003,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestPoolTables$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/pools_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPoolWordConsumesNamespacesInOrder": {
       "kind": "go",
@@ -3002,12 +3016,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestPoolWordConsumesNamespacesInOrder$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/pools_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPoolWordIsUniqueForever": {
       "kind": "go",
@@ -3015,12 +3029,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestPoolWordIsUniqueForever$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/pools_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPoolWordSuffixesOnWrap": {
       "kind": "go",
@@ -3028,12 +3042,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestPoolWordSuffixesOnWrap$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/pools_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPrintPlanTokensSaysSoWhenThereIsNoData": {
       "kind": "go",
@@ -3041,12 +3055,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPrintPlanTokensSaysSoWhenThereIsNoData$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 51,
+      "runs": 31,
+      "avg_ms": 49,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestProjectKeyFoldsCase": {
       "kind": "go",
@@ -3054,12 +3068,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestProjectKeyFoldsCase$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/names_test.go",
-      "runs": 26,
-      "avg_ms": 0,
-      "last_ms": 0,
+      "runs": 27,
+      "avg_ms": 2,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestProjectRootFindsOwnerFromInsideIterateItself": {
       "kind": "go",
@@ -3067,12 +3081,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestProjectRootFindsOwnerFromInsideIterateItself$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/projects_test.go",
-      "runs": 26,
-      "avg_ms": 0,
-      "last_ms": 10,
+      "runs": 27,
+      "avg_ms": 1,
+      "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestProjectRootFindsOwnerFromSubdirectory": {
       "kind": "go",
@@ -3080,12 +3094,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestProjectRootFindsOwnerFromSubdirectory$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/projects_test.go",
-      "runs": 26,
-      "avg_ms": 4,
-      "last_ms": 20,
+      "runs": 27,
+      "avg_ms": 7,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestProjectRootIgnoresAPlansFile": {
       "kind": "go",
@@ -3093,12 +3107,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestProjectRootIgnoresAPlansFile$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/projects_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestProjectRootStopsAtTheRepositoryRoot": {
       "kind": "go",
@@ -3106,12 +3120,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestProjectRootStopsAtTheRepositoryRoot$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/projects_test.go",
-      "runs": 26,
-      "avg_ms": 2,
-      "last_ms": 10,
+      "runs": 27,
+      "avg_ms": 3,
+      "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestProjectRootUnchangedWhenNothingOwnsIt": {
       "kind": "go",
@@ -3119,12 +3133,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestProjectRootUnchangedWhenNothingOwnsIt$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/projects_test.go",
-      "runs": 26,
-      "avg_ms": 0,
-      "last_ms": 0,
+      "runs": 27,
+      "avg_ms": 2,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestProjectRootWorktreeGitFileBoundsTheWalk": {
       "kind": "go",
@@ -3132,12 +3146,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestProjectRootWorktreeGitFileBoundsTheWalk$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/projects_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 1,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestPromptTickClassifiesEveryRealWakeupShape": {
       "kind": "go",
@@ -3145,12 +3159,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestPromptTickClassifiesEveryRealWakeupShape$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 53,
+      "runs": 31,
+      "avg_ms": 51,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestReadConductorStateMissingFile": {
       "kind": "go",
@@ -3158,12 +3172,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestReadConductorStateMissingFile$'",
       "file": "src/internal/iterrun/conductor_test.go",
-      "runs": 30,
-      "avg_ms": 52,
+      "runs": 31,
+      "avg_ms": 50,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestReadSchedulesFromProjectFiles": {
       "kind": "go",
@@ -3171,12 +3185,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestReadSchedulesFromProjectFiles$'",
       "file": "src/internal/iterrun/schedule_test.go",
-      "runs": 30,
-      "avg_ms": 39,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 40,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestRedispatchedTeamsShareOneLane": {
       "kind": "go",
@@ -3184,12 +3198,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestRedispatchedTeamsShareOneLane$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 53,
-      "last_ms": 10,
+      "last_ms": 70,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestReleasePlanNameReturnsWordToPool": {
       "kind": "go",
@@ -3197,12 +3211,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestReleasePlanNameReturnsWordToPool$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/pools_test.go",
-      "runs": 26,
-      "avg_ms": 131,
-      "last_ms": 150,
+      "runs": 27,
+      "avg_ms": 140,
+      "last_ms": 400,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning": {
       "kind": "go",
@@ -3210,12 +3224,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 78,
+      "runs": 32,
+      "avg_ms": 75,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestRunboxFallsBackToEarliestActivityWhenExecutingMissing": {
       "kind": "go",
@@ -3223,12 +3237,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestRunboxFallsBackToEarliestActivityWhenExecutingMissing$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 78,
+      "runs": 32,
+      "avg_ms": 75,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestRunboxHandlesZeroConfirmedActivity": {
       "kind": "go",
@@ -3236,12 +3250,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestRunboxHandlesZeroConfirmedActivity$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 79,
+      "runs": 32,
+      "avg_ms": 76,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestRunboxPrefersExecutingOverStarted": {
       "kind": "go",
@@ -3249,12 +3263,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestRunboxPrefersExecutingOverStarted$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 91,
+      "runs": 32,
+      "avg_ms": 88,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestRunboxPrefersFinishedOverActivityForArchivedPlans": {
       "kind": "go",
@@ -3262,12 +3276,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestRunboxPrefersFinishedOverActivityForArchivedPlans$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 80,
+      "runs": 32,
+      "avg_ms": 77,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestScheduleDatesMatchOpeningDay": {
       "kind": "go",
@@ -3275,12 +3289,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestScheduleDatesMatchOpeningDay$'",
       "file": "src/internal/iterrun/schedule_test.go",
-      "runs": 30,
-      "avg_ms": 26,
+      "runs": 31,
+      "avg_ms": 25,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestScheduleDenyBeatsAllow": {
       "kind": "go",
@@ -3288,12 +3302,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestScheduleDenyBeatsAllow$'",
       "file": "src/internal/iterrun/schedule_test.go",
-      "runs": 30,
-      "avg_ms": 29,
+      "runs": 31,
+      "avg_ms": 28,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestScheduleMalformedLineFailsClosedAndIsNamed": {
       "kind": "go",
@@ -3301,12 +3315,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestScheduleMalformedLineFailsClosedAndIsNamed$'",
       "file": "src/internal/iterrun/schedule_test.go",
-      "runs": 30,
-      "avg_ms": 27,
+      "runs": 31,
+      "avg_ms": 26,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestScheduleNoRulesAlwaysAllows": {
       "kind": "go",
@@ -3314,12 +3328,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestScheduleNoRulesAlwaysAllows$'",
       "file": "src/internal/iterrun/schedule_test.go",
-      "runs": 30,
-      "avg_ms": 30,
+      "runs": 31,
+      "avg_ms": 29,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestScheduleOneAllowMakesDefaultDeny": {
       "kind": "go",
@@ -3327,12 +3341,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestScheduleOneAllowMakesDefaultDeny$'",
       "file": "src/internal/iterrun/schedule_test.go",
-      "runs": 30,
-      "avg_ms": 30,
+      "runs": 31,
+      "avg_ms": 29,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestScheduleWeeknightWindowWrapsMidnightAndKeepsOpeningDay": {
       "kind": "go",
@@ -3340,12 +3354,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestScheduleWeeknightWindowWrapsMidnightAndKeepsOpeningDay$'",
       "file": "src/internal/iterrun/schedule_test.go",
-      "runs": 30,
-      "avg_ms": 38,
+      "runs": 31,
+      "avg_ms": 36,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestSetFrontmatterKey": {
       "kind": "go",
@@ -3353,12 +3367,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestSetFrontmatterKey$'",
       "file": "src/internal/iterrun/nightly_test.go",
-      "runs": 30,
-      "avg_ms": 25,
+      "runs": 31,
+      "avg_ms": 24,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestSyntheticZeroUsageRecordsAreNotCountedAsRequests": {
       "kind": "go",
@@ -3366,12 +3380,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestSyntheticZeroUsageRecordsAreNotCountedAsRequests$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 63,
-      "last_ms": 0,
+      "last_ms": 90,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestThinLetterKeepsItsLetter": {
       "kind": "go",
@@ -3379,12 +3393,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestThinLetterKeepsItsLetter$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/pools_test.go",
-      "runs": 26,
-      "avg_ms": 6952,
-      "last_ms": 3210,
+      "runs": 27,
+      "avg_ms": 7143,
+      "last_ms": 12110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestTickDisabledAndDryRun": {
       "kind": "go",
@@ -3393,12 +3407,12 @@
       "cmd": "go test ./src/internal/iterrun -run '^TestTickDisabledAndDryRun$'",
       "file": "src/internal/iterrun/nightly_test.go",
       "parallel_safe": false,
-      "runs": 33,
-      "avg_ms": 46,
-      "last_ms": 50,
+      "runs": 34,
+      "avg_ms": 47,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestTickGroupsSeparateCoalescedFiringsFromIdleOnes": {
       "kind": "go",
@@ -3406,12 +3420,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestTickGroupsSeparateCoalescedFiringsFromIdleOnes$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 70,
+      "runs": 31,
+      "avg_ms": 68,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestTokenPanelIsOmittedWhenThereIsNothingMeasured": {
       "kind": "go",
@@ -3419,12 +3433,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestTokenPanelIsOmittedWhenThereIsNothingMeasured$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 50,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 48,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestTokenPanelRendersLanesToolsAndWakeups": {
       "kind": "go",
@@ -3432,12 +3446,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestTokenPanelRendersLanesToolsAndWakeups$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
+      "runs": 31,
       "avg_ms": 59,
-      "last_ms": 10,
+      "last_ms": 60,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestToolAttributionChargesGrowthToTheCallThatCausedIt": {
       "kind": "go",
@@ -3445,12 +3459,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestToolAttributionChargesGrowthToTheCallThatCausedIt$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 62,
+      "runs": 31,
+      "avg_ms": 60,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestTouchHeartbeatNeverPanicsOnBadInput": {
       "kind": "go",
@@ -3458,12 +3472,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestTouchHeartbeatNeverPanicsOnBadInput$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/heartbeat_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect": {
       "kind": "go",
@@ -3471,12 +3485,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestTranscriptCacheReadsOnlyAppendedBytesAndStaysCorrect$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 57,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 55,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestTranscriptDedupeKeepsTheFinalStreamingWrite": {
       "kind": "go",
@@ -3484,12 +3498,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestTranscriptDedupeKeepsTheFinalStreamingWrite$'",
       "file": "src/internal/iterrun/tokens_test.go",
-      "runs": 30,
-      "avg_ms": 95,
-      "last_ms": 10,
+      "runs": 31,
+      "avg_ms": 92,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestUnteamedPlanOmitsTheEmptyTeamSection": {
       "kind": "go",
@@ -3497,12 +3511,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestUnteamedPlanOmitsTheEmptyTeamSection$'",
       "file": "src/internal/iterrun/planitems_test.go",
-      "runs": 30,
-      "avg_ms": 54,
+      "runs": 31,
+      "avg_ms": 52,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestValidationGlyphOpensModalOnlyWhenNoteExists": {
       "kind": "go",
@@ -3510,12 +3524,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestValidationGlyphOpensModalOnlyWhenNoteExists$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 30,
-      "avg_ms": 53,
+      "runs": 31,
+      "avg_ms": 51,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen": {
       "kind": "go",
@@ -3523,12 +3537,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen$'",
       "file": "src/internal/iterrun/timeline_test.go",
-      "runs": 31,
-      "avg_ms": 71,
+      "runs": 32,
+      "avg_ms": 68,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "iterrun.TestWriteLiveProjectSectionRendersConductorStatus": {
       "kind": "go",
@@ -3536,23 +3550,23 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test ./src/internal/iterrun -run '^TestWriteLiveProjectSectionRendersConductorStatus$'",
       "file": "src/internal/iterrun/serve_test.go",
-      "runs": 30,
-      "avg_ms": 64,
+      "runs": 31,
+      "avg_ms": 62,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "mailbox.mbx-test": {
       "kind": "shell",
       "cmd": "bash skills/mailbox/tests/mbx-test.sh",
       "file": "skills/mailbox/tests/mbx-test.sh",
-      "runs": 24,
-      "avg_ms": 9923,
-      "last_ms": 8489,
-      "tier": "fast",
+      "runs": 25,
+      "avg_ms": 10776,
+      "last_ms": 31269,
+      "tier": "standard",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestAgentPromptFileTransport": {
       "kind": "go",
@@ -3560,12 +3574,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestAgentPromptFileTransport$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 12,
+      "runs": 13,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestAuthenticatedAllowanceNormalization": {
       "kind": "go",
@@ -3573,12 +3587,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestAuthenticatedAllowanceNormalization$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 14,
+      "runs": 15,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestClaudeCollectorAuthenticContract": {
       "kind": "go",
@@ -3586,12 +3600,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestClaudeCollectorAuthenticContract$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 13,
+      "runs": 14,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestCodexFinalResultTransport": {
       "kind": "go",
@@ -3599,12 +3613,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestCodexFinalResultTransport$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 15,
+      "runs": 16,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestCompileLiteralExecutor": {
       "kind": "go",
@@ -3612,12 +3626,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestCompileLiteralExecutor$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 15,
-      "avg_ms": 533,
-      "last_ms": 550,
+      "runs": 16,
+      "avg_ms": 549,
+      "last_ms": 800,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestCompilePromptSeparator": {
       "kind": "go",
@@ -3625,12 +3639,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestCompilePromptSeparator$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 12,
-      "avg_ms": 503,
-      "last_ms": 510,
+      "runs": 13,
+      "avg_ms": 522,
+      "last_ms": 750,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestCustomResultContract": {
       "kind": "go",
@@ -3638,12 +3652,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestCustomResultContract$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 15,
-      "avg_ms": 190,
-      "last_ms": 180,
+      "runs": 16,
+      "avg_ms": 210,
+      "last_ms": 510,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestFragmentedProviderStreams": {
       "kind": "go",
@@ -3651,12 +3665,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestFragmentedProviderStreams$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 15,
+      "runs": 16,
       "avg_ms": 0,
-      "last_ms": 0,
+      "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestJavelinaCollectorRemedies": {
       "kind": "go",
@@ -3664,12 +3678,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestJavelinaCollectorRemedies$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/compile_test.go",
-      "runs": 10,
-      "avg_ms": 1301,
-      "last_ms": 1490,
+      "runs": 11,
+      "avg_ms": 1292,
+      "last_ms": 1210,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestJavelinaDetect": {
       "kind": "go",
@@ -3677,12 +3691,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestJavelinaDetect$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/compile_test.go",
-      "runs": 12,
+      "runs": 13,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestMalformedStreamDrain": {
       "kind": "go",
@@ -3690,12 +3704,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestMalformedStreamDrain$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 14,
-      "avg_ms": 0,
-      "last_ms": 0,
+      "runs": 15,
+      "avg_ms": 2,
+      "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestProviderEmbargoPreservesUsage": {
       "kind": "go",
@@ -3703,12 +3717,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestProviderEmbargoPreservesUsage$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 13,
+      "runs": 14,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestReadinessTemplates": {
       "kind": "go",
@@ -3716,12 +3730,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestReadinessTemplates$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 14,
-      "avg_ms": 214,
-      "last_ms": 200,
+      "runs": 15,
+      "avg_ms": 221,
+      "last_ms": 320,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestReservedTransport": {
       "kind": "go",
@@ -3729,12 +3743,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestReservedTransport$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 14,
+      "runs": 15,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestSubscriptionEnvironment": {
       "kind": "go",
@@ -3742,12 +3756,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestSubscriptionEnvironment$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 14,
+      "runs": 15,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestTerminalIsNotAssignmentSuccess": {
       "kind": "go",
@@ -3755,12 +3769,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestTerminalIsNotAssignmentSuccess$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 14,
+      "runs": 15,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "provider.TestUsageCommandScope": {
       "kind": "go",
@@ -3768,12 +3782,12 @@
       "pkg": "./src/internal/conductor/provider",
       "cmd": "go test -count=1 -run '^TestUsageCommandScope$' ./src/internal/conductor/provider",
       "file": "src/internal/conductor/provider/provider_test.go",
-      "runs": 14,
-      "avg_ms": 19,
+      "runs": 15,
+      "avg_ms": 20,
       "last_ms": 40,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestBlockingFailureStopsTheRunButIndependentFailuresDoNot": {
       "kind": "go",
@@ -3781,12 +3795,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestBlockingFailureStopsTheRunButIndependentFailuresDoNot$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 182,
-      "last_ms": 160,
+      "runs": 27,
+      "avg_ms": 215,
+      "last_ms": 1090,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestCLIEndToEnd": {
       "kind": "go",
@@ -3794,12 +3808,12 @@
       "pkg": "./src/cmd/testmaster",
       "cmd": "go test -count=1 -run '^TestCLIEndToEnd$' ./src/cmd/testmaster",
       "file": "src/cmd/testmaster/main_test.go",
-      "runs": 26,
-      "avg_ms": 178,
-      "last_ms": 120,
+      "runs": 27,
+      "avg_ms": 226,
+      "last_ms": 1490,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestCargoAdapter": {
       "kind": "go",
@@ -3807,12 +3821,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestCargoAdapter$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 2805,
-      "last_ms": 7980,
+      "runs": 27,
+      "avg_ms": 2991,
+      "last_ms": 7840,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestDefaultShellIsBashOnUnix": {
       "kind": "go",
@@ -3820,12 +3834,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestDefaultShellIsBashOnUnix$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_unix_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestDetectSources": {
       "kind": "go",
@@ -3833,12 +3847,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestDetectSources$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 9,
-      "last_ms": 10,
+      "runs": 27,
+      "avg_ms": 11,
+      "last_ms": 70,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestFlagsParseInEveryPosition": {
       "kind": "go",
@@ -3846,12 +3860,12 @@
       "pkg": "./src/cmd/testmaster",
       "cmd": "go test -count=1 -run '^TestFlagsParseInEveryPosition$' ./src/cmd/testmaster",
       "file": "src/cmd/testmaster/main_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestGoAdapterBatchesAPackageAndSurvivesACrash": {
       "kind": "go",
@@ -3859,12 +3873,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestGoAdapterBatchesAPackageAndSurvivesACrash$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 2850,
-      "last_ms": 2860,
+      "runs": 27,
+      "avg_ms": 2968,
+      "last_ms": 6060,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestGoBuildFailureCollapsesToOneLine": {
       "kind": "go",
@@ -3872,12 +3886,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestGoBuildFailureCollapsesToOneLine$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 441,
-      "last_ms": 410,
+      "runs": 27,
+      "avg_ms": 479,
+      "last_ms": 1470,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestGoTimeoutNamesTheHungTestAndRunsTheRest": {
       "kind": "go",
@@ -3885,12 +3899,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestGoTimeoutNamesTheHungTestAndRunsTheRest$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 3039,
-      "last_ms": 3080,
+      "runs": 27,
+      "avg_ms": 3094,
+      "last_ms": 4550,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestGreenRunStampsCatalogCases": {
       "kind": "go",
@@ -3898,12 +3912,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestGreenRunStampsCatalogCases$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 25,
-      "avg_ms": 144,
-      "last_ms": 200,
+      "runs": 26,
+      "avg_ms": 156,
+      "last_ms": 480,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestHelperProcess": {
       "kind": "go",
@@ -3911,12 +3925,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestHelperProcess$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/helper_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestInterruptKillsTheWholeTree": {
       "kind": "go",
@@ -3924,12 +3938,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestInterruptKillsTheWholeTree$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/proctree_test.go",
-      "runs": 16,
-      "avg_ms": 3511,
-      "last_ms": 3510,
+      "runs": 17,
+      "avg_ms": 3516,
+      "last_ms": 3610,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestLockIsExclusiveAcrossProcessesAndDiesWithItsHolder": {
       "kind": "go",
@@ -3937,12 +3951,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestLockIsExclusiveAcrossProcessesAndDiesWithItsHolder$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/lock_test.go",
-      "runs": 16,
-      "avg_ms": 17,
+      "runs": 17,
+      "avg_ms": 16,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestLockIsPerProject": {
       "kind": "go",
@@ -3950,12 +3964,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestLockIsPerProject$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/lock_test.go",
-      "runs": 16,
-      "avg_ms": 1,
-      "last_ms": 10,
+      "runs": 17,
+      "avg_ms": 5,
+      "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestLockReleaseAndStaleFile": {
       "kind": "go",
@@ -3963,12 +3977,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestLockReleaseAndStaleFile$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/lock_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestPassingTestsDetachedChildSurvives": {
       "kind": "go",
@@ -3976,12 +3990,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestPassingTestsDetachedChildSurvives$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/proctree_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 2112,
-      "last_ms": 2020,
+      "last_ms": 2120,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestPytestAdapter": {
       "kind": "go",
@@ -3989,12 +4003,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestPytestAdapter$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 3489,
-      "last_ms": 8130,
+      "runs": 27,
+      "avg_ms": 3703,
+      "last_ms": 9290,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestRegistryRoundTripKeepsUnknownFieldsAndNormalizesLegacyEntries": {
       "kind": "go",
@@ -4002,12 +4016,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestRegistryRoundTripKeepsUnknownFieldsAndNormalizesLegacyEntries$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
+      "runs": 27,
       "avg_ms": 0,
-      "last_ms": 10,
+      "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestSelfExitKeepsItsCode": {
       "kind": "go",
@@ -4015,12 +4029,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestSelfExitKeepsItsCode$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/proctree_test.go",
-      "runs": 16,
-      "avg_ms": 42,
-      "last_ms": 10,
+      "runs": 17,
+      "avg_ms": 40,
+      "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestSerialTestsRunAlone": {
       "kind": "go",
@@ -4028,12 +4042,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestSerialTestsRunAlone$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 1671,
-      "last_ms": 1860,
+      "runs": 27,
+      "avg_ms": 1695,
+      "last_ms": 2340,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestShellPassIsSilentAndFailureLeavesALog": {
       "kind": "go",
@@ -4041,12 +4055,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestShellPassIsSilentAndFailureLeavesALog$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 61,
-      "last_ms": 70,
+      "runs": 27,
+      "avg_ms": 85,
+      "last_ms": 710,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestShellRunnerOverrideBeatsTheDefault": {
       "kind": "go",
@@ -4054,12 +4068,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestShellRunnerOverrideBeatsTheDefault$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/shellpick_test.go",
-      "runs": 16,
-      "avg_ms": 26,
-      "last_ms": 20,
+      "runs": 17,
+      "avg_ms": 30,
+      "last_ms": 110,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestShellTimeoutKillsTheWholeProcessGroup": {
       "kind": "go",
@@ -4067,12 +4081,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestShellTimeoutKillsTheWholeProcessGroup$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 2820,
-      "last_ms": 2830,
+      "runs": 27,
+      "avg_ms": 2821,
+      "last_ms": 2850,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestTierChangeIsReportedAndDefaultSelection": {
       "kind": "go",
@@ -4080,12 +4094,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestTierChangeIsReportedAndDefaultSelection$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/testmaster_test.go",
-      "runs": 26,
-      "avg_ms": 100,
-      "last_ms": 170,
+      "runs": 27,
+      "avg_ms": 102,
+      "last_ms": 160,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestTimeoutKillsTheWholeTree": {
       "kind": "go",
@@ -4093,12 +4107,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestTimeoutKillsTheWholeTree$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/proctree_test.go",
-      "runs": 16,
-      "avg_ms": 3514,
-      "last_ms": 3510,
+      "runs": 17,
+      "avg_ms": 3517,
+      "last_ms": 3580,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "testmaster.TestWindowsShellResolution": {
       "kind": "go",
@@ -4106,12 +4120,12 @@
       "pkg": "./src/internal/testmaster",
       "cmd": "go test -count=1 -run '^TestWindowsShellResolution$' ./src/internal/testmaster",
       "file": "src/internal/testmaster/shellpick_test.go",
-      "runs": 16,
+      "runs": 17,
       "avg_ms": 0,
       "last_ms": 0,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     },
     "tutorial.box-test": {
       "kind": "shell",
@@ -4120,12 +4134,12 @@
       "cmd": "make tutorial-box-test",
       "file": "skills/tutorial/tests/box-test.sh",
       "parallel_safe": true,
-      "runs": 29,
-      "avg_ms": 6164,
-      "last_ms": 5831,
+      "runs": 30,
+      "avg_ms": 6404,
+      "last_ms": 13373,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-22T04:58:04Z"
+      "updated": "2026-10-22T05:51:16Z"
     }
   }
 }

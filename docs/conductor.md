@@ -114,7 +114,7 @@ JSON commands return one envelope with revision and data or a structured error. 
 
 Project views and plan timelines share launch visibility: the effective sequence, usage age, admission reason and next opportunity. An enabled schedule supplies its next opening within a fourteen-day preview horizon; an unknown quota recovery, missing queue/telemetry condition or stopped conductor remains explicit. Active assignments show their saved launch sequence rather than a later configuration edit.
 
-Plan details put project navigation above the plan identity, goal and progress summary. Conductor activity follows in a separate panel. The collapsible event log scrolls independently and follows incoming events while positioned at the bottom; scrolling back preserves your place. Usage observations expand separately.
+Plan details load the goal, requirements and saved progress before reading tool history and token usage. History loads separately for running and archived plans; **Retry history** retries a failed load while keeping the plan visible. Plan details put project navigation above the plan identity, goal and progress summary. Conductor activity follows in a separate panel. The collapsible event log scrolls independently and follows incoming events while positioned at the bottom; scrolling back preserves your place. Usage observations expand separately.
 
 The binary drains child stdout and stderr, stores protected logs, and normalizes activity into durable events. The portal polls those events and state; closing or disconnecting the browser does not stop execution. Reconnection resumes from a cursor. Execution-token totals describe the run, while account allowance comes from authenticated provider telemetry.
 
