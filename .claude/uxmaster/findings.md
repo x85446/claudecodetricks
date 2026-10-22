@@ -158,3 +158,50 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: live Caiman and archived Javelina requests exceeded 20 seconds without response bytes while handlers decoded the 160 MB shared hook log.
 - fix: filesystem plan details render immediately; tool history and token usage load separately with retry feedback, cancellation and one concurrent history reader. Live activity keeps its polling nodes and scroll position. Archive redirects preserve history requests.
 - verification: installed localhost:8420 returns Caiman in 0.281 seconds and Javelina in 0.278 seconds. Chrome displays initial goals and requirements while history loads, then the completed history; requirement details remain interactive. Handler regression covers blocked history, missing history, unlabelled completion pairs, cancellation and archive redirects.
+
+## Run-report comparison — 2026-10-22
+
+### F19 — Missing usage hides the accounting section
+- surface: archived Gemsbok report; Albatross and Waterbuck comparison
+- kind: mistake
+- severity: high
+- evidence: Chrome reports history loaded on all three pages. Gemsbok has no Token spend section; Albatross has 236 requests with a missing coordinator transcript; Waterbuck has five requests. The token renderer returns without an empty-state explanation when Messages is zero.
+- fix: Always show accounting availability, capture coverage and missing sources. Distinguish unavailable usage from zero usage, and preserve a durable plan-scoped record across providers and archives.
+- rule: —
+- status: open
+
+### F20 — Completion cards count lanes without naming that unit
+- surface: plan/archive completion cards
+- kind: mistake
+- severity: high
+- evidence: Fully loaded Gemsbok shows 0 DONE and 1 RECORDED OPEN while all four clickable requirements show DONE and its archive records complete with merged PR28. Albatross shows one queued lane despite all 20 requirements showing DONE. Source counts row states rather than requirement completion.
+- fix: Separate plan outcome, task completion, validation completion and lane state. Close recorded lanes from authoritative terminal events; label unknown termination explicitly.
+- rule: —
+- status: open
+
+### F21 — Requirement detail omits recorded acceptance evidence
+- surface: requirement detail and expanded coordinator
+- kind: ux
+- severity: high
+- evidence: Clicking Albatross requirement 3 shows a result NOTE. Clicking Gemsbok requirement 1 and expanding its coordinator shows the contract and checkmark without the actual result; its saved log contains 24-PDF acceptance, artifact identity, 299-case validation and merge evidence. Waterbuck requirement 4 carries a note mixing steps 4, 6 and 7.
+- fix: Store and display evidence per requirement and attempt: result, command, timestamp, exit status, artifact and source revision. Keep intended acceptance separate from observed proof.
+- rule: —
+- status: open
+
+### F22 — Session cost and plan usage use different scopes
+- surface: Waterbuck Token spend
+- kind: ux
+- severity: high
+- evidence: Chrome shows 893k context, 725 generated tokens, five requests and $784.89 SESSION COST together. Supporting prose says the dollar amount includes unrelated work in the same sessions. The report provides no coverage measure reconciling these totals with its 22h7m59s execution span.
+- fix: Group plan-attributed usage separately from whole-session cost. Show the attribution interval, coverage and estimated versus provider-reported amounts beside each total.
+- rule: —
+- status: open
+
+### F23 — Time gaps have severity without a recorded cause
+- surface: Waterbuck timeline
+- kind: ux
+- severity: medium
+- evidence: After history loads, the report labels a 7h21m30s interval a severe gap under Where the time actually went. The report does not identify whether that interval represents an operator wait, a schedule, a running external process or missing capture.
+- fix: Show elapsed, observed execution, blocked, queued, paused and unobserved time separately. Reserve failure severity for evidence of a failure; show unknown intervals as unknown.
+- rule: —
+- status: open

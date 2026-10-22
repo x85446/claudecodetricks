@@ -1289,7 +1289,7 @@
       ],
       "id": "req-plan-item-formats",
       "source": "user",
-      "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" \u2014 the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams."
+      "statement": "\"I no longer see the 1,2,3,4,5 locks. Activity by team is blank.\" — the dashboard must read plan Steps/Validation in every shape the iterate family writes them (the planner's `1. <task>`, the executor's `- [ ] 1. <step>` and `- [ ] check 1: <criterion>`), must use a checked box as progress without ever claiming an unproven step is met, and must not render a team section for a plan with no teams."
     },
     {
       "cases": [
@@ -1702,7 +1702,7 @@
             "skills/iterate-planner/SKILL.md"
           ],
           "covers_source": "manual",
-          "evidence": "claude -p \"/ip add to otter \u2026\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged \u2014 re-stage with /ip stage otter\"",
+          "evidence": "claude -p \"/ip add to otter …\" in fixture g11 (5.11.0): step 2 added, status removed, reply \"unstaged — re-stage with /ip stage otter\"",
           "given": "a queued plan",
           "id": "st-4",
           "last_validated_commit": "b49945e6",
@@ -1824,7 +1824,7 @@
           "id": "np-2",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "it proceeds \u2014 the plan's Cost: line is the authority \u2014 and the transcript contains no 'go-ahead', 'pause the plan' or 'let me know when' text",
+          "then": "it proceeds — the plan's Cost: line is the authority — and the transcript contains no 'go-ahead', 'pause the plan' or 'let me know when' text",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -1842,7 +1842,7 @@
           "id": "np-3",
           "last_validated_commit": "wt",
           "source": "plan:flamingo",
-          "then": "a 'paused by operator' line from /iterate pause or /ic pause accompanies it \u2014 a pause with no human command behind it is a defect",
+          "then": "a 'paused by operator' line from /iterate pause or /ic pause accompanies it — a pause with no human command behind it is a defect",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T04:16:44Z",
@@ -1859,7 +1859,7 @@
           "id": "np-4",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "the same turn writes one of the four terminal endings (all-green, human-gate, blocked-on-operator after the ladder, giveup) or records a human pause/kill \u2014 never 'awaiting go-ahead'",
+          "then": "the same turn writes one of the four terminal endings (all-green, human-gate, blocked-on-operator after the ladder, giveup) or records a human pause/kill — never 'awaiting go-ahead'",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -1871,12 +1871,12 @@
             "skills/iterate/SKILL.md"
           ],
           "covers_source": "manual",
-          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, \u26a0 branch-not-merged line",
+          "evidence": "claude -p \"/iterate gannet\" in fixture g14b (5.11.0): status: awaiting-human-gate set, loop cancelled and field cleared, gate question asked, ⚠ branch-not-merged line",
           "given": "a plan with human-gate: N and every other validation green",
           "id": "np-5",
           "last_validated_commit": "b49945e6",
           "source": "plan:flamingo",
-          "then": "success-with-handoff fires exactly as before \u2014 the one designed stop is unchanged",
+          "then": "success-with-handoff fires exactly as before — the one designed stop is unchanged",
           "tier": "?",
           "validity": "valid",
           "verified_at": "2026-10-05T05:25:00Z",
@@ -2047,7 +2047,7 @@
           "last_validated_commit": "1fa8f369",
           "source": "plan:gaur",
           "test": "tutorial.box-test",
-          "then": "a closed frame shows the (no tutorials yet \u2026) placeholder row",
+          "then": "a closed frame shows the (no tutorials yet …) placeholder row",
           "tier": "fast",
           "validity": "valid",
           "when": "the menu renders"
@@ -2603,7 +2603,7 @@
         }
       ],
       "id": "req-hoatzin-win-tree",
-      "requirement": "native Windows process-tree cancellation \u2014 a timeout or an interrupt kills everything the test spawned, not just the first process (kingtut inbox 20261013T051222Z)",
+      "requirement": "native Windows process-tree cancellation — a timeout or an interrupt kills everything the test spawned, not just the first process (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -2746,7 +2746,7 @@
         }
       ],
       "id": "req-hoatzin-win-lock",
-      "requirement": "an exclusive kernel-backed project run lock \u2014 two testmaster runs in one project never interleave registry writes, and the lock is released when the holder exits however it exits (kingtut inbox 20261013T051222Z)",
+      "requirement": "an exclusive kernel-backed project run lock — two testmaster runs in one project never interleave registry writes, and the lock is released when the holder exits however it exits (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -2879,7 +2879,7 @@
         }
       ],
       "id": "req-hoatzin-win-shell",
-      "requirement": "compatible shell invocation \u2014 shell-kind tests run under a Windows-capable shell instead of assuming /bin/sh, and runner set shell still overrides it (kingtut inbox 20261013T051222Z)",
+      "requirement": "compatible shell invocation — shell-kind tests run under a Windows-capable shell instead of assuming /bin/sh, and runner set shell still overrides it (kingtut inbox 20261013T051222Z)",
       "source": "plan:hoatzin"
     },
     {
@@ -6876,7 +6876,7 @@
             "src/internal/conductor/budget/recurrence.go"
           ],
           "covers_source": "coverage",
-          "given": "selected Friday 22:00\u201306:00 in an IANA timezone",
+          "given": "selected Friday 22:00–06:00 in an IANA timezone",
           "id": "indigobird-recurrence-overnight",
           "last_validated": "2026-10-22T05:51:16Z",
           "last_validated_commit": "1fa8f369",
@@ -11596,7 +11596,7 @@
           "validity": "valid",
           "verified_at": "2026-10-16T21:50:35Z",
           "verified_by": "Scoped root live-provider and route evidence; exact assertions in acceptance_evidence",
-          "when": "open Plans \u2192 Archived \u2192 gar, then directly open and reload its encoded /archive bookmark"
+          "when": "open Plans → Archived → gar, then directly open and reload its encoded /archive bookmark"
         },
         {
           "acceptance_evidence": [
@@ -12104,7 +12104,7 @@
             "src/internal/conductor/provider/compile.go",
             "src/internal/iterrun/conductor_api.go"
           ],
-          "given": "00:00\u201323:59 full-day preset",
+          "given": "00:00–23:59 full-day preset",
           "id": "javelina-full-day",
           "last_validated": "2026-10-22T05:51:16Z",
           "last_validated_commit": "1fa8f369",
@@ -12892,8 +12892,175 @@
       "id": "conductor-native-result-handoff",
       "source": "User: fix IzCRos result handoff and recover completed work without repeating successful implementation",
       "statement": "Native Codex and Claude assignments receive typed result contracts with prompt_file; accepted identity and verification advance one checkpoint, rejected identity never advances it. Recovery inspects prior artifacts."
+    },
+    {
+      "id": "req-killdeer-report-integrity",
+      "statement": "Our tooling has degraded significantly in what we track and how we track it. $ip add all this to newest plan that we are designing.",
+      "source": "plan:killdeer steps 5-14; user-approved report comparison and metric recommendations",
+      "cases": [
+        {
+          "id": "kr-record-replay",
+          "given": "accepted run events and an interrupted write",
+          "when": "restart and replay duplicates",
+          "then": "durable history is recovered once with original identities",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-record-isolation",
+          "given": "two projects with the same plan name",
+          "when": "read and archive their reports",
+          "then": "events and evidence stay with their own project/run",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-coverage-missing",
+          "given": "absent, known-zero and partial usage",
+          "when": "open each report",
+          "then": "availability distinguishes unknown, zero and partial with missing sources",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-coverage-providers",
+          "given": "recorded Codex and Claude runs and flat/teamed plans",
+          "when": "load usage and activity",
+          "then": "equivalent fields survive and unsupported data is explicit without fabricated teams",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-progress-complete",
+          "given": "a complete four-requirement archive",
+          "when": "read summary and detail",
+          "then": "four completed requirements and terminal outcome agree",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-progress-partial",
+          "given": "mixed blocked, active, queued and completed records",
+          "when": "refresh report",
+          "then": "requirement counts and lane counts remain separate and labelled",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-evidence-binding",
+          "given": "results for several steps and attempts",
+          "when": "open each requirement",
+          "then": "each result binds only to its matching requirement/attempt",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-evidence-freshness",
+          "given": "proof for a prior revision and subsequent covered-code edits",
+          "when": "read current acceptance",
+          "then": "original proof remains accessible and stale status is explicit",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-handoff-resume",
+          "given": "CLI clears a blocker and releases ownership with eligible automation",
+          "when": "advance bounded scheduler clock",
+          "then": "ordered ownership transitions and actual resumption delay are reported",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-handoff-gated",
+          "given": "live CLI owner or disabled/scheduled/budget-gated automation",
+          "when": "read report after blocker clearance",
+          "then": "report preserves ownership and explains why admission waits",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-time-partition",
+          "given": "overlapping work plus queue/blocked/paused intervals",
+          "when": "aggregate timeline",
+          "then": "wall time is not inflated by parallel work and categories have explicit boundaries",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-time-unknown",
+          "given": "a long unobserved interval",
+          "when": "open gap detail",
+          "then": "unknown remains unknown rather than an inferred execution failure",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-rework-retries",
+          "given": "failed validation followed by a successful retry and duplicate events",
+          "when": "read attempt metrics",
+          "then": "two attempts and one recovery are counted once",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-rework-interrupted",
+          "given": "an interrupted or reopened requirement",
+          "when": "resume and complete",
+          "then": "earlier outcome and attributable recovery cost remain recorded",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-usage-scopes",
+          "given": "plan usage within a longer mixed-work session",
+          "when": "read cost and usage",
+          "then": "plan, session, allowance and estimated values have distinct scopes",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-usage-dedup",
+          "given": "streamed usage, retries, caching and parent/child records",
+          "when": "aggregate usage",
+          "then": "no duplicate request/output/reasoning accounting and missing price stays unknown",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-delivery-stages",
+          "given": "tested, merged, installed and verified evidence at different revisions",
+          "when": "read delivery report",
+          "then": "each stage carries its own evidence and revision",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-delivery-unknown",
+          "given": "green CI without deployment evidence",
+          "when": "open report",
+          "then": "runtime proof remains unknown and read causes no deployment",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-report-navigation",
+          "given": "live and archived reports with large logs",
+          "when": "navigate requirements while history loads",
+          "then": "bounded logs preserve headers, focus and working detail navigation",
+          "tier": "?",
+          "validity": "unverified"
+        },
+        {
+          "id": "kr-report-legacy",
+          "given": "copied Albatross/Gemsbok/Waterbuck historical records",
+          "when": "render and compare browser views",
+          "then": "available detail survives and partial data is clearly identified without modifying sources",
+          "tier": "?",
+          "validity": "unverified"
+        }
+      ]
     }
   ],
   "schema": 1,
-  "updated": "2026-10-16T20:04:34Z"
+  "updated": "2026-10-22T15:42:53.140845+00:00"
 }
