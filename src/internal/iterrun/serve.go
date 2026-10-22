@@ -441,6 +441,9 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 			}
 			if newest != nil {
 				q := url.Values{"project": {proj}, "file": {newest.ArchiveFile}}
+				if r.URL.Query().Get("history") == "1" {
+					q.Set("history", "1")
+				}
 				http.Redirect(w, r, "/archive?"+q.Encode(), http.StatusFound)
 				return
 			}
@@ -464,18 +467,7 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 		conductorDetailError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
-	planStarted, _ := plan.EffectiveStart()
-
-	var tokens *PlanTokens
-	if events, err := ReadEvents(); err == nil {
-		labels, _ := ReadLabels()
-		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, name, proj, planStarted))
-		pt := PlanTokenUsage(plan, events, labels)
-		tokens = &pt
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(RenderTimelineWithChrome(rows, plan, "/project?project="+url.QueryEscape(proj)+"&tab=plans", tokens, conductorDetailHeader(proj, plan.Name, r.URL.RequestURI()))))
+	writePlanDetail(w, r, proj, rows, plan)
 }
 
 // handleArchive is handlePlan's counterpart for a finished/given-up run —
@@ -510,17 +502,50 @@ func handleArchive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	planStarted, _ := plan.EffectiveStart()
+	writePlanDetail(w, r, proj, rows, plan)
+}
+
+// History enrichment runs separately from the readable filesystem plan. One
+// history scan at a time bounds memory across concurrent detail-page requests.
+var detailHistorySlot = make(chan struct{}, 1)
+
+func writePlanDetail(w http.ResponseWriter, r *http.Request, proj string, rows []Row, plan PlanSummary) {
 	var tokens *PlanTokens
-	if events, err := ReadEvents(); err == nil {
+	if r.URL.Query().Get("history") == "1" {
+		select {
+		case detailHistorySlot <- struct{}{}:
+			defer func() { <-detailHistorySlot }()
+		case <-r.Context().Done():
+			return
+		}
+		events, err := readEventsContext(r.Context())
+		if err != nil {
+			http.Error(w, "Tool history is unavailable. Retry to load it.", http.StatusServiceUnavailable)
+			return
+		}
 		labels, _ := ReadLabels()
-		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, plan.Name, proj, planStarted))
+		started, _ := plan.EffectiveStart()
+		rows = MergeRows(rows, BuildRowsFromHookEvents(events, labels, plan.Name, proj, started))
+		if r.Context().Err() != nil {
+			return
+		}
 		pt := PlanTokenUsage(plan, events, labels)
 		tokens = &pt
 	}
-
+	pageURL := *r.URL
+	q := pageURL.Query()
+	q.Del("history")
+	pageURL.RawQuery = q.Encode()
+	page := RenderTimelineWithChrome(rows, plan, "/project?project="+url.QueryEscape(proj)+"&tab=plans", tokens, conductorDetailHeader(proj, plan.Name, pageURL.RequestURI()))
+	if tokens == nil {
+		q.Set("history", "1")
+		pageURL.RawQuery = q.Encode()
+		notice := `<p id="plan-history-status" role="status" data-history-url="` + html.EscapeString(pageURL.RequestURI()) + `">Plan details are ready. Loading tool history and token usage…</p><noscript><p><a href="` + html.EscapeString(pageURL.RequestURI()) + `">Load complete tool history and token usage</a></p></noscript>`
+		page = strings.Replace(page, `<div id="plan-recorded-content">`, notice+`<div id="plan-recorded-content">`, 1)
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(RenderTimelineWithChrome(rows, plan, "/project?project="+url.QueryEscape(proj)+"&tab=plans", tokens, conductorDetailHeader(proj, plan.Name, r.URL.RequestURI()))))
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write([]byte(page))
 }
 
 func dashboardHead(title string) string {

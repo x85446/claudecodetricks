@@ -2,6 +2,7 @@ package iterrun
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -92,6 +93,10 @@ func AppendEvent(e Event) error {
 // ReadEvents reads every event in the log. Malformed lines are skipped, not
 // fatal — a timeline shouldn't die because one write was torn by a crash.
 func ReadEvents() ([]Event, error) {
+	return readEventsContext(context.Background())
+}
+
+func readEventsContext(ctx context.Context) ([]Event, error) {
 	path := EventsPath()
 	f, err := os.Open(path)
 	if err != nil {
@@ -106,6 +111,9 @@ func ReadEvents() ([]Event, error) {
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
 	for scanner.Scan() {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
@@ -116,5 +124,5 @@ func ReadEvents() ([]Event, error) {
 		}
 		events = append(events, e)
 	}
-	return events, nil
+	return events, scanner.Err()
 }

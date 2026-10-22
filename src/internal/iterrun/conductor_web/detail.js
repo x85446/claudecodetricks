@@ -1,6 +1,36 @@
 'use strict';
 (() => {
 const header=document.querySelector('.conductor-detail-header'),panel=document.querySelector('#conductor-live-detail');
+const historyStatus=document.querySelector('#plan-history-status');
+async function loadHistory(){
+ if(!historyStatus)return;
+ historyStatus.textContent='Plan details are ready. Loading tool history and token usage…';
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),90000);
+ const cancel=()=>controller.abort();window.addEventListener('pagehide',cancel,{once:true});
+ try{
+  const response=await fetch(historyStatus.dataset.historyUrl,{signal:controller.signal,cache:'no-store'});
+  if(!response.ok)throw Error('History unavailable');
+  const doc=new DOMParser().parseFromString(await response.text(),'text/html');
+  const next=doc.querySelector('#plan-recorded-content'),current=document.querySelector('#plan-recorded-content');
+  if(!next||!current)throw Error('History unavailable');
+  const open=[...current.querySelectorAll('details')].map(el=>el.open);
+  const selected=current.querySelector('.bd-selected')?.dataset.num;
+  // Preserve the live event log, polling references, and its scroll position.
+  const nextPanel=next.querySelector('#conductor-live-detail');
+  if(panel&&nextPanel)nextPanel.replaceWith(panel);
+  next.querySelectorAll('details').forEach((el,i)=>{if(open[i]!==undefined)el.open=open[i];});
+  const scroll=window.scrollY;
+  current.replaceWith(next);
+  if(selected&&typeof window.bdShow==='function')window.bdShow(Number(selected));
+  window.scrollTo({top:scroll,behavior:'instant'});
+  historyStatus.textContent='Tool history and token usage loaded.';
+ }catch(error){
+  historyStatus.textContent='Plan details are available. Tool history could not load. ';
+  const retry=document.createElement('button');retry.type='button';retry.textContent='Retry history';
+  retry.addEventListener('click',loadHistory);historyStatus.append(retry);
+ }finally{clearTimeout(timeout);window.removeEventListener('pagehide',cancel);}
+}
+loadHistory();
 if(!header||!panel||location.pathname==='/archive')return;
 const status=panel.querySelector('[data-status]'),usage=panel.querySelector('[data-usage]'),log=panel.querySelector('.conductor-event-scroll');
 const seen=new Map();let busy=false,lastPaint='';

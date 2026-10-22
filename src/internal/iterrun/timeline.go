@@ -1190,7 +1190,11 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 		activity = `<section id="conductor-live-detail" aria-labelledby="conductor-activity-title"><h2 id="conductor-activity-title">Conductor activity</h2><div data-status aria-live="polite"><p>Loading activity…</p></div><details class="conductor-events" open><summary>Event log</summary><div class="conductor-event-scroll" role="region" aria-label="Conductor event log" tabindex="0"><p>Loading events…</p></div></details><details class="conductor-usage"><summary>Usage observations</summary><div data-usage></div></details></section>`
 	}
 	if len(rows) == 0 {
-		return timelinePageHead(title, chrome) + header + activity + `<p class="empty">no activity recorded yet</p></div>`
+		var b strings.Builder
+		b.WriteString(timelinePageHead(title, chrome) + header + `<div id="plan-recorded-content">` + activity + `<p class="empty">no activity recorded yet</p></div>`)
+		writeNoteModal(&b)
+		b.WriteString(`</div></body></html>`)
+		return b.String()
 	}
 
 	var minT, maxT time.Time
@@ -1263,6 +1267,7 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 	var b strings.Builder
 	b.WriteString(timelinePageHead(title, chrome))
 	b.WriteString(header)
+	b.WriteString(`<div id="plan-recorded-content">`)
 	if hasActivity {
 		fmt.Fprintf(&b, `<div class="sub">%s &rarr; %s (%s of recorded activity)</div>`+"\n",
 			minT.Local().Format("2006-01-02 15:04:05"), maxT.Local().Format("15:04:05"), total.Round(time.Second))
@@ -1425,6 +1430,7 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 	writeTokenPanel(&b, tokens)
 
 	b.WriteString(`<footer>Built from what's already on disk — each team's own log file plus any iterate-run-wrapped unit's registry timestamps, merged with hook-derived tool-call data wherever it's been captured.</footer>`)
+	b.WriteString(`</div>`)
 	writeNoteModal(&b)
 	b.WriteString(`</div></body></html>`)
 
@@ -1444,6 +1450,30 @@ func renderTimelinePage(rows []Row, plan PlanSummary, homeURL string, tokens *Pl
 func writeNoteModal(b *strings.Builder) {
 	b.WriteString(`<div id="note-modal" class="note-modal" style="display:none" onclick="if(event.target===this)noteModalClose()"><div class="note-modal-box"><button type="button" class="note-modal-close" onclick="noteModalClose()" aria-label="Close">&times;</button><div class="note-modal-label"></div><div class="note-modal-text"></div></div></div>
 <script>
+function bdEsc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+function bdShow(num){
+  var data=document.getElementById('bd-data');
+  var d=data?JSON.parse(data.textContent)[num]:null;
+  var el=document.getElementById('bd-detail');
+  if(!el)return;
+  if(!d){el.style.display='none';return;}
+  var stateLabel={done:'done',active:'active',gaveup:'gave up',queued:'not yet worked on'}[d.state]||d.state;
+  // The orange bucket covers two different outcomes and "gave up" is only
+  // one of them: a validation reported not-met was attempted and failed,
+  // while a step ticked off whose validation is still unticked was done
+  // but never proven — which is what a plan blocked on its operator looks
+  // like, and calling that "gave up" is simply false.
+  if(d.state==='gaveup'&&d.vstatus!=='not-met'){stateLabel='done, not yet proven';}
+  var html='<div class="bd-detail-num bd-detail-'+d.state+'">Requirement '+num+' &middot; '+bdEsc(d.team)+' &middot; '+bdEsc(stateLabel)+'</div>';
+  html+='<div class="bd-detail-chain">depends on: '+bdEsc(d.dependsOn.length?d.dependsOn.join(', '):'none')+'</div>';
+  if(d.step){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'a.</span><span>'+bdEsc(d.step)+'</span></div>';}
+  if(d.validation){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'b.</span><span>'+bdEsc(d.validation)+'</span></div>';}
+  if(d.note){html+='<div class="bd-detail-note"><div class="bd-detail-note-label">note</div><div>'+bdEsc(d.note)+'</div></div>';}
+  el.innerHTML=html;
+  el.style.display='block';
+  document.querySelectorAll('.bd-cell').forEach(function(c){c.classList.toggle('bd-selected',c.dataset.num===String(num));});
+}
+
 function showNote(el){
   var modal=document.getElementById('note-modal');
   var label=modal.querySelector('.note-modal-label');
@@ -1643,29 +1673,7 @@ func writeBurndownChart(b *strings.Builder, rows []Row) {
 	if err != nil {
 		return
 	}
-	b.WriteString(`<script>var bdData=` + string(encoded) + `;
-function bdEsc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
-function bdShow(num){
-  var d=bdData[num];
-  var el=document.getElementById('bd-detail');
-  if(!d){el.style.display='none';return;}
-  var stateLabel={done:'done',active:'active',gaveup:'gave up',queued:'not yet worked on'}[d.state]||d.state;
-  // The orange bucket covers two different outcomes and "gave up" is only
-  // one of them: a validation reported not-met was attempted and failed,
-  // while a step ticked off whose validation is still unticked was done
-  // but never proven — which is what a plan blocked on its operator looks
-  // like, and calling that "gave up" is simply false.
-  if(d.state==='gaveup'&&d.vstatus!=='not-met'){stateLabel='done, not yet proven';}
-  var html='<div class="bd-detail-num bd-detail-'+d.state+'">Requirement '+num+' &middot; '+bdEsc(d.team)+' &middot; '+bdEsc(stateLabel)+'</div>';
-  html+='<div class="bd-detail-chain">depends on: '+bdEsc(d.dependsOn.length?d.dependsOn.join(', '):'none')+'</div>';
-  if(d.step){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'a.</span><span>'+bdEsc(d.step)+'</span></div>';}
-  if(d.validation){html+='<div class="bd-detail-row"><span class="bd-detail-label">'+num+'b.</span><span>'+bdEsc(d.validation)+'</span></div>';}
-  if(d.note){html+='<div class="bd-detail-note"><div class="bd-detail-note-label">note</div><div>'+bdEsc(d.note)+'</div></div>';}
-  el.innerHTML=html;
-  el.style.display='block';
-  document.querySelectorAll('.bd-cell').forEach(function(c){c.classList.toggle('bd-selected',c.dataset.num===String(num));});
-}
-</script>`)
+	b.WriteString(`<script id="bd-data" type="application/json">` + string(encoded) + `</script>`)
 }
 
 // tickIntervals are the only spacings a clock axis may use: each one is a

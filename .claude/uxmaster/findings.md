@@ -151,3 +151,10 @@
 - verification: browser creates a definition, attaches it to Sample A and B disabled, enables A independently, duplicates and deletes the unused copy, prevents referenced deletion, detaches/re-attaches B disabled, and preserves a stale draft. Bounded worker tests prove distinct assignment/occurrence identities; checkpoint tests prove active snapshots survive shared edits.
 
 Final repeat sweep: no additional findings across the covered dashboard, subscription, power-band, time-window, overdrive and shared-automation flows. Nested help, cancel/reopen, disabled-parent/enabled-child and 320px subscription layout are exercised. Global fixture admission stays disabled; no model work runs. Production localhost:8420 and user configuration remain unchanged.
+
+### F18 — Plan and archive navigation waits for global history
+- surface: `/plan` and `/archive`
+- kind: ux; severity: high; status: fixed
+- evidence: live Caiman and archived Javelina requests exceeded 20 seconds without response bytes while handlers decoded the 160 MB shared hook log.
+- fix: filesystem plan details render immediately; tool history and token usage load separately with retry feedback, cancellation and one concurrent history reader. Live activity keeps its polling nodes and scroll position. Archive redirects preserve history requests.
+- verification: installed localhost:8420 returns Caiman in 0.281 seconds and Javelina in 0.278 seconds. Chrome displays initial goals and requirements while history loads, then the completed history; requirement details remain interactive. Handler regression covers blocked history, missing history, unlabelled completion pairs, cancellation and archive redirects.
