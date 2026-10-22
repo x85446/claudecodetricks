@@ -267,6 +267,8 @@ Guest-naming commands carry `--provider` because
 | `izmachine remote --format json` | the remote command family |
 | `izmachine daemon --format json` | daemon command family |
 | `izmachine daemon status --format json` | user ownership, protocol, interval and process |
+| `izmachine daemon status --remote B --format json` | the SSH remote `B`'s daemon status object, plus `remote` |
+| `izmachine daemon install --remote B --dry-run --format json` | what installing `B`'s daemon would do: `{remote,platform,binary,path,command,dry_run:true,installed:false}`, writing nothing |
 | `izmachine remote migrate --dry-run config.toml --format json` | copied-file migration preview |
 | `izmachine config show --origin --format json` | every resolved global as `{values:[{name,value,origin,source,what}]}`; origin is `flag`, `env`, `project`, `user` or `default` |
 | `izmachine config path --format json` | every file consulted, whether it exists, and the `IZMACHINE_*` variables read |
@@ -291,6 +293,8 @@ Guest-naming commands carry `--provider` because
 | `izmachine daemon stop --format json` | stop an owned daemon |
 | `izmachine daemon install --format json` | install user startup service |
 | `izmachine daemon uninstall --format json` | remove user startup service |
+| `izmachine daemon install --remote B --format json` | install the SSH remote `B`'s daemon: copy a matching build to `~/.local/bin/izmachine` there, retire its running daemon, run its `daemon install`, enable systemd lingering on Linux and wait for the daemon — `{remote,target,platform,binary,path,installed,version,service,policy,linger,daemon,service_pid}`; `--binary <path>` supplies the build. See [SSH hosts](references/remotes.md#cached-inventory-and-ssh-hosts) |
+| `izmachine daemon uninstall --remote B --format json` | remove `B`'s startup service; `~/.local/bin/izmachine` stays |
 | `izmachine remote subscribe incus --format json` | follow eligible client endpoints |
 | `izmachine remote unsubscribe incus --format json` | stop source membership tracking |
 | `izmachine remote sync --format json` | reconcile subscribed membership |

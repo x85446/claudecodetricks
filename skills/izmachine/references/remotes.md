@@ -110,6 +110,24 @@ through that CLI/daemon, with live destination checks and lock guards. Use
 do not retry a disconnected mutation without inspecting its outcome.
 `--tty` is for interactive SSH shells in table output.
 
+An SSH remote answers through its own daemon, and
+`izmachine daemon install --remote B --format json` is how `B` gets one. It
+reads `B`'s platform with `uname` and copies a build for it to
+`~/.local/bin/izmachine` there: this executable when the platforms match,
+else `--binary <path>`, else `izmachine-<os>-<arch>` beside this executable or
+in `../dist` (`make release`). The ELF or Mach-O header is checked before the
+copy. It then retires `B`'s running daemon, runs `B`'s own `daemon install`,
+enables systemd lingering on Linux and waits for the daemon to answer.
+`--dry-run` reports the remote, platform, build, path and command and writes
+nothing. `daemon status --remote B` returns `B`'s status object plus
+`remote`; `daemon uninstall --remote B` removes `B`'s service and leaves
+`~/.local/bin/izmachine` in place.
+
+Only a typed `--remote` moves a daemon verb: a configured default remote or
+`IZMACHINE_REMOTE` never does. Exit 2 (`usage`) refuses `--remote` naming
+this host, an Incus remote, a selector or an unknown name; two `--remote`
+flags; `--socket` with `--remote`; and `--binary` without `--remote`.
+
 `remote subscribe incus`, `unsubscribe incus`, and `sync` follow changing
 private Incus instance-serving endpoints. Explicit `incus:<alias>` registrations
 monitor only those targets. Public image sources are excluded; derived IDs
