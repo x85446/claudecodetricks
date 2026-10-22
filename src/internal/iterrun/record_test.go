@@ -72,7 +72,7 @@ func TestRecordHookObservesOnlyExecutingPlanInItsProject(t *testing.T) {
 		t.Fatalf("report: %+v %v", rep, err)
 	}
 	r := rep.Runs[0]
-	if r.Marker != "2026-10-20T10:00:00Z" || r.Versions.Engine != "codex" || r.Versions.ExecutorVersion != "5.22.0" {
+	if r.Marker != "2026-10-20T10:00:00Z" || r.Versions.Engine != "claude-code" || r.Versions.ExecutorVersion != "5.22.0" {
 		t.Fatalf("identity: %+v", r)
 	}
 	if len(r.Sessions) != 1 || r.Sessions[0].SessionID != "s1" || len(r.Agents) != 1 || r.Agents[0].Team != "app" {

@@ -43,7 +43,7 @@ Exactly one payload object accompanies each type:
 
 | Type | Payload | Carries |
 |---|---|---|
-| `run.opened` | `versions` | Engine (`claude-code`/`codex`), executor and planner skill versions, `iterate-run` version |
+| `run.opened` | `versions` | Engine (`claude-code`/`codex`: the harness executing the run — `claude-code` from a hook, the subscription's adapter from the Conductor; a plan's `harness:` names its planner), executor and planner skill versions, `iterate-run` version |
 | `run.lifecycle` | `lifecycle` | `state` (queued, admitted, executing, paused, resumed, interrupted, blocked, unblocked, completed, archived), `reason`, `archive_file`, `observed_via` |
 | `session.observed` | `versions` | A session linked to the run, with engine, provider and model when known |
 | `agent.observed` | — | A subagent and its team |

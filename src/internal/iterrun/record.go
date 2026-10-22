@@ -70,6 +70,18 @@ func recordEngine(harness string) string {
 	return ""
 }
 
+// hookEngine is the harness every hook observation comes from: hooks run only
+// under Claude Code, and a plan's harness: field names its planner, not the
+// session executing it.
+const hookEngine = "claude-code"
+
+// hookVersions is recordVersions with the engine of the observing hook.
+func hookVersions(path string, ps PlanSummary) *runrecord.Versions {
+	v := recordVersions(path, ps)
+	v.Engine = hookEngine
+	return v
+}
+
 // recordVersions reads the version markers of a plan file.
 func recordVersions(path string, ps PlanSummary) *runrecord.Versions {
 	v := &runrecord.Versions{Engine: recordEngine(ps.Harness), IterateRun: BuildVersion}
@@ -130,7 +142,7 @@ func observeRecordHook(root, plan, team string, in hookInput) {
 	req := runrecord.OpenRequest{
 		Key:    runrecord.PlanKey{ProjectPath: root, Plan: plan},
 		Marker: recordMarker(ps), Source: runrecord.SourceHook,
-		Versions: recordVersions(path, ps), At: now,
+		Versions: hookVersions(path, ps), At: now,
 		NoOpen: recordLifecycleState(ps) == "completed",
 	}
 	_, _, _ = RecordStore().Observe(req, func(run runrecord.Run) []runrecord.Event {
@@ -139,7 +151,7 @@ func observeRecordHook(root, plan, team string, in hookInput) {
 			out = append(out, runrecord.Event{
 				Type: runrecord.TypeSessionObserved, ID: runrecord.StableID("hook-session", run.RunID, in.SessionID, bucket),
 				At: now, SessionID: in.SessionID, AgentID: in.AgentID,
-				Versions: &runrecord.Versions{Engine: recordEngine(ps.Harness)},
+				Versions: &runrecord.Versions{Engine: hookEngine},
 			})
 		}
 		if in.AgentID != "" {
