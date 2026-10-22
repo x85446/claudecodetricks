@@ -201,6 +201,9 @@ func (s *Service) TickProject(ctx context.Context, projectID string) (out TickRe
 		out.State = "running"
 		return nil
 	})
+	if err == nil {
+		s.recordAdmission(out.Decision)
+	}
 	if err != nil || out.Assignment == nil {
 		return out, err
 	}

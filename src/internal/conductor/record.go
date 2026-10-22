@@ -25,3 +25,23 @@ func (s *Service) record(phase string, a model.Assignment, result *model.Result,
 		r.RecordAssignment(phase, a, result, event)
 	}
 }
+
+// AdmissionRecordSource is an optional PlanSource extension that mirrors
+// each supervisor tick's admission decision into the run record: which
+// plans were admitted and which gate held the rest. The decision is
+// already made when it is observed; the record never changes it.
+type AdmissionRecordSource interface {
+	RecordAdmission(d Decision, projects []model.Project)
+}
+
+func (s *Service) recordAdmission(d Decision) {
+	r, ok := s.Source.(AdmissionRecordSource)
+	if !ok {
+		return
+	}
+	c, err := s.Config()
+	if err != nil {
+		return
+	}
+	r.RecordAdmission(d, c.Projects)
+}

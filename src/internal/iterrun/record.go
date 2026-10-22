@@ -102,7 +102,10 @@ func recordLifecycleState(ps PlanSummary) string {
 // run's latest lifecycle state. Only an executing plan whose file lives in
 // the hook's project is observed, so drafting activity opens no run and a
 // same-named plan in another project is never touched. A completed plan
-// file records completion into its existing run and opens none.
+// file records completion into its existing run and opens none. It also
+// observes the CLI's ownership through the running: lock and the plan's
+// blocked status (cliOwnershipEvents, cliBlockerEvents); a hook inside a
+// Conductor-owned child leaves ownership to the Conductor's lease.
 // Best-effort: a record failure never affects the tool call.
 func observeRecordHook(root, plan, team string, in hookInput) {
 	if plan == "" || !runrecord.ValidName(plan) {
@@ -113,7 +116,16 @@ func observeRecordHook(root, plan, team string, in hookInput) {
 	if err != nil || (ps.Phase != "executing" && ps.Executing == "" && recordLifecycleState(ps) != "completed") {
 		return
 	}
-	now := time.Now().UTC()
+	raw, _ := os.ReadFile(path)
+	var modTime time.Time
+	if info, err := os.Stat(path); err == nil {
+		modTime = info.ModTime().UTC()
+	}
+	lock := readCLILock(raw)
+	if os.Getenv("ITERATE_CONDUCTOR_ASSIGNMENT_ID") != "" {
+		lock.conductor = true
+	}
+	now := recordNow()
 	bucket := now.Truncate(5 * time.Minute).Format(time.RFC3339)
 	req := runrecord.OpenRequest{
 		Key:    runrecord.PlanKey{ProjectPath: root, Plan: plan},
@@ -136,16 +148,22 @@ func observeRecordHook(root, plan, team string, in hookInput) {
 				At: now, SessionID: in.SessionID, AgentID: in.AgentID, Team: team,
 			})
 		}
-		if state := recordLifecycleState(ps); state != "" && state != run.State {
+		if state := recordLifecycleState(ps); state != "" && !sameLifecycle(state, run.State) {
 			previous := ""
 			if n := len(run.Lifecycle); n > 0 {
 				previous = run.Lifecycle[n-1].EventID
 			}
+			reason := ps.Status
+			if state == "executing" && run.State == "paused" {
+				state, reason = "resumed", "status: paused cleared"
+			}
 			out = append(out, runrecord.Event{
 				Type: runrecord.TypeLifecycle, ID: runrecord.StableID("hook-lifecycle", run.RunID, previous, state),
-				At: now, Lifecycle: &runrecord.Lifecycle{State: state, Reason: ps.Status, ObservedVia: "plan-file"},
+				At: now, Lifecycle: &runrecord.Lifecycle{State: state, Reason: reason, ObservedVia: "plan-file"},
 			})
 		}
+		out = append(out, cliBlockerEvents(run, ps, modTime, now)...)
+		out = append(out, cliOwnershipEvents(run, lock, in.SessionID, now)...)
 		return out
 	})
 }
@@ -163,7 +181,7 @@ func (ConductorPlanSource) RecordAssignment(phase string, a model.Assignment, re
 	if engine == "" {
 		engine = a.Subscription.Adapter
 	}
-	now := time.Now().UTC()
+	now := recordNow()
 	base := runrecord.Event{
 		Source: runrecord.SourceConductor, At: now, ProjectID: a.ProjectID,
 		Requirement: a.Step, AttemptKey: a.ID, AssignmentID: a.ID, ConductorRunID: a.RunID, Team: a.Team,
@@ -173,6 +191,8 @@ func (ConductorPlanSource) RecordAssignment(phase string, a model.Assignment, re
 	}
 	var events []runrecord.Event
 	push := func(e runrecord.Event) { events = append(events, e) }
+	// derive adds events that depend on the run's current view.
+	var derive func(runrecord.Run) []runrecord.Event
 	owner := &runrecord.Ownership{OwnerKind: "conductor", OwnerID: a.ID, PID: os.Getpid()}
 	switch phase {
 	case conductor.RecordAdmitted:
@@ -183,6 +203,7 @@ func (ConductorPlanSource) RecordAssignment(phase string, a model.Assignment, re
 		e = base
 		e.Type, e.ID, e.Ownership = runrecord.TypeOwnershipAcquired, id("acquired"), owner
 		push(e)
+		derive = func(run runrecord.Run) []runrecord.Event { return admissionClearances(run, now, a.ID) }
 	case conductor.RecordStarted:
 		e := base
 		e.Type, e.ID = runrecord.TypeAttemptStarted, id("started")
@@ -195,6 +216,11 @@ func (ConductorPlanSource) RecordAssignment(phase string, a model.Assignment, re
 	case conductor.RecordEvent:
 		if ev == nil {
 			return
+		}
+		if beat, ok := conductorHeartbeat(a.ID, now); ok {
+			e := base
+			e.Type, e.ID, e.Ownership = beat.Type, beat.ID, beat.Ownership
+			push(e)
 		}
 		switch {
 		case ev.Kind == "session" && ev.SessionID != "":
@@ -212,7 +238,8 @@ func (ConductorPlanSource) RecordAssignment(phase string, a model.Assignment, re
 				Note: "conductor stream total; input includes cache read and creation tokens",
 			}
 			push(e)
-		default:
+		}
+		if len(events) == 0 {
 			return
 		}
 	case conductor.RecordFinished:
@@ -298,7 +325,12 @@ func (ConductorPlanSource) RecordAssignment(phase string, a model.Assignment, re
 		Key:    runrecord.PlanKey{ProjectPath: a.ProjectPath, ProjectID: a.ProjectID, Plan: a.Plan},
 		Marker: marker, Source: runrecord.SourceConductor, Versions: versions, At: now, AttemptKey: a.ID,
 	}
-	_, _, _ = RecordStore().Observe(req, func(runrecord.Run) []runrecord.Event { return events })
+	_, _, _ = RecordStore().Observe(req, func(run runrecord.Run) []runrecord.Event {
+		if derive == nil {
+			return events
+		}
+		return append(events, derive(run)...)
+	})
 }
 
 // conductorDeliveryArchive finds the archive file a delivery assignment

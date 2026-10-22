@@ -208,7 +208,8 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - evidence: After history loads, the report labels a 7h21m30s interval a severe gap under Where the time actually went. The report does not identify whether that interval represents an operator wait, a schedule, a running external process or missing capture.
 - fix: Show elapsed, observed execution, blocked, queued, paused and unobserved time separately. Reserve failure severity for evidence of a failure; show unknown intervals as unknown.
 - rule: —
-- status: open
+- status: fixed
+- verification: The plan report's Time section (killdeer lifecycle) partitions Waterbuck's elapsed time on the :8483 preview into execution 1d 12h 51m (83%) and unobserved 7h 32m (17%), and lists the 7h 21m interval as Unobserved with "No record covers this interval; it is unknown, not a failure", the ownership state and the observed work on either side. TestKrTimeUnknown shows the same Waterbuck-shaped interval relabelled Blocked on operator only after a recorded blocker covers it. The old severe-gap stat and list remain on the page until the layout step removes them (F52).
 
 ## Named Automations audit — 2026-10-22
 
@@ -372,3 +373,73 @@ Final repeat sweep: no additional findings across the covered dashboard, subscri
 - rule: WCAG 2.2 SC 1.4.3 Contrast (Minimum)
 - status: fixed
 - verification: Re-measured on the rebuilt preview: lowest light-scheme ratios 5.02:1 (badges, state label), 4.83:1 (counts), 5.85:1 (result labels); dark scheme 4.60:1 and up.
+
+## Lifecycle report sections — 2026-10-22
+
+### F48 — Section status lines repeat their own label
+- surface: plan report Time and Attempts and rework sections (Waterbuck, Albatross, Gemsbok)
+- kind: mistake
+- severity: low
+- evidence: Headless Chrome on the :8483 preview: the Time status read "Partial. Partial: this execution has no run record; …" on all three reference pages.
+- fix: The availability label is the sentence's subject; the note follows as its own sentence.
+- rule: —
+- status: fixed
+- verification: Waterbuck, Albatross and Gemsbok now read "Partial. This execution has no run record; …"; data-status carries the state for scripts.
+
+### F49 — One section shows two clocks
+- surface: Time intervals (Before/After) and Ownership handoffs (gates, release)
+- kind: ux
+- severity: medium
+- evidence: Waterbuck on the preview: the interval heading read "2026-10-20 18:24 CDT to 2026-10-21 01:46 CDT" while its context lines read "coordinator ended 2026-10-20T23:24:48Z"; handoff gates and the release line used raw RFC 3339 UTC as well.
+- fix: Carry instants as structured fields in the model and render every one as a local <time> element with the exact instant in datetime.
+- rule: WCAG 2.2 SC 3.2.4 Consistent Identification
+- status: fixed
+- verification: The preview's Waterbuck Time section and the TestKrHandoffResume fixture page render every instant as "YYYY-MM-DD HH:MM <zone>" in a <time datetime> element; the JSON keeps RFC 3339.
+
+### F50 — Unknown figures read as zero
+- surface: Time partition and lane-time rows, Ownership summary
+- kind: mistake
+- severity: high
+- evidence: Preview: Waterbuck's partition showed "Blocked on operator 0s 0%" for an execution whose legacy history carries no blocker capture; lane-time rows read "none observed" in the label and "not captured" in the value; Ownership showed "0 ownership holds, 0 blockers" and "Last heartbeat: no owner" where ownership was never recorded; intervals before the first recorded ownership event said "no owner held the plan".
+- fix: Zero-time causes read "none recorded"; lane-time carries state measured, none or unknown; Ownership reads "not recorded" without ownership events; ownership before the first event is "not recorded by then".
+- rule: —
+- status: fixed
+- verification: Preview Waterbuck (history loaded) shows "Blocked on operator none recorded —", "Waiting on dispatched subagents none observed", "Last heartbeat not recorded" and "Recorded no ownership or blocker events"; before history loads, tool lanes read "unknown — tool history is not loaded"; TestKrTimeUnknown asserts "ownership not recorded by then".
+
+### F51 — Plain-language counts and kinds
+- surface: Attempts and rework, Time lane-time
+- kind: ui
+- severity: low
+- evidence: Fixture pages: "3 retrys", "1 lane; 1 span" for one Conductor attempt, the internal attempt kind "pair" beside every attempt, and "(partial)" on token totals whose only gap was cost.
+- fix: Pluralize correctly, name each lane kind's unit (calls, units, attempts, intervals), hide the default kind, mark tokens partial only when input or output tokens are missing.
+- rule: —
+- status: fixed
+- verification: TestKrReworkInterrupted's page reads "3 retries, 1 restart", "1,200 tokens", and "Conductor attempts 1 attempt".
+
+### F52 — Severe-gap judgment still beside the Time section
+- surface: plan/archive pages: "N severe gap(s)" stat, the "severe gap (5m+)" legend entry, red gantt gap markers, "Where the time actually went"
+- kind: ux
+- severity: medium
+- evidence: Preview Waterbuck shows "1 SEVERE GAP" and the "Where the time actually went" list above the Time section that labels the same 7h 21m interval Unobserved, unknown and not a failure.
+- fix: Remove the severe-gap stat, legend entry and list, and draw gantt gaps in the neutral unobserved pattern; the Time section's intervals replace them.
+- rule: —
+- status: open (layout step; timeline.go is outside this team's files)
+
+### F53 — Two elapsed figures disagree on a live plan
+- surface: plan page runbox ("Recorded execution span" / "Running for") and the Time section
+- kind: mistake
+- severity: medium
+- evidence: Preview Waterbuck (live): the runbox reads 44h12m13s, ending at the latest activity (14:36:27), while Time reads 1d 20h 23m, ending at the report time (14:47). Archived Albatross and Gemsbok agree because both end at Finished:.
+- fix: One clock: remove the runbox or render it from the Time section's window (start basis, end basis, open flag).
+- rule: —
+- status: open (layout step)
+
+### F54 — First-pass success is unknowable for CLI-run plans
+- surface: Attempts and rework
+- kind: ux
+- severity: medium
+- evidence: Preview: Waterbuck, Albatross and Gemsbok all show "Unavailable. No attempts are recorded for this execution." Only Conductor assignments become attempts; /iterate records none, though Albatross's team logs carry 14 validation assessments.
+- fix: Have /iterate append attempt.started and attempt.finished per requirement through iterate-run record append (or an equivalent hook observation), so CLI runs report retries, recoveries and first-pass success.
+- rule: —
+- status: open (needs the iterate executor to record attempts)
+

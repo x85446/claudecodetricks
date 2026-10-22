@@ -97,8 +97,12 @@ type BlockerView struct {
 	Blocker
 	DetectedAt *time.Time `json:"detected_at,omitempty"`
 	ClearedAt  *time.Time `json:"cleared_at,omitempty"`
-	Source     string     `json:"source"`
-	Provenance string     `json:"provenance"`
+	// ClearedBy and ClearReason are the clearance's writer and reason;
+	// Blocker keeps the detection's payload.
+	ClearedBy   string `json:"cleared_by,omitempty"`
+	ClearReason string `json:"clear_reason,omitempty"`
+	Source      string `json:"source"`
+	Provenance  string `json:"provenance"`
 }
 
 type AdmissionEntry struct {
@@ -414,6 +418,7 @@ func Fold(events []Event, info fileRead) Run {
 				b := &r.Blockers[i]
 				if b.ClearedAt == nil && (e.Blocker.Key == "" || b.Key == e.Blocker.Key) {
 					b.ClearedAt = ptrTime(e.At)
+					b.ClearedBy, b.ClearReason = e.Source, e.Blocker.Reason
 					cleared = true
 					break
 				}
@@ -421,7 +426,7 @@ func Fold(events []Event, info fileRead) Run {
 			if !cleared {
 				// A clearance with no observed detection keeps its
 				// detection time unknown.
-				r.Blockers = append(r.Blockers, BlockerView{Blocker: *e.Blocker, ClearedAt: ptrTime(e.At), Source: e.Source, Provenance: e.Provenance})
+				r.Blockers = append(r.Blockers, BlockerView{Blocker: *e.Blocker, ClearedAt: ptrTime(e.At), ClearedBy: e.Source, ClearReason: e.Blocker.Reason, Source: e.Source, Provenance: e.Provenance})
 			}
 		case TypeAdmission:
 			r.Admissions = append(r.Admissions, AdmissionEntry{Meta: meta(e), Admission: *e.Admission})

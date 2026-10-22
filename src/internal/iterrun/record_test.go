@@ -174,7 +174,13 @@ func TestConductorAssignmentsLandInTheRunRecord(t *testing.T) {
 	if got := strings.Join(states, ","); got != "admitted,executing,admitted,executing,completed,archived" {
 		t.Fatalf("lifecycle %s", got)
 	}
-	if r.Owner != nil || len(r.Ownership) != 4 {
+	held := map[string]int{}
+	for _, o := range r.Ownership {
+		held[o.Event]++
+	}
+	// Provider events prove the owned child is alive: one heartbeat per
+	// assignment per five-minute bucket.
+	if r.Owner != nil || held["acquired"] != 2 || held["released"] != 2 || held["heartbeat"] != 2 {
 		t.Fatalf("ownership: %+v %+v", r.Owner, r.Ownership)
 	}
 	var step1, plan *runrecord.RequirementView
