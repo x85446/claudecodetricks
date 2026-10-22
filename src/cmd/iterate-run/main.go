@@ -19,8 +19,13 @@ var (
 )
 
 func main() {
+	iterrun.BuildVersion = Version
 	if args, ok := conductorInvocation(os.Args[1:]); ok {
 		conductorCmd(args)
+		return
+	}
+	if args, ok := recordInvocation(os.Args[1:]); ok {
+		recordCmd(args)
 		return
 	}
 	if len(os.Args) < 2 {
@@ -62,6 +67,7 @@ Usage:
   iterate-run run --plan <name> [--team <name>] --unit <name> -- <command> [args...]
   iterate-run status
   iterate-run conductor --help       (revisioned scheduler, project and subscription controls)
+  iterate-run record list|show|append|import|types  (durable run record; iterate-run record --help)
   iterate-run hook pre|post          (wired into PreToolUse/PostToolUse in settings.json, not run by hand)
   iterate-run timeline [--plan <name>] [--home <dir>] [scan-dir...]
   iterate-run tokens [--plan <name>]  (token spend by lane, tool and wake-up; defaults to this project's current plan)
@@ -251,7 +257,17 @@ func timelineCmd(args []string) {
 
 	iterrun.PrintTimelineSummary(os.Stdout, rows)
 
-	path, err := iterrun.WriteTimelineHTML(cwd, rows, planSummary)
+	// A named plan's page carries its report: the run record and, when the
+	// hook log reads, transcript usage, the same inputs the dashboard uses.
+	in := iterrun.ReportInput{Plan: planSummary, Rows: rows, Now: time.Now()}
+	if plan != "" {
+		in.Record, in.RecordErr = iterrun.ReadRecordReport(home, planSummary.Name, planSummary.ArchiveFile)
+		if eventsErr == nil && labelsErr == nil {
+			pt := iterrun.PlanTokenUsage(planSummary, events, labels)
+			in.Tokens, in.HistoryLoaded = &pt, true
+		}
+	}
+	path, err := iterrun.WriteTimelineHTML(cwd, in)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "iterate-run: could not write HTML timeline: %v\n", err)
 		return

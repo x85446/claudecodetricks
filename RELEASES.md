@@ -2,6 +2,24 @@
 
 What changed, for people who use this.
 
+## 2026-10-22 — Plan reports you can trust, and simpler automations
+
+**New**
+- Every plan page explains what happened: the outcome, which requirements are done and the proof behind each, where the time went and why, who held the plan and what it waited on, retries, what it cost, and how far delivery got. Anything nobody recorded says "unknown" instead of showing a misleading zero.
+- Choose which projects use each automation by dragging them together, or with the keyboard.
+- Try an automation's rules before saving: pick Green, Yellow or Red and see which row would launch.
+- Codex runs count toward a plan's usage alongside Claude Code.
+
+**Improved**
+- Plan pages lead with the outcome and progress, link each requirement to its proof, and keep the activity log in its own scrolling box.
+- Automation names match everywhere they appear, and unsaved changes stay marked until you save or discard them.
+- What a whole session spent is shown apart from what the plan itself used.
+
+**Fixed**
+- Named Automations always opens the list, even with an editor open, and Save returns you to it.
+- Buttons work on the first click, including right after you type a name or a priority and while the dashboard refreshes.
+- Completed plans no longer report zero done, and long quiet stretches are explained or marked unknown rather than flagged as failures.
+
 ## 2026-10-21 — Reusable automations and clearer settings
 
 **New**

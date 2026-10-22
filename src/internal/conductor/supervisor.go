@@ -201,9 +201,13 @@ func (s *Service) TickProject(ctx context.Context, projectID string) (out TickRe
 		out.State = "running"
 		return nil
 	})
+	if err == nil {
+		s.recordAdmission(out.Decision)
+	}
 	if err != nil || out.Assignment == nil {
 		return out, err
 	}
+	s.record(RecordAdmitted, a, nil, nil)
 	result, runErr := s.execute(ctx, a)
 	dir, _ := s.runDir(a.RunID)
 	_ = readJSON(filepath.Join(dir, "validated-result.json"), &result)
@@ -279,6 +283,7 @@ func (s *Service) execute(ctx context.Context, a model.Assignment) (model.Result
 		_ = cmd.Wait()
 		return result, s.finish(ctx, a, result, e)
 	}
+	s.record(RecordStarted, a, nil, nil)
 	var wg sync.WaitGroup
 	errs := make(chan error, 3)
 	var candidate *model.Result
@@ -493,6 +498,13 @@ func (s *Service) mustInterrupt(a model.Assignment) (bool, error) {
 	return stop, e
 }
 func (s *Service) finish(ctx context.Context, a model.Assignment, result model.Result, cause error) error {
+	err := s.finishLocked(ctx, a, &result, cause)
+	s.record(RecordFinished, a, &result, nil)
+	return err
+}
+func (s *Service) finishLocked(ctx context.Context, a model.Assignment, resultRef *model.Result, cause error) error {
+	result := *resultRef
+	defer func() { *resultRef = result }()
 	dir, _ := s.runDir(a.RunID)
 	if e := atomicJSON(filepath.Join(dir, "validated-result.json"), result); e != nil {
 		return e

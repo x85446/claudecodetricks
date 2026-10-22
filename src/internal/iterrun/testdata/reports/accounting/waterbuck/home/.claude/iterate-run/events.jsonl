@@ -1,0 +1,6 @@
+{"session_id":"wb-coord","tool_name":"Bash","tool_use_id":"w1","plan":"waterbuck","cwd":"{{PROJECT}}","ts":"2026-10-20T23:30:00Z","hook":"pre"}
+{"session_id":"wb-coord","tool_name":"Bash","tool_use_id":"w1","plan":"waterbuck","cwd":"{{PROJECT}}","ts":"2026-10-20T23:30:40Z","hook":"post","duration_ms":40000,"success":true}
+{"session_id":"wb-coord","tool_name":"Bash","tool_use_id":"w2","plan":"waterbuck","cwd":"{{PROJECT}}","ts":"2026-10-21T07:00:00Z","hook":"pre"}
+{"session_id":"wb-coord","tool_name":"Bash","tool_use_id":"w2","plan":"waterbuck","cwd":"{{PROJECT}}","ts":"2026-10-21T07:00:20Z","hook":"post","duration_ms":20000,"success":true}
+{"session_id":"wb-coord","tool_name":"Edit","tool_use_id":"w3","plan":"waterbuck","cwd":"{{PROJECT}}","ts":"2026-10-21T21:00:00Z","hook":"pre"}
+{"session_id":"wb-coord","tool_name":"Edit","tool_use_id":"w3","plan":"waterbuck","cwd":"{{PROJECT}}","ts":"2026-10-21T21:00:02Z","hook":"post","duration_ms":2000,"success":true}

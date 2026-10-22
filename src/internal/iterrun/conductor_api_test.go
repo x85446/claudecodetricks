@@ -170,6 +170,36 @@ func TestConductorAPISimulationPure(t *testing.T) {
 	}
 }
 
+// TESTMASTER: id=killdeer-api-automation-preview tier=fast parallel=yes
+func TestConductorAPIAutomationPreview(t *testing.T) {
+	s := NewConductorService(t.TempDir())
+	c, _ := s.Config()
+	c, e := s.Apply(0, c)
+	if e != nil {
+		t.Fatal(e)
+	}
+	before, _ := os.ReadFile(filepath.Join(s.Dir, "config.json"))
+	h := ConductorAPI(s)
+	seq := c.Subscriptions[0].Sequences[0].ID
+	draft := model.Automation{ID: "draft", Name: "Run yellow", Mode: "keep_working", Entries: []model.Entry{{ID: "row", SequenceID: seq, MaxBand: model.Yellow}}}
+	for band, want := range map[model.Band]string{model.Green: "launch", model.Yellow: "launch", model.Red: "wait"} {
+		w := conductorRequest(t, h, "POST", "automation-preview", "http://localhost:8420", "localhost:8420", conductor.AutomationPreviewRequest{Automation: draft, Band: band})
+		var got struct {
+			Data conductor.AutomationPreview `json:"data"`
+		}
+		if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &got) != nil || got.Data.Outcome != want {
+			t.Fatalf("%s: %d %s", band, w.Code, w.Body)
+		}
+	}
+	if w := conductorRequest(t, h, "POST", "automation-preview", "http://evil.example", "localhost:8420", conductor.AutomationPreviewRequest{Automation: draft}); w.Code != 403 {
+		t.Fatalf("cross-origin preview: %d", w.Code)
+	}
+	after, _ := os.ReadFile(filepath.Join(s.Dir, "config.json"))
+	if !bytes.Equal(before, after) {
+		t.Fatal("preview saved config")
+	}
+}
+
 // TESTMASTER: id=indigobird-api-private-run-projection tier=? parallel=yes
 func TestConductorAPIPrivateRunProjection(t *testing.T) {
 	l := conductor.Lease{Assignment: model.Assignment{RunID: "r", Prompt: "private prompt", ResultPath: "private path", Subscription: model.Subscription{ID: "s", Name: "account", Args: []string{"secret"}}, Sequence: model.Sequence{ID: "q", Name: "build"}}}

@@ -66,7 +66,7 @@ func TestConductorDetailIndependentHistory(t *testing.T) {
 			tc.handler(rec, httptest.NewRequest("GET", tc.path, nil).WithContext(ctx))
 			<-detailHistorySlot
 			cancel()
-			for _, want := range []string{"Readable plan goal", "Real task", "Real proof", "data-history-url=", "plan-recorded-content", "function bdShow", "function showNote"} {
+			for _, want := range []string{"Readable plan goal", "Real task", "Real proof", "data-history-url=", "plan-recorded-content", `<main id="main"`, `href="#evidence-req-1"`, `id="evidence-req-1"`} {
 				if !strings.Contains(rec.Body.String(), want) {
 					t.Fatalf("initial page missing %q: %s", want, rec.Body)
 				}
@@ -129,7 +129,8 @@ func TestConductorUnifiedDetailPreservesTimeline(t *testing.T) {
 	start := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
 	rows := []Row{{label: "coordinator", status: "in-progress", spans: []span{{start: start, end: start.Add(time.Hour), tool: "recorded tool", summary: "recorded evidence"}}, steps: []StepDetail{{Num: 1, Step: "Task evidence", Validation: "Validation evidence"}}}}
 	p := PlanSummary{Name: "gar", GoalFull: "Actual historical goal", Archived: true, Started: start.Format(time.RFC3339), Finished: start.Add(time.Hour).Format(time.RFC3339)}
-	page := RenderTimelineWithChrome(rows, p, "/project?project=fixture", nil, conductorDetailHeader("/workspace/fixture", "gar"))
+	chrome := PlanPageOptions{Chrome: conductorDetailHeader("/workspace/fixture", "gar")}
+	page := RenderPlanPage(ReportInput{Plan: p, Rows: rows, Now: start.Add(2 * time.Hour)}, chrome)
 	for _, want := range []string{"Actual historical goal", "Requirements", "coordinator", "recorded evidence", "recorded open", "open at last recorded observation", "Conductor", "/assets/conductor/detail.js"} {
 		if !strings.Contains(page, want) {
 			t.Errorf("full detail missing %q", want)
@@ -144,8 +145,8 @@ func TestConductorUnifiedDetailPreservesTimeline(t *testing.T) {
 	for _, state := range []string{"blocked-on-operator: needs repair", "unblocked", "executing"} {
 		p.Archived = false
 		p.Status = state
-		page = RenderTimelineWithChrome(rows, p, "/project?project=fixture", nil, conductorDetailHeader("/workspace/fixture", "gar"))
-		for _, want := range []string{"Recorded execution span", "recorded open", "open at last recorded observation", "recorded evidence"} {
+		page = RenderPlanPage(ReportInput{Plan: p, Rows: rows, Now: start.Add(2 * time.Hour)}, chrome)
+		for _, want := range []string{`id="plan-elapsed"`, "recorded open", "open at last recorded observation", "recorded evidence", `id="conductor-live-detail"`} {
 			if !strings.Contains(page, want) {
 				t.Errorf("%s: historical detail missing %q", state, want)
 			}

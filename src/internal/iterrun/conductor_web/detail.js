@@ -2,6 +2,32 @@
 (() => {
 const header=document.querySelector('.conductor-detail-header'),panel=document.querySelector('#conductor-live-detail');
 const historyStatus=document.querySelector('#plan-history-status');
+// detailsKeys names each disclosure by its own data-key, or by the nearest
+// identified element and its summary text with counts removed, so a
+// disclosure keeps its key when history adds rows or changes a figure.
+function detailsKeys(root){
+ const seen=new Map();
+ return [...root.querySelectorAll('details')].map(d=>{
+  const owner=d.id||d.parentElement?.closest('[id]')?.id||'';
+  const text=(d.querySelector(':scope>summary')?.textContent||'').replace(/\([^)]*\)/g,'').replace(/\d[\d.,:]*[a-z]*/g,'#').replace(/\s+/g,' ').trim();
+  let key=d.dataset.key||owner+'|'+text;const n=seen.get(key)||0;seen.set(key,n+1);if(n)key+='|'+n;
+  return [key,d];
+ });
+}
+function focusKey(el,root){
+ if(!el||!root.contains(el))return null;
+ if(el.id)return {id:el.id};
+ const d=el.tagName==='SUMMARY'?el.parentElement:null;
+ if(d){const hit=detailsKeys(root).find(([,x])=>x===d);if(hit)return {details:hit[0]};}
+ if(el.tagName==='A')return {href:el.getAttribute('href'),text:el.textContent};
+ const owner=el.closest('[id]');return owner&&root.contains(owner)?{id:owner.id}:null;
+}
+function findFocus(k,root){
+ if(!k)return null;
+ if(k.id)return root.querySelector('#'+CSS.escape(k.id));
+ if(k.details){const hit=detailsKeys(root).find(([key])=>key===k.details);return hit?hit[1].querySelector(':scope>summary'):null;}
+ return [...root.querySelectorAll('a')].find(a=>a.getAttribute('href')===k.href&&a.textContent===k.text)||null;
+}
 async function loadHistory(){
  if(!historyStatus)return;
  historyStatus.textContent='Plan details are ready. Loading tool history and token usage…';
@@ -13,16 +39,24 @@ async function loadHistory(){
   const doc=new DOMParser().parseFromString(await response.text(),'text/html');
   const next=doc.querySelector('#plan-recorded-content'),current=document.querySelector('#plan-recorded-content');
   if(!next||!current)throw Error('History unavailable');
-  const open=[...current.querySelectorAll('details')].map(el=>el.open);
-  const selected=current.querySelector('.bd-selected')?.dataset.num;
+  // Keep what the reader did: open disclosures, focus, and the element at
+  // the top of the viewport, matched by stable keys rather than position.
+  const open=new Map(detailsKeys(current).map(([k,d])=>[k,d.open]));
+  const focus=focusKey(document.activeElement,current);
+  const anchor=[...current.querySelectorAll('[id]')].find(el=>el.getBoundingClientRect().bottom>0);
+  const anchorTop=anchor?anchor.getBoundingClientRect().top:0;
   // Preserve the live event log, polling references, and its scroll position.
   const nextPanel=next.querySelector('#conductor-live-detail');
   if(panel&&nextPanel)nextPanel.replaceWith(panel);
-  next.querySelectorAll('details').forEach((el,i)=>{if(open[i]!==undefined)el.open=open[i];});
-  const scroll=window.scrollY;
+  for(const [k,d] of detailsKeys(next))if(open.has(k))d.open=open.get(k);
+  const hash=decodeURIComponent(location.hash.slice(1));
+  const target=hash&&next.querySelector('#'+CSS.escape(hash));
+  if(target){for(let p=target;p&&p!==next;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;const own=target.querySelector(':scope>details');if(own)own.open=true;}
   current.replaceWith(next);
-  if(selected&&typeof window.bdShow==='function')window.bdShow(Number(selected));
-  window.scrollTo({top:scroll,behavior:'instant'});
+  const again=anchor&&scrollY>0&&document.getElementById(anchor.id);
+  if(again)window.scrollBy({top:again.getBoundingClientRect().top-anchorTop,behavior:'instant'});
+  findFocus(focus,next)?.focus({preventScroll:true});
+  document.dispatchEvent(new Event('plan-report-replaced'));
   historyStatus.textContent='Tool history and token usage loaded.';
  }catch(error){
   historyStatus.textContent='Plan details are available. Tool history could not load. ';

@@ -100,6 +100,7 @@ func HandleHook(phase string, r io.Reader) {
 
 	_ = AppendEvent(e)
 	observeConductorHook(phase, in)
+	observeRecordHook(root, plan, team, in)
 
 	// Resolve agent_id -> team label the moment a dispatch confirms it,
 	// so subsequent events from that agent_id render under a real name.

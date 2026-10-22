@@ -11,7 +11,7 @@ description: "Plans a production release of this project — version, per-platfo
 
 # $iterate-release — plan a production release
 
-**Version:** iterate family 5.22.0
+**Version:** iterate family 5.25.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -64,6 +64,7 @@ The release ships to whatever platforms the project already ships to. Read the e
 |---|---|
 | `docs/engineering.md` Deploy table, `docs/architecture.md` platform statement | authoritative when present |
 | `*.xcodeproj`, `project.yml` (XcodeGen), `Package.swift` executables, `pkgbuild`/`productbuild`/`hdiutil`/`codesign`/`notarytool` in the Makefile or `scripts/` | macOS |
+| a `*UITests` target in the Xcode project or `project.yml`, or `xcodebuild test` against a UI test scheme | the macOS UI test tier (brief `test-guests:`) |
 | `*.wxs` (WiX), `*.iss` (Inno Setup), `*.nsi`, `Package.appxmanifest`, `signtool` | Windows |
 | `debian/`, `*.spec`, `nfpm.yaml`, AppImage/Flatpak manifests, `dpkg-deb`/`rpmbuild` | Linux |
 | `.goreleaser.yaml`, `cargo-dist` config, `electron-builder` config | read their target lists |
@@ -121,18 +122,19 @@ credentials: <per platform: held credential and its Access: probe, or the decisi
 targets: <each release-* target: exists | build it>
 publish: <target>
 verify-on: <per platform: a clean guest of the two most recent majors (macOS), the supported distros (Linux), Windows 11>
+test-guests: <per platform with a UI test tier: the guests that run it and their provisioning — macOS XCUITest guests carry Automation Mode without authentication>
 decisions: <every answer the user gave in Steps 2–5, quoted>
 ```
 
 The planner writes it per its op 8.7. The release plan's steps, in order:
 
 1. Access preflight for every credential above (the planner's Step 5).
-2. Test gate: `testmaster suite run` fast + standard on the release commit, all green.
+2. Test gate: `testmaster suite run` fast + standard on the release commit, all green. A macOS UI test tier (XCUITest) runs only in test guests that carry Automation Mode: each test guest is provisioned with `sudo automationmodetool enable-automationmode-without-authentication` before its `clean` snapshot ($izmachine), and the step first runs `automationmodetool` in the guest, which must report that enabling Automation Mode needs no user authentication. Without it `xcodebuild test` fails with "Timed out while enabling automation mode".
 3. Build each missing release target (per `$dev-makefiles`).
 4. Version bump wherever the project records its version, `RELEASES.md` and `CHANGELOG.md` sections for `vX.Y.Z`, the `$user-docs` sync and the Makefile maintenance — committed as the release commit.
 5. Tag the release commit locally: `git tag -a vX.Y.Z -m "<title>"`.
 6. `make release`. A notarization rejection is executor work: read `xcrun notarytool log <id> --keychain-profile notary`, fix the cause (an unsigned nested binary, a missing hardened runtime, a disallowed entitlement), rebuild, resubmit.
-7. Install and run on a clean guest per platform (`$izmachine`): the quarantined download passes Gatekeeper as notarized Developer ID, the Windows installer verifies, the Linux package verifies against the published key. A failure moves the local tag after the fix (`git tag -f`) — it has not been pushed.
+7. Install and run on a clean guest per platform (`$izmachine`): the quarantined download passes Gatekeeper as notarized Developer ID, the Windows installer verifies, the Linux package verifies against the published key. The install guest is a separate stock guest: it never carries Automation Mode or developer tools, so it proves what a user's machine sees. A failure moves the local tag after the fix (`git tag -f`) — it has not been pushed.
 8. Push the tag: `git push origin vX.Y.Z`.
 9. `make release-publish`.
 10. Verify what was published: download each artifact from the publish target, check its checksum and signature, and `xcrun stapler validate` the macOS one.

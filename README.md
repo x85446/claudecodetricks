@@ -248,21 +248,55 @@ Both services are macOS only. On other systems the commands stop with a clear me
 
 Compact plan rows show status, actual AI assignment, plan name, goal and recorded timing. An unassigned plan stays unassigned. Queue links select the exact counted plans, with waiting and running work reported separately. Each worktree retains its full canonical identity.
 
-Opening a plan preserves its full requirements, coordinator/team timeline, activity and available evidence. Existing `/plan?project=…&name=…` and `/archive?project=…&file=…` bookmarks enter this same project workspace. Archived open observations describe historical records, not a presently running process.
+Opening a plan shows its report in reading order:
+
+1. The plan header: name, harness, launch command, goal, and a **Needs you** banner when the plan waits on a person.
+2. The summary: one elapsed figure, the plan's outcome, requirement and lane counts, a grid with one cell per requirement, and the validation evidence behind each requirement.
+3. The execution timeline: the coordinator's lane and each team's lane on one clock axis. Each lane opens to its numbered steps and validations, each linked to its evidence.
+4. The breakdowns: time, ownership and handoffs, attempts and rework, usage, tracking coverage, and delivery.
+5. For a plan that is not archived, the Conductor activity. Its event log scrolls in its own fixed-height box.
+
+An **On this page** list after the header jumps to each part. Each requirement cell is a link that opens that requirement's evidence, by mouse or keyboard. Every section states whether its data is available, partial or unavailable, and an unknown figure reads as unknown, never as zero. Tool history loads after the page appears; disclosures you opened, the requirement you selected and your place on the page stay as they were when it arrives. Existing `/plan?project=…&name=…` and `/archive?project=…&file=…` bookmarks enter this same project workspace. Archived open observations describe historical records, not a presently running process.
 
 Activity updates every three seconds while the page is visible. Durable events survive reloads and reconnects; configuration drafts retain their values while read-only state refreshes. Session token totals remain separate from subscription allowance percentages.
 
+### Reading a plan report
+
+Each section answers one question and names its unit. A count of requirements is never a count of lanes, and a figure nobody recorded reads **unknown**, not zero.
+
+- **Verified progress**: the plan's outcome, taken from its recorded completion and archive, then requirement counts (complete, tasks implemented, validations passed, and how many of those have observed proof) apart from lane counts (completed, active, blocked, queued). A checked box is not proof. A lane of an ended plan with no recorded end counts as **unknown end**, never as running.
+- **Validation evidence**: for each requirement and attempt, the result, command, exit status, time, artifact, source revision and environment. What the validation must show sits in its own collapsed **Acceptance** box, apart from what was observed. Reports copied from the plan log are tagged **imported** with result not observed. When a file the proof covers changes after the proof's revision, the proof reads **stale** and stays visible.
+- **Time**: elapsed time split into execution, blocked on a person, paused, waiting on a schedule, queued and unobserved; the parts add up to the elapsed figure exactly. Time spent by lanes in parallel (tool calls, subagents, builds, model turns) is listed apart and never added to elapsed. A long stretch without execution shows its recorded cause, or reads **unknown, not a failure**.
+- **Ownership and handoffs**: who holds the plan now (a CLI session or a Conductor assignment), its last heartbeat, when a blocker was detected and cleared, when ownership was released, and what admission is waiting on: automation disabled, schedule, budget or ownership. Each handoff reports the delays from blocker cleared to released to resumed. A stale owner is labelled; reading the report never releases it.
+- **Attempts and rework**: attempts by outcome, retries, restarts and reopened requirements, first-pass success and recoveries with their denominators, and what recovery cost in time and tokens.
+- **Usage**: what the plan cost, by scope (see below).
+- **Tracking coverage**: which sessions, agents and requests were captured, per lane and per source, and whether the record is complete, partial or unavailable. A percentage appears only when the total is known.
+- **Delivery**: source commit, pull request, review, CI, merge, install, deploy and runtime verification as separate stages, each with its own revision and time. A green CI never implies a deploy, and a stage with no evidence says so.
+
 ### What a run cost in tokens
 
-A plan's own page carries a **Token spend** panel, in three tables:
+A plan's **Usage** section reports what the run cost. Plan-attributed usage sits apart from whole-session cost and subscription allowance, and its breakdowns are:
 
-- **Who spent it** — one row for the coordinator and one per team, with context sent, tokens generated, thinking, peak context and request count. Share is of the whole run, so "the coordinator took two thirds of this" is one glance.
-- **What it went on, by tool** — per tool, how much bigger the next request got because the call happened (the real price of a read, paid again every later turn) alongside what the model spent writing the call itself.
-- **What each wake-up cost** — one row per kind of wake-up: a cron or `/loop` firing, a coordinator nudge to a team, something you typed. A firing that arrived mid-turn and never got its own request is counted **coalesced** and cost nothing; one that ran and then made no tool call is **idle**, and those are the expensive ones.
+- **By coordinator, team and agent**: one row per lane with requests, input, cache, output and reasoning tokens, and the peak request input.
+- **By tool** (estimated): per tool, how much bigger the next request got because the call happened (the real price of a read, paid again every later turn) alongside what the model spent writing the call itself.
+- **By wake-up** (estimated): one row per kind of wake-up: a cron or `/loop` firing, a coordinator nudge to a team, something you typed. A firing that arrived mid-turn and never got its own request is counted **coalesced** and cost nothing; one that ran and then made no tool call is **idle**, and those are the expensive ones.
 
-`iterate-run tokens [--plan <name>]` prints the same three tables in the terminal.
+`iterate-run tokens [--plan <name>]` prints the per-lane, per-tool and per-wake-up tables in the terminal.
 
-Numbers come from the session transcripts Claude Code already writes, joined to the hook event log by session and agent id — nothing extra is recorded and no plan needs re-running. Session cost in dollars is Claude Code's own figure for the whole session, which usually covers more than one plan; it is labelled as such and never divided between lanes.
+Numbers come from the session transcripts Claude Code and Codex already write, joined to the hook event log by session and agent id, plus the provider usage the Conductor records for its assignments. A request counts once even when it appears in a parent's transcript, a resumed session or the Conductor's record. Session cost in dollars is Claude Code's own figure for the whole session, which usually covers more than one plan; it is labelled **whole-session cost**, shown apart from plan usage and subscription allowance, and never divided between lanes.
+
+### The run record
+
+Every plan execution has one durable history, the run record, which hooks, `/iterate` and the Conductor append to and every report reads. A plan that ran before its project had a record gets a read-only view rebuilt from its plan file, hook log and Conductor history, labelled **legacy**.
+
+```bash
+iterate-run record list                          # recorded runs in this project
+iterate-run record show --plan finch --json      # one execution, folded: lifecycle, attempts, evidence, usage, unknowns
+iterate-run record show --plan finch --archive 20261001T120000Z-finch-done.md
+iterate-run record import --plan finch --dry-run # what a legacy import would record; drop --dry-run to keep it
+```
+
+The same reads have make targets: `make record-list`, `make record-show PLAN=finch`, `make record-import PLAN=finch` (a preview unless `APPLY=1`) and `make report-json PLAN=finch HISTORY=1`, which prints the report the plan page renders. `make preview` serves the current build's dashboard on port 8490 beside the one on 8420, with a throwaway Conductor store, so trying a build never admits or changes real work.
 
 ### Plan names
 

@@ -1,0 +1,4 @@
+{"session_id":"gemsbok-coord","tool_name":"Bash","tool_use_id":"g1","plan":"gemsbok","cwd":"{{PROJECT}}","ts":"2026-10-20T09:00:00Z","hook":"pre"}
+{"session_id":"gemsbok-coord","tool_name":"Bash","tool_use_id":"g1","plan":"gemsbok","cwd":"{{PROJECT}}","ts":"2026-10-20T09:00:05Z","hook":"post","duration_ms":5000,"success":true}
+{"session_id":"gemsbok-coord","tool_name":"Edit","tool_use_id":"g2","plan":"gemsbok","cwd":"{{PROJECT}}","ts":"2026-10-20T09:20:00Z","hook":"pre"}
+{"session_id":"gemsbok-coord","tool_name":"Edit","tool_use_id":"g2","plan":"gemsbok","cwd":"{{PROJECT}}","ts":"2026-10-20T09:20:05Z","hook":"post","duration_ms":5000,"success":true}

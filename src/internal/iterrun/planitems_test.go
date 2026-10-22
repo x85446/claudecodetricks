@@ -3,6 +3,7 @@ package iterrun
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -147,9 +148,9 @@ The two sweeps only a signed-in session can run.
 		t.Fatalf("coordinator steps = %d, want 3", len(rows[0].steps))
 	}
 
-	burn := collectSteps(rows)
+	burn := stepsOf(rows)
 	if len(burn) != 3 {
-		t.Fatalf("burndown steps = %d, want 3 — this is the Requirements row", len(burn))
+		t.Fatalf("requirement steps = %d, want 3 — these are the Requirements grid's cells", len(burn))
 	}
 	// Step 1 ticked, its validation explicitly not: attempted, not proven.
 	if burn[0].VStatus != "partial" {
@@ -194,9 +195,9 @@ Executing: 2026-09-09T05:32:39Z
 	if err != nil {
 		t.Fatal(err)
 	}
-	burn := collectSteps(rows)
+	burn := stepsOf(rows)
 	if len(burn) != 4 {
-		t.Fatalf("burndown steps = %d, want all 4 — a partial row is worse than none", len(burn))
+		t.Fatalf("requirement steps = %d, want all 4 — a partial grid is worse than none", len(burn))
 	}
 	if burn[1].VStatus != "met" {
 		t.Errorf("req 2 vstatus = %q, want met (its `check 2:` box is ticked)", burn[1].VStatus)
@@ -232,9 +233,9 @@ Executing: 2026-09-15T08:00:00Z
 	if err != nil {
 		t.Fatal(err)
 	}
-	burn := collectSteps(rows)
+	burn := stepsOf(rows)
 	if len(burn) != 1 {
-		t.Fatalf("burndown steps = %d, want 1", len(burn))
+		t.Fatalf("requirement steps = %d, want 1", len(burn))
 	}
 	if burn[0].VStatus != "partial" {
 		t.Errorf("vstatus = %q, want partial from the Status/Log, not met from the box", burn[0].VStatus)
@@ -268,18 +269,37 @@ Executing: 2026-09-15T08:00:00Z
 	if err != nil {
 		t.Fatal(err)
 	}
-	burn := collectSteps(rows)
+	burn := stepsOf(rows)
 	if len(burn) != 2 {
-		t.Fatalf("burndown steps = %d, want 2", len(burn))
+		t.Fatalf("requirement steps = %d, want 2", len(burn))
 	}
 	for _, b := range burn {
 		if b.VStatus != "" {
 			t.Errorf("req %d vstatus = %q — a plain plan has no boxes, so no status may be invented", b.Num, b.VStatus)
 		}
-		if b.State != "queued" {
-			t.Errorf("req %d state = %q, want queued", b.Num, b.State)
+	}
+	plan, err := GetPlanSummary(proj, "ichneumon")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep := BuildPlanReport(ReportInput{Plan: plan, Rows: rows, Now: time.Date(2026, 9, 15, 9, 0, 0, 0, time.UTC)})
+	for _, r := range rep.Progress.RequirementItems {
+		if r.State != "not-started" {
+			t.Errorf("req %d state = %q, want not-started", r.Number, r.State)
 		}
 	}
+}
+
+// stepsOf flattens every row's Steps/Validation detail in requirement
+// order: the per-requirement data the progress model and the gantt lanes
+// read.
+func stepsOf(rows []Row) []StepDetail {
+	var out []StepDetail
+	for _, r := range rows {
+		out = append(out, r.steps...)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Num < out[j].Num })
+	return out
 }
 
 // TESTMASTER: id=timeline-no-empty-team-section tier=fast parallel=yes

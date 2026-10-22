@@ -1,6 +1,7 @@
 package iterrun
 
 import (
+	"fmt"
 	"html"
 	"os"
 	"path/filepath"
@@ -592,132 +593,114 @@ func TestBuildRowsFromFilesystemMatchesOrphanDispatchesToParent(t *testing.T) {
 	}
 }
 
-// TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning reproduces the
-// bug reported live: the coordinator row (and any orphan dispatch before
-// its terminal line arrives) never gets a status field set at all, but the
-// old stats loop only had three buckets — done/blocked, in-progress, and
-// no-spans-at-all — so a status-less row WITH activity fell through all
-// three, uncounted anywhere. A plan with real ongoing coordinator work
-// could read as fully accounted for (e.g. "N done, 0 running") in the top
-// summary while its own coordinator section showed hours of live activity.
-func TestRenderTimelineHTMLCountsStatuslessActiveRowsAsRunning(t *testing.T) {
+// TestStatuslessActiveLaneCountsAsActive reproduces the bug reported live:
+// a lane with recorded activity but no status field (an orphan dispatch
+// before its terminal line arrives) fell through every bucket of the old
+// done/running/queued cards, so a plan with work in flight read as fully
+// accounted for. The progress section's lane counts carry it as active.
+func TestStatuslessActiveLaneCountsAsActive(t *testing.T) {
 	base := time.Date(2026, 8, 11, 12, 0, 0, 0, time.UTC)
 	rows := []Row{
-		{key: "", label: "coordinator", spans: []span{{start: base, end: base.Add(time.Minute)}}}, // status intentionally "" — the coordinator never gets one
+		{key: "", label: "coordinator", spans: []span{{start: base, end: base.Add(time.Minute)}}},
 		{key: "repo-ci", label: "repo-ci", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}}},
+		{key: "dispatch", label: "dispatch", spans: []span{{start: base, end: base.Add(time.Minute)}}}, // status intentionally ""
 	}
-	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
-
-	if !strings.Contains(out, `<div class="n">1</div><div class="l">done</div>`) {
-		t.Errorf("expected exactly 1 done in stats; output:\n%s", out)
+	in := ReportInput{Plan: PlanSummary{Name: "badger"}, Rows: rows, Now: base.Add(time.Hour)}
+	lanes := BuildPlanReport(in).Progress.Lanes
+	if lanes.Completed != 1 || lanes.Active < 1 || lanes.Total != 3 {
+		t.Errorf("lanes = %+v, want 1 completed and the status-less dispatch counted active among 3", lanes)
 	}
-	if !strings.Contains(out, `<div class="n">1</div><div class="l">running</div>`) {
-		t.Errorf("expected the status-less-but-active coordinator to count as 1 running, not fall through uncounted; output:\n%s", out)
-	}
-	if strings.Contains(out, `<div class="n">0</div><div class="l">running</div>`) {
-		t.Errorf("running count is 0 — the coordinator's own activity isn't being counted")
-	}
-}
-
-// TestRunboxPrefersExecutingOverStarted reproduces the bug reported live: a
-// plan drafted via /iterate-planner at 13:59, not actually run until 16:32,
-// showed "running for 2h36m" the instant /iterate was invoked — that read
-// as elapsed drafting time, not elapsed execution time. Once Executing: is
-// present, the runbox must anchor to it instead of Started:.
-func TestRunboxPrefersExecutingOverStarted(t *testing.T) {
-	drafted := time.Date(2026, 8, 11, 13, 59, 24, 0, time.Local)
-	executing := time.Date(2026, 8, 11, 16, 32, 55, 0, time.Local)
-	rows := []Row{
-		{key: "coordinator", label: "coordinator", spans: []span{{start: executing, end: executing.Add(3 * time.Minute)}}},
-	}
-	plan := PlanSummary{
-		Name:      "aardvark",
-		Started:   drafted.Format("2006-01-02 15:04:05"),
-		Executing: executing.Format("2006-01-02 15:04:05"),
-	}
-	out := RenderTimelineHTML(rows, plan, "")
-
-	if !strings.Contains(out, "since "+executing.Format("2006-01-02 15:04:05")) {
-		t.Errorf("runbox should anchor to Executing: (%s), not Started: (%s); output:\n%s",
-			executing.Format("2006-01-02 15:04:05"), drafted.Format("2006-01-02 15:04:05"), out)
-	}
-	if strings.Contains(out, "2h36m") {
-		t.Errorf("runbox shows elapsed drafting time (2h36m) instead of elapsed execution time; output:\n%s", out)
+	out := RenderPlanPage(in, PlanPageOptions{})
+	if !strings.Contains(out, `<dt>Active</dt><dd class="pg-n">`) || strings.Contains(out, `class="stats"`) {
+		t.Errorf("the page must show lane counts in the progress section and no unlabelled stat cards; output:\n%s", out)
 	}
 }
 
-// TestRunboxFallsBackToEarliestActivityWhenExecutingMissing covers plans
-// written before the Executing: field existed — the runbox should prefer
-// real recorded activity (minT) over a stale Started: drafting timestamp
-// rather than reverting to the original bug.
-func TestRunboxFallsBackToEarliestActivityWhenExecutingMissing(t *testing.T) {
-	drafted := time.Date(2026, 8, 11, 13, 59, 24, 0, time.Local)
-	activity := time.Date(2026, 8, 11, 16, 32, 55, 0, time.Local)
+// planElapsed returns the page's one elapsed line.
+func planElapsed(t *testing.T, page string) string {
+	t.Helper()
+	i := strings.Index(page, `<p class="plan-elapsed" id="plan-elapsed">`)
+	if i < 0 {
+		t.Fatalf("page has no elapsed line:\n%s", page)
+	}
+	return page[i : i+strings.Index(page[i:], "</p>")]
+}
+
+// TestElapsedPrefersExecutingOverStarted reproduces the bug reported live: a
+// plan drafted at 13:59 and run from 16:32 showed "running for 2h36m" the
+// instant /iterate started, elapsed drafting time rather than execution
+// time. The page's one elapsed figure starts at Executing:.
+func TestElapsedPrefersExecutingOverStarted(t *testing.T) {
+	drafted := time.Date(2026, 8, 11, 13, 59, 24, 0, time.UTC)
+	executing := time.Date(2026, 8, 11, 16, 32, 55, 0, time.UTC)
 	rows := []Row{
-		{key: "coordinator", label: "coordinator", spans: []span{{start: activity, end: activity.Add(3 * time.Minute)}}},
+		{key: "", label: "coordinator", spans: []span{{start: executing, end: executing.Add(3 * time.Minute)}}},
+	}
+	plan := PlanSummary{Name: "aardvark", Started: drafted.Format(time.RFC3339), Executing: executing.Format(time.RFC3339)}
+	line := planElapsed(t, RenderPlanPage(ReportInput{Plan: plan, Rows: rows, Now: executing.Add(10 * time.Minute)}, PlanPageOptions{}))
+	if !strings.Contains(line, `datetime="`+executing.Format(time.RFC3339)+`"`) || !strings.Contains(line, "<strong>10m 0s</strong>") {
+		t.Errorf("elapsed should run from Executing: (%s) for 10m 0s, not from Started:; got %s", executing, line)
+	}
+	if strings.Contains(line, drafted.Format(time.RFC3339)) {
+		t.Errorf("elapsed starts at drafting time; got %s", line)
+	}
+}
+
+// TestElapsedFallsBackToEarliestActivityWhenExecutingMissing covers plans
+// written before the Executing: field existed: the first observed tool call
+// beats a stale Started: drafting timestamp.
+func TestElapsedFallsBackToEarliestActivityWhenExecutingMissing(t *testing.T) {
+	drafted := time.Date(2026, 8, 11, 13, 59, 24, 0, time.UTC)
+	activity := time.Date(2026, 8, 11, 16, 32, 55, 0, time.UTC)
+	rows := []Row{
+		{key: "", label: "coordinator", spans: []span{{start: activity, end: activity.Add(3 * time.Minute), tool: "Bash"}}},
 	}
 	plan := PlanSummary{Name: "aardvark", Started: drafted.Format("2006-01-02 15:04:05") + " (planned)"}
-	out := RenderTimelineHTML(rows, plan, "")
-
-	if !strings.Contains(out, "since "+activity.Format("2006-01-02 15:04:05")) {
-		t.Errorf("runbox should fall back to earliest recorded activity (%s) when Executing: is absent, not Started: (%s); output:\n%s",
-			activity.Format("2006-01-02 15:04:05"), drafted.Format("2006-01-02 15:04:05"), out)
+	line := planElapsed(t, RenderPlanPage(ReportInput{Plan: plan, Rows: rows, Now: activity.Add(time.Hour)}, PlanPageOptions{}))
+	if !strings.Contains(line, `datetime="`+activity.Format(time.RFC3339)+`"`) {
+		t.Errorf("elapsed should start at the earliest recorded tool call (%s) when Executing: is absent; got %s", activity, line)
 	}
 }
 
-// TestRunboxHandlesZeroConfirmedActivity reproduces the bug shown live: a
-// flat plan with a correct Executing: but no hook or iterate-run-wrapped
-// registry data at all (no spans on ANY row) showed "0000-12-31 18:09:24
-// -> 18:09:24 (1s of recorded activity)" and "Running for 0s" — Go's zero
-// time.Time leaking straight into the page because minT/maxT never got
-// set, and maxT.Sub(started) went hugely negative and got silently
-// clamped to 0. A row with real Steps/Validation detail but zero spans is
-// a real, common shape (see BuildRowsFromFilesystem's unassigned-steps
-// attribution to the coordinator) — the page must fall back to "now" for
-// the duration and never print the zero-value date at all.
-func TestRunboxHandlesZeroConfirmedActivity(t *testing.T) {
-	executing := time.Now().Add(-90 * time.Minute)
+// TestElapsedHandlesZeroConfirmedActivity reproduces the bug shown live: a
+// flat plan with a correct Executing: and no hook or registry data showed
+// "0000-12-31 18:09:24" and "Running for 0s". The figure runs from
+// Executing: to the report time and the page never prints a zero date.
+func TestElapsedHandlesZeroConfirmedActivity(t *testing.T) {
+	now := time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC)
 	rows := []Row{
 		{key: "", label: "coordinator", steps: []StepDetail{{Num: 1, Step: "x", Validation: "y"}}}, // no spans at all
 	}
-	plan := PlanSummary{Name: "bison", Executing: executing.UTC().Format("2006-01-02T15:04:05Z")}
-	out := RenderTimelineHTML(rows, plan, "")
-
+	plan := PlanSummary{Name: "bison", Executing: now.Add(-90 * time.Minute).Format(time.RFC3339)}
+	out := RenderPlanPage(ReportInput{Plan: plan, Rows: rows, Now: now}, PlanPageOptions{})
+	if line := planElapsed(t, out); !strings.Contains(line, "<strong>1h 30m</strong>") || !strings.Contains(line, "still open at") {
+		t.Errorf("elapsed should read 1h 30m, still open; got %s", line)
+	}
 	if strings.Contains(out, "0000-") {
 		t.Errorf("zero-value timestamp leaked into the page; output:\n%s", out)
 	}
-	if strings.Contains(out, `class="runbox-dur">0s<`) {
-		t.Errorf("runbox shows 0s despite Executing: being 90 minutes ago; output:\n%s", out)
-	}
 	if strings.Contains(out, `class="axis">`) {
-		t.Errorf("axis line should be omitted with zero confirmed activity, not show 0000-derived timestamps; output:\n%s", out)
+		t.Errorf("axis line should be omitted with zero confirmed activity; output:\n%s", out)
 	}
 }
 
-// TestRunboxPrefersFinishedOverActivityForArchivedPlans confirms an
-// archived plan's "Ran for" figure anchors to its own declared Finished:
-// (set once by /iterate right before archiving) rather than maxT — the
-// latest CONFIRMED activity span, which is only as reliable as whatever
-// hook/registry data happens to exist for that project, and can end far
-// earlier than the plan's real completion instant.
-func TestRunboxPrefersFinishedOverActivityForArchivedPlans(t *testing.T) {
+// TestElapsedPrefersFinishedOverActivityForArchivedPlans confirms an
+// archived plan's elapsed figure ends at its declared Finished:, not at the
+// latest confirmed activity, which can end long before the real finish.
+func TestElapsedPrefersFinishedOverActivityForArchivedPlans(t *testing.T) {
 	executing := time.Date(2026, 8, 12, 2, 54, 23, 0, time.UTC)
-	staleActivity := time.Date(2026, 8, 12, 2, 55, 0, 0, time.UTC) // a confirmed span, but well before the real finish
+	staleActivity := time.Date(2026, 8, 12, 2, 55, 0, 0, time.UTC)
 	finished := time.Date(2026, 8, 12, 5, 0, 0, 0, time.UTC)
 	rows := []Row{
 		{key: "", label: "coordinator", spans: []span{{start: staleActivity, end: staleActivity.Add(time.Second)}}},
 	}
-	plan := PlanSummary{
-		Name:      "bison",
-		Archived:  true,
-		Executing: executing.Format("2006-01-02T15:04:05Z"),
-		Finished:  finished.Format("2006-01-02T15:04:05Z"),
+	plan := PlanSummary{Name: "bison", Archived: true, Executing: executing.Format(time.RFC3339), Finished: finished.Format(time.RFC3339)}
+	line := planElapsed(t, RenderPlanPage(ReportInput{Plan: plan, Rows: rows, Now: finished.Add(48 * time.Hour)}, PlanPageOptions{}))
+	if !strings.Contains(line, "<strong>2h 6m</strong>") || !strings.Contains(line, `datetime="`+finished.Format(time.RFC3339)+`"`) {
+		t.Errorf("elapsed should be Executing: to Finished: (2h 6m), ending at %s; got %s", finished, line)
 	}
-	out := RenderTimelineHTML(rows, plan, "")
-
-	wantDur := finished.Sub(executing).Round(time.Second)
-	if !strings.Contains(out, `class="runbox-dur">`+wantDur.String()+`<`) {
-		t.Errorf("runbox should show the Executing:->Finished: span (%s), anchored to Finished: not the stale confirmed-activity span; output:\n%s", wantDur, out)
+	if strings.Contains(line, "still open") {
+		t.Errorf("an archived plan's clock must not read open; got %s", line)
 	}
 }
 
@@ -740,102 +723,75 @@ func TestWriteGanttRowMarksEveryInProgressRowsLastSpanOpen(t *testing.T) {
 	}
 }
 
-// TestBurndownChartShadesByValidationState confirms the burndown grid
-// classifies each requirement correctly: met -> green (bd-done), reported
-// but not fully resolved (partial/not-met) or currently the team's inferred
-// working step -> yellow (bd-active), no signal at all -> white (bd-queued)
-// — and that clicking through embeds the owning team's dependency chain.
-func TestBurndownChartShadesByValidationState(t *testing.T) {
+// gridCells returns the requirement grid's cells as number -> class.
+func gridCells(t *testing.T, page string) map[string]string {
+	t.Helper()
+	i := strings.Index(page, `<ul class="bd-grid"`)
+	if i < 0 {
+		return nil
+	}
+	grid := page[i : i+strings.Index(page[i:], "</ul>")]
+	cells := map[string]string{}
+	for _, part := range strings.Split(grid, `<a class="bd-cell `)[1:] {
+		cls := part[:strings.Index(part, `"`)]
+		num := part[strings.Index(part, `">`)+2 : strings.Index(part, "</a>")]
+		cells[num] = cls
+		if !strings.Contains(part, `href="#evidence-req-`+num+`"`) {
+			t.Errorf("cell %s does not link to its evidence: %s", num, part)
+		}
+	}
+	return cells
+}
+
+// TestRequirementGridFollowsTheProgressModel confirms every requirement cell
+// is a link to its evidence, coloured by the progress section's state for
+// that requirement, so the grid, the lanes and the summary never disagree.
+func TestRequirementGridFollowsTheProgressModel(t *testing.T) {
 	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
 	rows := []Row{
 		{key: "engine", label: "engine", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}},
 			steps: []StepDetail{{Num: 1, Step: "build the engine", Validation: "engine builds clean", VStatus: "met"}}},
+		{key: "store", label: "store", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}},
+			steps: []StepDetail{{Num: 2, Step: "hard blocker", Validation: "x", VStatus: "not-met", VNote: "no access"}}},
 		{key: "app-macos", label: "app-macos", status: "in-progress", dependsOn: []string{"engine"}, spans: []span{{start: base, end: base.Add(time.Minute)}},
 			steps: []StepDetail{
-				{Num: 2, Step: "wire the UI", Validation: "UI renders"},        // no VStatus, but it's the working step -> active
-				{Num: 3, Step: "ship installer", Validation: "installer runs"}, // untouched -> queued
+				{Num: 3, Step: "wire the UI", Validation: "UI renders", VStatus: "partial"},
+				{Num: 4, Step: "ship installer", Validation: "installer runs"},
 			}},
 	}
-	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
-
-	if !strings.Contains(out, `<h2>Requirements</h2>`) {
-		t.Fatalf("expected a Requirements burndown section; output:\n%s", out)
+	in := ReportInput{Plan: PlanSummary{Name: "badger"}, Rows: rows, Now: base.Add(time.Hour)}
+	rep := BuildPlanReport(in)
+	out := RenderPlanPage(in, PlanPageOptions{})
+	cells := gridCells(t, out)
+	if len(cells) != 4 {
+		t.Fatalf("grid cells = %v, want 4; output:\n%s", cells, out)
 	}
-	if !strings.Contains(out, `class="bd-cell bd-done" data-num="1"`) {
-		t.Errorf("requirement 1 (VStatus=met) should render bd-done; output:\n%s", out)
+	want := map[string]string{"1": "complete", "2": "blocked", "3": "in-progress", "4": "not-started"}
+	for _, r := range rep.Progress.RequirementItems {
+		n := fmt.Sprint(r.Number)
+		if cells[n] != "bd-"+r.State {
+			t.Errorf("cell %s class = %q, progress state = %q", n, cells[n], r.State)
+		}
+		if r.State != want[n] {
+			t.Errorf("requirement %s state = %q, want %q", n, r.State, want[n])
+		}
+		if !strings.Contains(out, `id="`+r.EvidenceAnchor+`"`) {
+			t.Errorf("requirement %s's evidence anchor %q is missing from the page", n, r.EvidenceAnchor)
+		}
 	}
-	if !strings.Contains(out, `class="bd-cell bd-active" data-num="2"`) {
-		t.Errorf("requirement 2 (inferred working step) should render bd-active; output:\n%s", out)
+	if strings.Contains(out, "onclick") || strings.Contains(out, "bdShow") {
+		t.Error("the grid must be plain links, not click handlers")
 	}
-	if !strings.Contains(out, `class="bd-cell bd-queued" data-num="3"`) {
-		t.Errorf("requirement 3 (no signal at all) should render bd-queued; output:\n%s", out)
-	}
-	if !strings.Contains(out, `"dependsOn":["engine"]`) {
-		t.Errorf("requirement 2/3's embedded data should carry app-macos's own full Depends-on list; output:\n%s", out)
+	if !strings.Contains(out, `aria-label="Requirement 2, Blocked, lane store"`) {
+		t.Errorf("each cell names its requirement, state and lane; output:\n%s", out)
 	}
 }
 
-// TestBurndownChartDistinguishesGaveUpFromActive reproduces the exact bug
-// shown live: a step the team explicitly reported "not-met" (attempted a
-// perf-check, it failed, they gave up) rendered in the SAME amber
-// "active" bucket as a step genuinely still being worked on — reading as
-// "still going" for something the team had actually abandoned. Confirms
-// not-met gets its own distinct "gaveup" state/color, carries its note
-// into the embedded data for the click-through panel, and gets the
-// little flag marker cells-with-a-note get.
-func TestBurndownChartDistinguishesGaveUpFromActive(t *testing.T) {
-	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
-	rows := []Row{
-		// Real shape found live: the store team finished (status "done")
-		// having reported step 5 only "partial" — a perf-check clause
-		// failing for a documented, accepted reason (the recorded
-		// baseline is a GitHub-runner figure, doesn't apply on a laptop)
-		// — and moved on regardless. That's settled, not "still going."
-		{key: "store", label: "store", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}},
-			steps: []StepDetail{
-				{Num: 5, Step: "run the full local gate suite", Validation: "all gates exit 0",
-					VStatus: "partial", VNote: "perf-check FAILS ladder/1e3/import_s (0.0277s vs 0.0159s limit) — but the baseline is a GitHub-runner figure"},
-				{Num: 6, Step: "hard blocker", Validation: "x", VStatus: "not-met", VNote: "no access"},
-			}},
-		// A DIFFERENT team, still genuinely in flight — its own "partial"
-		// report must stay active, not get swept into gaveup just because
-		// SOME row somewhere finished.
-		{key: "pipeline", label: "pipeline", status: "in-progress", spans: []span{{start: base, end: base.Add(time.Minute)}},
-			steps: []StepDetail{
-				{Num: 7, Step: "still going", Validation: "x", VStatus: "partial", VNote: "in progress"},
-			}},
-	}
-	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
-
-	if !strings.Contains(out, `class="bd-cell bd-gaveup" data-num="5"`) {
-		t.Errorf("requirement 5 (partial, but its team already finished) should render bd-gaveup, NOT bd-active — that bucket means 'still working'; output:\n%s", out)
-	}
-	if strings.Contains(out, `class="bd-cell bd-active" data-num="5"`) {
-		t.Errorf("requirement 5 must NOT render as bd-active; output:\n%s", out)
-	}
-	if !strings.Contains(out, `class="bd-cell bd-gaveup" data-num="6"`) {
-		t.Errorf("requirement 6 (VStatus=not-met) should render bd-gaveup; output:\n%s", out)
-	}
-	if !strings.Contains(out, `class="bd-cell bd-active" data-num="7"`) {
-		t.Errorf("requirement 7 (partial, team genuinely still in-progress) should render bd-active; output:\n%s", out)
-	}
-	if !strings.Contains(out, `"note":"perf-check FAILS ladder/1e3/import_s (0.0277s vs 0.0159s limit) — but the baseline is a GitHub-runner figure"`) {
-		t.Errorf("requirement 5's real note text missing from the embedded click-through data; output:\n%s", out)
-	}
-	if strings.Count(out, `class="bd-flag"`) != 3 {
-		t.Errorf(`expected 3 flag markers (all three steps have a note), got %d; output:%s`, strings.Count(out, `class="bd-flag"`), out)
-	}
-}
-
-// TestBurndownChartShowsFullDependsOnListNotJustPrimary reproduces a real
-// bug found live: a team can list several dependencies (a real plan had one
-// team depending on all seven others), but an earlier version of this
-// chart walked only the single "primary" dependency orderTeamRows uses for
-// display indentation — that's a deliberate simplification scoped to
-// indentation only, and silently dropped every dependency but the first
-// when reused here. The click-through detail must show the team's own
-// complete Depends-on list.
-func TestBurndownChartShowsFullDependsOnListNotJustPrimary(t *testing.T) {
+// TestLaneListShowsFullDependsOnListNotJustPrimary reproduces a real bug: a
+// team can depend on several others, but the old requirement detail walked
+// only the single primary dependency used for indentation. The progress
+// section's lane list carries the team's complete Depends-on list.
+func TestLaneListShowsFullDependsOnListNotJustPrimary(t *testing.T) {
 	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
 	rows := []Row{
 		{key: "audio-filters", label: "audio-filters", status: "done", spans: []span{{start: base, end: base.Add(time.Minute)}}},
@@ -844,48 +800,61 @@ func TestBurndownChartShowsFullDependsOnListNotJustPrimary(t *testing.T) {
 			steps: []StepDetail{{Num: 17, Step: "clean up", Validation: "clean"}}},
 	}
 	out := RenderTimelineHTML(rows, PlanSummary{Name: "badger"}, "")
-
-	if !strings.Contains(out, `"dependsOn":["audio-filters","settings-surfaces"]`) {
-		t.Errorf("requirement 17's dependsOn should list BOTH of tech-debt's real dependencies, not just the first; output:\n%s", out)
+	if !strings.Contains(out, "depends on audio-filters, settings-surfaces") {
+		t.Errorf("tech-debt's lane should list BOTH of its dependencies; output:\n%s", out)
 	}
 }
 
-// TestBurndownChartOmittedWhenNoStepDetail confirms a plan with no
-// per-team Steps/Validation detail (a flat/unteamed plan, or any plan
-// whose rows just don't have step data) renders no Requirements section at
-// all rather than an empty, confusing one.
-func TestBurndownChartOmittedWhenNoStepDetail(t *testing.T) {
+// TestRequirementGridOmittedWhenNoStepDetail confirms a plan with no
+// numbered requirements renders no grid rather than an empty one.
+func TestRequirementGridOmittedWhenNoStepDetail(t *testing.T) {
 	base := time.Date(2026, 8, 11, 16, 0, 0, 0, time.UTC)
 	rows := []Row{
 		{key: "", label: "coordinator", spans: []span{{start: base, end: base.Add(time.Minute)}}},
 	}
 	out := RenderTimelineHTML(rows, PlanSummary{Name: "finch"}, "")
-	if strings.Contains(out, `<h2>Requirements</h2>`) {
-		t.Errorf("expected no Requirements section for a plan with no step detail; output:\n%s", out)
+	if strings.Contains(out, `class="bd-grid"`) {
+		t.Errorf("expected no requirement grid for a plan with no step detail; output:\n%s", out)
+	}
+	if !strings.Contains(out, "No numbered requirements were found") {
+		t.Errorf("the progress section should say why there is no grid; output:\n%s", out)
 	}
 }
 
-// TestValidationGlyphOpensModalOnlyWhenNoteExists reproduces the bug shown
-// live: a real validation note (several sentences explaining why a check
-// landed where it did) was embedded in a native title="..." tooltip —
-// truncates, can't be selected/copied, vanishes when the mouse moves.
-// Confirms a glyph with a real note is click-triggered into the shared
-// #note-modal (data-note carries the FULL text, not truncated into a
-// title attribute), while a glyph with no note stays a plain,
-// non-interactive marker — nothing to show in a popup.
-func TestValidationGlyphOpensModalOnlyWhenNoteExists(t *testing.T) {
+// TestTeamValidationNotesReachEvidenceNotAModal: a team's validation note is
+// often several sentences, so the page shows it in full, selectable, under
+// the requirement's evidence, and every gantt step links there by keyboard.
+// Nothing on the page opens on a click handler.
+func TestTeamValidationNotesReachEvidenceNotAModal(t *testing.T) {
 	long := "partial: verify/test/conformance/round-trip/acceptance/verify-leak all exit 0; retention proved from the CLI (16 imports leave exactly 10 manifests) and in Rust at the default N=10 with a prior snapshot opened read-only before pre-edit balances."
-	withNote := validationGlyph("partial", long)
-	if !strings.Contains(withNote, `onclick="showNote(this)"`) {
-		t.Errorf("a glyph with a real note should be click-triggered into the shared modal; got: %s", withNote)
+	proj := writePlan(t, "ocelot", "# Iterate Task\n\nname: ocelot\nphase: executing\nExecuting: 2026-09-15T08:00:00Z\nteamed: true\n\n## Steps\n- [x] 1. Build the store.\n\n## Validation\n- [ ] 1. The store round-trips.\n\n## Teams\n| Team | Steps | Focus | Depends on | Agent | Status |\n|---|---|---|---|---|---|\n| store | 1 | Store | — | general-purpose | in-progress |\n")
+	teams := filepath.Join(proj, ".claude", "iterate", "plans", "ocelot.teams")
+	if err := os.MkdirAll(teams, 0o755); err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(withNote, `data-note="`+html.EscapeString(long)+`"`) {
-		t.Errorf("the glyph's data-note should carry the FULL note text, not a truncated version; got: %s", withNote)
+	if err := os.WriteFile(filepath.Join(teams, "store.log.md"), []byte("# store\n##ITERATE-VALIDATION## {\"step\":1,\"status\":\"partial\",\"note\":\""+long+"\"}\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-
-	noNote := validationGlyph("met", "")
-	if strings.Contains(noNote, "onclick") {
-		t.Errorf("a glyph with no note should not be clickable at all; got: %s", noNote)
+	rows, err := BuildRowsFromFilesystem("ocelot", proj, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := GetPlanSummary(proj, "ocelot")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := RenderPlanPage(ReportInput{Plan: plan, Rows: rows, Now: time.Date(2026, 9, 15, 9, 0, 0, 0, time.UTC)}, PlanPageOptions{})
+	ev := out[strings.Index(out, `id="evidence-req-1"`):]
+	if !strings.Contains(ev[:strings.Index(ev, "</li></ol>")], html.EscapeString(long)) {
+		t.Errorf("requirement 1's evidence should carry the team's full note")
+	}
+	if !strings.Contains(out, `<a class="step-ev" href="#evidence-req-1">Evidence for requirement 1</a>`) {
+		t.Errorf("the gantt step should link to its evidence; output:\n%s", out)
+	}
+	for _, gone := range []string{"onclick", "note-modal", "showNote"} {
+		if strings.Contains(out, gone) {
+			t.Errorf("page still carries %q", gone)
+		}
 	}
 }
 

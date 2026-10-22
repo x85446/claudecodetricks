@@ -510,16 +510,23 @@ func TestALaneWithNoTranscriptIsReportedNotZeroed(t *testing.T) {
 	if !ghost.Missing {
 		t.Error("ghost lane should be flagged Missing, not shown as zero spend")
 	}
-	out := RenderTimelineHTMLWithTokens(
-		[]Row{{key: "", label: "coordinator", spans: []span{{start: time.Now().Add(-time.Hour), end: time.Now()}}}},
-		planFor("badger", proj, "2026-09-15T09:00:00Z", "2026-09-15T11:00:00Z"), "", &pt)
-	if !strings.Contains(out, "no transcript found") {
-		t.Error("page should say the ghost lane's spend is uncounted")
+	out := RenderPlanPage(ReportInput{
+		Plan:   planFor("badger", proj, "2026-09-15T09:00:00Z", "2026-09-15T11:00:00Z"),
+		Rows:   []Row{{key: "", label: "coordinator", spans: []span{{start: time.Now().Add(-time.Hour), end: time.Now()}}}},
+		Tokens: &pt, HistoryLoaded: true, Now: time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC),
+	}, PlanPageOptions{})
+	usage := out[strings.Index(out, `id="report-usage"`):]
+	if !strings.Contains(usage, "no transcript found; usage unknown") {
+		t.Error("the Usage section should say the ghost lane's spend is uncounted")
 	}
 }
 
 // TESTMASTER: id=tokens-panel-render tier=fast parallel=yes
-func TestTokenPanelRendersLanesToolsAndWakeups(t *testing.T) {
+//
+// The plan page's Usage section carries what the token panel showed: usage
+// per lane, per tool and per wake-up, and no second panel puts a
+// session-cost tile beside plan totals.
+func TestUsageSectionRendersLanesToolsAndWakeups(t *testing.T) {
 	write := tokenTestHome(t)
 	proj := t.TempDir()
 	write("slug", "sess1", "",
@@ -538,43 +545,50 @@ func TestTokenPanelRendersLanesToolsAndWakeups(t *testing.T) {
 	}, nil)
 
 	rows := []Row{{key: "", label: "coordinator", spans: []span{{start: time.Now().Add(-time.Hour), end: time.Now()}}}}
-	out := RenderTimelineHTMLWithTokens(rows, plan, "", &pt)
-
+	out := RenderPlanPage(ReportInput{Plan: plan, Rows: rows, Tokens: &pt, HistoryLoaded: true, Now: time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC)}, PlanPageOptions{})
+	usage := out[strings.Index(out, `id="report-usage"`):]
+	usage = usage[:strings.Index(usage, "</section>")]
 	for _, want := range []string{
-		"Token spend", "context sent", "Who spent it", "coordinator",
-		"What it went on, by tool", "Read", "What each wake-up cost", "/iterate",
-		"tk-bar", "peak ctx",
+		"By coordinator, team and agent", "coordinator", "Peak request input tokens",
+		"By tool (estimated", "Read", "By wake-up (estimated", "/iterate",
 	} {
-		if !strings.Contains(out, want) {
-			t.Errorf("page missing %q", want)
+		if !strings.Contains(usage, want) {
+			t.Errorf("Usage section missing %q", want)
 		}
 	}
-	// The panel's CSS must actually be in the page's stylesheet.
-	if !strings.Contains(out, "table.tk{") {
-		t.Error("token panel CSS not present in the page head")
-	}
-	// Rendered before the footer, inside the wrapper.
-	if strings.Index(out, "Token spend") > strings.Index(out, "<footer>") {
-		t.Error("token panel must render above the footer")
+	for _, gone := range []string{"Token spend", "tk-top", "table.tk{"} {
+		if strings.Contains(out, gone) {
+			t.Errorf("the page carries a token panel beside the Usage section: %q", gone)
+		}
 	}
 }
 
 // TESTMASTER: id=tokens-panel-omitted tier=fast parallel=yes
 //
-// The panel is omitted entirely when nothing was measured. An empty table
-// implying zero spend would be a lie about a plan that simply predates
+// With nothing measured the Usage section says usage is unknown and why; an
+// empty table implying zero spend would be a lie about a plan that predates
 // this data or whose teams ran on another machine.
-func TestTokenPanelIsOmittedWhenThereIsNothingMeasured(t *testing.T) {
+func TestUsageIsUnknownWhenThereIsNothingMeasured(t *testing.T) {
 	tokenTestHome(t)
 	plan := PlanSummary{Name: "badger"}
 	rows := []Row{{key: "", label: "coordinator", spans: []span{{start: time.Now().Add(-time.Hour), end: time.Now()}}}}
-
-	if out := RenderTimelineHTMLWithTokens(rows, plan, "", nil); strings.Contains(out, "Token spend") {
-		t.Error("nil tokens must render no panel")
-	}
+	now := time.Date(2026, 9, 15, 12, 0, 0, 0, time.UTC)
 	empty := PlanTokens{Plan: "badger"}
-	if out := RenderTimelineHTMLWithTokens(rows, plan, "", &empty); strings.Contains(out, "Token spend") {
-		t.Error("an empty PlanTokens must render no panel, not a zero table")
+	for name, in := range map[string]ReportInput{
+		"history not loaded": {Plan: plan, Rows: rows, Now: now},
+		"nothing measured":   {Plan: plan, Rows: rows, Tokens: &empty, HistoryLoaded: true, Now: now},
+	} {
+		out := RenderPlanPage(in, PlanPageOptions{})
+		if strings.Contains(out, "Token spend") {
+			t.Errorf("%s: a token panel rendered beside the Usage section", name)
+		}
+		u := BuildPlanReport(in).Usage
+		if u.Plan.State == stateComplete {
+			t.Errorf("%s: plan usage reads complete with nothing measured: %+v", name, u.Plan)
+		}
+		if !strings.Contains(out, `id="report-usage"`) {
+			t.Errorf("%s: the Usage section must stay on the page and say why it is empty", name)
+		}
 	}
 }
 
@@ -648,5 +662,37 @@ func TestLongLaneLabelsAreTrimmedToFitAColumn(t *testing.T) {
 		if len([]rune(got)) > 26 {
 			t.Errorf("laneLabel(%q) = %q, %d runes — wider than the column", c.in, got, len([]rune(got)))
 		}
+	}
+}
+
+// TESTMASTER: id=tokens-archive-window-end tier=fast parallel=yes
+//
+// An archive that never recorded Finished: ends at its archive time, so a
+// coordinator session that kept working afterwards is not charged to it.
+func TestArchivedPlanWindowEndsAtTheArchiveTime(t *testing.T) {
+	for file, want := range map[string]string{
+		"20261020T094038Z-gemsbok.md":            "2026-10-20T09:40:38Z",
+		"2026-09-11T02-27-19Z-albatross-done.md": "2026-09-11T02:27:19Z",
+		"2026-09-11T022719Z-albatross.md":        "2026-09-11T02:27:19Z",
+	} {
+		got, ok := planWindowEnd(PlanSummary{Archived: true, ArchiveFile: file})
+		if !ok || got.Format(time.RFC3339) != want {
+			t.Errorf("%s: %v %v, want %s", file, got, ok, want)
+		}
+	}
+	if _, ok := planWindowEnd(PlanSummary{Name: "live"}); ok {
+		t.Error("a live plan without Finished: has an open window")
+	}
+
+	write := tokenTestHome(t)
+	proj := t.TempDir()
+	write("slug", "sess1", "",
+		assistantLine("2026-10-20T09:10:00Z", "in", "claude-opus-5", 1, 100, 0, 10, 0),
+		assistantLine("2026-10-20T11:00:00Z", "after", "claude-opus-5", 1, 900, 0, 90, 0),
+	)
+	plan := PlanSummary{Name: "gemsbok", ProjectDir: proj, Executing: "2026-10-20T08:59:23Z", Archived: true, ArchiveFile: "20261020T094038Z-gemsbok.md"}
+	pt := PlanTokenUsage(plan, []Event{coordEvent("gemsbok", proj, "sess1")}, nil)
+	if pt.Total.Messages != 1 || pt.ToOpen {
+		t.Errorf("counted %d requests (open %v); the request after the archive belongs to other work", pt.Total.Messages, pt.ToOpen)
 	}
 }
