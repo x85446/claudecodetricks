@@ -14,7 +14,7 @@ but leaning on it is how you end up with a 40-second Lima VM when you wanted a
 |---|---|---|---|
 | `vm` | `linux` | `lima` | `incus`, `utm` |
 | `vm` | `macos` | `lume` | `utm` |
-| `vm` | `windows` | `utm` | — |
+| `vm` | `windows` | `utm` | `incus` |
 | `container` | `linux` | `docker` | `container`, `incus` |
 
 `--kind` defaults to `vm`, so `create --os linux` gets you a Lima VM and
@@ -39,12 +39,17 @@ Read it rather than assuming — the differences are large:
 | `container` | container | linux | everything: create, run, ssh, snapshot ×4, snapshot-to-clone, clone, export, import |
 | `docker` | container | linux | everything, same set as `container` |
 | `lima` | vm | linux | create, run, ssh, clone, snapshot ×4 — no export/import |
-| `incus` | vm, container | linux | create, run, ssh, snapshot ×4 — no clone, no export/import |
+| `incus` | vm, container | linux, windows | create, run, ssh, snapshot ×4 — no clone, no export/import |
 | `lume` | vm | macos | create, run, ssh, clone — **no snapshot at all** |
 | `utm` | vm | windows, macos, linux | start, stop, destroy, list, info, status, clone — **no create, no run, no ssh** |
 
-Two consequences worth carrying:
+Three consequences worth carrying:
 
+- **`incus` serves Windows only as a VM, from an explicit Windows image.** A
+  Windows container is a usage error. Without `--profile`, creation applies the
+  host's `default` and `windows` profiles. Commands reach the guest through the
+  Incus Windows agent, so Windows setup lives in the prepared image, not in
+  izmachine.
 - **`utm` serves Linux as well as Windows and macOS**, so it shows up as an
   alternative for `vm`/`linux`. But it cannot create or exec, so it manages VMs
   that already exist rather than building you one.
