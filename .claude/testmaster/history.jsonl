@@ -8002,3 +8002,8 @@
 {"id":"testmaster.TestWindowsShellResolution","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:39:11Z"}
 {"id":"tutorial.box-test","ms":5696,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:39:11Z"}
 {"batch":"fast+standard","failed":1,"missing":0,"ms":89389,"not_run":0,"passed":362,"runner":"testmaster","skipped":0,"ts":"2026-10-22T21:39:11Z"}
+{"id":"iterate.contract-test","ms":508,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:42:30Z"}
+{"batch":"iterate.contract-test","failed":0,"missing":0,"ms":508,"not_run":0,"passed":1,"runner":"testmaster","skipped":0,"ts":"2026-10-22T21:42:30Z"}
+{"id":"conductor.TestIndigobirdBoundedContractExpansion","ms":360,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:42:43Z"}
+{"id":"iterate.contract-test","ms":539,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-22T21:42:43Z"}
+{"batch":"iterate.contract-test+conductor.TestIndigobirdBoundedContractExpansion","failed":0,"missing":0,"ms":1250,"not_run":0,"passed":2,"runner":"testmaster","skipped":0,"ts":"2026-10-22T21:42:43Z"}
