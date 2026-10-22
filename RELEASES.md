@@ -17,7 +17,7 @@ What changed, for people who use this.
 
 **Fixed**
 - Named Automations always opens the list, even with an editor open, and Save returns you to it.
-- Save works on the first click.
+- Buttons work on the first click, including right after you type a name or a priority and while the dashboard refreshes.
 - Completed plans no longer report zero done, and long quiet stretches are explained or marked unknown rather than flagged as failures.
 
 ## 2026-10-21 — Reusable automations and clearer settings

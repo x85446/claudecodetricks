@@ -22,7 +22,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
 
 ### Fixed
 - The Named Automations rail link shows the list while an editor is open; Save returns to the refreshed list; Back and Forward move between list and editor.
-- A Save click survives the band tester re-evaluating on blur and the dashboard poll repainting during the press.
+- A press that spans a repaint reaches its control: Save and Cancel after typing in the automation editor, Edit shared rules and Remove from project after typing a priority, and any pointer or Space press held across the 3-second refresh; quick configuration saves queue instead of conflicting.
 - Completed plans report requirement counts instead of unlabelled lane cards that read zero done.
 - Missing usage keeps the accounting section with an unavailable state; whole-session cost is labelled apart from plan usage.
 - Long stretches without execution show their recorded cause, or unknown, instead of a severe-gap judgment.
