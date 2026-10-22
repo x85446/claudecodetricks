@@ -22,6 +22,7 @@ func Serve(addr, versionLine string) error {
 	registerConductorWeb(mux)
 	registerConductorAPI(mux)
 	registerRecordAPI(mux)
+	registerReportAPI(mux)
 	mux.HandleFunc("/plan", handlePlan)
 	mux.HandleFunc("/archive", handleArchive)
 	mux.HandleFunc("/healthz", handleHealthz(versionLine))
@@ -538,6 +539,9 @@ func writePlanDetail(w http.ResponseWriter, r *http.Request, proj string, rows [
 	q.Del("history")
 	pageURL.RawQuery = q.Encode()
 	page := RenderTimelineWithChrome(rows, plan, "/project?project="+url.QueryEscape(proj)+"&tab=plans", tokens, conductorDetailHeader(proj, plan.Name, pageURL.RequestURI()))
+	in := ReportInput{Plan: plan, Rows: rows, Tokens: tokens, HistoryLoaded: tokens != nil, Now: time.Now()}
+	in.Record, in.RecordErr = ReadRecordReport(proj, plan.Name, plan.ArchiveFile)
+	page = strings.Replace(page, `<div id="plan-recorded-content">`, RenderPlanReport(BuildPlanReport(in))+`<div id="plan-recorded-content">`, 1)
 	if tokens == nil {
 		q.Set("history", "1")
 		pageURL.RawQuery = q.Encode()
