@@ -16,7 +16,7 @@ One installed `iterate-run` binary owns admission, queue selection, leases, assi
 | `src/internal/runrecord` | Durable, versioned run record shared by the CLI and Conductor ([run record](run-record.md)) | controls |
 | `src/cmd/iterate-run` | CLI parsing and output | controls |
 
-The conductor packages do not import `iterrun`. A `PlanSource` interface supplies canonical plan summaries, pair content and validated checkpoint writes; an `iterrun` adapter reuses its existing parsers. Provider and budget packages depend only on model and the standard library. `runrecord` depends only on the standard library; the supervisor reaches it through `RecordSource`, an optional extension of the plan source that the `iterrun` adapter implements. HTTP and CLI use service functions rather than duplicate policy.
+The conductor packages do not import `iterrun`. A `PlanSource` interface supplies canonical plan summaries (each with its dependency state: `waiting`, `waiting_on`, `wait_reason`, `held_by`, `depth`, `milestone`, resolved by `plangraph`), pair content and validated checkpoint writes; an `iterrun` adapter reuses its existing parsers. Provider and budget packages depend only on model and the standard library. `runrecord` depends only on the standard library; the supervisor reaches it through `RecordSource`, an optional extension of the plan source that the `iterrun` adapter implements. HTTP and CLI use service functions rather than duplicate policy.
 
 The initial shared package entrypoints are:
 
