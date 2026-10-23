@@ -339,7 +339,7 @@ The icon itself lights up as `⚡` while a run is live. The last letter is alway
 
 ### Run staged plans unattended
 
-Stage approved work with `/ip stage <name>` in Claude Code or `$ip stage <name>` in Codex. A queued plan is eligible only when its project, automation, subscription, budget, schedule and ownership checks permit an assignment. Editing approved requirements removes staging. Release and release-candidate plans require a direct human invocation.
+Stage approved work with `/ip stage <name>` in Claude Code or `$ip stage <name>` in Codex, or stage a whole release at once with a milestone range: `/ip stage M1-04..M1-10`. A queued plan is eligible only when its project, automation, subscription, budget, schedule and ownership checks permit an assignment, and every plan it depends on has landed. Editing approved requirements removes staging. Release and release-candidate plans require a direct human invocation.
 
 Configure a project through the dashboard or the conductor skill. **Keep it working** selects the first eligible launch sequence in your ordered list. **Run on a schedule** adds a named recurring window and closing behavior. **Follow subscription overdrive** uses the selected subscriptions' own enabled windows. Registration starts disabled.
 
@@ -357,6 +357,23 @@ make nightly-uninstall
 `nightly off` disables that optional timer's admissions. Global Conductor Stop controls the shared scheduler, including the dashboard wake loop. `nightly enroll` registers a disabled canonical project; `nightly withdraw` disables it while preserving its queue and definitions. Tick and dashboard workers share project/account leases.
 
 Preview imported settings with `make conductor-migrate`. Review ownership and ambiguous scheduling notes before applying with `make conductor-migrate ARGS=--apply`. Import preserves source files and protected backups, and it never invents authenticated accounts or enables ambiguous overdrive rules.
+
+### Order plans with dependencies
+
+Each plan names the plans it builds on in one line near its top, so you can stage a whole queue and let the conductor run it in the right order:
+
+```
+depends: M1-04, M1-05
+```
+
+A plan waits until every plan on that line has finished, and plans with nothing unfinished behind them run in any order. When a plan parks on something only you can supply, every plan behind it waits instead of launching and parking in turn, and the dashboard notice names the plan holding them: `caiman holds 7 plans`.
+
+- `/ip <name> depends on <x>` sets the line, `/ip drop dependency <x> from <name>` removes one, and `/ip <name> depends on nothing` marks a plan that needs only what main already holds. Editing the line keeps the plan staged.
+- `/ip graph` (or `iterate-run plan graph` in a project) prints the graph: `✔` done, `●` ready, `◌` waiting, `✖` blocked, with what each plan waits on. Add `--format mermaid` for a diagram you can paste into Markdown, `--json` for scripts, or `--check` to list problems such as a cycle or a name that matches no plan.
+- The dashboard's **Graph** tab draws the same graph. Dashed arrows still wait, and selecting a plan opens it. In the **Plans** tab, a held plan's badge reads **Waiting** and its row says what it waits on.
+- `/ip retrofit` gives existing plans their line. It reads each plan's milestone and its "Depends on" notes, writes what it can derive, settles the rest by reading them, and tells you which `/ip stage` command would queue what is left. `iterate-run plan depends backfill` shows the same proposals without writing anything; add `--apply` to write them.
+
+[docs/plan-graph.md](docs/plan-graph.md) has the full reference.
 
 ## Development
 
