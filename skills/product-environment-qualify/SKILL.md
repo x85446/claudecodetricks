@@ -1,7 +1,7 @@
 ---
 name: product-environment-qualify
 description: "PRODUCT stage-9 child (invoked via /product-environment): walks the operator's decision tree of qualifying questions in questions.md, answers each from evidence, and returns the obligations the chosen branches impose on every environment, each with its probe and status."
-version: 1.0.0
+version: 1.7.0
 ---
 
 # /product-environment-qualify — the qualifying questions

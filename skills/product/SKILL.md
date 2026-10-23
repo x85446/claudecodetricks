@@ -3,7 +3,7 @@ name: product
 description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture, engineering, milestones and environment docs, then the plans. Routes all product-definition work; picks the child."
 when_to_use: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"what order do we build it in\", \"break the roadmap into milestones\", \"set up the environment\", \"tear down the human gates\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions (/user-docs), NOT building it (/iterate)."
 argument-hint: "[status | next | <stage> | plans | maintain | unlock <stage>] [--fast]"
-version: 1.6.0
+version: 1.7.0
 disable-model-invocation: true
 ---
 

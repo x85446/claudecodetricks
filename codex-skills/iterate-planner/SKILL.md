@@ -1,13 +1,13 @@
 ---
 name: "iterate-planner"
-description: "Never executes — the user runs $iterate for that. Triggers on \"$iterate-planner\" or its alias \"$ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\", \"publish\" / \"show plan\", \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch left unmerged), \"roll <name>\" (carry unfinished steps to a new plan, same branch), \"turn these notes into a plan\" / \"notes-to-plan\", \"plan the inbox\" (turns $mailbox messages into a plan). Release candidate: \"release candidate task to track: <x>\", \"rc list\", \"rc plan\". Teaming: \"team this\", \"teamify\", \"team up the plan\", \"reorganize into teams\"; reverse with \"flat\", \"flatify\", \"un-team\", \"remove teams\". Also recognizes the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps over a named scope, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip tests/docs/makefile\") which suppresses the standing end-of-plan finishers for that plan."
+description: "Never executes — the user runs $iterate for that. Triggers on \"$iterate-planner\" or its alias \"$ip\", \"plan this for iterate\", \"give me an iterate plan\", \"restate the plan\", \"plan with the oracle\". Plan management: \"status\", \"publish\" / \"show plan\", \"list plans\", \"add to <name>\", \"delete <name>\", \"from <name> remove <x>\", \"close <name>\" (archive unfinished, branch left unmerged), \"roll <name>\" (carry unfinished steps to a new plan, same branch), \"turn these notes into a plan\" / \"notes-to-plan\", \"plan the inbox\" (turns $mailbox messages into a plan). Ordering: \"<name> depends on <x>\", \"graph\", \"retrofit\". Release candidate: \"release candidate task to track: <x>\", \"rc list\", \"rc plan\". Teaming: \"team this\", \"teamify\", \"team up the plan\", \"reorganize into teams\"; reverse with \"flat\", \"flatify\", \"un-team\", \"remove teams\". Also recognizes the FFIV macro (Find, Fix, Iterate, Verify) for quality sweeps over a named scope, and the \"skip\" modifier (\"skip\", \"skip finishers\", \"skip tests/docs/makefile\") which suppresses the standing end-of-plan finishers for that plan."
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
 
-**Version:** iterate family 5.25.0
+**Version:** iterate family 5.26.0
 
 ## What this skill does
 
@@ -157,13 +157,19 @@ If a current plan exists and the user just describes more work, **add it to the 
    <name>: started <YYYY-MM-DD> — <goal>        (current)
    ```
 
-   Mark the current plan with `(current)`. Sort by `Started:` ascending. If no plans exist, say so. Then **stop** — this is a read-only op.
+   Mark the current plan with `(current)`, and one whose `depends:` predecessor is unfinished with `(waiting on <x>)`, read from `iterate-run plan graph --json` (each node's `status` and `reason`). Sort by `Started:` ascending. If no plans exist, say so. Then **stop** — this is a read-only op.
 
 2. **delete `<name>`** — "delete `<name>`", "remove plan `<name>`", "drop `<name>`": delete `plans/<name>.md`. If it was the current plan, repoint `current` to the sole remaining plan (if exactly one) else clear it. If the plan is `phase: executing`, refuse and tell the user to let it finish or stop the loop first. If the plan had a `branch:` with commits on it, say so — the branch is left in place, unmerged (sweep it later with `$feature-branch cleanup` or merge it explicitly). Confirm in one line. Then **stop**.
 
 3. **remove-from** — "from `<name>` remove `<thing>`", "remove `<thing>` from `<name>`", "from `<name>` drop step N": open `plans/<name>.md`, remove the matching Step + its paired Validation + its Provenance line (renumber all three lists 1:1), re-print that plan. Then **stop**.
 
 4. **add-to-named** — `add to "<name>" that <thing>`, "to `<name>` add `<thing>`": open `plans/<name>.md`, append the new Step + an inferred Validation, set `current` = `<name>`, re-print that plan. Then **stop**.
+
+4.6. **depends** — `$1` matches "`<name>` depends on `<x>`[, `<y>`…]", "`<name>` depends on nothing", or "drop dependency `<x>` from `<name>`": edit only the key block's `depends:` line. A plan name or a milestone id goes on the line as written; "nothing" writes `depends: none`; dropping the last reference writes `depends: none`. Run `iterate-run plan graph --check`; a cycle, a self-edge or an unknown name it reports is fixed now, by naming the right predecessor, never saved. The edit keeps `status: queued`: staging approves the work, and `depends:` only orders it. Reply in one line: `<name> depends on <x> · <ready | waiting on <y> | blocked: <error>>`. Then **stop**.
+
+4.7. **graph** — `$1` is "graph", "show the graph", "plan graph", optionally naming `mermaid` or `json`: run `iterate-run plan graph` (with `--format mermaid` or `--format json` when asked) from the project directory and print its stdout verbatim. Read-only. Then **stop**.
+
+4.8. **retrofit** — `$1` is "retrofit", "retrofit the plans", "backfill depends": give every existing plan a `depends:` line. Run the Retrofit procedure (see [procedures.md](references/procedures.md)). Then **stop**.
 
 5. **teamify** — `$1` matches a teamify trigger phrase ("team this", "teamify", "make into team stack", "team up the plan", "reorganize into teams", optionally "teamify `<name>`"): resolve the target plan (named, else current), run the Teamify procedure (see "Teamify procedure" below) over its full Steps list, write the `## Teams` table and set `teamed: true`, re-print the plan including the Teams table. Then **stop**. This is the only operation that does a full from-scratch reclustering — never run it implicitly as part of any other op.
 
@@ -452,7 +458,8 @@ Notarizing, stapling, pushing a version tag and publishing happen in a `mode: re
 **On a brand-new plan** (op 9, or the first-plan path of op 10) — after Steps 1-5 above have produced the full Goal/Steps/Validation/Constraints — do two things before writing:
 
 1. **Name the feature branch, do not create it** (git repos only — see "One plan = one feature branch" above): compute `feature/<plan-name>-<short-goal-slug>` and record it in the frontmatter as `branch:` plus `branch-created: false`. Do not run `$feature-branch start`, do not check anything out — `$iterate` creates the branch at execution start. Not a git repo → skip, no `branch:` field, one audit-trail note. (Roll-forward plans inherit their source's branch, which by then usually exists — carry `branch-created:` forward unchanged.)
-2. Run the **Teamify procedure** (see below) automatically, unless `$1` also carried a flat trigger phrase (see "Flat trigger phrases" above), in which case skip straight to writing flat. This is what makes teaming the default: every new plan gets a real attempt at clustering, and either ends up with a `## Teams` table or a legitimate "no independent context boundaries — staying flat" outcome (both are normal, neither needs the user to ask).
+2. **Write the `depends:` line.** Name every plan this one builds on — the plans behind its `Depends on:` constraint, or the milestones of its `docs/milestones.md` row — as plan names or milestone ids: `depends: caiman, M1-03`. A plan that builds only on what main already holds writes `depends: none`. Then run `iterate-run plan graph --check` and fix whatever it reports before saving.
+3. Run the **Teamify procedure** (see below) automatically, unless `$1` also carried a flat trigger phrase (see "Flat trigger phrases" above), in which case skip straight to writing flat. This is what makes teaming the default: every new plan gets a real attempt at clustering, and either ends up with a `## Teams` table or a legitimate "no independent context boundaries — staying flat" outcome (both are normal, neither needs the user to ask).
 
 **Refining an existing plan triggers neither** — no new branch (the plan already has one, or deliberately has none), and no auto-teamify: a flat plan being added to stays flat (use the explicit teamify trigger if it's grown enough to warrant teams); a teamed plan being added to uses the existing cheap Auto-classify-on-add, never a full re-cluster.
 
@@ -471,6 +478,7 @@ planner-version: <version>  # this skill's own frontmatter `version:` at write t
 harness: codex         # which harness's planner produced this file — claude-code | codex | unknown. Written once, here, at plan creation; every later operation (refinement, roll-forward, execution, resume, close) carries it forward untouched. A file where the field is absent, blank, or holds any other value reads as `unknown` — never defaulted to either harness.
 teamed: false               # set true only after a teamify pass writes ## Teams
 branch: feature/<name>-<slug>  # the plan's feature branch (omit when not a git repo); created via $feature-branch at plan creation, merged+deleted by $iterate only on all-green
+depends: <plan names or milestone ids> | none   # the predecessors whose landing this plan waits for; the binary computes ready/waiting from it at read time
 human-gate: <step N>           # only when Step 5.5 found a terminal human-decision step; $iterate ends in success-with-handoff there, not "blocked"
 
 ## Goal
@@ -494,7 +502,7 @@ human-gate: <step N>           # only when Step 5.5 found a terminal human-decis
 - Timing: <known duration for a specific operation, if the oracle has one>
 - Access: <target> — <capability needed>, verified via step <N> (one per access dependency found)
 - Long tests: none — not built: <property> (Step 5.10; omit when nothing needs a long run)   (or: "<the user's words>" — <test ids>)
-- Depends on: <the packages, binaries, or schema this plan builds on> (from plan <name>) <!-- name what must EXIST, not "stage N merged to main": a predecessor now lands its green work even when one feature parks, so a merge-phrased gate is stricter than the real dependency and stalls the queue when it needn't -->
+- Depends on: <the packages, binaries, or schema this plan builds on> (from plan <name>) <!-- name what must EXIST, never "stage N merged to main"; the plans named here go on the key block's depends: line, which is what the conductor reads -->
 
 ## Teams
 <!-- Only present when teamed: true. See "Teams" section above for schema. Omit entirely on flat plans. -->
@@ -739,3 +747,5 @@ after 5.5.0 was installed and verified on disk.
 If members disagree, say so and name them: drift inside the family is a
 defect, not a state, and `skillctl family iterate set X.Y.Z` is the only
 correct way to bump.
+
+38. **Order lives in `depends:`, never in steps.** A plan's predecessors are its key-block `depends:` line; the conductor holds a plan whose predecessor has not landed, and runs every plan with nothing unfinished behind it in any order. Never write a "stage the next plan" step, and never sequence work by staging one plan at a time: stage the plans that are approved, and let the graph order them (`iterate-run plan graph` shows it). A plan whose predecessors live in another project names them in its Goal and `## Blocks`, not on `depends:`.

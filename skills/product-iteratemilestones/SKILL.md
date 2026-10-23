@@ -2,7 +2,7 @@
 name: product-iteratemilestones
 description: "PRODUCT stage 10, the plans step: turns docs/milestones.md into one /iterate-planner plan per milestone, all 30, each carrying its milestone's predecessors on its depends: line; once stage 9 (environment) is done it stages them all and the conductor's graph orders them."
 argument-hint: "[M1-03 …]"
-version: 1.6.0
+version: 1.7.0
 ---
 
 # /product-iteratemilestones — milestones to plans

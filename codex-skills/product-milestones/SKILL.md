@@ -6,7 +6,7 @@ description: "PRODUCT child (invoked via $product): the build sequence — cuts 
 
 # $product-milestones — stage 8: the order it gets built in
 
-**Version:** product family 1.6.0
+**Version:** product family 1.7.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -25,6 +25,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$ip` — ported.
 - `$product` — ported.
+- `$product-iteratemilestones` — ported.
 
 **The rule that makes a milestone real:** it is a thin vertical slice, never a
 layer. "Set up the database" and "build the API" are not milestones. Nothing
@@ -108,7 +109,7 @@ one part) applied a second time, inside each release.
 **Delivers:** F-07 (partial), F-42 · R-001, R-014
 **Touches:** <containers from architecture.md>
 **Retires:** <the risk, ADR or external dependency this proves>
-**Depends on:** —
+**Depends on:** — <or the internal ids, comma-separated, then any outside dependency marked (external): `M1-04, M1-05; Papyrus spec 1.0 (external)`>
 **Exit criteria:**
 - [ ] <from R-001's acceptance criteria, as a command or observable check>
 - [ ] <…>
@@ -128,6 +129,7 @@ one part) applied a second time, inside each release.
 - Requirements assigned: <n> of <n>. Unassigned: <none | ids — a defect>. Assigned twice: <none | ids — a defect>
 - Features covered: <n> of <n> per release. Missing: <none | ids>
 - Dependencies point backwards only: <yes | the forward edges — a defect>
+- Dependency ids resolve and form no cycle: <yes | the unknown ids or the cycle — a defect>
 - Layer-shaped milestones (nothing runnable at the end): <none | ids — re-cut>
 - Last milestone of each release passes that release's end-to-end check: <yes | what's missing>
 
@@ -153,7 +155,13 @@ one part) applied a second time, inside each release.
    Audit both directions. Unassigned requirements are omissions, and
    requirements assigned twice are ambiguity about when something is done.
 5. **Dependencies point backwards only**, within a release and across
-   releases. A forward edge is a sequencing defect.
+   releases. A forward edge is a sequencing defect. Each `**Depends on:**`
+   line lists internal milestone ids separated by commas, then any outside
+   dependency marked `(external)`; `$product-iteratemilestones` copies the
+   internal ids onto each plan's `depends:` line, so an id that names no
+   milestone, or a cycle, fails the audit. Name only the milestones whose
+   work this one needs: two milestones that both need only M1-03 both name
+   M1-03, and the conductor then runs them in either order.
 6. **Risk first.** What could force a redesign goes as early as its
    dependencies allow.
 7. **No dates and no estimates.** Order is this document's axis; scheduling
