@@ -28,6 +28,10 @@ func main() {
 		recordCmd(args)
 		return
 	}
+	if args, ok := planInvocation(os.Args[1:]); ok {
+		planCmd(args)
+		return
+	}
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(2)
@@ -66,6 +70,8 @@ func usage() {
 Usage:
   iterate-run run --plan <name> [--team <name>] --unit <name> -- <command> [args...]
   iterate-run status
+  iterate-run plan graph [--format text|mermaid|json] [--check] [-C <dir>]   (plan dependency graph)
+  iterate-run plan depends backfill [--apply] [-C <dir>]                    (derive depends: lines)
   iterate-run conductor --help       (revisioned scheduler, project and subscription controls)
   iterate-run record list|show|append|import|types  (durable run record; iterate-run record --help)
   iterate-run hook pre|post          (wired into PreToolUse/PostToolUse in settings.json, not run by hand)
