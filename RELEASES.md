@@ -2,6 +2,16 @@
 
 What changed, for people who use this.
 
+## 2026-10-23 — Plans that wait their turn
+
+**New**
+- Plans name the plans they build on, and the conductor runs each one only after those finish. Plans with nothing unfinished behind them run in any order, so you can stage a whole release at once: `/ip stage M1-04..M1-10`.
+- See the order at a glance: `/ip graph` in the terminal, or the new **Graph** tab on the dashboard, where waiting plans are drawn with dashed arrows and the Plans tab marks them **Waiting**.
+- `/ip retrofit` gives plans you already have their dependency line, reading their milestones and notes.
+
+**Fixed**
+- When a plan stops on something only you can supply, the plans behind it wait instead of launching and stopping one after another. The dashboard names the one plan holding them up.
+
 ## 2026-10-22 — SSH config edits that stay clean
 
 **Fixed**
