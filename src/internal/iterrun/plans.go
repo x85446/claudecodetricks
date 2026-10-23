@@ -2,6 +2,7 @@ package iterrun
 
 import (
 	"bufio"
+	"github.com/x85446/claudecodetricks/src/internal/plangraph"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -84,6 +85,14 @@ type PlanSummary struct {
 	// the body line `**Version:** iterate family <x.y.z>` that port
 	// writes instead. Empty when none of the three is present.
 	Version string
+	// Depends lists the predecessors named on the key block's `depends:`
+	// line, as plan names or milestone ids. DependsDeclared is true when
+	// the line exists at all, including `depends: none`. Milestone is the
+	// key block's `milestone:` id. All three are read only above the first
+	// "## " heading; the graph they feed is plangraph's, computed on read.
+	Depends         []string
+	DependsDeclared bool
+	Milestone       string
 }
 
 // IsCompleted reports whether every team in this plan's Teams table has
@@ -137,21 +146,13 @@ func (p PlanSummary) IsQueued() bool {
 // is a planned plan carrying an approval. Any `status: blocked*` reads as
 // blocked — a quota wall is as stuck as an operator wall for the reader.
 func (p PlanSummary) StateLabel() string {
-	switch {
-	case strings.HasPrefix(p.Status, "blocked"), strings.HasPrefix(p.Status, "awaiting-human-gate"):
-		return "blocked"
-	case strings.HasPrefix(p.Status, "paused"):
-		return "paused"
-	case strings.HasPrefix(p.Status, "unblocked"):
-		return "unblocked"
-	case p.Phase == "executing":
-		return "executing"
-	case p.IsQueued():
-		return "queued"
-	case p.Phase == "" || p.Phase == "planned":
-		return "planned"
-	}
-	return p.Phase
+	return plangraph.StateOf(p.Phase, p.Status)
+}
+
+// ProjectGraph resolves the dependency graph between a project's plans:
+// every live plan, plus each archived predecessor a live edge reaches.
+func ProjectGraph(projectDir string) (plangraph.Graph, error) {
+	return plangraph.Load(projectDir)
 }
 
 // StartedAt is this plan's own declared Started: value, parsed into the
@@ -333,6 +334,8 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 	inGoal, inTeams := false, false
+	inKeyBlock := true
+	var keys plangraph.KeyBlock
 	var goalLines []string
 	// The "Next attempt" banner is a blockquote ("> ...") near the top of
 	// the file — the coordinator's own exact instructions for clearing a
@@ -396,7 +399,11 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 			codexVersion = strings.TrimSpace(m[1])
 		}
 
+		if inKeyBlock && !strings.HasPrefix(line, "## ") {
+			keys.Apply(line)
+		}
 		if strings.HasPrefix(trimmed, "## ") {
+			inKeyBlock = false
 			inGoal = trimmed == "## Goal"
 			inTeams = trimmed == "## Teams"
 			continue
@@ -416,6 +423,7 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		}
 	}
 
+	ps.Depends, ps.DependsDeclared, ps.Milestone = keys.Depends, keys.Declared, keys.Milestone
 	ps.GoalFull = strings.Join(goalLines, " ")
 	ps.Goal = ps.GoalFull
 	if len(ps.Goal) > 160 {

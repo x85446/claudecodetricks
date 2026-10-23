@@ -14340,8 +14340,324 @@
       "id": "req-killdeer-automations",
       "source": "plan:killdeer steps 1-4 (user asks, provenance 1-4)",
       "statement": "Remove the sample project and test whether any eligible project runs in Green or Yellow under the sequence's permitted bands. Make the automation naming and identity consistent so attachment is unambiguous. Manage which projects use each automation by dragging associations in and out. Clicking Named Automations keeps showing the open editor; Save appears to do nothing, while Cancel reveals the list."
+    },
+    {
+      "id": "req-manatee-plan-graph",
+      "source": "plan:manatee (user asks, provenance)",
+      "asked": "2026-10-22",
+      "statement": "\"plans that require previous plans or depend on the previous plans can be done in the right order … some things can be iterated through in parallel or out of order and others cannot. I launched conductor and it just kept launching plan after plan after each plan blocked.\" / \"will we be able to easily visualize the plan graph?\"",
+      "cases": [
+        {
+          "id": "dag-sat-1",
+          "given": "B has `depends: A`; A archived as <ts>-A-done.md",
+          "when": "the graph resolves",
+          "then": "B is ready",
+          "tier": "?"
+        },
+        {
+          "id": "dag-sat-2",
+          "given": "B depends on A; A archived as <ts>-A-landed-rolled-to-C.md",
+          "when": "the graph resolves",
+          "then": "B is ready (A's green work landed)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-sat-3",
+          "given": "B depends on A; A archived as <ts>-A-rolled-to-C.md with no landing; C planned",
+          "when": "the graph resolves",
+          "then": "B is waiting on C (the edge forwards to the rolled plan)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-sat-4",
+          "given": "B depends on A; A archived as <ts>-A-closed.md",
+          "when": "the graph resolves",
+          "then": "B is waiting; the reason names A as closed unfinished",
+          "tier": "?"
+        },
+        {
+          "id": "dag-sat-5",
+          "given": "B depends on A; A in plans/ as planned, queued, executing, blocked or paused",
+          "when": "the graph resolves",
+          "then": "B is waiting on A (negative case: an unfinished predecessor never satisfies)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-sat-6",
+          "given": "B has `depends: M1-03`; the plan carrying `milestone: M1-03` is archived done",
+          "when": "the graph resolves",
+          "then": "B is ready (milestone ids resolve through the milestone: key, live or archived)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-sat-7",
+          "given": "B has no depends: line",
+          "when": "the graph resolves",
+          "then": "B is ready and the gate adds nothing (negative case)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-sat-8",
+          "given": "B has `depends: A, D`; A done, D executing",
+          "when": "the graph resolves",
+          "then": "B is waiting on D only (a join needs every edge)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-err-1",
+          "given": "B depends on a name no live or archived plan carries",
+          "when": "the graph resolves",
+          "then": "B is blocked with `unknown dependency <name>`",
+          "tier": "?"
+        },
+        {
+          "id": "dag-err-2",
+          "given": "A depends on B and B depends on A",
+          "when": "the graph resolves",
+          "then": "A and B are blocked and the reason names the cycle A → B → A",
+          "tier": "?"
+        },
+        {
+          "id": "dag-err-3",
+          "given": "A depends on A",
+          "when": "the graph resolves",
+          "then": "A is blocked naming the self-dependency",
+          "tier": "?"
+        },
+        {
+          "id": "dag-err-4",
+          "given": "B depends on M1-03 and two plans carry `milestone: M1-03`",
+          "when": "the graph resolves",
+          "then": "B is blocked naming the ambiguous milestone id and both plans",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-1",
+          "given": "B is staged and waiting on A",
+          "when": "the conductor evaluates and ticks",
+          "then": "B is denied `plan_waiting` naming A and no assignment is claimed for B",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-2",
+          "given": "chain A → B → C, all three staged; A parks",
+          "when": "the conductor evaluates after the park",
+          "then": "neither B nor C is launched and the queue reports both held by A (the izcrOS cascade)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-3",
+          "given": "A done; B and C each depend only on A and are staged",
+          "when": "the conductor evaluates",
+          "then": "B and C are both eligible, ordered by graph depth, then milestone id, then Started",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-4",
+          "given": "A parked holding B; independent D staged",
+          "when": "the conductor evaluates",
+          "then": "D is admitted (unrelated work runs out of order past a held branch)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-5",
+          "given": "B staged and waiting on A",
+          "when": "A archives done and the conductor evaluates again",
+          "then": "B is admitted with no re-stage and no write to B's file (waiting is computed, never stored)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-6",
+          "given": "B planned but not staged; every edge satisfied",
+          "when": "the conductor evaluates",
+          "then": "B is not admitted (negative case: the graph never grants approval)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-7",
+          "given": "B is `phase: executing` (or `status: unblocked`) with an unsatisfied edge, started ahead of its predecessor by a typed /iterate",
+          "when": "the conductor evaluates",
+          "then": "AMBIGUOUS — resume B (the gate controls starting only, like iterate-rules) or hold it as waiting until the predecessor lands",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-8",
+          "given": "a project's only queued plans are all waiting",
+          "when": "the nightly tick decides that project",
+          "then": "the reason reads `nothing startable (<n> waiting)` and no AI process is launched",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-9",
+          "given": "a `mode: release` plan whose edges are all satisfied",
+          "when": "the conductor evaluates",
+          "then": "it is still not admitted (typed-only is unchanged by the graph)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-10",
+          "given": "every staged plan waits behind a predecessor",
+          "when": "the conductor's idle watch evaluates",
+          "then": "a predecessor that is blocked-on-operator stands the watch down naming it; a predecessor that is queued or executing keeps it watching",
+          "tier": "?"
+        },
+        {
+          "id": "dag-cli-1",
+          "given": "a project with edges A → B and A → C",
+          "when": "`iterate-run plan graph` runs",
+          "then": "stdout lists each plan once, nested under its predecessors, with its state and waiting reason; exit 0",
+          "tier": "?"
+        },
+        {
+          "id": "dag-cli-2",
+          "given": "the same project",
+          "when": "`iterate-run plan graph --format mermaid` runs",
+          "then": "stdout is a Mermaid `flowchart` with one node per plan (archived predecessors included as done) and one arrow per edge",
+          "tier": "?"
+        },
+        {
+          "id": "dag-cli-3",
+          "given": "the same project",
+          "when": "`iterate-run plan graph --format json` runs",
+          "then": "stdout is nodes and edges with state, waiting_on and held_by, identical to GET /api/graph",
+          "tier": "?"
+        },
+        {
+          "id": "dag-cli-4",
+          "given": "a project with a cycle and an unknown reference",
+          "when": "`iterate-run plan graph --check` runs",
+          "then": "exit 1 with one line per error; a clean project exits 0 and prints nothing",
+          "tier": "?"
+        },
+        {
+          "id": "dag-cli-5",
+          "given": "a project whose plans carry no depends: lines",
+          "when": "`iterate-run plan graph` runs",
+          "then": "every plan prints as a root and the exit is 0 (negative case)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-cli-6",
+          "given": "any project",
+          "when": "flags are placed before the noun, between noun and verb, and after the verb",
+          "then": "all three invocations produce identical output (house grammar: flags parse in every position)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-web-1",
+          "given": "the dashboard serving a project with edges",
+          "when": "GET /api/graph?project=<id>",
+          "then": "the response is the same JSON the CLI prints for that project",
+          "tier": "?"
+        },
+        {
+          "id": "dag-web-2",
+          "given": "the dashboard open on a project with a parked predecessor",
+          "when": "the Graph view loads in a browser",
+          "then": "one node per plan and one edge per dependency, colored by state; held nodes read `waiting on <name>`; clicking a node opens its plan page",
+          "tier": "?"
+        },
+        {
+          "id": "dag-web-3",
+          "given": "a project with no plans",
+          "when": "the Graph view loads",
+          "then": "it shows an empty-state line and no error",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-1",
+          "given": "a plan with `milestone: M1-06` and docs/milestones.md reading `**Depends on:** M1-04, M1-05; Papyrus spec 1.0 (external)`",
+          "when": "`iterate-run plan depends backfill` runs",
+          "then": "it proposes `depends: M1-04, M1-05` and drops the external dependency",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-2",
+          "given": "a plan whose Constraints read `Depends on: … (from plan caiman)`",
+          "when": "backfill runs",
+          "then": "it proposes `depends: caiman`",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-3",
+          "given": "any project with derivable edges",
+          "when": "backfill runs without --apply",
+          "then": "no file changes (negative case: dry run is the default)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-4",
+          "given": "a plan that already has a depends: line",
+          "when": "backfill --apply runs",
+          "then": "that line is left exactly as written (restore-state: a hand-written edge is never overwritten)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-5",
+          "given": "a plan with `running: true` or a live heartbeat",
+          "when": "backfill --apply runs",
+          "then": "that plan is skipped and named in the report",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-6",
+          "given": "a staged plan",
+          "when": "backfill --apply adds its depends: line",
+          "then": "the file differs only by that one line and `status: queued` survives",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-7",
+          "given": "backfill --apply is killed mid-run",
+          "when": "backfill --apply runs again",
+          "then": "no file is truncated or half-written (atomic replace) and no plan gets a second depends: line",
+          "tier": "?"
+        },
+        {
+          "id": "dag-sat-9",
+          "given": "B carries `depends: none`",
+          "when": "the graph resolves",
+          "then": "B is ready with no edges, and the line marks B as reviewed",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-11",
+          "given": "seven dependents in a chain are `phase: executing` with `status: unblocked`, none with a live run, and their head is unfinished",
+          "when": "the conductor evaluates",
+          "then": "none of the seven is admitted and each reads `waiting on <predecessor>` (the izcrOS shape as it sits on disk)",
+          "tier": "?"
+        },
+        {
+          "id": "dag-adm-12",
+          "given": "B has a live run (a current owner) and its predecessor is unfinished",
+          "when": "the conductor evaluates",
+          "then": "B's run is left alone, never interrupted or reclaimed",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-8",
+          "given": "a plan whose Constraints read `Depends on: the released v2 product (from milestone M2-10)`",
+          "when": "backfill runs",
+          "then": "it proposes `depends: M2-10`",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-9",
+          "given": "a plan whose Constraints read `Depends on: nothing. …`",
+          "when": "backfill runs",
+          "then": "it proposes `depends: none`",
+          "tier": "?"
+        },
+        {
+          "id": "dag-bf-10",
+          "given": "a plan whose Depends on prose names no plan and no milestone id",
+          "when": "backfill runs",
+          "then": "no line is proposed and the report lists `unresolved <plan>: <the prose>`",
+          "tier": "?"
+        }
+      ]
     }
   ],
   "schema": 1,
-  "updated": "2026-10-22T15:42:53.140845+00:00"
+  "updated": "2026-10-23T02:46:07.573505+00:00"
 }

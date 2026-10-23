@@ -108,6 +108,19 @@ func wakeConductor(ctx context.Context, s *conductor.Service, start func(string,
 	depth := map[string]int{}
 	for _, queue := range d.Queues {
 		depth[queue.ProjectID] = queue.Depth
+		// A queue whose every plan waits on an unfinished predecessor or
+		// on the operator wakes once, so the worker records the watch and
+		// its notice. Once that watch has stood down, nothing a worker
+		// could start exists until a plan in the queue moves.
+		held := queue.Depth > 0
+		for _, p := range queue.Plans {
+			if !p.Waiting && !p.Blocked {
+				held = false
+			}
+		}
+		if held && r.Watches[queue.ProjectID].State == "stood_down" {
+			depth[queue.ProjectID] = 0
+		}
 	}
 	for _, project := range c.Projects {
 		if project.Enabled && !project.Paused && !busy[project.ID] && (depth[project.ID] > 0 || project.IntakeEnabled) {

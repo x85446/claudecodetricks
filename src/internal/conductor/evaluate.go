@@ -6,6 +6,7 @@ import (
 	"github.com/x85446/claudecodetricks/src/internal/conductor/budget"
 	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 	"github.com/x85446/claudecodetricks/src/internal/conductor/provider"
+	"github.com/x85446/claudecodetricks/src/internal/plangraph"
 	"os/exec"
 	"sort"
 	"time"
@@ -168,7 +169,7 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 			selectable := false
 			for _, pl := range plans {
 				parked := r.Progress[PlanID(p.Path, pl.Name)].Parked && pl.State != "unblocked"
-				if !pl.Running && !pl.Complete && !pl.Release && !pl.Blocked && !parked && (pl.Staged || pl.State == "executing" || pl.State == "unblocked") {
+				if !pl.Running && !pl.Complete && !pl.Release && !pl.Blocked && !pl.Waiting && !parked && (pl.Staged || pl.State == "executing" || pl.State == "unblocked") {
 					selectable = true
 				}
 			}
@@ -192,6 +193,15 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 			a, b := rank(plans[i]), rank(plans[j])
 			if a != b {
 				return a < b
+			}
+			if plans[i].Depth != plans[j].Depth {
+				return plans[i].Depth < plans[j].Depth
+			}
+			if mi, mj := plans[i].Milestone, plans[j].Milestone; mi != mj {
+				if mi == "" || mj == "" {
+					return mi != ""
+				}
+				return plangraph.MilestoneLess(mi, mj)
 			}
 			if !plans[i].Started.Equal(plans[j].Started) {
 				return plans[i].Started.Before(plans[j].Started)
@@ -321,6 +331,9 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 					}
 					if pl.Blocked {
 						deny("plan_blocked", pl.Reason)
+					}
+					if pl.Waiting {
+						deny("plan_waiting", pl.WaitReason)
 					}
 					pg := r.Progress[pl.ID]
 					if pg.ReconcileSequence != "" && pg.ReconcileSequence != sq.ID {

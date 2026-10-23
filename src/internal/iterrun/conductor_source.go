@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/x85446/claudecodetricks/src/internal/conductor"
 	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
+	"github.com/x85446/claudecodetricks/src/internal/plangraph"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -27,12 +28,26 @@ func (ConductorPlanSource) List(ctx context.Context, p model.Project) ([]conduct
 	if e != nil {
 		return nil, e
 	}
+	graph, graphErr := ProjectGraph(p.Path)
 	out := []conductor.Plan{}
 	for _, v := range ps {
 		started, _ := v.StartedAt()
 		state := v.StateLabel()
 		running := conductorManualPlanRunning(p.Path, v, time.Now())
-		plan := conductor.Plan{Running: running, Name: v.Name, ProjectPath: p.Path, ID: conductor.PlanID(p.Path, v.Name), State: state, Staged: v.IsQueued() || v.Phase == "executing" || state == "unblocked", Blocked: state == "blocked" || state == "paused", Reason: v.Status, Release: v.TypedOnly, Started: started, Complete: v.Phase == "complete" || v.Phase == "done"}
+		plan := conductor.Plan{Running: running, Name: v.Name, ProjectPath: p.Path, ID: conductor.PlanID(p.Path, v.Name), State: state, Staged: v.IsQueued() || v.Phase == "executing" || state == "unblocked", Blocked: state == "blocked" || state == "paused", Reason: v.Status, Release: v.TypedOnly, Started: started, Complete: v.Phase == "complete" || v.Phase == "done", Milestone: v.Milestone}
+		if graphErr != nil && len(v.Depends) > 0 {
+			plan.Blocked, plan.State, plan.Reason = true, "blocked", "Plan dependencies unreadable: "+graphErr.Error()
+		} else if n, ok := graph.Node(v.Name); ok && graphErr == nil {
+			plan.Depth = n.Depth
+			switch n.Status {
+			case plangraph.StatusBlocked:
+				if !plan.Blocked {
+					plan.Blocked, plan.State, plan.Reason = true, "blocked", "Plan dependencies: "+n.Reason
+				}
+			case plangraph.StatusWaiting:
+				plan.Waiting, plan.WaitingOn, plan.WaitReason, plan.HeldBy = true, n.WaitingOn, n.Reason, n.HeldBy
+			}
+		}
 		if plan.Staged && !plan.Blocked && !plan.Running && !plan.Complete {
 			if _, err := (ConductorPlanSource{}).Pair(ctx, p, v.Name); err != nil {
 				plan.Blocked, plan.State, plan.Reason = true, "blocked", "Plan cannot run: "+err.Error()
