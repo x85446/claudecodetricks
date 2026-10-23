@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/x85446/claudecodetricks/src/internal/plangraph"
 	"io"
 	"os"
 	"os/exec"
@@ -130,23 +131,43 @@ func (d TickDecision) String() string {
 // unattended: a queued plan, an unblocked one, or an executing one whose
 // run died (its heartbeat is stale — the caller has already checked that).
 // A bare planned plan is never startable unattended; a blocked or paused
-// one is waiting on a human, and a release or release-candidate plan waits
-// for a typed /iterate.
+// one is waiting on a human, a release or release-candidate plan waits for
+// a typed /iterate, and a plan whose depends: predecessor is unfinished
+// waits for that predecessor.
 func hasStartablePlan(dir string) bool {
+	startable, _ := startablePlans(dir)
+	return startable > 0
+}
+
+// startablePlans counts the plans hasStartablePlan would launch, and the
+// otherwise-startable plans held back by an unfinished predecessor.
+func startablePlans(dir string) (startable, waiting int) {
 	plans, err := ListPlans(dir)
 	if err != nil {
-		return false
+		return 0, 0
 	}
+	graph, graphErr := ProjectGraph(dir)
 	for _, p := range plans {
 		if p.TypedOnly {
 			continue
 		}
 		switch p.StateLabel() {
 		case "queued", "unblocked", "executing":
-			return true
+		default:
+			continue
 		}
+		if graphErr == nil {
+			if n, ok := graph.Node(p.Name); ok && n.Status == plangraph.StatusWaiting {
+				waiting++
+				continue
+			}
+			if n, ok := graph.Node(p.Name); ok && n.Status == plangraph.StatusBlocked {
+				continue
+			}
+		}
+		startable++
 	}
-	return false
+	return startable, waiting
 }
 
 // decideProject applies the skip order: not enrolled, conductor disabled
@@ -169,8 +190,11 @@ func decideProject(dir string, now time.Time, live time.Duration) TickDecision {
 		d.Reason = "conductor paused"
 		return d
 	}
-	if !hasStartablePlan(dir) {
+	if startable, waiting := startablePlans(dir); startable == 0 {
 		d.Reason = "nothing queued"
+		if waiting > 0 {
+			d.Reason = fmt.Sprintf("nothing startable (%d waiting)", waiting)
+		}
 		return d
 	}
 	if nightlyLockHeld(dir) {

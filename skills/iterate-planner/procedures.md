@@ -16,6 +16,8 @@ ahead of main: <count>
 Plans:
 -------------------------
 Active: <count>
+Waiting: <count>
+  - <name>: waiting on <x>
 Partially complete: <count>
   - <name>:
       complete tasks: <n>
@@ -39,6 +41,7 @@ Waiting on you: <count>
 
 **Plans section** (all counts from `./.claude/iterate/`; if the directory doesn't exist, print `Active: 0`, `Partially complete: 0`, `Archived: 0`):
 - `Active` — count of plan files in `plans/`.
+- `Waiting` — plans `iterate-run plan graph --json` reports `status: waiting`, each with its `reason`.
 - `Partially complete` — the subset of active plans with at least one complete step AND at least one incomplete step. For each, read its file and report:
   - `complete tasks` — steps whose validation has passed (checked `## Steps` entries, or steps the Status/Log records as validated green).
   - `problem tasks` — incomplete steps the Status/Log shows have actually FAILED or blocked at least once (failed validation, blocked-on-operator, access-check failure). Never-attempted steps are not problems — don't count them here.
@@ -86,7 +89,7 @@ The user wants the unfinished work to continue as a fresh plan without losing th
 
 1. Resolve the source plan (named, else current). Same fresh-`running:` refusal as Close step 2; same loop/cron cancellation as Close step 3.
 2. Identify the unfinished steps: unchecked entries in `## Steps` (and any step whose paired Validation isn't met per the Status/Log). Completed steps stay behind in the source plan.
-3. Create the new plan: name from `iterate-run name next`, `phase: planned`, `Started: <now>`, carrying over — renumbered 1:1 from 1 — the unfinished Steps + their paired Validations, the Goal (reworded to cover only the remaining scope if the original scope is too broad), all still-relevant Constraints (including `Access:` ones whose steps carried over), and **`branch: <the source plan's branch>` verbatim — do NOT create a new branch and do NOT invoke `/feature-branch start`**. The whole point is the new plan continues on the same branch, on top of the commits already there. Carry `harness: <the source plan's harness>` verbatim too — same treatment as `branch:`: this is a new plan *file*, but it is not a new plan *provenance*, so the field never gets re-stamped by whichever harness happens to run the roll-forward. Carry each surviving step's `## Provenance` line with it (renumbered alongside). Also carry the source's `## Changelog draft` lines forward verbatim into the new plan's draft section — nothing publishes now; when the successor completes, its distillation covers the whole branch's accumulated story. If the source was teamed, re-run Teamify fresh over the carried steps (the old table's step numbers are meaningless after renumbering).
+3. Create the new plan: name from `iterate-run name next`, `phase: planned`, `Started: <now>`, carrying over — renumbered 1:1 from 1 — the unfinished Steps + their paired Validations, the Goal (reworded to cover only the remaining scope if the original scope is too broad), all still-relevant Constraints (including `Access:` ones whose steps carried over), the source's `depends:` and `milestone:` lines, and **`branch: <the source plan's branch>` verbatim — do NOT create a new branch and do NOT invoke `/feature-branch start`**. The whole point is the new plan continues on the same branch, on top of the commits already there. Carry `harness: <the source plan's harness>` verbatim too — same treatment as `branch:`: this is a new plan *file*, but it is not a new plan *provenance*, so the field never gets re-stamped by whichever harness happens to run the roll-forward. Carry each surviving step's `## Provenance` line with it (renumbered alongside). Also carry the source's `## Changelog draft` lines forward verbatim into the new plan's draft section — nothing publishes now; when the successor completes, its distillation covers the whole branch's accumulated story. If the source was teamed, re-run Teamify fresh over the carried steps (the old table's step numbers are meaningless after renumbering).
 4. Set `current` = the new plan.
 5. Archive the source: `archive/<UTC-timestamp>-<name>-rolled-to-<newname>.md` (+ `.teams/` dir if present), checkboxes left as they stand.
 6. **Report — same mandatory merge line as Close:**
@@ -192,3 +195,19 @@ The count is a **prediction** — the planner reading step prose and guessing wh
 | No catalog at all | `-current total test cases: 0 (no catalog — run /testmaster-adopt)` |
 
 An unadopted project reports zero forever, which makes every plan look safe. Treat `unknown` as nonzero: the blast radius is unmeasured, not empty (rule 27.7).
+
+## Retrofit procedure (op 4.8 — give every existing plan a `depends:` line)
+
+A plan with no `depends:` line orders nothing: the conductor treats it as independent of every other plan. The retrofit derives the line from what the plan already says.
+
+1. **Dry run.** From the project directory run `iterate-run plan depends backfill`. Each row is `propose <plan> depends: …` (derived from the plan's `docs/milestones.md` row, `(from plan X)`, `(plan X)`, `(from milestone M…)` or "Depends on: nothing"), `keep` (already declared), `skip` (a live run), or `unresolved <plan>: <prose>`.
+2. **Check each proposal against its source** — the milestone's `**Depends on:**` line, or the plan's `Depends on:` constraint. A proposal naming the plan's own milestone, or a plan in another project, is wrong; fix it by hand after the apply.
+3. **Apply.** `iterate-run plan depends backfill --apply` writes every proposed line by atomic replace, after the plan's `milestone:` lines (else its last key line). Steps, staging and every other byte stay as they were.
+4. **Settle each `unresolved` plan by reading it.** Its prose names no plan, so decide from the prose and the Goal: the plans whose work it needs that has not landed go on `depends:` (op 4.6); a plan that needs only what main holds gets `depends: none`. A plan with no `Depends on:` constraint and no `milestone:` key gets the same reading when its title or Goal orders it against its siblings (`Stage 10 … implements the stage 9 feature set`).
+5. **Check.** `iterate-run plan graph --check` exits 0. Then `iterate-run plan graph` prints the result.
+6. **Report** in this shape, then the graph:
+   ```
+   retrofit <project>: <n> applied, <n> settled by reading, <n> kept, <n> skipped (live)
+   stage the rest with: /ip stage <names or range>
+   ```
+   The stage line lists the approved-looking plans that are not staged, for the user to run; the retrofit never stages anything. A skipped live plan is listed, and a rerun after its run ends gives it its line.

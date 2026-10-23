@@ -6,7 +6,7 @@ description: "PRODUCT stage-9 child (invoked via $product-environment): walks th
 
 # $product-environment-qualify — the qualifying questions
 
-**Version:** product family 1.0.0
+**Version:** product family 1.7.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

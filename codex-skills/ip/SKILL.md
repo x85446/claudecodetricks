@@ -1,11 +1,11 @@
 ---
 name: ip
-description: Alias for $iterate-planner. Typing $ip <anything> behaves exactly as $iterate-planner <anything> — plan building, adds, teamify/flatify, close/roll, list, status. Exists purely as a shorthand for rapid-fire planning streaks.
+description: Alias for $iterate-planner. Typing $ip <anything> behaves exactly as $iterate-planner <anything> — plan building, adds, depends/graph/retrofit, stage, teamify/flatify, close/roll, list, status. Exists purely as a shorthand for rapid-fire planning streaks.
 ---
 
 # $ip — alias for $iterate-planner
 
-**Version:** iterate family 5.25.0
+**Version:** iterate family 5.26.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

@@ -38,3 +38,10 @@
 - 2026-10-22 (killdeer layout): Section <style> blocks stay inside their sections. Each is scoped to its own id and travels with the section through the history swap; hoisting them to <head> would duplicate the scoping for no visible change.
 - 2026-10-22 (killdeer layout): A Delivery section with no recorded stage folds the stage list into one disclosure; the summary line already states every stage is unknown, not failed.
 - 2026-10-22 (killdeer layout): `iterate-run timeline --plan` writes the same plan page with the report, built from the run record and transcripts the dashboard reads; without --plan it writes the timeline alone.
+- 2026-10-23 (manatee plan CLI): `iterate-run plan graph` and `iterate-run plan depends backfill` form a `plan` noun; `iterate-run graph` keeps meaning the timeline, so no existing invocation changes.
+- 2026-10-23 (manatee plan CLI): `-C, --project <dir>` names the project directory, matching the sibling `testmaster -C, --project` and `git -C`; iterate-run has no config-file flag for `-C` to collide with.
+- 2026-10-23 (manatee plan CLI): `plan graph --check` prints one line per graph error on stdout and exits 1, or nothing and exits 0; a failed check is the operation failing (grammar.md §6), and usage errors keep exit 2.
+- 2026-10-23 (manatee plan CLI): `--json` is accepted as the machine form of both verbs; on `plan graph` it equals `--format json`, and `GET /api/graph` serves the same document.
+- 2026-10-23 (manatee plan CLI): text graph rows read `<symbol> <name>  <milestone>  <state> · <status>`; ✔ done, ● ready, ◌ waiting, ✖ blocked, with ASCII `+ * ~ x` and `|- \-` tree rules outside a UTF-8 locale. Color is a layer over the symbol and word: green done, yellow waiting, red blocked, dim milestone.
+- 2026-10-23 (manatee plan CLI): a plan with two predecessors prints once, under its first, with `also after <name>`; every plan appears exactly once.
+- 2026-10-23 (manatee plan CLI): backfill rows are `propose|applied|keep|skip|unresolved`, one per plan in a column layout; the summary and the next command go to stderr, so stdout stays the result.

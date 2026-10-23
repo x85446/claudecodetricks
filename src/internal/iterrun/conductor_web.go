@@ -36,6 +36,60 @@ func registerConductorWeb(mux *http.ServeMux) {
 	mux.HandleFunc("/project", conductorShell)
 	mux.HandleFunc("/settings", conductorShell)
 	mux.HandleFunc("/api/conductor/projects", conductorProjects)
+	mux.HandleFunc("/api/graph", conductorGraph)
+}
+
+// conductorGraph serves one known project's plan graph, the same document
+// `iterate-run plan graph --format json` prints. The project is named by
+// its dashboard id or its path, and only a configured or registered
+// project is read.
+func conductorGraph(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "method not allowed", 405)
+		return
+	}
+	want := r.URL.Query().Get("project")
+	path, ok := knownProjectPath(want)
+	if !ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "unknown project " + fmt.Sprintf("%q", want) + "; name a configured project's id or path"})
+		return
+	}
+	v, err := BuildGraphView(path)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(v)
+}
+
+// knownProjectPath resolves a dashboard project id ("project-…" from the
+// conductor config, or "discovered-…" for a registered project) or a path
+// to the project's directory.
+func knownProjectPath(want string) (string, bool) {
+	if want == "" {
+		return "", false
+	}
+	cfg, _ := NewConductorService("").Config()
+	for _, p := range cfg.Projects {
+		if p.ID == want || sameProjectDirectory(p.Path, want) {
+			return p.Path, true
+		}
+	}
+	paths, _ := ListProjects()
+	for _, p := range paths {
+		canonical, e := conductor.Canonical(p)
+		if e != nil {
+			canonical = filepath.Clean(p)
+		}
+		sum := sha256.Sum256([]byte(canonical))
+		if "discovered-"+hex.EncodeToString(sum[:12]) == want || sameProjectDirectory(canonical, want) {
+			return canonical, true
+		}
+	}
+	return "", false
 }
 
 type conductorProjectView struct {

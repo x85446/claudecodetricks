@@ -6,7 +6,7 @@ description: "Alias for $iterate-conductor; controls the binary conductor with t
 
 # $ic — conductor alias
 
-**Version:** iterate family 5.25.0
+**Version:** iterate family 5.26.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

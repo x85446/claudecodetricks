@@ -3,6 +3,24 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [manatee] - 2026-10-23
+
+### Added
+- `src/internal/plangraph`: resolves a project's plan dependency graph from each plan's key-block `depends:` line (plan names or milestone ids, or `none`) and its archive outcomes (`-done` and `-landed-rolled-to-` satisfy, `-rolled-to-` follows the roll, `-closed` holds), with ready/waiting/blocked status, `waiting_on`, `held_by`, depth, implied edges, several milestone ids per plan, and errors for unknown names, self-edges, cycles and ambiguous milestones.
+- `iterate-run plan graph [--format text|mermaid|json] [--check] [-C <dir>]` and `iterate-run plan depends backfill [--apply]`, with flags in every position and the shared color ladder.
+- `GET /api/graph?project=<id|path>` and the dashboard's **Graph** tab; held plans read **Waiting** in the Plans tab.
+- `/ip` ops `<name> depends on <x>`, `drop dependency`, `graph` and `retrofit`; `/ip stage` takes several names or a milestone range; every new plan carries `depends:`.
+- `docs/plan-graph.md`, `make plan-graph-test`, the dag-* cases (44, all linked with measured covers) and the headless-Chrome `conductor.graph-tab` test.
+
+### Changed
+- Conductor admission denies a plan whose `depends:` predecessor is unfinished as `plan_waiting`, on start and resume alike, never interrupting a live run; queued plans order by graph depth, then milestone id; the idle watch stands down naming the operator-held root (`caiman holds 7 plans`); the nightly decision reports `nothing startable (<n> waiting)`; the dashboard wake loop stops spawning workers for a held queue once its watch has stood down.
+- `/product-iteratemilestones` copies each milestone's predecessors onto its plan's `depends:` line, drops the "Stage the next milestone" step, and stages every plan once stage 9 is done; `/product-milestones` audits its Depends on ids for cycles and unknown ids.
+- `/iterate` archives a landing as `<ts>-<name>-landed-rolled-to-<new>.md` and logs a typed start ahead of an unfinished predecessor; `/iterate-conductor` and `/iterate-triage` report a held plan by the root holding it.
+- iterate family 5.26.0 and product family 1.7.0, with the Codex ports carrying the same rules; the planner's trigger text fits the 1,536-character cap.
+
+### Fixed
+- A parked plan no longer cascades: the conductor used to launch each dependent of a parked plan in turn (izcrOS caiman → jabiru, 2026-10-21); dependents now wait behind it.
+
 ## [lapwing] - 2026-10-22
 
 ### Added

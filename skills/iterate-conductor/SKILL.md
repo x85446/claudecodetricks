@@ -3,7 +3,7 @@ name: iterate-conductor
 description: Control the binary conductor and its shared dashboard configuration; start, pause, inspect or configure project automations, AI subscriptions, launch sequences, schedules, power bands and overdrive.
 argument-hint: status | start | stop | pause | resume | run | kill | schedule <rule>
 disable-model-invocation: true
-version: 5.25.1
+version: 5.26.0
 ---
 
 # /iterate-conductor — control the binary conductor
@@ -23,6 +23,8 @@ Use `scripts/control.sh` beside this skill, or invoke `iterate-run conductor` di
 - Activity: `run list --project ID --json`, then `event list --run RUN --json`. Report actual checkpoints and waiting reasons rather than interpreting token totals as remaining allowance.
 
 Release and release-candidate plans (`mode: release` and `mode: rc`) require a direct human iterate invocation; conductor admission never runs them.
+
+A plan whose `depends:` predecessor is unfinished is held: explain reports it as `plan_waiting` with its `wait_reason` and `held_by`, and admission skips it whether it would start or resume, while every plan with nothing unfinished behind it stays eligible in any order. Report a held plan as held behind its root, never as blocked. When the watch stands down, its notice names the root and how many plans it holds (`caiman holds 7 plans`); that root is the one thing to clear. `iterate-run plan graph -C <project>` prints the whole graph. Staging or unstaging a held plan changes nothing about the hold.
 
 The binary owns worker wakeups and lifecycle. Do not create a cron, loop, timer, background AI session, second webserver or shell queue loop. Do not write conductor config/runtime/leases directly, edit `conductor.md`, invoke whole-plan iterate as a dispatch substitute, or kill processes by name.
 

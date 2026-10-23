@@ -7,7 +7,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.25.0
+**Version:** iterate family 5.26.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -104,7 +104,7 @@ Resolve in this order:
 
    Same placement logic as 1.5: this is below rule 1, so a run legitimately started at 23:00 keeps resuming at 07:00. Gating resumption on the window would kill every overnight run at dawn, which is the one thing an overnight window is for.
 
-2. **`$1` names an existing plan** (`$1` exactly matches a `plans/<name>.md`, e.g. `$iterate dog`): set `current` = that plan; if `phase: planned` → transition to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set up the auto-resume loop, begin; if already executing → resume it (leave `Executing:` untouched).
+2. **`$1` names an existing plan** (`$1` exactly matches a `plans/<name>.md`, e.g. `$iterate dog`): if `iterate-run plan graph --json` shows the plan waiting on an unfinished `depends:` predecessor, print one line, `<name> waits on <x>; starting ahead of it on your typed command`, log `started ahead of depends: <x>` in the Decisions log, and go on: a typed name is the human override the conductor's hold leaves room for. Then set `current` = that plan; if `phase: planned` → transition to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set up the auto-resume loop, begin; if already executing → resume it (leave `Executing:` untouched).
 3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** plan, named via `iterate-run name next`, with `phase: executing`, **`Executing:` set to the same UTC timestamp as `Started:`**, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
 4. **`$1` empty, exactly one plan exists** with `phase: planned`: transition it to `phase: executing`, **set `Executing: <UTC timestamp now>`**, set `current`, set up the loop, begin.
 5. **`$1` empty, multiple planned plans exist**: ask the user which one, presenting a plainly numbered list — one line per plan, `<n>. <name> — started <date> — <goal>` — and wait for them to pick a number. <!-- codex-port: no confirmed structured-picker equivalent in Codex; rendered as a numbered prose list; verify manually --> Then execute the chosen plan (transition to executing, **set `Executing:`**, set current, loop, begin). This is the ONLY place `$iterate` asks a question, and it only happens on a human-typed no-arg `$iterate` with no executing plan.

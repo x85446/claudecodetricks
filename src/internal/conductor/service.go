@@ -41,6 +41,16 @@ type Plan struct {
 	Started     time.Time `json:"started"`
 	Complete    bool      `json:"complete"`
 	Kind        string    `json:"kind,omitempty"`
+	// Waiting is true while a predecessor named on the plan's depends:
+	// line is unfinished. A waiting plan is never admitted, whether it
+	// would start or resume; a plan with a live run is never interrupted.
+	// HeldBy is the plan holding the whole branch, the root of the chain.
+	Waiting    bool     `json:"waiting"`
+	WaitingOn  []string `json:"waiting_on,omitempty"`
+	WaitReason string   `json:"wait_reason,omitempty"`
+	HeldBy     string   `json:"held_by,omitempty"`
+	Depth      int      `json:"depth"`
+	Milestone  string   `json:"milestone,omitempty"`
 }
 type PlanSource interface {
 	List(context.Context, model.Project) ([]Plan, error)

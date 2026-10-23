@@ -11,8 +11,20 @@ import (
 //
 // With ITERATE_RUN_RECORD_CLI_HELPER=1 the test binary instead runs
 // `iterate-run record` on the arguments after "--" and exits, so a test can
-// restart the CLI as a fresh process without building the binary.
+// restart the CLI as a fresh process without building the binary. With
+// ITERATE_RUN_MAIN_HELPER=1 it runs the whole iterate-run main on those
+// arguments, top-level routing included.
 func TestMain(m *testing.M) {
+	if os.Getenv("ITERATE_RUN_MAIN_HELPER") == "1" {
+		for i, a := range os.Args {
+			if a == "--" {
+				os.Args = append([]string{"iterate-run"}, os.Args[i+1:]...)
+				main()
+				os.Exit(0)
+			}
+		}
+		os.Exit(2)
+	}
 	if os.Getenv("ITERATE_RUN_RECORD_CLI_HELPER") == "1" {
 		for i, a := range os.Args {
 			if a == "--" {

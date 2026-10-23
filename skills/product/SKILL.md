@@ -3,7 +3,7 @@ name: product
 description: "PRODUCT — the product-definition meta: staged brief, competitors, PRD, features, roadmap, requirements, architecture, engineering, milestones and environment docs, then the plans. Routes all product-definition work; picks the child."
 when_to_use: "\"define a new product\", \"what's our MVP\", \"which features ship in v1\", \"what order do we build it in\", \"break the roadmap into milestones\", \"set up the environment\", \"tear down the human gates\", \"is this worth building\", \"PRFAQ\", \"working backwards\". NOT end-user instructions (/user-docs), NOT building it (/iterate)."
 argument-hint: "[status | next | <stage> | plans | maintain | unlock <stage>] [--fast]"
-version: 1.6.0
+version: 1.7.0
 disable-model-invocation: true
 ---
 
@@ -27,7 +27,7 @@ Ten documents, each earned from the one before it, then the plans. The chain exi
 | 9 | Environment | `/product-environment` | `docs/environment.md` + `./.iz` |
 | 10 | Plans | `/product-iteratemilestones` | `./.claude/iterate/plans/` |
 
-Stage 9 is the last document: every machine, credential and live-only proof the whole roadmap needs, proven or reduced to one operator act on one list. It opens with `/product-environment-qualify`, the operator's decision tree of qualifying questions (is it a Mac app; does it sign with Apple's official identity), whose branches set what every environment must already hold — signed builds and pre-set OS permissions, or SIP off and scripted grants — before the gate opens. Stage 10 is the **plans step**: `/product-iteratemilestones` turns `docs/milestones.md` into one `/ip` plan per milestone and chain-stages them. It writes no document and has no gate. It is done once a plan in `./.claude/iterate/plans/` or `archive/` carries a `milestone:` key, and it stages the chain head only when stage 9 is `done`, because a chain launched into walls nobody listed parks on the first one.
+Stage 9 is the last document: every machine, credential and live-only proof the whole roadmap needs, proven or reduced to one operator act on one list. It opens with `/product-environment-qualify`, the operator's decision tree of qualifying questions (is it a Mac app; does it sign with Apple's official identity), whose branches set what every environment must already hold — signed builds and pre-set OS permissions, or SIP off and scripted grants — before the gate opens. Stage 10 is the **plans step**: `/product-iteratemilestones` turns `docs/milestones.md` into one `/ip` plan per milestone, each naming its milestone's predecessors on a `depends:` line, so the conductor runs every plan as soon as the plans it depends on land. It writes no document and has no gate. It is done once a plan in `./.claude/iterate/plans/` or `archive/` carries a `milestone:` key, and it stages the plans only when stage 9 is `done`, because plans launched into walls nobody listed park on the first one.
 
 Invoke children with the Skill tool. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
 
