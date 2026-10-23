@@ -255,6 +255,11 @@ report-test: build  ## Verify the run record and plan report (kr-* cases, headle
 	$(Q)testmaster suite discover
 	$(Q)testmaster suite run 'iterate-run.TestKr*' 'iterate-run.TestRecord*' 'iterrun.TestKr*' 'runrecord.*' conductor.report-navigation
 
+.PHONY: plan-graph-test
+plan-graph-test:  ## Verify the plan dependency graph (dag-* cases: plangraph, admission, CLI, backfill, headless-Chrome Graph tab) through TESTMASTER
+	$(Q)testmaster suite discover
+	$(Q)testmaster suite run 'plangraph.*' 'conductor.TestDagAdm*' 'iterrun.TestDag*' 'iterrun.TestConductorHolds*' 'iterrun.TestConductorAdmits*' 'iterrun.TestConductorBlocks*' 'iterrun.TestPlanSummaryReadsDepends*' 'iterrun.TestProjectGraph*' 'iterrun.TestBackfill*' 'iterate-run.TestDagCli*' 'iterate-run.TestPlan*' conductor.graph-tab
+
 .PHONY: ssh-config-test
 ssh-config-test:  ## Verify the ssh-config helper keeps backups out of the include glob (sshbak-1..12)
 	$(Q)python3 -m unittest skills/ssh-config/tests/test_sshcfg.py
