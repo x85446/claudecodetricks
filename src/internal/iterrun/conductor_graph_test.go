@@ -3,7 +3,12 @@ package iterrun
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -176,5 +181,50 @@ func TestDagAdm8ANightlyTickLaunchesNothingForAWaitingQueue(t *testing.T) {
 	}
 	if started != 1 {
 		t.Fatalf("launcher spy recorded %d calls after the watch stood down, want 1", started)
+	}
+}
+
+// TESTMASTER: id=dag-web-1 tier=fast parallel=no
+func TestDagWeb1GraphAPIServesTheCLIDocument(t *testing.T) {
+	home := nightlyHome(t)
+	t.Setenv("ITERATE_CONDUCTOR_DIR", t.TempDir())
+	dir := mkNightlyProject(t, home, "graphweb", "", "")
+	plans := filepath.Join(dir, ".claude", "iterate", "plans")
+	for name, body := range map[string]string{
+		"alpha.md": graphPlan("alpha", "phase: executing", "status: blocked-on-operator: token"),
+		"bravo.md": graphPlan("bravo", "phase: planned", "depends: alpha"),
+	} {
+		if e := os.WriteFile(filepath.Join(plans, name), []byte(body), 0o644); e != nil {
+			t.Fatal(e)
+		}
+	}
+	want, err := BuildGraphView(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantJSON, _ := json.Marshal(want)
+	canonical, _ := conductor.Canonical(dir)
+	sum := sha256.Sum256([]byte(canonical))
+	mux := http.NewServeMux()
+	registerConductorWeb(mux)
+	for _, project := range []string{dir, "discovered-" + hex.EncodeToString(sum[:12])} {
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, httptest.NewRequest("GET", "/api/graph?project="+url.QueryEscape(project), nil))
+		if w.Code != 200 {
+			t.Fatalf("%s: %d %s", project, w.Code, w.Body)
+		}
+		var got GraphView
+		if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+			t.Fatal(err)
+		}
+		gotJSON, _ := json.Marshal(got)
+		if !bytes.Equal(gotJSON, wantJSON) {
+			t.Fatalf("%s:\n%s\nwant\n%s", project, gotJSON, wantJSON)
+		}
+	}
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, httptest.NewRequest("GET", "/api/graph?project=/etc", nil))
+	if w.Code != 404 || !strings.Contains(w.Body.String(), `unknown project \"/etc\"`) {
+		t.Fatalf("unknown project: %d %s", w.Code, w.Body)
 	}
 }

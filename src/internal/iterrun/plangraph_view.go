@@ -14,6 +14,7 @@ type GraphEdge struct {
 	To        string `json:"to"`
 	Satisfied bool   `json:"satisfied"`
 	Reason    string `json:"reason,omitempty"`
+	Implied   bool   `json:"implied,omitempty"` // another predecessor already reaches it; drawings omit it
 }
 
 // GraphView is the one document `iterate-run plan graph --format json` and
@@ -31,6 +32,9 @@ func BuildGraphView(projectDir string) (GraphView, error) {
 	if err != nil {
 		return GraphView{}, err
 	}
+	if real, err := filepath.EvalSymlinks(abs); err == nil {
+		abs = real
+	}
 	g, err := ProjectGraph(abs)
 	if err != nil {
 		return GraphView{}, err
@@ -38,7 +42,7 @@ func BuildGraphView(projectDir string) (GraphView, error) {
 	v := GraphView{Project: abs, Nodes: g.Nodes, Edges: []GraphEdge{}, Errors: g.Errors}
 	for _, n := range g.Nodes {
 		for _, e := range n.Edges {
-			v.Edges = append(v.Edges, GraphEdge{From: e.Target, To: n.Name, Satisfied: e.Satisfied, Reason: e.Reason})
+			v.Edges = append(v.Edges, GraphEdge{From: e.Target, To: n.Name, Satisfied: e.Satisfied, Reason: e.Reason, Implied: e.Implied})
 		}
 	}
 	return v, nil
@@ -54,13 +58,16 @@ func (v GraphView) Mermaid() string {
 	for i, n := range v.Nodes {
 		id[n.Name] = fmt.Sprintf("n%d", i)
 		label := n.Name
-		if n.Milestone != "" {
-			label += " · " + n.Milestone
+		if len(n.Milestones) > 0 {
+			label += " · " + strings.Join(n.Milestones, ", ")
 		}
 		label += " · " + nodeWord(n)
 		fmt.Fprintf(&b, "  %s[\"%s\"]:::%s\n", id[n.Name], strings.ReplaceAll(label, `"`, "'"), mermaidClass(n))
 	}
 	for _, e := range v.Edges {
+		if e.Implied {
+			continue
+		}
 		from, ok1 := id[e.From]
 		to, ok2 := id[e.To]
 		if !ok1 || !ok2 {
@@ -79,8 +86,18 @@ func (v GraphView) Mermaid() string {
 	return b.String()
 }
 
+// DisplayStatus is the status a view draws: the graph status, except that
+// a plan whose own edges are met but which is itself blocked or paused
+// reads as blocked.
+func DisplayStatus(n plangraph.Node) string {
+	if n.Status == plangraph.StatusReady && (n.State == "blocked" || n.State == "paused") {
+		return plangraph.StatusBlocked
+	}
+	return n.Status
+}
+
 func mermaidClass(n plangraph.Node) string {
-	switch n.Status {
+	switch DisplayStatus(n) {
 	case plangraph.StatusDone:
 		return "done"
 	case plangraph.StatusWaiting:
@@ -131,7 +148,7 @@ func (v GraphView) TextRows() []GraphRow {
 	also := map[string][]string{}
 	for _, n := range v.Nodes {
 		for _, e := range n.Edges {
-			if _, ok := byName[e.Target]; !ok {
+			if _, ok := byName[e.Target]; !ok || e.Implied {
 				continue
 			}
 			if _, has := parent[n.Name]; !has {
@@ -175,6 +192,9 @@ func rowDetail(n plangraph.Node) string {
 		return n.Reason
 	case plangraph.StatusHeld:
 		return "does not satisfy its dependents"
+	}
+	if DisplayStatus(n) != n.Status {
+		return ""
 	}
 	return n.Status
 }

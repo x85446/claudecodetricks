@@ -251,6 +251,54 @@ func TestUnknownArchiveSuffixUsesTheNameKey(t *testing.T) {
 	}
 }
 
+func TestAPlanCanCarrySeveralMilestones(t *testing.T) {
+	p := newProject(t)
+	p.plan("genet", "phase: planned", "milestone: M1-06", "milestone: M1-07", "depends: M1-05")
+	p.plan("alexandrite", "phase: planned", "milestone: M1-05")
+	p.plan("hog", "phase: planned", "milestone: M1-08, M1-09", "depends: M1-06")
+	p.plan("indri", "phase: planned", "milestone: M1-10", "depends: M1-09")
+	g := p.graph()
+	if n := node(t, g, "genet"); !slices.Equal(n.Milestones, []string{"M1-06", "M1-07"}) || n.Milestone != "M1-06" {
+		t.Fatalf("genet milestones = %v / %q", n.Milestones, n.Milestone)
+	}
+	wantStatus(t, g, "hog", StatusWaiting, "genet")
+	wantStatus(t, g, "indri", StatusWaiting, "hog")
+	if len(g.Errors) != 0 {
+		t.Fatalf("errors = %v", g.Errors)
+	}
+}
+
+func TestImpliedEdgesStillGateButLeaveTheReason(t *testing.T) {
+	p := newProject(t)
+	p.plan("haddock", "phase: executing", "status: unblocked")
+	p.plan("ibex", "phase: executing", "status: unblocked", "depends: haddock")
+	p.plan("jabiru", "phase: planned", "depends: ibex, haddock")
+	g := p.graph()
+	n := wantStatus(t, g, "jabiru", StatusWaiting, "ibex", "haddock")
+	if n.Reason != "waiting on ibex (unblocked)" {
+		t.Fatalf("reason = %q", n.Reason)
+	}
+	implied := 0
+	for _, e := range n.Edges {
+		if e.Implied {
+			implied++
+			if e.Target != "haddock" {
+				t.Fatalf("implied edge = %+v", e)
+			}
+		}
+	}
+	if implied != 1 {
+		t.Fatalf("implied = %d", implied)
+	}
+	// Out of order: ibex finished first, so the implied predecessor is what holds.
+	p.archive("20261023T000000Z-ibex-done.md", "ibex")
+	os.Remove(filepath.Join(p.dir, ".claude", "iterate", "plans", "ibex.md"))
+	n = wantStatus(t, p.graph(), "jabiru", StatusWaiting, "haddock")
+	if n.Reason != "waiting on haddock (unblocked)" {
+		t.Fatalf("reason = %q", n.Reason)
+	}
+}
+
 func TestMilestoneCarriedThroughARollResolvesToTheSource(t *testing.T) {
 	p := newProject(t)
 	p.archive("20261013T014252Z-alpha-rolled-to-charlie.md", "alpha", "milestone: M1-03")

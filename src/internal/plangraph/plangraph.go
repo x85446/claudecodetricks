@@ -53,16 +53,17 @@ const (
 
 // Input is one plan as read from disk.
 type Input struct {
-	Name      string
-	Milestone string
-	Depends   []string // references as written
-	Declared  bool     // a depends: line exists, including "depends: none"
-	State     string   // live: StateOf(phase, status); archived: "archived"
-	Archived  bool
-	Outcome   Outcome
-	RolledTo  string
-	Started   string
-	File      string
+	Name       string
+	Milestone  string   // the first milestone id the plan carries
+	Milestones []string // every milestone id the plan carries
+	Depends    []string // references as written
+	Declared   bool     // a depends: line exists, including "depends: none"
+	State      string   // live: StateOf(phase, status); archived: "archived"
+	Archived   bool
+	Outcome    Outcome
+	RolledTo   string
+	Started    string
+	File       string
 }
 
 // Edge is one resolved dependency.
@@ -71,25 +72,30 @@ type Edge struct {
 	Target    string `json:"target,omitempty"` // the plan that satisfies or holds it, after following rolls
 	Satisfied bool   `json:"satisfied"`
 	Reason    string `json:"reason,omitempty"` // why an unsatisfied edge holds
+	// Implied is true when another of the plan's predecessors already
+	// depends on this one, so a drawing can leave the edge out. The edge
+	// still gates admission.
+	Implied bool `json:"implied,omitempty"`
 }
 
 // Node is one plan in the resolved graph.
 type Node struct {
-	Name      string   `json:"name"`
-	Milestone string   `json:"milestone,omitempty"`
-	State     string   `json:"state"`
-	Status    string   `json:"status"`
-	Archived  bool     `json:"archived"`
-	Outcome   Outcome  `json:"outcome,omitempty"`
-	Declared  bool     `json:"declared"`
-	Depends   []string `json:"depends"`
-	Edges     []Edge   `json:"edges"`
-	WaitingOn []string `json:"waiting_on"`
-	HeldBy    string   `json:"held_by,omitempty"`
-	Reason    string   `json:"reason,omitempty"`
-	Errors    []string `json:"errors"`
-	Depth     int      `json:"depth"`
-	Started   string   `json:"started,omitempty"`
+	Name       string   `json:"name"`
+	Milestone  string   `json:"milestone,omitempty"`
+	Milestones []string `json:"milestones,omitempty"`
+	State      string   `json:"state"`
+	Status     string   `json:"status"`
+	Archived   bool     `json:"archived"`
+	Outcome    Outcome  `json:"outcome,omitempty"`
+	Declared   bool     `json:"declared"`
+	Depends    []string `json:"depends"`
+	Edges      []Edge   `json:"edges"`
+	WaitingOn  []string `json:"waiting_on"`
+	HeldBy     string   `json:"held_by,omitempty"`
+	Reason     string   `json:"reason,omitempty"`
+	Errors     []string `json:"errors"`
+	Depth      int      `json:"depth"`
+	Started    string   `json:"started,omitempty"`
 }
 
 // Graph is a project's resolved plan graph: every live plan, plus each
@@ -274,13 +280,14 @@ func ParseArchiveName(file string) (name string, outcome Outcome, rolledTo strin
 
 // KeyBlock is the subset of a plan's key block the graph reads.
 type KeyBlock struct {
-	Name      string
-	Phase     string
-	Status    string
-	Started   string
-	Milestone string
-	Depends   []string
-	Declared  bool
+	Name       string
+	Phase      string
+	Status     string
+	Started    string
+	Milestone  string   // the first milestone id
+	Milestones []string // every milestone: line, in order; one plan can cover several
+	Depends    []string
+	Declared   bool
 }
 
 var reKey = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9-]*):[ \t]*(.*)$`)
@@ -323,7 +330,15 @@ func (kb *KeyBlock) Apply(line string) {
 	case "Started":
 		kb.Started = v
 	case "milestone":
-		kb.Milestone = v
+		ids, _ := ParseDepends(v)
+		for _, id := range ids {
+			if !slices.Contains(kb.Milestones, id) {
+				kb.Milestones = append(kb.Milestones, id)
+			}
+		}
+		if len(kb.Milestones) > 0 {
+			kb.Milestone = kb.Milestones[0]
+		}
 	case "depends":
 		kb.Depends, _ = ParseDepends(v)
 		kb.Declared = true
@@ -359,7 +374,7 @@ func Inputs(projectDir string) ([]Input, error) {
 		if kb.Name != "" {
 			name = kb.Name
 		}
-		in = append(in, Input{Name: name, Milestone: kb.Milestone, Depends: kb.Depends, Declared: kb.Declared, State: StateOf(kb.Phase, kb.Status), Started: kb.Started, File: path})
+		in = append(in, Input{Name: name, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: StateOf(kb.Phase, kb.Status), Started: kb.Started, File: path})
 	}
 	archived, err := filepath.Glob(filepath.Join(base, "archive", "*.md"))
 	if err != nil {
@@ -378,7 +393,7 @@ func Inputs(projectDir string) ([]Input, error) {
 		if kb.Name != "" {
 			name = kb.Name
 		}
-		in = append(in, Input{Name: name, Milestone: kb.Milestone, Depends: kb.Depends, Declared: kb.Declared, State: "archived", Archived: true, Outcome: outcome, RolledTo: rolledTo, Started: kb.Started, File: path})
+		in = append(in, Input{Name: name, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: "archived", Archived: true, Outcome: outcome, RolledTo: rolledTo, Started: kb.Started, File: path})
 	}
 	return in, nil
 }
@@ -411,16 +426,16 @@ func Resolve(inputs []Input) Graph {
 		r.live[in.Name] = in
 	}
 	for name, in := range r.live {
-		if in.Milestone != "" {
-			r.milestone[in.Milestone] = append(r.milestone[in.Milestone], name)
+		for _, id := range milestonesOf(*in) {
+			r.milestone[id] = append(r.milestone[id], name)
 		}
 	}
 	for name, in := range r.archived {
 		if _, shadowed := r.live[name]; shadowed {
 			continue
 		}
-		if in.Milestone != "" {
-			r.milestone[in.Milestone] = append(r.milestone[in.Milestone], name)
+		for _, id := range milestonesOf(*in) {
+			r.milestone[id] = append(r.milestone[id], name)
 		}
 	}
 	for id := range r.milestone {
@@ -439,7 +454,7 @@ func Resolve(inputs []Input) Graph {
 	}
 	for _, name := range order {
 		in := r.live[name]
-		n := Node{Name: name, Milestone: in.Milestone, State: in.State, Declared: in.Declared, Depends: append([]string{}, in.Depends...), Edges: []Edge{}, WaitingOn: []string{}, Errors: []string{}, Started: in.Started}
+		n := Node{Name: name, Milestone: in.Milestone, Milestones: milestonesOf(*in), State: in.State, Declared: in.Declared, Depends: append([]string{}, in.Depends...), Edges: []Edge{}, WaitingOn: []string{}, Errors: []string{}, Started: in.Started}
 		for _, ref := range in.Depends {
 			target, err := r.lookup(ref)
 			if err != nil {
@@ -475,11 +490,12 @@ func Resolve(inputs []Input) Graph {
 				if a.Outcome != OutcomeDone && a.Outcome != OutcomeLanded {
 					status = StatusHeld
 				}
-				add(Node{Name: hop, Milestone: a.Milestone, State: "archived", Status: status, Archived: true, Outcome: a.Outcome, Declared: a.Declared, Depends: []string{}, Edges: []Edge{}, WaitingOn: []string{}, Errors: []string{}, Started: a.Started})
+				add(Node{Name: hop, Milestone: a.Milestone, Milestones: milestonesOf(*a), State: "archived", Status: status, Archived: true, Outcome: a.Outcome, Declared: a.Declared, Depends: []string{}, Edges: []Edge{}, WaitingOn: []string{}, Errors: []string{}, Started: a.Started})
 			}
 		}
 	}
 	cyclic := g.markCycles()
+	g.markImplied()
 	for i := range g.Nodes {
 		n := &g.Nodes[i]
 		if n.Archived {
@@ -530,10 +546,69 @@ func Resolve(inputs []Input) Graph {
 	return g
 }
 
+// milestonesOf lists every milestone id an input carries; an input built
+// with only Milestone set carries that one.
+func milestonesOf(in Input) []string {
+	if len(in.Milestones) > 0 {
+		return in.Milestones
+	}
+	if in.Milestone != "" {
+		return []string{in.Milestone}
+	}
+	return nil
+}
+
+// ancestors lists every plan reachable from name along its edges.
+func (g Graph) ancestors(name string) map[string]bool {
+	seen := map[string]bool{}
+	stack := []string{name}
+	for len(stack) > 0 {
+		cur := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		i, ok := g.index[cur]
+		if !ok {
+			continue
+		}
+		for _, e := range g.Nodes[i].Edges {
+			if !seen[e.Target] {
+				seen[e.Target] = true
+				stack = append(stack, e.Target)
+			}
+		}
+	}
+	return seen
+}
+
+// markImplied flags each edge whose predecessor another of the plan's
+// predecessors already reaches.
+func (g *Graph) markImplied() {
+	anc := map[string]map[string]bool{}
+	for i := range g.Nodes {
+		n := &g.Nodes[i]
+		for j := range n.Edges {
+			for k := range n.Edges {
+				other := n.Edges[k].Target
+				if j == k || other == n.Edges[j].Target {
+					continue
+				}
+				if anc[other] == nil {
+					anc[other] = g.ancestors(other)
+				}
+				if anc[other][n.Edges[j].Target] {
+					n.Edges[j].Implied = true
+					break
+				}
+			}
+		}
+	}
+}
+
+// waitingReason names the unfinished predecessors a reader needs: an
+// implied one only when no other unfinished predecessor covers it.
 func waitingReason(n Node) string {
 	parts := []string{}
 	for _, e := range n.Edges {
-		if e.Satisfied {
+		if e.Satisfied || (e.Implied && hasUnsatisfiedReacher(n, e)) {
 			continue
 		}
 		p := e.Target
@@ -545,6 +620,17 @@ func waitingReason(n Node) string {
 		}
 	}
 	return "waiting on " + strings.Join(parts, ", ")
+}
+
+// hasUnsatisfiedReacher reports whether a plan has an unfinished, direct
+// predecessor other than the implied one, which then covers it.
+func hasUnsatisfiedReacher(n Node, implied Edge) bool {
+	for _, e := range n.Edges {
+		if !e.Satisfied && !e.Implied && e.Target != implied.Target {
+			return true
+		}
+	}
+	return false
 }
 
 func isComplete(state string) bool { return state == "complete" || state == "done" }

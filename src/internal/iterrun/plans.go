@@ -93,6 +93,7 @@ type PlanSummary struct {
 	Depends         []string
 	DependsDeclared bool
 	Milestone       string
+	Milestones      []string
 }
 
 // IsCompleted reports whether every team in this plan's Teams table has
@@ -423,7 +424,7 @@ func parsePlanFile(path, projectDir string) (PlanSummary, error) {
 		}
 	}
 
-	ps.Depends, ps.DependsDeclared, ps.Milestone = keys.Depends, keys.Declared, keys.Milestone
+	ps.Depends, ps.DependsDeclared, ps.Milestone, ps.Milestones = keys.Depends, keys.Declared, keys.Milestone, keys.Milestones
 	ps.GoalFull = strings.Join(goalLines, " ")
 	ps.Goal = ps.GoalFull
 	if len(ps.Goal) > 160 {

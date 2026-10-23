@@ -45,7 +45,7 @@ var (
 	reMilestoneID       = regexp.MustCompile(`\b[A-Z][A-Z0-9]*\d+-\d+\b`)
 	reMilestoneHeading  = regexp.MustCompile(`^#{2,4}\s+([A-Z][A-Z0-9]*\d+-\d+)\b`)
 	reDependsOnLine     = regexp.MustCompile(`^\s*(?:[-*]\s+)?\*{0,2}Depends on:\*{0,2}\s*(.*)$`)
-	reFromPlan          = regexp.MustCompile(`\(from plans? ([^)]+)\)`)
+	reFromPlan          = regexp.MustCompile(`\((?:from )?plans? ([^)]+)\)`)
 	reFromMilestone     = regexp.MustCompile(`\(from milestones? ([^)]+)\)`)
 	rePlanName          = regexp.MustCompile(`^[a-z][a-z0-9]*$`)
 	reNothing           = regexp.MustCompile(`(?i)^(nothing|none|—|-)\b`)
@@ -126,25 +126,32 @@ func keyBlockEnd(lines []string) int {
 
 // deriveDepends reads a plan's dependency sources: its milestone's line in
 // docs/milestones.md, and its `Depends on:` prose naming `(from plan X)`,
-// `(from milestone M…)` or "nothing". It returns the references, whether
+// `(plan X)`, `(from milestone M…)` or "nothing". It returns the references, whether
 // the plan declared it depends on nothing, the source description, and
 // the prose it could not resolve.
-func deriveDepends(name, milestone string, lines []string, doc map[string][]string) (refs []string, none bool, sources []string, unresolved string) {
+func deriveDepends(name string, milestones []string, lines []string, doc map[string][]string) (refs []string, none bool, sources []string, unresolved string) {
 	add := func(r string) {
-		if r != "" && r != name && r != milestone && !slices.Contains(refs, r) {
+		if r != "" && r != name && !slices.Contains(milestones, r) && !slices.Contains(refs, r) {
 			refs = append(refs, r)
 		}
 	}
-	if milestone != "" {
-		if ids, ok := doc[milestone]; ok {
-			for _, id := range ids {
-				add(id)
-			}
-			if len(ids) == 0 {
-				none = true
-			}
-			sources = append(sources, "docs/milestones.md "+milestone)
+	docNone := len(milestones) > 0
+	for _, milestone := range milestones {
+		ids, ok := doc[milestone]
+		if !ok {
+			docNone = false
+			continue
 		}
+		for _, id := range ids {
+			add(id)
+		}
+		if len(ids) > 0 {
+			docNone = false
+		}
+		sources = append(sources, "docs/milestones.md "+milestone)
+	}
+	if docNone && len(sources) > 0 {
+		none = true
 	}
 	end := keyBlockEnd(lines)
 	prose := []string{}
@@ -246,7 +253,7 @@ func BackfillDepends(projectDir string, apply bool, now time.Time) (BackfillRepo
 		case planIsLive(text, now):
 			row.Action, row.Source = "skip", "live run"
 		default:
-			refs, none, sources, unresolved := deriveDepends(name, kb.Milestone, lines, doc)
+			refs, none, sources, unresolved := deriveDepends(name, kb.Milestones, lines, doc)
 			row.Refs, row.Source = refs, strings.Join(sources, "; ")
 			switch {
 			case len(refs) > 0:

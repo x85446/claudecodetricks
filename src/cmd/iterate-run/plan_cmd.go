@@ -292,7 +292,7 @@ func runPlanGraph(f planFlags, project string, out, diag io.Writer) int {
 	for _, n := range v.Nodes {
 		if !n.Archived {
 			live++
-			counts[n.Status]++
+			counts[iterrun.DisplayStatus(n)]++
 		}
 	}
 	fmt.Fprintf(diag, "%d plans: %d ready, %d waiting, %d blocked\n", live, counts[plangraph.StatusReady], counts[plangraph.StatusWaiting], counts[plangraph.StatusBlocked])
@@ -322,7 +322,7 @@ func planGraphLine(row iterrun.GraphRow, pal planPalette) string {
 	n := row.Node
 	sym, code := "●", ""
 	ascii := "*"
-	switch n.Status {
+	switch iterrun.DisplayStatus(n) {
 	case plangraph.StatusDone:
 		sym, ascii, code = "✔", "+", "32"
 	case plangraph.StatusWaiting:
@@ -336,8 +336,8 @@ func planGraphLine(row iterrun.GraphRow, pal planPalette) string {
 	b.WriteString(pal.paint(code, sym))
 	b.WriteString(" ")
 	b.WriteString(pal.paint("1", n.Name))
-	if n.Milestone != "" {
-		b.WriteString("  " + pal.paint("2", n.Milestone))
+	if len(n.Milestones) > 0 {
+		b.WriteString("  " + pal.paint("2", strings.Join(n.Milestones, ", ")))
 	}
 	word := n.State
 	if n.Archived {

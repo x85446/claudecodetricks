@@ -88,6 +88,27 @@ func TestDagBf2FromPlanProseProposesThePlan(t *testing.T) {
 	}
 }
 
+func TestBackfillReadsABarePlanReference(t *testing.T) {
+	dir := backfillProject(t, map[string]string{"gerenuk": bfPlan("gerenuk", []string{"phase: planned"}, "- Depends on: the toolkit-free state model in `keygenhelper::app`, all as they stand on master at 1e44e3c (plan fisher).")}, "")
+	r, _ := BackfillDepends(dir, false, backfillNow)
+	if row := rowFor(t, r, "gerenuk"); row.Line != "depends: fisher" {
+		t.Fatalf("gerenuk = %+v", row)
+	}
+}
+
+func TestBackfillUnionsEveryMilestoneAndDropsItsOwn(t *testing.T) {
+	doc := "### M1-06 — a\n\n**Depends on:** M1-05\n\n### M1-07 — b\n\n**Depends on:** M1-06, M1-03\n"
+	dir := backfillProject(t, map[string]string{"genet": bfPlan("genet", []string{"phase: planned", "milestone: M1-06", "milestone: M1-07"})}, doc)
+	r, _ := BackfillDepends(dir, true, backfillNow)
+	if row := rowFor(t, r, "genet"); row.Line != "depends: M1-05, M1-03" {
+		t.Fatalf("genet = %+v", row)
+	}
+	b, _ := os.ReadFile(filepath.Join(dir, ".claude", "iterate", "plans", "genet.md"))
+	if !strings.Contains(string(b), "milestone: M1-07\ndepends: M1-05, M1-03\n") {
+		t.Fatalf("line not placed after the last milestone line:\n%s", b)
+	}
+}
+
 // TESTMASTER: id=dag-bf-3 tier=fast parallel=yes
 func TestDagBf3DryRunChangesNothing(t *testing.T) {
 	dir := backfillProject(t, map[string]string{
