@@ -1,6 +1,6 @@
 ---
 name: product-iteratemilestones
-description: "PRODUCT stage 10, the plans step: turns docs/milestones.md into one /iterate-planner plan per milestone, all 30, and chain-stages them so each plan queues the next when it finishes green; the chain head is staged only once stage 9 (environment) is done."
+description: "PRODUCT stage 10, the plans step: turns docs/milestones.md into one /iterate-planner plan per milestone, all 30, each carrying its milestone's predecessors on its depends: line; once stage 9 (environment) is done it stages them all and the conductor's graph orders them."
 argument-hint: "[M1-03 …]"
 version: 1.6.0
 ---
@@ -8,11 +8,12 @@ version: 1.6.0
 # /product-iteratemilestones — milestones to plans
 
 Stage 8 ordered the product into thirty milestones. This skill turns every
-one of them into a saved `/iterate-planner` plan and chains them, so the
-build runs milestone by milestone with no one at the keyboard. The first
-plan is staged now. Each plan's last step stages the next one, and only a
-plan that finishes green reaches that step. So a blocked milestone holds
-everything behind it, and nothing builds on work that never landed.
+one of them into a saved `/iterate-planner` plan whose key block names its
+predecessors on a `depends:` line, so the build runs with no one at the
+keyboard. Once stage 9 is done every plan is staged, and the conductor runs
+each one as soon as every plan it depends on has landed: two milestones
+that both need only M1-03 run in either order, and a blocked milestone holds
+only the plans that depend on it. Nothing builds on work that never landed.
 
 It is `/product`'s plans step, stage 10. The meta runs it when stages 0–9
 are done and no plan carries a `milestone:` key, and the user can also type
@@ -30,8 +31,8 @@ Read, from the project root:
 2. **`./.claude/product/state.md` rows 8 and 9.** Row 8 not `done`: say so
    in one line and continue. The user typed this, and planning from an
    unapproved sequence is their call. Row 9 (environment) not `done`: the
-   plans are still written, and step 4 stages nothing, because a chain
-   launched into walls nobody listed parks on the first one. Say so in one
+   plans are still written, and step 4 stages nothing, because plans
+   launched into walls nobody listed park on the first one. Say so in one
    line and name the count of open operator acts from `docs/environment.md`.
 3. **Existing plans.** Scan `./.claude/iterate/plans/*.md` and
    `./.claude/iterate/archive/*.md` for a key-block line `milestone: <ID>`.
@@ -43,9 +44,9 @@ Read, from the project root:
    still written but nothing is staged (step 4). Say why in one line.
 
 Parse every milestone block: its id, title, Goal, Demo, Delivers, Touches,
-Retires, Depends on and Exit criteria. The chain order is the document's
-order: M1-01 … M1-10, M2-01 … M3-10. A milestone's **successor** is the
-next id in that order, and M3-10 has none.
+Retires, Depends on and Exit criteria. A milestone's **predecessors** are
+the internal milestone ids on its `**Depends on:**` line; items marked
+`(external)` name no plan and are dropped. `—` means none.
 
 ## 2. Plan them, one subagent per milestone
 
@@ -69,7 +70,8 @@ Milestone <ID> — <title>, from docs/milestones.md (dated <date>), verbatim:
 Invoke the Skill tool with skill `iterate-planner` and the request
 "new plan for milestone <ID> — <title>", and build that plan with these
 mappings in addition to everything iterate-planner already requires:
-- Key block: add the line `milestone: <ID>` above the first `## ` heading.
+- Key block: add the lines `milestone: <ID>` and `depends: <predecessor
+  ids, comma-separated>` (or `depends: none`) above the first `## ` heading.
 - Goal: the milestone's Goal, then its Demo as the observable end state.
 - Steps: derived from Delivers. Read each cited R-NN with its acceptance
   criteria in docs/requirements.md and each F-NN in docs/features.md; read
@@ -88,11 +90,6 @@ mappings in addition to everything iterate-planner already requires:
   does not list is an environment gap: still write the verification step,
   and report `env gap: <need>` in your reply line.
 - Provenance: `Milestone <ID> from docs/milestones.md (<date>): <title>`.
-- Last step, after the standing finishers: "Stage the next milestone
-  (<successor ID>)", skill: iterate-planner. It finds the plan in
-  ./.claude/iterate/plans/ whose key block reads `milestone: <successor ID>`
-  and runs `/ip stage <that plan's name>`. Validation: that plan's key block
-  reads `status: queued`.            <!-- omit this bullet for M3-10 -->
 Do not stage this plan, run /iterate, edit anything under docs/, or change
 ./.claude/iterate/current. Never ask a question. If the milestone needs a
 feature, requirement or decision the docs do not contain, do not invent it:
@@ -100,7 +97,7 @@ plan what the docs support and report the gap.
 Reply with exactly one line: <ID><TAB><plan name><TAB><step count><TAB><gap, or ->
 ```
 
-## 3. Verify the chain
+## 3. Verify the graph
 
 After each release's subagents return, check the files, not the replies:
 
@@ -108,26 +105,29 @@ After each release's subagents return, check the files, not the replies:
   - None: rerun that one subagent once. Still none: report it as failed.
   - Two (a retry duplicated it): keep the newer and remove the other with
     `/ip delete <name>`.
-- Every plan except M3-10's names its successor id in its last step.
-  Missing: send the planning subagent's request again as an `/ip` refinement
-  (`add to <name>: …`).
-- No plan has `status: queued` except the one step 4 stages.
+- Each plan's `depends:` line equals its milestone's predecessors. A wrong
+  or missing line is fixed with `/ip <name> depends on <ids>`.
+- `iterate-run plan graph --check` exits 0. It reports an unknown id or a
+  cycle line by line; each is a `docs/milestones.md` defect to report, and
+  the plan keeps the ids the document names.
+- No plan has `status: queued` before step 4.
 
-## 4. Set current and stage the chain head
+## 4. Set current and stage the plans
 
-Skip this outside a git repository, when state row 9 (environment) is not
-`done`, or when a milestone plan is already queued or executing, because
-the chain is already live.
+Skip this outside a git repository or when state row 9 (environment) is not
+`done`.
 
-The **chain head** is the earliest milestone whose plan is neither archived
-nor closed. Write its name to `./.claude/iterate/current`, then invoke the
-Skill tool with `iterate-planner` and `stage <name>`. From then on, the
-conductor or the nightly tick runs it. Each plan stages its successor as its
-last step.
+Stage every milestone plan that is neither archived, closed, executing nor
+already queued: invoke the Skill tool with `iterate-planner` and
+`stage <first ID>..<last ID>` (one milestone range). Write the earliest
+ready plan's name (`iterate-run plan graph`, no unfinished predecessor) to
+`./.claude/iterate/current`. From then on the conductor or the nightly tick
+runs every ready plan, and each waiting one starts when its predecessors
+land.
 
 ## 5. Output
 
-One line per milestone, in chain order, then the chain line:
+One line per milestone, in document order, then the graph line:
 
 ```
 milestones → plans: 30 of 30   (v1 10 · v2 10 · v3 10)
@@ -135,12 +135,12 @@ milestones → plans: 30 of 30   (v1 10 · v2 10 · v3 10)
   M1-02  lemur     7 steps   gap: R-044 has no serial stack choice on Windows
   M1-03  —         skipped   plan marmot exists
   …
-chain: kestrel (M1-01) staged — each plan stages the next when it finishes green
+graph: 29 staged · ready now: kestrel (M1-01) · 28 wait on their predecessors
 ```
 
-Outside git, the chain line reads
-`chain: not staged — not a git repo; git init, then run this again`. With
-stage 9 open it reads `chain: not staged — environment has <N> operator
+Outside git, the graph line reads
+`graph: not staged — not a git repo; git init, then run this again`. With
+stage 9 open it reads `graph: not staged — environment has <N> operator
 acts open (docs/environment.md); /product environment after each, then run
 this again`.
 
@@ -148,16 +148,18 @@ this again`.
 
 1. **One plan per milestone, linked by milestone id.** The id outlives
    codenames, refinements and re-plans.
-2. **Order is the document's order.** Dependencies point backwards (stage 8
-   audits that), so a linear chain satisfies all of them.
-3. **Only the chain head is staged here.** Every later plan is staged by
-   its predecessor's green ending, never ahead of it.
+2. **Order lives on each plan's `depends:` line.** It copies the
+   milestone's `**Depends on:**` ids; stage 8 audits that they point
+   backwards and form no cycle. No plan carries a "stage the next
+   milestone" step.
+3. **Staging approves; the graph orders.** Every plan is staged together in
+   step 4, and the conductor holds each one until its predecessors land.
 4. **Never run `/iterate` and never touch `docs/`.** A locked milestone
    document changes only through `/product unlock milestones`.
 5. **Never invent scope.** A gap goes in the output line, and the stage it
    belongs to is the user's to unlock.
 6. **Stale plans are reported, never rewritten.** A re-cut milestones
    document means the user decides whether to `/ip delete` and rerun.
-7. **The chain head waits for the environment.** Plans are written whenever
-   the user asks; the head is staged only once stage 9 is `done`, so the
-   first unattended launch meets no wall stage 9 did not list.
+7. **Staging waits for the environment.** Plans are written whenever the
+   user asks; they are staged only once stage 9 is `done`, so the first
+   unattended launch meets no wall stage 9 did not list.
