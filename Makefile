@@ -260,6 +260,22 @@ plan-graph-test:  ## Verify the plan dependency graph (dag-* cases: plangraph, a
 	$(Q)testmaster suite discover
 	$(Q)testmaster suite run 'plangraph.*' 'conductor.TestDagAdm*' 'iterrun.TestDag*' 'iterrun.TestConductorHolds*' 'iterrun.TestConductorAdmits*' 'iterrun.TestConductorBlocks*' 'iterrun.TestPlanSummaryReadsDepends*' 'iterrun.TestProjectGraph*' 'iterrun.TestBackfill*' 'iterate-run.TestDagCli*' 'iterate-run.TestPlan*' conductor.graph-tab
 
+.PHONY: nene-skill-test
+nene-skill-test: $(ITERATE_RUN_BIN)  ## Exercise an installed iterate entry against an isolated fixture
+	$(Q)python3 scripts/nene-skill-acceptance.py --harness $(or $(HARNESS),claude) --busy $(or $(BUSY),0)
+
+.PHONY: nene-planning-test
+nene-planning-test: $(ITERATE_RUN_BIN)  ## Exercise coherent planning and consolidation on synthetic scope
+	$(Q)$(if $(NENE_COVERAGE),python3 -m coverage run --data-file='.claude/iterate/plans/nene.evidence/python-$(or $(SCOPE),small).coverage' --source=scripts,python3) scripts/nene-planning-acceptance.py --scope $(or $(SCOPE),small)
+
+.PHONY: nene-coverage-test
+nene-coverage-test:  ## Measure one ownership or order test's executed source files
+	$(Q)$(GO) test -count=1 -run '^$(TEST_CASE)$$' -coverpkg=./src/internal/iterrun,./src/internal/plangraph -coverprofile='$(COVER_FILE)' ./src/internal/iterrun
+
+.PHONY: nene-ownership-test
+nene-ownership-test: $(ITERATE_RUN_BIN)  ## Verify process-level ownership and dependency admission with the real CLI
+	$(Q)python3 scripts/nene-ownership-acceptance.py
+
 .PHONY: ssh-config-test
 ssh-config-test:  ## Verify the ssh-config helper keeps backups out of the include glob (sshbak-1..12)
 	$(Q)python3 -m unittest skills/ssh-config/tests/test_sshcfg.py

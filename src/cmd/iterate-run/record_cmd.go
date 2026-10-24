@@ -312,8 +312,8 @@ func runRecordCLI(args []string, input io.Reader, out, diag io.Writer) int {
 				}
 			}
 			runID, n, err = store.Observe(runrecord.OpenRequest{
-				Key: runrecord.PlanKey{ProjectPath: project, Plan: plan}, Marker: marker, Source: runrecord.SourceCLI,
-				Versions: &runrecord.Versions{IterateRun: iterrun.BuildVersion}, AttemptKey: e.AttemptKey,
+				Key: runrecord.PlanKey{ProjectPath: project, ProjectID: e.ProjectID, Plan: plan}, Marker: marker, Source: e.Source,
+				At: e.At, Versions: iterrun.RecordPlanVersions(project, plan), AttemptKey: e.AttemptKey,
 			}, func(runrecord.Run) []runrecord.Event { return []runrecord.Event{e} })
 			accepted = n == 1
 		}

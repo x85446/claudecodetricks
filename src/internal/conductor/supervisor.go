@@ -263,6 +263,13 @@ func (s *Service) execute(ctx context.Context, a model.Assignment) (model.Result
 	_ = outWriter.Close()
 	_ = errWriter.Close()
 	identity := processIdentity(cmd.Process.Pid)
+	if source, ok := s.Source.(ChildOwnerSource); ok {
+		if e = source.OwnerChild(ctx, a, cmd.Process.Pid, identity); e != nil {
+			_ = signalOwned(cmd.Process.Pid, identity, true)
+			_ = cmd.Wait()
+			return result, s.finish(ctx, a, result, e)
+		}
+	}
 	e = s.withLock(func() error {
 		r, x := s.runtime()
 		if x != nil {

@@ -35,9 +35,16 @@ func (ConductorPlanSource) List(ctx context.Context, p model.Project) ([]conduct
 		state := v.StateLabel()
 		running := conductorManualPlanRunning(p.Path, v, time.Now())
 		plan := conductor.Plan{Running: running, Name: v.Name, ProjectPath: p.Path, ID: conductor.PlanID(p.Path, v.Name), State: state, Staged: v.IsQueued() || v.Phase == "executing" || state == "unblocked", Blocked: state == "blocked" || state == "paused", Reason: v.Status, Release: v.TypedOnly, Started: started, Complete: v.Phase == "complete" || v.Phase == "done", Milestone: v.Milestone}
+		if path, e := safePlanPath(p.Path, v.Name); e == nil {
+			if owner, e := readOwner(path, time.Now()); e == nil && owner.Live {
+				plan.Running = true
+				plan.ExecutionOwner = owner.Owner
+			}
+		}
 		if graphErr != nil && len(v.Depends) > 0 {
 			plan.Blocked, plan.State, plan.Reason = true, "blocked", "Plan dependencies unreadable: "+graphErr.Error()
 		} else if n, ok := graph.Node(v.Name); ok && graphErr == nil {
+			plan.Position, plan.Label, plan.ReleaseGroup = n.Position, n.Label, n.Release
 			plan.Depth = n.Depth
 			switch n.Status {
 			case plangraph.StatusBlocked:
@@ -56,25 +63,6 @@ func (ConductorPlanSource) List(ctx context.Context, p model.Project) ([]conduct
 		out = append(out, plan)
 	}
 	return out, nil
-}
-func safePlanPath(project, name string) (string, error) {
-	if name == "" || filepath.Base(name) != name || strings.ContainsAny(name, "/\\\x00") {
-		return "", errors.New("invalid plan name")
-	}
-	base := filepath.Join(project, ".claude", "iterate", "plans")
-	path := filepath.Join(base, name+".md")
-	resolved, e := filepath.EvalSymlinks(path)
-	if e != nil {
-		return "", e
-	}
-	canonicalBase, e := filepath.EvalSymlinks(base)
-	if e != nil {
-		return "", e
-	}
-	if filepath.Dir(resolved) != canonicalBase {
-		return "", errors.New("plan resolves outside project plan directory")
-	}
-	return path, nil
 }
 
 type pairLines struct {
@@ -223,13 +211,7 @@ func (ConductorPlanSource) Checkpoint(ctx context.Context, a model.Assignment, r
 	}
 	return errors.New("assignment step is absent")
 }
-func conductorSetField(text, key, value string) string {
-	re := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + `:.*$`)
-	if re.MatchString(text) {
-		return re.ReplaceAllStringFunc(text, func(string) string { return key + ": " + value })
-	}
-	return key + ": " + value + "\n" + text
-}
+func conductorSetField(text, key, value string) string { return setPlanField(text, key, value) }
 
 // conductorManualPlanRunning respects an explicit release before consulting activity.
 // Generic project hooks provide a fallback only for an executing plan without a release.
@@ -241,6 +223,10 @@ func conductorManualPlanRunning(project string, plan PlanSummary, now time.Time)
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return false
+	}
+	if ownerField(string(raw), "owner") != "" {
+		o, e := readOwner(path, now)
+		return e == nil && o.Live && o.Owner == "cli"
 	}
 	marker := regexp.MustCompile(`(?m)^running:[ \t]*([^\r\n]*)`).FindSubmatch(raw)
 	if len(marker) > 1 {
@@ -350,6 +336,9 @@ func (ConductorPlanSource) Outcome(ctx context.Context, a model.Assignment, r mo
 	return nil
 }
 func (ConductorPlanSource) Claim(ctx context.Context, a model.Assignment) error {
+	if _, err := ClaimPlan(a.ProjectPath, a.Plan, "conductor", os.Getpid(), time.Now()); err != nil {
+		return err
+	}
 	path, e := safePlanPath(a.ProjectPath, a.Plan)
 	if e != nil {
 		return e
@@ -378,6 +367,9 @@ func (ConductorPlanSource) Claim(ctx context.Context, a model.Assignment) error 
 func (ConductorPlanSource) Heartbeat(ctx context.Context, a model.Assignment) error {
 	return conductorRunMarker(a, false)
 }
+func (ConductorPlanSource) OwnerChild(ctx context.Context, a model.Assignment, pid int, identity string) error {
+	return SetPlanOwnerChild(a.ProjectPath, a.Plan, pid, identity)
+}
 func (ConductorPlanSource) Release(ctx context.Context, a model.Assignment) error {
 	return conductorRunMarker(a, true)
 }
@@ -403,6 +395,7 @@ func conductorRunMarker(a model.Assignment, release bool) error {
 		value = "false"
 	}
 	text = conductorSetField(text, "running", value)
+	text = conductorSetField(text, "heartbeat", time.Now().UTC().Format(time.RFC3339))
 	ownerID := a.ID
 	if release {
 		ownerID = ""

@@ -27,6 +27,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -53,6 +54,9 @@ const (
 
 // Input is one plan as read from disk.
 type Input struct {
+	Position   int
+	Label      string
+	Release    string
 	Name       string
 	Milestone  string   // the first milestone id the plan carries
 	Milestones []string // every milestone id the plan carries
@@ -80,27 +84,32 @@ type Edge struct {
 
 // Node is one plan in the resolved graph.
 type Node struct {
-	Name       string   `json:"name"`
-	Milestone  string   `json:"milestone,omitempty"`
-	Milestones []string `json:"milestones,omitempty"`
-	State      string   `json:"state"`
-	Status     string   `json:"status"`
-	Archived   bool     `json:"archived"`
-	Outcome    Outcome  `json:"outcome,omitempty"`
-	Declared   bool     `json:"declared"`
-	Depends    []string `json:"depends"`
-	Edges      []Edge   `json:"edges"`
-	WaitingOn  []string `json:"waiting_on"`
-	HeldBy     string   `json:"held_by,omitempty"`
-	Reason     string   `json:"reason,omitempty"`
-	Errors     []string `json:"errors"`
-	Depth      int      `json:"depth"`
-	Started    string   `json:"started,omitempty"`
+	Position      int      `json:"position"`
+	Label         string   `json:"label"`
+	Release       string   `json:"release"`
+	WaitingReason string   `json:"waiting_reason,omitempty"`
+	Name          string   `json:"name"`
+	Milestone     string   `json:"milestone,omitempty"`
+	Milestones    []string `json:"milestones,omitempty"`
+	State         string   `json:"state"`
+	Status        string   `json:"status"`
+	Archived      bool     `json:"archived"`
+	Outcome       Outcome  `json:"outcome,omitempty"`
+	Declared      bool     `json:"declared"`
+	Depends       []string `json:"depends"`
+	Edges         []Edge   `json:"edges"`
+	WaitingOn     []string `json:"waiting_on"`
+	HeldBy        string   `json:"held_by,omitempty"`
+	Reason        string   `json:"reason,omitempty"`
+	Errors        []string `json:"errors"`
+	Depth         int      `json:"depth"`
+	Started       string   `json:"started,omitempty"`
 }
 
 // Graph is a project's resolved plan graph: every live plan, plus each
 // archived plan a live edge reaches.
 type Graph struct {
+	Next   string   `json:"next,omitempty"`
 	Nodes  []Node   `json:"nodes"`
 	Errors []string `json:"errors"`
 	index  map[string]int
@@ -140,6 +149,9 @@ func (g Graph) Ready() []Node {
 // Less orders plans for admission: graph depth, then milestone id, then
 // Started, then name. A plan with a milestone sorts before one without.
 func Less(a, b Node) bool {
+	if a.Position > 0 && b.Position > 0 && a.Position != b.Position {
+		return a.Position < b.Position
+	}
 	if a.Depth != b.Depth {
 		return a.Depth < b.Depth
 	}
@@ -280,6 +292,9 @@ func ParseArchiveName(file string) (name string, outcome Outcome, rolledTo strin
 
 // KeyBlock is the subset of a plan's key block the graph reads.
 type KeyBlock struct {
+	Position   int
+	Label      string
+	Release    string
 	Name       string
 	Phase      string
 	Status     string
@@ -321,6 +336,12 @@ func (kb *KeyBlock) Apply(line string) {
 	}
 	v := strings.TrimSpace(m[2])
 	switch m[1] {
+	case "position":
+		kb.Position, _ = strconv.Atoi(v)
+	case "label":
+		kb.Label = v
+	case "release":
+		kb.Release = v
 	case "name":
 		kb.Name = v
 	case "phase":
@@ -374,7 +395,7 @@ func Inputs(projectDir string) ([]Input, error) {
 		if kb.Name != "" {
 			name = kb.Name
 		}
-		in = append(in, Input{Name: name, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: StateOf(kb.Phase, kb.Status), Started: kb.Started, File: path})
+		in = append(in, Input{Name: name, Position: kb.Position, Label: kb.Label, Release: kb.Release, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: StateOf(kb.Phase, kb.Status), Started: kb.Started, File: path})
 	}
 	archived, err := filepath.Glob(filepath.Join(base, "archive", "*.md"))
 	if err != nil {
@@ -393,7 +414,7 @@ func Inputs(projectDir string) ([]Input, error) {
 		if kb.Name != "" {
 			name = kb.Name
 		}
-		in = append(in, Input{Name: name, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: "archived", Archived: true, Outcome: outcome, RolledTo: rolledTo, Started: kb.Started, File: path})
+		in = append(in, Input{Name: name, Position: kb.Position, Label: kb.Label, Release: kb.Release, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: "archived", Archived: true, Outcome: outcome, RolledTo: rolledTo, Started: kb.Started, File: path})
 	}
 	return in, nil
 }
@@ -454,7 +475,7 @@ func Resolve(inputs []Input) Graph {
 	}
 	for _, name := range order {
 		in := r.live[name]
-		n := Node{Name: name, Milestone: in.Milestone, Milestones: milestonesOf(*in), State: in.State, Declared: in.Declared, Depends: append([]string{}, in.Depends...), Edges: []Edge{}, WaitingOn: []string{}, Errors: []string{}, Started: in.Started}
+		n := Node{Name: name, Position: in.Position, Label: in.Label, Release: in.Release, Milestone: in.Milestone, Milestones: milestonesOf(*in), State: in.State, Declared: in.Declared, Depends: append([]string{}, in.Depends...), Edges: []Edge{}, WaitingOn: []string{}, Errors: []string{}, Started: in.Started}
 		for _, ref := range in.Depends {
 			target, err := r.lookup(ref)
 			if err != nil {
@@ -540,6 +561,7 @@ func Resolve(inputs []Input) Graph {
 		}
 		return Less(a, b)
 	})
+	g.assignExecutionOrder()
 	for i, n := range g.Nodes {
 		g.index[n.Name] = i
 	}
@@ -828,5 +850,87 @@ func (g *Graph) depths(cyclic map[string]bool) {
 	}
 	for i := range g.Nodes {
 		g.Nodes[i].Depth = depth(g.Nodes[i].Name)
+	}
+}
+
+// assignExecutionOrder derives unstamped positions from stable plan metadata.
+// Explicit position keys remain authoritative across status updates.
+func (g *Graph) assignExecutionOrder() {
+	live := []int{}
+	used := map[int]string{}
+	labels := map[string]string{}
+	for i, n := range g.Nodes {
+		if n.Archived {
+			continue
+		}
+		live = append(live, i)
+		if n.Position > 0 {
+			if prev := used[n.Position]; prev != "" {
+				g.Errors = append(g.Errors, fmt.Sprintf("duplicate execution position %d: %s, %s", n.Position, prev, n.Name))
+			}
+			used[n.Position] = n.Name
+		}
+	}
+	if len(live) > 26 {
+		names := []string{}
+		for _, i := range live {
+			names = append(names, g.Nodes[i].Name)
+		}
+		g.Errors = append(g.Errors, "execution sequence exceeds 26 plans; consolidate: "+strings.Join(names, ", "))
+	}
+	next := 1
+	for _, i := range live {
+		n := &g.Nodes[i]
+		if n.Position <= 0 {
+			for used[next] != "" {
+				next++
+			}
+			n.Position = next
+			used[next] = n.Name
+			next++
+		}
+		expected := ""
+		if n.Position <= 26 {
+			expected = string(rune('A' + n.Position - 1))
+		} else {
+			g.Errors = append(g.Errors, fmt.Sprintf("execution position for %s exceeds Z; consolidate plans", n.Name))
+		}
+		if n.Label != "" && n.Label != expected {
+			g.Errors = append(g.Errors, fmt.Sprintf("label %s for %s disagrees with position %d (%s)", n.Label, n.Name, n.Position, expected))
+		}
+		if prev := labels[n.Label]; n.Label != "" && prev != "" {
+			g.Errors = append(g.Errors, fmt.Sprintf("duplicate execution label %s: %s, %s", n.Label, prev, n.Name))
+		}
+		if n.Label != "" {
+			labels[n.Label] = n.Name
+		}
+		n.Label = expected
+		n.WaitingReason = n.Reason
+	}
+	byName := map[string]Node{}
+	for _, n := range g.Nodes {
+		byName[n.Name] = n
+	}
+	for _, i := range live {
+		n := g.Nodes[i]
+		for _, e := range n.Edges {
+			p, ok := byName[e.Target]
+			if len(g.Errors) == 0 && ok && !p.Archived && p.Position >= n.Position {
+				g.Errors = append(g.Errors, fmt.Sprintf("execution order puts %s before prerequisite %s", n.Name, p.Name))
+			}
+		}
+	}
+	sort.SliceStable(g.Nodes, func(i, j int) bool {
+		a, b := g.Nodes[i], g.Nodes[j]
+		if a.Archived != b.Archived {
+			return a.Archived
+		}
+		return Less(a, b)
+	})
+	for _, n := range g.Nodes {
+		if !n.Archived && n.Status == StatusReady && n.State != "blocked" && n.State != "paused" {
+			g.Next = n.Name
+			break
+		}
 	}
 }

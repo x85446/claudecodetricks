@@ -129,7 +129,7 @@ Read, in order: the current branch and whether the tree is dirty; every
 |---|---|
 | On default branch, clean, no plans, no unworked or operator-waiting messages | `fixed: 0/0`, `broken still: 0/0`, `clean, nothing outstanding`. Stop. |
 | Plans exist, all `phase: planned`, on default branch | **Planning session, never kicked off.** Nothing broken — the clause names the plans; `/iterate <name>` starts one. A normal resting state, not a fault. |
-| `phase: executing`, `running:` heartbeat fresh (<90s) | **A run is live right now.** Say so in the clause and leave it alone. Do not touch the branch, the plan, or the tree. |
+| binary reports a live execution owner | **A run is live right now.** Say so in the clause and leave it alone. Do not touch the branch, the plan, or the tree. |
 | `phase: executing`, no fresh heartbeat, all steps done, all validations green, not merged | **The merge never happened.** This is the failure case — finish it (see below); it counts as fixed. |
 | `phase: executing`, `status: blocked-on-operator` / `awaiting-human-gate` | **Blocked on you.** Each blocker is a problem; plan its route down to one question before you answer. |
 | `status: blocked-on-operator` on a purchase, subscription, token or licence key the plan's `Cost:` line did **not** approve (an approved one missing its credential is an ordinary access blocker — handle it as one) | **Planning defect, not a blocker on you.** The executor should never have parked here (`/iterate` rule 29). Never "buy X": `I can fix` it by re-planning the free path through `/iterate-planner` and marking the plan `unblocked` with the reason. |
@@ -236,7 +236,7 @@ in a second session clearing J. **The conductor owns one project lease across pl
   is confusing later.
 
 Before touching anything, check whether the plan you're about to edit is the one
-currently running (`running:` heartbeat under 90 seconds). If it is, report and
+currently held by a live binary execution owner. If it is, report and
 stop — that plan is not yours to triage right now.
 
 ## Rules
@@ -289,3 +289,7 @@ after 5.5.0 was installed and verified on disk.
 If members disagree, say so and name them: drift inside the family is a
 defect, not a state, and `skillctl family iterate set X.Y.Z` is the only
 correct way to bump.
+
+## Execution ownership
+
+Use `iterate-run plan reconcile <name> --json` to reconcile dead execution leases. Preserve checkpoint evidence and alive orphaned children. Never delete lease files or clear ownership fields by hand. A planned, queued, staged or idle executing plan has no permanent executor; only a live execution owns the project. Read readiness and execution order from `iterate-run plan graph --json`.

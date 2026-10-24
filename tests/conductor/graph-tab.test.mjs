@@ -8,7 +8,7 @@
 //
 // Run: node --experimental-websocket tests/conductor/graph-tab.test.mjs
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -31,7 +31,8 @@ const cleanup = () => { for (const p of procs) try { p.kill('SIGTERM'); } catch 
 process.on('exit', cleanup);
 
 const bin = join(root, 'iterate-run');
-execFileSync('go', ['build', '-o', bin, './src/cmd/iterate-run'], { cwd: repo, stdio: 'inherit' });
+execFileSync('make', ['bin/iterate-run'], { cwd: repo, stdio: 'inherit' });
+copyFileSync(join(repo, 'bin/iterate-run'), bin);
 
 const plan = (name, keys) => `# Iterate Task — ${name}\n\nname: ${name}\nStarted: 2026-09-11T02:06:12Z (planned)\n${keys.join('\n')}\nrunning: false\n\n## Goal\nFixture plan ${name}\n\n## Steps\n- [ ] 1. work\n\n## Validation\n- [ ] 1. verify\n`;
 for (const d of [join(chain, '.claude/iterate/plans'), join(chain, '.claude/iterate/archive'), join(empty, '.claude/iterate/plans'), join(home, '.claude/iterate-run')]) mkdirSync(d, { recursive: true });
@@ -98,7 +99,17 @@ check(await js("document.querySelectorAll('path.graph-edge.unmet').length") === 
 const held = await js("document.querySelector('.graph-held')?.textContent || ''");
 check(held.includes('dace') && held.includes('waiting on caiman'), 'the held list names dace waiting on caiman', held);
 check(held.includes('held by caiman'), 'deeper plans name the root that holds them', held);
-check((await js("document.querySelector('.graph-summary')?.textContent || ''")).startsWith('5 plans · 1 ready · 3 waiting · 1 blocked'), 'summary counts by displayed status');
+check((await js("document.querySelector('.graph-summary')?.textContent || ''")).includes('5 plans · 1 ready · 3 waiting · 1 blocked'), 'summary counts by displayed status');
+check((await js("document.querySelector('.graph-summary')?.textContent || ''")).includes('Next: independent'), 'Next names the ready unblocked plan');
+const graphAPI = await (await fetch(`http://localhost:${port}/api/graph?${new URLSearchParams({project:chain})}`)).json();
+const graphDocument = graphAPI.nodes ? graphAPI : graphAPI.data;
+for (const n of graphDocument.nodes.filter(n=>!n.archived)) {
+  check(await js(`Array.from(document.querySelectorAll('.graph-name')).some(x=>x.textContent.includes(${JSON.stringify(n.label+' · '+n.name)}))`), 'node shows canonical execution label '+n.name);
+}
+if (process.env.NENE_GRAPH_SCREENSHOT) {
+ const shot = await send('Page.captureScreenshot', {format:'png',captureBeyondViewport:false});
+ writeFileSync(process.env.NENE_GRAPH_SCREENSHOT, Buffer.from(shot.result.data,'base64'));
+}
 const through = await js(`(()=>{const rects=[...document.querySelectorAll('.graph-item')].map(g=>({n:g.querySelector('title').textContent.split(' · ')[0],b:g.querySelector('rect').getBBox()}));const hits=[];for(const p of document.querySelectorAll('path.graph-edge')){const [f,t]=p.querySelector('title').textContent.split(' · ')[0].split(' → ');const L=p.getTotalLength();for(let s=0;s<=60;s++){const q=p.getPointAtLength(L*s/60);for(const r of rects){if(r.n===f||r.n===t)continue;const b=r.b;if(q.x>b.x+2&&q.x<b.x+b.width-2&&q.y>b.y+2&&q.y<b.y+b.height-2)hits.push(f+'→'+t+' through '+r.n)}}}return [...new Set(hits)]})()`);
 check(through.length === 0, 'no edge crosses another plan\'s box', through);
 check(await js("document.querySelectorAll('rect.graph-node').length === new Set([...document.querySelectorAll('rect.graph-node')].map(r=>r.getAttribute('x')+','+r.getAttribute('y'))).size"), 'no two boxes share a position');

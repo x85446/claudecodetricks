@@ -29,18 +29,22 @@ type Pair struct {
 	Digest     string `json:"digest"`
 }
 type Plan struct {
-	Running     bool      `json:"running"`
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	ProjectPath string    `json:"project_path"`
-	State       string    `json:"state"`
-	Staged      bool      `json:"staged"`
-	Blocked     bool      `json:"blocked"`
-	Reason      string    `json:"reason,omitempty"`
-	Release     bool      `json:"release"`
-	Started     time.Time `json:"started"`
-	Complete    bool      `json:"complete"`
-	Kind        string    `json:"kind,omitempty"`
+	ExecutionOwner string    `json:"execution_owner,omitempty"`
+	Position       int       `json:"position,omitempty"`
+	Label          string    `json:"label,omitempty"`
+	ReleaseGroup   string    `json:"release_group,omitempty"`
+	Running        bool      `json:"running"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	ProjectPath    string    `json:"project_path"`
+	State          string    `json:"state"`
+	Staged         bool      `json:"staged"`
+	Blocked        bool      `json:"blocked"`
+	Reason         string    `json:"reason,omitempty"`
+	Release        bool      `json:"release"`
+	Started        time.Time `json:"started"`
+	Complete       bool      `json:"complete"`
+	Kind           string    `json:"kind,omitempty"`
 	// Waiting is true while a predecessor named on the plan's depends:
 	// line is unfinished. A waiting plan is never admitted, whether it
 	// would start or resume; a plan with a live run is never interrupted.
@@ -64,6 +68,11 @@ type LeaseSource interface {
 	Claim(context.Context, model.Assignment) error
 	Heartbeat(context.Context, model.Assignment) error
 	Release(context.Context, model.Assignment) error
+}
+
+// ChildOwnerSource records the child process identity alongside project ownership.
+type ChildOwnerSource interface {
+	OwnerChild(context.Context, model.Assignment, int, string) error
 }
 type OutcomeSource interface {
 	Outcome(context.Context, model.Assignment, model.Result) error

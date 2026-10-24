@@ -111,6 +111,35 @@ func writePlan(t *testing.T, project, name, executing string) string {
 	return path
 }
 
+// TESTMASTER: id=nene-record-append-contract tier=? parallel=no
+func TestNeneRecordAppendConductorIdentityAndClock(t *testing.T) {
+	env := newRecordEnv(t)
+	project := t.TempDir()
+	writePlan(t, project, "alpha", "2026-01-07T09:00:00Z")
+	events := []string{
+		`{"id":"nene-start","type":"attempt.started","at":"2026-01-07T09:00:00Z","source":"conductor","project_id":"p1","assignment_id":"a1","conductor_run_id":"c1","attempt_key":"a1","team":"fixture","requirement":1,"attempt_info":{"kind":"pair","engine":"claude-code"}}`,
+		`{"id":"nene-usage","type":"usage.observed","at":"2026-01-07T09:00:01Z","source":"conductor","assignment_id":"a1","conductor_run_id":"c1","attempt_key":"a1","team":"fixture","requirement":1,"usage":{"request_id":"a1","scope":"exact","input_tokens":100,"output_tokens":10}}`,
+	}
+	for _, event := range events {
+		env.mustAppend(project, "alpha", true, event, "accepted")
+	}
+	r := onlyRun(t, env.show(false, "--project", project, "--plan", "alpha"))
+	if r.ProjectID != "p1" || len(r.Sources) != 1 || r.Sources[0] != "conductor" || r.OpenedAt == nil || r.OpenedAt.Format("2006-01-02T15:04:05Z") != "2026-01-07T09:00:00Z" {
+		t.Fatalf("append lost source, project or observation clock: %+v", r)
+	}
+	b, _ := json.Marshal(r)
+	for _, value := range []string{`"assignment_id":"a1"`, `"conductor_run_id":"c1"`, `"team":"fixture"`, `"input_tokens":100`} {
+		if !bytes.Contains(b, []byte(value)) {
+			t.Fatalf("fold lost %s: %s", value, b)
+		}
+	}
+	query := url.Values{"project": {project}, "plan": {"alpha"}}
+	api := onlyRun(t, apiReport(t, query))
+	if api.ProjectID != "p1" || api.Events != r.Events {
+		t.Fatalf("record API differs from CLI: %+v", api)
+	}
+}
+
 func archivePlan(t *testing.T, project, name, archive string) {
 	t.Helper()
 	dir := filepath.Join(project, ".claude", "iterate", "archive")

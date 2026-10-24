@@ -96,6 +96,17 @@ func recordVersions(path string, ps PlanSummary) *runrecord.Versions {
 	return v
 }
 
+// RecordPlanVersions reads the plan and runtime versions for an append caller.
+func RecordPlanVersions(project, plan string) *runrecord.Versions {
+	path, err := safePlanPath(project, plan)
+	if err == nil {
+		if ps, e := parsePlanFile(path, project); e == nil {
+			return recordVersions(path, ps)
+		}
+	}
+	return &runrecord.Versions{IterateRun: BuildVersion}
+}
+
 // recordLifecycleState maps a plan's state label to a lifecycle state, or
 // "" for a label that is not one (planned).
 func recordLifecycleState(ps PlanSummary) string {

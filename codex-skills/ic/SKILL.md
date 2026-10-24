@@ -26,3 +26,5 @@ Argument: <same arguments as /iterate-conductor>. `$1` is its first word; `$ARGU
 Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
 
 - `$iterate-conductor` — ported.
+
+Execution admission uses `iterate-run plan claim <name> --owner <cli|conductor> --pid <session-pid>`. Only a live execution excludes the other executor. Dependencies gate typed and unnamed launches. A bare iterate selects the sole ready plan from `iterate-run plan graph --json`; several ready plans are listed without a claim. Use `plan heartbeat`, `plan release` and `plan reconcile` for lease lifecycle, preserving uncertain checkpoint evidence.

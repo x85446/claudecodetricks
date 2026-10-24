@@ -33,3 +33,5 @@ is the normal path and not a workaround.
 
 - `$iterate` — must also be installed as a Codex skill for this alias to
   resolve. Port it with `$skill-2-codex` if it is missing.
+
+Execution admission uses `iterate-run plan claim <name> --owner <cli|conductor> --pid <session-pid>`. Only a live execution excludes the other executor. Dependencies gate typed and unnamed launches. A bare iterate selects the sole ready plan from `iterate-run plan graph --json`; several ready plans are listed without a claim. Use `plan heartbeat`, `plan release` and `plan reconcile` for lease lifecycle, preserving uncertain checkpoint evidence.

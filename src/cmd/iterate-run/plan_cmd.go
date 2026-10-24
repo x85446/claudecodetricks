@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,7 +24,7 @@ type planFlags struct {
 }
 
 var (
-	planValued  = map[string]bool{"format": true, "project": true, "color": true}
+	planValued  = map[string]bool{"format": true, "project": true, "color": true, "owner": true, "pid": true}
 	planBoolean = map[string]bool{"check": true, "json": true, "apply": true, "help": true, "no-color": true}
 	planShort   = map[string]string{"-C": "project", "-h": "help"}
 )
@@ -118,6 +119,25 @@ func runPlanCLI(args []string, out, diag io.Writer, now time.Time) int {
 	f, err := parsePlanFlags(args)
 	if err != nil {
 		return planUsageError(diag, err.Error(), "See the flags with: iterate-run plan --help")
+	}
+	if len(f.words) > 0 && (f.words[0] == "claim" || f.words[0] == "heartbeat" || f.words[0] == "release" || f.words[0] == "reconcile") && !f.bools["help"] {
+		return runPlanOwnership(f, out, diag, now)
+	}
+	if len(f.words) >= 2 && f.words[0] == "order" && !f.bools["help"] {
+		project := f.values["project"]
+		if project == "" {
+			project = "."
+		}
+		switch f.words[1] {
+		case "show":
+			return runPlanGraph(f, project, out, diag)
+		case "set":
+			if e := iterrun.SetPlanOrder(project, f.words[2:]); e != nil {
+				fmt.Fprintln(diag, "Error:", e)
+				return 1
+			}
+			return runPlanGraph(f, project, out, diag)
+		}
 	}
 	verb := strings.Join(f.words, " ")
 	if len(f.words) == 0 || f.bools["help"] {
@@ -421,6 +441,10 @@ func planHelp(w io.Writer) {
 
 Usage:
   iterate-run plan <command> [flags]
+  iterate-run plan claim <name> --owner <cli|conductor> --pid <pid> [--json]
+  iterate-run plan heartbeat|release <name> [--json]
+  iterate-run plan reconcile [<name>] [--json]
+  iterate-run plan order show|set [<names...>] [--json]
 
 Examples:
   iterate-run plan graph                          # this project's graph as a tree
@@ -430,11 +454,19 @@ Examples:
   iterate-run plan depends backfill --apply       # write them
 
 Commands:
+  claim               atomically claim a ready plan for a live session
+  heartbeat           refresh the execution owner's heartbeat
+  release             release an execution owner
+  reconcile           finish dead leases and preserve checkpoint evidence
+  order show|set      inspect or set stable execution positions
   graph               print the plan graph: each plan, its state, what it waits on
   depends backfill    derive depends: lines from milestones and Depends on prose
 
 Global flags:
   -C, --project <dir>         project directory (default .)
+      --owner <kind>          claim: cli or conductor
+      --pid <pid>             claim: long-lived session process PID
+      --json                  machine-readable result
       --color <when>          auto, always or never (default auto)
       --no-color              same as --color never
   -h, --help                  help for this command
@@ -499,4 +531,41 @@ written; a plan with a live run is skipped. Prose naming no plan is listed as
 unresolved and needs a reading.
 
 See also: iterate-run plan graph --check`)
+}
+
+func runPlanOwnership(f planFlags, out, diag io.Writer, now time.Time) int {
+	verb := f.words[0]
+	name := ""
+	if len(f.words) > 1 {
+		name = f.words[1]
+	}
+	if len(f.words) > 2 || (name == "" && verb != "reconcile") {
+		return planUsageError(diag, "plan name required", "Run: iterate-run plan "+verb+" <name>")
+	}
+	project := f.values["project"]
+	if project == "" {
+		project = "."
+	}
+	var value any
+	var err error
+	if verb == "claim" {
+		pid, e := strconv.Atoi(f.values["pid"])
+		if e != nil {
+			return planUsageError(diag, "--pid requires the owning process PID", "Run: iterate-run plan claim "+name+" --owner cli --pid <pid>")
+		}
+		value, err = iterrun.ClaimPlan(project, name, f.values["owner"], pid, now)
+	} else {
+		err = iterrun.UpdatePlanOwnership(project, name, verb, now)
+		value = map[string]string{"plan": name, "operation": verb}
+	}
+	if err != nil {
+		fmt.Fprintln(diag, "Error:", err)
+		return 1
+	}
+	if f.bools["json"] {
+		_ = json.NewEncoder(out).Encode(value)
+	} else {
+		fmt.Fprintf(out, "%s %s\n", verb, name)
+	}
+	return 0
 }

@@ -20,6 +20,7 @@ type GraphEdge struct {
 // GraphView is the one document `iterate-run plan graph --format json` and
 // `GET /api/graph` both serve.
 type GraphView struct {
+	Next    string           `json:"next,omitempty"`
 	Project string           `json:"project"`
 	Nodes   []plangraph.Node `json:"nodes"`
 	Edges   []GraphEdge      `json:"edges"`
@@ -39,7 +40,7 @@ func BuildGraphView(projectDir string) (GraphView, error) {
 	if err != nil {
 		return GraphView{}, err
 	}
-	v := GraphView{Project: abs, Nodes: g.Nodes, Edges: []GraphEdge{}, Errors: g.Errors}
+	v := GraphView{Next: g.Next, Project: abs, Nodes: g.Nodes, Edges: []GraphEdge{}, Errors: g.Errors}
 	for _, n := range g.Nodes {
 		for _, e := range n.Edges {
 			v.Edges = append(v.Edges, GraphEdge{From: e.Target, To: n.Name, Satisfied: e.Satisfied, Reason: e.Reason, Implied: e.Implied})

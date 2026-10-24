@@ -178,6 +178,9 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 			}
 		}
 		sort.SliceStable(plans, func(i, j int) bool {
+			if plans[i].Position > 0 && plans[j].Position > 0 && plans[i].Position != plans[j].Position {
+				return plans[i].Position < plans[j].Position
+			}
 			rank := func(x Plan) int {
 				if x.Kind == "intake" {
 					return 3
@@ -243,7 +246,11 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 				}
 				if !owned {
 					q.RunningPlans = append(q.RunningPlans, pl.Name)
-					q.RunningOwners[pl.Name] = "cli"
+					owner := pl.ExecutionOwner
+					if owner == "" {
+						owner = "cli"
+					}
+					q.RunningOwners[pl.Name] = owner
 					q.Running++
 				}
 				continue
@@ -336,9 +343,6 @@ func (s *Service) evaluate(ctx context.Context, c model.Config, r Runtime, now t
 						deny("plan_waiting", pl.WaitReason)
 					}
 					pg := r.Progress[pl.ID]
-					if pg.ReconcileSequence != "" && pg.ReconcileSequence != sq.ID {
-						deny("checkpoint_reconciliation", "Interrupted checkpoint must reconcile with its launch sequence before handoff")
-					}
 					if pg.Parked && pl.State != "unblocked" {
 						deny("operator_parked", pg.Reason)
 					}
