@@ -213,32 +213,14 @@ func (ConductorPlanSource) Checkpoint(ctx context.Context, a model.Assignment, r
 }
 func conductorSetField(text, key, value string) string { return setPlanField(text, key, value) }
 
-// conductorManualPlanRunning respects an explicit release before consulting activity.
-// Generic project hooks provide a fallback only for an executing plan without a release.
+// conductorManualPlanRunning reads the shared plan ownership contract.
 func conductorManualPlanRunning(project string, plan PlanSummary, now time.Time) bool {
-	path, err := safePlanPath(project, plan.Name)
-	if err != nil {
+	path, e := safePlanPath(project, plan.Name)
+	if e != nil {
 		return false
 	}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	if ownerField(string(raw), "owner") != "" {
-		o, e := readOwner(path, now)
-		return e == nil && o.Live && o.Owner == "cli"
-	}
-	marker := regexp.MustCompile(`(?m)^running:[ \t]*([^\r\n]*)`).FindSubmatch(raw)
-	if len(marker) > 1 {
-		value := strings.TrimSpace(string(marker[1]))
-		if value == "false" {
-			return false
-		}
-		if at, err := time.Parse(time.RFC3339, value); err == nil && now.Sub(at) >= 0 && now.Sub(at) < 90*time.Second {
-			return true
-		}
-	}
-	return plan.StateLabel() == "executing" && CurrentPlanName(project) == plan.Name && IsLive(project, now) && !conductorOwnTrail(project)
+	owner, e := readOwner(path, now)
+	return e == nil && owner.Live && owner.Owner != "conductor"
 }
 
 func (ConductorPlanSource) Gate(ctx context.Context, p model.Project, now time.Time) error {

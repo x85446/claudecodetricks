@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ownerKernel32         = syscall.NewLazyDLL("ownerKernel32.dll")
+	ownerKernel32         = syscall.NewLazyDLL("kernel32.dll")
 	ownerProcLockFileEx   = ownerKernel32.NewProc("LockFileEx")
 	ownerProcUnlockFileEx = ownerKernel32.NewProc("UnlockFileEx")
 )

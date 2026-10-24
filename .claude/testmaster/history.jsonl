@@ -10288,3 +10288,15 @@
 {"id":"iterrun.TestOwnerSimultaneousClaims","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:28:28Z"}
 {"id":"nene.ownership-cli","ms":652,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:28:28Z"}
 {"batch":"iterate-run.TestNeneRecord*+nene.ownership-cli+iterrun.TestOwner*","failed":0,"missing":0,"ms":2099,"not_run":0,"passed":12,"runner":"testmaster","skipped":0,"ts":"2026-10-24T06:28:28Z"}
+{"id":"iterrun.TestConductorManualReleaseHandoff","ms":140,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestConductorSourceOwnTrail","ms":80,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerCLIExcludesConductor","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerCLIIdleStart","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerCompletedHandoffBothWays","ms":30,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerConductorExcludesCLI","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerConductorIdleStart","ms":60,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerDeadLeaseReconcilesEvidence","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerDependencyDenialPreservesPlan","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerLiveProcessKeepsStaleHeartbeat","ms":20,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"id":"iterrun.TestOwnerSimultaneousClaims","ms":10,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-24T06:44:24Z"}
+{"batch":"iterrun.TestOwner*+iterrun.TestConductorManualRelease*+iterrun.TestConductorSourceOwnTrail","failed":0,"missing":0,"ms":2879,"not_run":0,"passed":11,"runner":"testmaster","skipped":0,"ts":"2026-10-24T06:44:24Z"}

@@ -12901,8 +12901,8 @@
             "src/internal/iterrun/conductor_source.go"
           ],
           "id": "conductor-cli-unblock-handoff",
-          "last_validated": "2026-10-24T05:59:03Z",
-          "last_validated_commit": "2e6f8048",
+          "last_validated": "2026-10-24T06:44:24Z",
+          "last_validated_commit": "a7d00ce4",
           "test": "iterrun.TestConductorManualReleaseHandoff",
           "validity": "valid"
         },

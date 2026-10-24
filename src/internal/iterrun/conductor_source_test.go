@@ -290,7 +290,7 @@ func TestConductorManualReleaseHandoff(t *testing.T) {
 		{"blocked release", "blocked-on-operator: fixture", "false", false},
 		{"fresh manual lock", "executing", now.Format(time.RFC3339), true},
 		{"unblocked but still owned", "unblocked", now.Format(time.RFC3339), true},
-		{"legacy active", "executing", "", true},
+		{"legacy active", "executing", "", false},
 		{"legacy unblocked", "unblocked", "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

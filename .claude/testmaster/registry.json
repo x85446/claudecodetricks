@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-24T06:28:28Z",
+  "updated": "2026-10-24T06:44:24Z",
   "sources": [
     {
       "kind": "go",
@@ -16,10 +16,10 @@
     }
   ],
   "last_run": {
-    "ts": "2026-10-24T06:28:28Z",
-    "selection": "iterate-run.TestNeneRecord*+nene.ownership-cli+iterrun.TestOwner*",
-    "ms": 2099,
-    "passed": 12,
+    "ts": "2026-10-24T06:44:24Z",
+    "selection": "iterrun.TestOwner*+iterrun.TestConductorManualRelease*+iterrun.TestConductorSourceOwnTrail",
+    "ms": 2879,
+    "passed": 11,
     "failed": 0,
     "skipped": 0,
     "missing": 0,
@@ -5195,12 +5195,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorManualReleaseHandoff$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 16,
-      "avg_ms": 265,
-      "last_ms": 130,
+      "runs": 17,
+      "avg_ms": 257,
+      "last_ms": 140,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T05:59:03Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestConductorOwnedHookObservation": {
       "kind": "go",
@@ -5338,12 +5338,12 @@
       "pkg": "./src/internal/iterrun",
       "cmd": "go test -count=1 -run '^TestConductorSourceOwnTrail$' ./src/internal/iterrun",
       "file": "src/internal/iterrun/conductor_source_test.go",
-      "runs": 30,
-      "avg_ms": 115,
+      "runs": 31,
+      "avg_ms": 113,
       "last_ms": 80,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T05:59:03Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestConductorSourceParkedInterruption": {
       "kind": "go",
@@ -6493,12 +6493,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerCLIExcludesConductor$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
-      "avg_ms": 13,
+      "runs": 12,
+      "avg_ms": 12,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestOwnerCLIIdleStart": {
       "kind": "go",
@@ -6507,12 +6507,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerCLIIdleStart$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
+      "runs": 12,
       "avg_ms": 10,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestOwnerCompletedHandoffBothWays": {
       "kind": "go",
@@ -6521,12 +6521,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerCompletedHandoffBothWays$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
-      "avg_ms": 32,
+      "runs": 12,
+      "avg_ms": 31,
       "last_ms": 30,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestOwnerConductorExcludesCLI": {
       "kind": "go",
@@ -6535,12 +6535,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerConductorExcludesCLI$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
+      "runs": 12,
       "avg_ms": 10,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestOwnerConductorIdleStart": {
       "kind": "go",
@@ -6549,12 +6549,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerConductorIdleStart$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
-      "avg_ms": 63,
-      "last_ms": 50,
+      "runs": 12,
+      "avg_ms": 62,
+      "last_ms": 60,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestOwnerDeadLeaseReconcilesEvidence": {
       "kind": "go",
@@ -6563,12 +6563,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerDeadLeaseReconcilesEvidence$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
+      "runs": 12,
       "avg_ms": 10,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestOwnerDependencyDenialPreservesPlan": {
       "kind": "go",
@@ -6577,12 +6577,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerDependencyDenialPreservesPlan$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
+      "runs": 12,
       "avg_ms": 10,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestOwnerLiveProcessKeepsStaleHeartbeat": {
       "kind": "go",
@@ -6591,12 +6591,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerLiveProcessKeepsStaleHeartbeat$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
+      "runs": 12,
       "avg_ms": 19,
       "last_ms": 20,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestOwnerSimultaneousClaims": {
       "kind": "go",
@@ -6605,12 +6605,12 @@
       "dir": "src/internal/iterrun",
       "cmd": "cd src/internal/iterrun && go test -count=1 -run '^TestOwnerSimultaneousClaims$' .",
       "file": "src/internal/iterrun/ownership_test.go",
-      "runs": 11,
-      "avg_ms": 14,
+      "runs": 12,
+      "avg_ms": 13,
       "last_ms": 10,
       "tier": "fast",
       "last_result": "pass",
-      "updated": "2026-10-24T06:28:28Z"
+      "updated": "2026-10-24T06:44:24Z"
     },
     "iterrun.TestParallelCallsSplitTheirSharedContextGrowth": {
       "kind": "go",

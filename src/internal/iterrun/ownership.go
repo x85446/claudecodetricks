@@ -39,6 +39,9 @@ func readOwner(path string, now time.Time) (ExecutionOwner, error) {
 	}
 	s := string(b)
 	o := ExecutionOwner{Plan: strings.TrimSuffix(filepath.Base(path), ".md"), Owner: ownerField(s, "owner"), Identity: ownerField(s, "owner-start")}
+	if o.Owner == "" && ownerField(s, "conductor-assignment") != "" {
+		o.Owner = "conductor"
+	}
 	o.PID, _ = strconv.Atoi(ownerField(s, "owner-pid"))
 	o.Heartbeat, _ = time.Parse(time.RFC3339, ownerField(s, "heartbeat"))
 	if o.Heartbeat.IsZero() {
