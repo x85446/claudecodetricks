@@ -257,6 +257,10 @@ nene-planning-test: $(ITERATE_RUN_BIN)  ## Exercise coherent planning and consol
 nene-coverage-test:  ## Measure one ownership or order test's executed source files
 	$(Q)$(GO) test -count=1 -run '^$(TEST_CASE)$$' -coverpkg=./src/internal/iterrun,./src/internal/plangraph -coverprofile='$(COVER_FILE)' ./src/internal/iterrun
 
+.PHONY: nene-legacy-test
+nene-legacy-test: $(ITERATE_RUN_BIN)  ## Exercise installed staging and terminal-state rules
+	$(Q)python3 scripts/nene-legacy-acceptance.py --scope $(or $(SCOPE),stage)
+
 .PHONY: nene-ownership-test
 nene-ownership-test: $(ITERATE_RUN_BIN)  ## Verify process-level ownership and dependency admission with the real CLI
 	$(Q)python3 scripts/nene-ownership-acceptance.py
