@@ -112,7 +112,6 @@ endif
 .PHONY: fmt fmt-check vet lint check
 .PHONY: install uninstall
 .PHONY: coverage coverage-html tutorial-box-test iterate-contract-test
-.PHONY: nightly-install nightly-uninstall nightly-status nightly-tick
 .PHONY: run watch
 .PHONY: version info
 .PHONY: help
@@ -209,15 +208,11 @@ $(DOC_GUARD_BIN): $(wildcard $(CMD_DIR)/doc-guard/*.go) $(wildcard $(INTERNAL_DI
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/doc-guard
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) doc-guard → $@"
 
-$(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(shell find $(INTERNAL_DIR)/iterrun $(INTERNAL_DIR)/conductor $(INTERNAL_DIR)/runrecord -type f 2>/dev/null)
+$(ITERATE_RUN_BIN): $(wildcard $(CMD_DIR)/iterate-run/*.go) $(shell find $(INTERNAL_DIR)/iterrun $(INTERNAL_DIR)/plangraph $(INTERNAL_DIR)/runrecord -type f 2>/dev/null)
 	$(Q)echo -e "$(COLOR_BLUE)→ Building iterate-run...$(COLOR_RESET)"
 	$(Q)mkdir -p $(TOOLS_BIN_DIR)
 	$(Q)cd $(SRC_DIR) && $(GO) build $(VERBOSE) $(GOFLAGS) -o ../$@ ./cmd/iterate-run
 	$(Q)echo -e "  $(COLOR_GREEN)✓$(COLOR_RESET) iterate-run → $@"
-
-.PHONY: build-conductor
-build-conductor: check-tools  ## Compile the shared conductor packages
-	$(Q)cd $(SRC_DIR) && $(GO) build ./internal/conductor/...
 
 $(TESTMASTER_BIN): $(wildcard $(CMD_DIR)/testmaster/*.go) $(wildcard $(INTERNAL_DIR)/testmaster/*.go)
 	$(Q)echo -e "$(COLOR_BLUE)→ Building testmaster...$(COLOR_RESET)"
@@ -240,25 +235,35 @@ build-testmaster-cross: check-tools  ## Cross-build testmaster for windows/amd64
 
 ##@ Test
 
-.PHONY: conductor-settings-test
-conductor-settings-test:  ## Verify Conductor settings interactions through TESTMASTER
-	$(Q)testmaster suite discover
-	$(Q)testmaster suite run conductor.settings-ui 'budget.TestJavelina*' 'conductor.TestJavelina*' 'iterrun.TestJavelina*' 'provider.TestJavelina*'
-
-.PHONY: automation-test
-automation-test:  ## Verify Named Automations (editor, band tester, associations) through TESTMASTER
-	$(Q)testmaster suite discover
-	$(Q)testmaster suite run conductor.automations-ui conductor.automation-navigation conductor.settings-ui 'conductor.TestKilldeer*' 'iterrun.TestConductorAPIAutomationPreview'
-
 .PHONY: report-test
 report-test: build  ## Verify the run record and plan report (kr-* cases, headless-Chrome page test) through TESTMASTER
 	$(Q)testmaster suite discover
-	$(Q)testmaster suite run 'iterate-run.TestKr*' 'iterate-run.TestRecord*' 'iterrun.TestKr*' 'runrecord.*' conductor.report-navigation
+	$(Q)testmaster suite run 'iterate-run.TestKr*' 'iterate-run.TestRecord*' 'iterrun.TestKr*' 'runrecord.*' dashboard.report-navigation
 
 .PHONY: plan-graph-test
 plan-graph-test:  ## Verify the plan dependency graph (dag-* cases: plangraph, admission, CLI, backfill, headless-Chrome Graph tab) through TESTMASTER
 	$(Q)testmaster suite discover
-	$(Q)testmaster suite run 'plangraph.*' 'conductor.TestDagAdm*' 'iterrun.TestDag*' 'iterrun.TestConductorHolds*' 'iterrun.TestConductorAdmits*' 'iterrun.TestConductorBlocks*' 'iterrun.TestPlanSummaryReadsDepends*' 'iterrun.TestProjectGraph*' 'iterrun.TestBackfill*' 'iterate-run.TestDagCli*' 'iterate-run.TestPlan*' conductor.graph-tab
+	$(Q)testmaster suite run 'plangraph.*' 'iterrun.TestDashboardGraph*' 'iterrun.TestPlanSummaryReadsDepends*' 'iterrun.TestProjectGraph*' 'iterrun.TestBackfill*' 'iterate-run.TestDagCli*' 'iterate-run.TestPlan*' dashboard.graph-tab
+
+.PHONY: nene-skill-test
+nene-skill-test: $(ITERATE_RUN_BIN)  ## Exercise an installed iterate entry against an isolated fixture
+	$(Q)python3 scripts/nene-skill-acceptance.py --harness $(or $(HARNESS),claude) --busy $(or $(BUSY),0)
+
+.PHONY: nene-planning-test
+nene-planning-test: $(ITERATE_RUN_BIN)  ## Exercise coherent planning and consolidation on synthetic scope
+	$(Q)$(if $(NENE_COVERAGE),python3 -m coverage run --data-file='.claude/iterate/plans/nene.evidence/python-$(or $(SCOPE),small).coverage' --source=scripts,python3) scripts/nene-planning-acceptance.py --scope $(or $(SCOPE),small)
+
+.PHONY: nene-coverage-test
+nene-coverage-test:  ## Measure one ownership or order test's executed source files
+	$(Q)$(GO) test -count=1 -run '^$(TEST_CASE)$$' -coverpkg=./src/internal/iterrun,./src/internal/plangraph -coverprofile='$(COVER_FILE)' ./src/internal/iterrun
+
+.PHONY: nene-legacy-test
+nene-legacy-test: $(ITERATE_RUN_BIN)  ## Exercise installed staging and terminal-state rules
+	$(Q)python3 scripts/nene-legacy-acceptance.py --scope $(or $(SCOPE),stage)
+
+.PHONY: nene-ownership-test
+nene-ownership-test: $(ITERATE_RUN_BIN)  ## Verify process-level ownership and dependency admission with the real CLI
+	$(Q)python3 scripts/nene-ownership-acceptance.py
 
 .PHONY: ssh-config-test
 ssh-config-test:  ## Verify the ssh-config helper keeps backups out of the include glob (sshbak-1..12)
@@ -380,7 +385,7 @@ install: build  ## Install hooks to Claude Code directory, and tools onto PATH
 	$(Q)echo -e "$(COLOR_CYAN)  Note: Update ~/.claude/settings.json to enable hooks$(COLOR_RESET)"
 	$(Q)echo -e "$(COLOR_BLUE)→ Installing tools...$(COLOR_RESET)"
 	$(Q)mkdir -p $(TOOLS_INSTALL_DIR)
-	$(Q)./makehelp.sh install-conductor "$(ITERATE_RUN_BIN)" "$(TOOLS_INSTALL_DIR)"
+	$(Q)./makehelp.sh install-iterate-run "$(ITERATE_RUN_BIN)" "$(TOOLS_INSTALL_DIR)"
 	$(Q)cp -f $(TESTMASTER_BIN) $(TOOLS_INSTALL_DIR)/
 	$(Q)chmod +x $(TOOLS_INSTALL_DIR)/testmaster
 	$(Q)if command -v codesign >/dev/null 2>&1; then \
@@ -408,27 +413,14 @@ uninstall:  ## Remove installed hooks and tools
 # target below fails with a clear message on non-macOS rather than half
 # installing, since launchd is not portable.
 
-.PHONY: install-conductor install-conductor-skills conductor-acceptance conductor-migrate conductor-skill-test conductor-cover-case
-install-conductor: $(ITERATE_RUN_BIN)  ## Atomically install iterate-run, preserving a rollback binary
-	$(Q)./makehelp.sh install-conductor "$(ITERATE_RUN_BIN)" "$(TOOLS_INSTALL_DIR)"
+.PHONY: install-iterate-run install-iterate-skills
+install-iterate-run: $(ITERATE_RUN_BIN)  ## Atomically install iterate-run, preserving a rollback binary
+	$(Q)./makehelp.sh install-iterate-run "$(ITERATE_RUN_BIN)" "$(TOOLS_INSTALL_DIR)"
 
-install-conductor-skills:  ## Install the iterate family and its protected Codex clients
-	$(Q)./makehelp.sh install-conductor-skills
+install-iterate-skills:  ## Install the iterate family and its protected Codex clients
+	$(Q)./makehelp.sh install-iterate-skills
 
-conductor-acceptance: build  ## Run bounded conductor acceptance through TESTMASTER
-	$(Q)./makehelp.sh conductor-acceptance
-
-conductor-skill-test: $(ITERATE_RUN_BIN)  ## Exercise thin conductor clients against isolated state
-	$(Q)python3 skills/iterate-conductor/tests/control_test.py
-
-conductor-cover-case:  ## Measure one registered Go case (COVER_PKG, COVER_TEST, COVER_FILE)
-	$(Q)test -n "$(COVER_PKG)" -a -n "$(COVER_TEST)" -a -n "$(COVER_FILE)"
-	$(Q)$(GOTEST) "$(COVER_PKG)" -run '^$(COVER_TEST)$$' -count=1 -coverpkg=./src/internal/conductor/...,./src/internal/iterrun,./src/cmd/iterate-run -coverprofile="$(COVER_FILE)"
-
-conductor-migrate: $(ITERATE_RUN_BIN)  ## Preview legacy conductor import (ARGS=--apply commits it)
-	$(Q)$(ITERATE_RUN_BIN) conductor migrate --legacy $(ARGS)
-
-serve-install: install-conductor  ## Install or reuse the managed dashboard on localhost:8420
+serve-install: install-iterate-run  ## Install or reuse the managed dashboard on localhost:8420
 	$(Q)./makehelp.sh serve-install "$(TOOLS_INSTALL_DIR)/iterate-run" "$(ITERATE_SERVE_PORT)"
 
 serve-uninstall:  ## Unload and remove the dashboard launchd agent
@@ -448,21 +440,6 @@ chrome-uninstall:  ## Unload and remove the Chrome launchd agent (stops it for g
 
 chrome-status:  ## Show whether the Chrome launchd agent is loaded and running
 	$(Q)./makehelp.sh chrome-status
-
-# The nightly tick (com.x85446.iterate-nightly) runs enrolled projects' staged
-# plans unattended; the installed iterate-run owns the plist, the switch and
-# the per-project enrollment, so these are thin aliases onto it.
-nightly-install: install  ## Arm the nightly launchd tick (iterate-run nightly install, every 10m)
-	$(Q)$(TOOLS_INSTALL_DIR)/iterate-run nightly install $(if $(NIGHTLY_EVERY),--every $(NIGHTLY_EVERY),)
-
-nightly-uninstall:  ## Boot out and remove the nightly launchd tick
-	$(Q)$(TOOLS_INSTALL_DIR)/iterate-run nightly uninstall
-
-nightly-status:  ## Show the nightly tick: plist, switch, and each enrolled project's last run
-	$(Q)$(TOOLS_INSTALL_DIR)/iterate-run nightly status
-
-nightly-tick:  ## Dry-run one nightly tick: what would launch, what is skipped and why
-	$(Q)$(TOOLS_INSTALL_DIR)/iterate-run nightly tick --dry-run
 
 # ==================================================================================== #
 # DEVELOPMENT TARGETS
@@ -498,7 +475,7 @@ PREVIEW_PORT ?= 8490
 REPORT_URL ?= http://localhost:8420
 
 .PHONY: preview
-preview: build  ## Run this build's dashboard on PREVIEW_PORT (8490): real plans read-only, Conductor state in a temp dir
+preview: build  ## Run this build's dashboard on PREVIEW_PORT (8490): read real plans and records without execution
 	$(Q)./makehelp.sh preview "$(ITERATE_RUN_BIN)" "$(PREVIEW_PORT)"
 
 .PHONY: record-list
@@ -546,3 +523,10 @@ clean:  ## Remove built binaries and test artifacts
 	$(Q)rm -f coverage.out coverage.html
 	$(Q)rm -rf $(SRC_DIR)/vendor
 	$(Q)echo -e "$(COLOR_GREEN)✓ Clean complete$(COLOR_RESET)"
+
+.PHONY: race-test
+race-test: $(ITERATE_RUN_BIN)  ## Run registered Go tests with the race detector
+	$(Q)GOFLAGS=-race testmaster suite run '*.Test*'
+.PHONY: dashboard-visual-test
+dashboard-visual-test: $(ITERATE_RUN_BIN)  ## Hold isolated report fixtures for visual acceptance
+	$(Q)DASHBOARD_VISUAL_READY='$(READY_FILE)' node --experimental-websocket tests/dashboard/report-navigation.test.mjs

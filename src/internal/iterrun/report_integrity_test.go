@@ -25,7 +25,7 @@ func integrityProject(t *testing.T) string {
 	t.Helper()
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("ITERATE_RUN_RECORD_DIR", t.TempDir())
-	t.Setenv("ITERATE_CONDUCTOR_DIR", t.TempDir())
+	t.Setenv("ITERATE_LEGACY_RUN_DIR", t.TempDir())
 	project := t.TempDir()
 	for _, d := range []string{"plans", "archive"} {
 		if err := os.MkdirAll(filepath.Join(project, ".claude", "iterate", d), 0o755); err != nil {

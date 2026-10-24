@@ -25,6 +25,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null)" || { echo "contract-test: run it from the claudecodetricks repo" >&2; exit 1; }
 SK="$ROOT/skills"
+ITERATE_WORKFLOW="$SK/iterate/reference/workflow.md"
 INSTALLED="${ITERATE_INSTALLED:-$HOME/.claude/skills}"
 fails=0
 pass() { echo "$1: pass"; }
@@ -34,7 +35,7 @@ fail() { echo "$1: FAIL — $2"; fails=$((fails + 1)); }
 para() { awk -v p="$1" 'index($0, p) == 1 { on = 1 } on && /^$/ { exit } on { printf "%s ", $0 }' "$2"; }
 
 # contract-1
-r33=$(grep -E '^33\. \*\*' "$SK/iterate/SKILL.md")
+r33=$(grep -E '^33\. \*\*' "$ITERATE_WORKFLOW")
 if [ -n "$r33" ] && printf '%s' "$r33" | grep -q 'contract expansion' \
    && printf '%s' "$r33" | grep -q 'answered \*\*extend\*\*' \
    && printf '%s' "$r33" | grep -q 'tern'; then
@@ -44,8 +45,8 @@ else
 fi
 
 # contract-2
-stuck=$(para '**On stuck' "$SK/iterate/SKILL.md")
-fails2=$(para '**Fails' "$SK/iterate/SKILL.md")
+stuck=$(para '**On stuck' "$ITERATE_WORKFLOW")
+fails2=$(para '**Fails' "$ITERATE_WORKFLOW")
 if printf '%s' "$stuck" | grep -q 'a secret no agent has, physical access, an external party' \
    && ! printf '%s' "$stuck" | grep -qi 'decision' \
    && printf '%s' "$fails2" | grep -q 'clause 3 or clause 4' \

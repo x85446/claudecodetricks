@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 )
 
 // TestLiveBadgePrioritizesBlockedOverEverything confirms Blocked() wins
@@ -204,43 +202,11 @@ func TestHarnessRollupOnlyWhenMixed(t *testing.T) {
 	}
 }
 
-// TestWriteLiveProjectSectionRendersConductorStatus confirms an enabled
-// conductor.md sitting next to a project's plans surfaces its tick state
-// on the dashboard, driven through the real writeLiveProjectSection
-// entry point (not just the lower-level ConductorStatusLine helper) so a
-// regression in how the two are wired together would actually be caught.
-func TestWriteLiveProjectSectionRendersConductorStatus(t *testing.T) {
-	dir := t.TempDir()
-	writeConductorFixture(t, dir, `---
-enabled: true
-cron:
-tick: stood-down
-sweeps: 3
----
-
-## Sweep log
-- [2026-09-10T09:00:00Z] stood down, nothing left to run
-`)
-	var b strings.Builder
-	writeLiveProjectSection(&b, dir, "proj", nil)
-	if !strings.Contains(b.String(), "stood down") {
-		t.Errorf("expected the project section to surface the conductor's stood-down state; output:\n%s", b.String())
-	}
-}
-
 func TestPlanRouteFollowsAPlanIntoTheArchive(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	t.Setenv("ITERATE_CONDUCTOR_DIR", t.TempDir())
+	t.Setenv("ITERATE_LEGACY_RUN_DIR", t.TempDir())
 	proj := t.TempDir()
-	service := NewConductorService("")
-	config, err := service.Config()
-	if err != nil {
-		t.Fatal(err)
-	}
-	config.Projects = []model.Project{{ID: "archive-fixture", Name: "Archive fixture", Path: proj}}
-	if _, err = service.Apply(config.Revision, config); err != nil {
-		t.Fatal(err)
-	}
+	RegisterProject(proj)
 	plans := filepath.Join(proj, ".claude", "iterate", "plans")
 	arch := filepath.Join(proj, ".claude", "iterate", "archive")
 	for _, d := range []string{plans, arch} {
@@ -256,6 +222,7 @@ func TestPlanRouteFollowsAPlanIntoTheArchive(t *testing.T) {
 		}
 	}
 
+	RegisterProject(proj)
 	req := httptest.NewRequest("GET", "/plan?project="+url.QueryEscape(proj)+"&name=galago", nil)
 	rec := httptest.NewRecorder()
 	handlePlan(rec, req)

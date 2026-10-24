@@ -1,6 +1,6 @@
 # Run record
 
-The run record is the durable history of each plan execution. `iterate-run` owns it for both execution owners: the CLI (`/iterate` sessions observed through hooks, plus `iterate-run record append`) and the Conductor supervisor. Every report, skill and web page reads the same record through one Go API (`src/internal/runrecord`, wrapped by `src/internal/iterrun/record.go`).
+The run record is the durable history of each plan execution. `iterate-run` owns it for both execution owners: the CLI (`/iterate` sessions observed through hooks, plus `iterate-run record append`) and the external Conductor through `iterate-run record append`. Every report, skill and web page reads the same record through one Go API (`src/internal/runrecord`, wrapped by `src/internal/iterrun/record.go`).
 
 The record observes. The Conductor's leases, checkpoints and run events stay authoritative for admission and results, and the plan file stays authoritative for plan content. A record write never gates admission, alters a result or fails an assignment.
 
@@ -16,7 +16,7 @@ $ITERATE_RUN_RECORD_DIR                     (default ~/.claude/iterate-run/recor
 - **Project key** is the first 16 hex digits of the SHA-256 of the canonical project path (absolute, symlinks resolved). Distinct worktrees and same-named plans in different projects never share a directory.
 - **Run id** (`run-<UTC timestamp>-<random>`) names one execution of a codename. A plan that runs, archives and runs again has two runs.
 - Archiving a plan file moves nothing in the store. The run records the archive filename in its `archived` lifecycle event.
-- `ITERATE_RUN_RECORD_DIR` selects an isolated store, the same way `ITERATE_CONDUCTOR_DIR` isolates the Conductor. The `iterrun` and `cmd/iterate-run` test binaries set it to a temporary directory.
+- `ITERATE_RUN_RECORD_DIR` selects an isolated record store. The `iterrun` and `cmd/iterate-run` test binaries set it to a temporary directory.
 
 ## Event envelope
 
@@ -85,9 +85,9 @@ A folded blocker keeps its detection's payload and adds the clearance's writer a
 
 | Owner | Path | Records |
 |---|---|---|
-| CLI hooks | `iterate-run hook pre/post` (`observeRecordHook`) | The session and subagent working on an executing plan, at most once per five minutes each, and the plan file's state when it differs from the run's latest lifecycle state (`resumed` when `status: paused` clears). CLI ownership from `/iterate`'s `running:` lock: `acquired` when a fresh lock has no CLI owner, `heartbeat` at each newer lock timestamp, `released` on `running: false`, and a release plus acquisition when another session takes a lock stale past 90 seconds; a lock carrying `conductor-assignment:`, or a hook inside a Conductor child, belongs to the Conductor's lease. `blocker.detected` when the plan's status is blocked and no blocker is open; `blocker.cleared` when the status has left blocked and the plan file changed after the detection. Only a plan whose file lives in the hook's own project is observed; a plan still in drafting opens no run, and a completed plan records completion into its existing run without opening one. |
+| CLI hooks | `iterate-run hook pre/post` (`observeRecordHook`) | The session and subagent working on an executing plan, at most once per five minutes each, and the plan file's state when it differs from the run's latest lifecycle state (`resumed` when `status: paused` clears). CLI ownership from `/iterate`'s `running:` lock: `acquired` when a fresh lock has no CLI owner, `heartbeat` at each newer lock timestamp, `released` on `running: false`, and a release plus acquisition when another session takes a lock stale past 90 seconds; a lock carrying `conductor-assignment:` belongs to that execution lease. `blocker.detected` when the plan's status is blocked and no blocker is open; `blocker.cleared` when the status has left blocked and the plan file changed after the detection. Only a plan whose file lives in the hook's own project is observed; a plan still in drafting opens no run, and a completed plan records completion into its existing run without opening one. |
 | CLI explicit | `iterate-run record append` | Any event a skill states directly: lifecycle, ownership, blockers, attempts, evidence, delivery, intervals. |
-| Conductor | `RecordSource` phases in `supervisor.go` and `events.go` | `admitted` (lifecycle admitted, ownership acquired, and a clearance of any blocker still open, whose reason says the clearance itself was not observed), `started` (attempt started, lifecycle executing), `event` (provider session, cumulative usage, and an ownership heartbeat at most once per five minutes), `finished` (attempt outcome, result evidence with the checked-out git revision, requirement checkpoint, blocker, completion, archive, ownership released). |
+| External Conductor | Atomic event batches through `iterate-run record append` | `admitted` (lifecycle admitted, ownership acquired, and a clearance of any blocker still open, whose reason says the clearance itself was not observed), `started` (attempt started, lifecycle executing), `event` (provider session, cumulative usage, and an ownership heartbeat at most once per five minutes), `finished` (attempt outcome, result evidence with the checked-out git revision, requirement checkpoint, blocker, completion, archive, ownership released). |
 | Conductor admission | `AdmissionRecordSource` after each supervisor tick | One `admission.considered` per plan the tick considered: `admitted` for the selected plan, otherwise `gated` with the first denial's gate — `automation_disabled` (Conductor, project, automation or subscription disabled or paused), `schedule` (project or automation window, launch policy), `budget` (allowance and band decisions), `ownership` (a CLI run holds the plan or the project), `queue` (another plan admitted first, a busy allowance pool, a claimed occurrence) or `other`. It writes only into an existing run of the plan's current execution and repeats nothing: a decision equal to the run's latest, with no ownership change since, appends no event. |
 
 Run resolution: a writer appends to the plan's newest run that is not archived and whose marker matches the plan file's `Executing:` value; with none, it opens a new run. A Conductor observation of an assignment always lands in the run holding that assignment's attempt, even after delivery archived the plan. Intake assignments triage an issue into a new plan and open no run.
@@ -127,6 +127,18 @@ The dashboard serves the same reads:
 | `GET /api/record/runs[?project=<path>][&plan=<name>]` | Run summaries |
 
 Any other method answers 405.
+
+## Atomic event batches
+
+`iterate-run record append` accepts one event object or an array of event objects.
+Every batch event supplies its own `type`; `--type` applies to single objects.
+The writer validates the whole batch before appending any event and accepts each
+stable event ID once. Replaying a batch returns `duplicate` with zero accepted
+events. With `--run`, the batch appends to that execution; otherwise the first
+event supplies the observation time, source, project ID and attempt identity
+used to select or open the run.
+
+Batch JSON output includes `accepted_count`, `event_ids` and `run_id`.
 
 ## Legacy plans
 

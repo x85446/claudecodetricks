@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, then asks which fixes to queue. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: "[fix all [<plan>]]"
-version: 5.26.0
+version: 5.27.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -122,14 +122,14 @@ somewhere that is not about to be deleted.
 
 Read, in order: the current branch and whether the tree is dirty; every
 `./.claude/iterate/plans/*.md` frontmatter; `./.claude/iterate/current`;
-`iterate-run conductor status --json` and project-scoped explain output; and every
+`conductor status --json` and project-scoped explain output; and every
 `./.claude/iterate/inbox/*.md` key block. Then match the first case that fits.
 
 | State | Verdict and action |
 |---|---|
 | On default branch, clean, no plans, no unworked or operator-waiting messages | `fixed: 0/0`, `broken still: 0/0`, `clean, nothing outstanding`. Stop. |
 | Plans exist, all `phase: planned`, on default branch | **Planning session, never kicked off.** Nothing broken — the clause names the plans; `/iterate <name>` starts one. A normal resting state, not a fault. |
-| `phase: executing`, `running:` heartbeat fresh (<90s) | **A run is live right now.** Say so in the clause and leave it alone. Do not touch the branch, the plan, or the tree. |
+| binary reports a live execution owner | **A run is live right now.** Say so in the clause and leave it alone. Do not touch the branch, the plan, or the tree. |
 | `phase: executing`, no fresh heartbeat, all steps done, all validations green, not merged | **The merge never happened.** This is the failure case — finish it (see below); it counts as fixed. |
 | `phase: executing`, `status: blocked-on-operator` / `awaiting-human-gate` | **Blocked on you.** Each blocker is a problem; plan its route down to one question before you answer. |
 | `status: blocked-on-operator` on a purchase, subscription, token or licence key the plan's `Cost:` line did **not** approve (an approved one missing its credential is an ordinary access blocker — handle it as one) | **Planning defect, not a blocker on you.** The executor should never have parked here (`/iterate` rule 29). Never "buy X": `I can fix` it by re-planning the free path through `/iterate-planner` and marking the plan `unblocked` with the reason. |
@@ -139,7 +139,7 @@ Read, in order: the current branch and whether the tree is dirty; every
 | `phase: executing`, stopped mid-run, no terminal status | **Died mid-run** (session killed, context ran out, cron lost). Commit anything loose; `You can fix` it by typing `/iterate <name>`. |
 | Feature branch with no matching plan | **Orphan branch.** Its line says whose it looks like from the name. `I can fix` it by landing or dropping it — a choice; triage runs the one picked. Never delete unasked. |
 | `status: paused` (magenta) | Not a problem — a human stopped it with `/iterate pause`, and `/iterate resume <name>` continues. Commit loose work as always. |
-| `status: unblocked` (cyan) | Already cleared, waiting its turn; the conductor takes it next unless the graph shows it waiting (next row). If the conductor is off, `I can fix` it by starting it: `iterate-run conductor start --project <id>`. |
+| `status: unblocked` (cyan) | Already cleared, waiting its turn; the conductor takes it next unless the graph shows it waiting (next row). If the conductor is off, `I can fix` it by starting it: `conductor start --project <id>`. |
 | A plan `iterate-run plan graph` shows waiting | Not a problem: it waits on an unfinished predecessor and starts when that lands. The plan at the root of the hold is the problem, reported once in its own line as `<root> holds <n> plans`, routed by that root's own row in this table. A plan the graph shows blocked (an unknown name, a cycle, itself on `depends:`) is a problem whose route is fixing its `depends:` line with `/ip <name> depends on <x>`. |
 | Several plans all-green but unmerged | Batch them: one merge session landing every branch, in dependency order, rather than N separate ones. |
 | `phase: closed` sitting in `plans/` | Should have been archived. Archive it now (nothing is lost, it is the step `/iterate` owed); it counts as fixed. |
@@ -216,7 +216,7 @@ Only mark it when the blocker is actually gone — verify it, don't take "should
 be fine" for an answer. A plan wrongly marked cyan goes straight back into the
 queue to fail on the same wall.
 
-**Check binary status after unblocking.** Read `iterate-run conductor explain --project ID --json`; a waiting reason it reports is a problem line of its own, except `plan_waiting`: a plan held behind an unfinished predecessor is counted once, at its root. Existing enabled rules reconsider staged/unblocked work through the binary worker. Resume a paused project only when the user requests it — a `y` to that problem's question is the request — using its current revision; never arm a skill cron or silently override an operator stop.
+**Check binary status after unblocking.** Read `conductor explain --project ID --json`; a waiting reason it reports is a problem line of its own, except `plan_waiting`: a plan held behind an unfinished predecessor is counted once, at its root. Existing enabled rules reconsider staged/unblocked work through the binary worker. Resume a paused project only when the user requests it — a `y` to that problem's question is the request — using its current revision; never arm a skill cron or silently override an operator stop.
 
 ### Unblocking while the conductor is running something else
 
@@ -236,7 +236,7 @@ in a second session clearing J. **The conductor owns one project lease across pl
   is confusing later.
 
 Before touching anything, check whether the plan you're about to edit is the one
-currently running (`running:` heartbeat under 90 seconds). If it is, report and
+currently held by a live binary execution owner. If it is, report and
 stop — that plan is not yours to triage right now.
 
 ## Rules
@@ -289,3 +289,7 @@ after 5.5.0 was installed and verified on disk.
 If members disagree, say so and name them: drift inside the family is a
 defect, not a state, and `skillctl family iterate set X.Y.Z` is the only
 correct way to bump.
+
+## Execution ownership
+
+Use `iterate-run plan reconcile <name> --json` to reconcile dead execution leases. Preserve checkpoint evidence and alive orphaned children. Never delete lease files or clear ownership fields by hand. A planned, queued, staged or idle executing plan has no permanent executor; only a live execution owns the project. Read readiness and execution order from `iterate-run plan graph --json`.

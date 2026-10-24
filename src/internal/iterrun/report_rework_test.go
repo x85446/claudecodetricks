@@ -1,32 +1,29 @@
 package iterrun
 
 import (
+	"github.com/x85446/claudecodetricks/src/internal/runrecord"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/x85446/claudecodetricks/src/internal/conductor"
-	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
-	"github.com/x85446/claudecodetricks/src/internal/runrecord"
 )
 
 // lcAttempt drives one Conductor assignment through the record adapter:
 // admitted and started at start, usage observed, finished at end.
-func lcAttempt(t *testing.T, clock *lcClock, project, plan string, step int, id string, start, end time.Time, in, out int64, result model.Result) model.Assignment {
+func lcAttempt(t *testing.T, clock *lcClock, project, plan string, step int, id string, start, end time.Time, in, out int64, result recordFixtureResult) recordFixtureAssignment {
 	t.Helper()
-	src := ConductorPlanSource{}
-	a := model.Assignment{ID: id, RunID: "run-" + id, ProjectID: "p1", ProjectPath: project, Plan: plan, Step: step, Kind: "pair", Task: "step task", Validation: "step check"}
+	src := recordFixtureSource{}
+	a := recordFixtureAssignment{ID: id, RunID: "run-" + id, ProjectID: "p1", ProjectPath: project, Plan: plan, Step: step, Kind: "pair", Task: "step task", Validation: "step check"}
 	clock.set(start.Add(-time.Second))
-	src.RecordAssignment(conductor.RecordAdmitted, a, nil, nil)
+	src.AppendPhase("admitted", a, nil, nil)
 	clock.set(start)
-	src.RecordAssignment(conductor.RecordStarted, a, nil, nil)
+	src.AppendPhase("started", a, nil, nil)
 	if in > 0 || out > 0 {
 		clock.set(start.Add(end.Sub(start) / 2))
-		src.RecordAssignment(conductor.RecordEvent, a, nil, &model.Event{Kind: "usage", SessionID: "c-" + id, Sequence: 1, InputTokens: in, OutputTokens: out, Cumulative: true})
+		src.AppendPhase("event", a, nil, &recordFixtureUsage{Kind: "usage", SessionID: "c-" + id, Sequence: 1, InputTokens: in, OutputTokens: out, Cumulative: true})
 	}
 	clock.set(end)
-	src.RecordAssignment(conductor.RecordFinished, a, &result, nil)
+	src.AppendPhase("finished", a, &result, nil)
 	return a
 }
 
@@ -47,16 +44,16 @@ func TestKrReworkRetries(t *testing.T) {
 	clock := lcUseClock(t, t0)
 	writeRecordPlan(t, project, "ibis", lcExec)
 
-	failed := model.Result{Outcome: "failed", Blocker: "validation failed: 2 cases red", Evidence: []string{"2 of 14 cases failed"}}
+	failed := recordFixtureResult{Outcome: "failed", Blocker: "validation failed: 2 cases red", Evidence: []string{"2 of 14 cases failed"}}
 	a1 := lcAttempt(t, clock, project, "ibis", 1, "assignment-a1", t0, t0.Add(5*time.Minute), 1000, 100, failed)
 	// Duplicate observations: the same finish and start replayed through
 	// the adapter, and a second writer's start for the same attempt.
 	clock.set(t0.Add(5*time.Minute + 30*time.Second))
-	ConductorPlanSource{}.RecordAssignment(conductor.RecordFinished, a1, &failed, nil)
-	ConductorPlanSource{}.RecordAssignment(conductor.RecordStarted, a1, nil, nil)
+	recordFixtureSource{}.AppendPhase("finished", a1, &failed, nil)
+	recordFixtureSource{}.AppendPhase("started", a1, nil, nil)
 	runs, _ := RecordStore().Runs(project, "ibis")
 	lcAppend(t, project, "ibis", runs[0].RunID, runrecord.Event{Type: runrecord.TypeAttemptStarted, Source: runrecord.SourceConductor, At: t0.Add(time.Second), Requirement: 1, AttemptKey: a1.ID, AssignmentID: a1.ID, AttemptInfo: &runrecord.Attempt{Kind: "pair"}})
-	lcAttempt(t, clock, project, "ibis", 1, "assignment-a2", t0.Add(6*time.Minute), t0.Add(10*time.Minute), 2000, 200, model.Result{Outcome: "completed", ValidationMet: true, Evidence: []string{"14 of 14 cases pass"}})
+	lcAttempt(t, clock, project, "ibis", 1, "assignment-a2", t0.Add(6*time.Minute), t0.Add(10*time.Minute), 2000, 200, recordFixtureResult{Outcome: "completed", ValidationMet: true, Evidence: []string{"14 of 14 cases pass"}})
 
 	rep, page := lcReport(t, project, "ibis", "", false, t0.Add(11*time.Minute))
 	s := rep.Rework
@@ -99,12 +96,12 @@ func TestKrReworkInterrupted(t *testing.T) {
 	writeRecordPlan(t, project, "plover", lcExec)
 
 	// Requirement 2: interrupted, then resumed to success.
-	lcAttempt(t, clock, project, "plover", 2, "assignment-b1", m(0), m(10), 1000, 200, model.Result{Outcome: "interrupted", Blocker: "the operator paused the Conductor"})
-	lcAttempt(t, clock, project, "plover", 2, "assignment-b2", m(15), m(20), 500, 100, model.Result{Outcome: "completed", ValidationMet: true, Evidence: []string{"build green"}})
+	lcAttempt(t, clock, project, "plover", 2, "assignment-b1", m(0), m(10), 1000, 200, recordFixtureResult{Outcome: "interrupted", Blocker: "the operator paused the Conductor"})
+	lcAttempt(t, clock, project, "plover", 2, "assignment-b2", m(15), m(20), 500, 100, recordFixtureResult{Outcome: "completed", ValidationMet: true, Evidence: []string{"build green"}})
 	// Requirement 3: passed, reopened by a failure, passed again.
-	lcAttempt(t, clock, project, "plover", 3, "assignment-c1", m(21), m(23), 0, 0, model.Result{Outcome: "completed", ValidationMet: true, Evidence: []string{"first check"}})
-	lcAttempt(t, clock, project, "plover", 3, "assignment-c2", m(24), m(26), 0, 0, model.Result{Outcome: "failed", Blocker: "regression found"})
-	lcAttempt(t, clock, project, "plover", 3, "assignment-c3", m(27), m(30), 0, 0, model.Result{Outcome: "completed", ValidationMet: true, Evidence: []string{"regression fixed"}})
+	lcAttempt(t, clock, project, "plover", 3, "assignment-c1", m(21), m(23), 0, 0, recordFixtureResult{Outcome: "completed", ValidationMet: true, Evidence: []string{"first check"}})
+	lcAttempt(t, clock, project, "plover", 3, "assignment-c2", m(24), m(26), 0, 0, recordFixtureResult{Outcome: "failed", Blocker: "regression found"})
+	lcAttempt(t, clock, project, "plover", 3, "assignment-c3", m(27), m(30), 0, 0, recordFixtureResult{Outcome: "completed", ValidationMet: true, Evidence: []string{"regression fixed"}})
 
 	// The plan completes; the CLI hook records it.
 	clock.set(m(31))

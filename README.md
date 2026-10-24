@@ -220,9 +220,7 @@ curl http://localhost:8420/healthz
 iterate-run version
 ```
 
-Logs live in `~/Library/Logs/iterate-run/serve.log`. The server revisits enabled queues every 30 seconds; detached binary workers own assignments independently of the browser and web-service lifetime. Disabled Conductor configuration launches nothing.
-
-Global **Settings** contains AI Subscriptions, Named Power Bands and Named Time Windows. Each subscription owns Named Launch Sequences and overdrive windows. Project automations choose ordered maximum bands, recurring windows, or subscription overdrive. The [Conductor guide](docs/conductor.md) covers setup, used-percentage targets, simulators and checkpoint recovery.
+Logs live in `~/Library/Logs/iterate-run/serve.log`. The dashboard presents project plans, the dependency graph, recorded runs, archives and reports. Execution labels, positions, release groups and Next come from the same graph as `iterate-run plan graph --json`.
 
 ### Keep it on screen
 
@@ -335,28 +333,19 @@ The Claude Code status line carries the same states as one letter per plan after
 | cyan | unblocked, waiting to be picked back up |
 | magenta | paused by you |
 
-The icon itself lights up as `⚡` while a run is live. The last letter is always dim: it is the letter the *next* plan will get, so the segment is never empty — an empty segment means the status line itself is broken, not that there are no plans. `⏰` after the letters means this project is enrolled in the nightly tick; `⏰ off` means the tick is installed but switched off. Orange and dark green need a 256-colour terminal; on a 16-colour one they appear as bright yellow and plain green.
+The icon lights up as `⚡` while a run is live. A dim trailing letter indicates the next animal-name allocation in the Claude Code status line; it does not indicate execution order. `⏰` after the letters means this project is enrolled in the nightly tick; `⏰ off` means the tick is installed but switched off. Orange and dark green need a 256-colour terminal; on a 16-colour one they appear as bright yellow and plain green.
 
-### Run staged plans unattended
+### iTerm2 execution order
 
-Stage approved work with `/ip stage <name>` in Claude Code or `$ip stage <name>` in Codex, or stage a whole release at once with a milestone range: `/ip stage M1-04..M1-10`. A queued plan is eligible only when its project, automation, subscription, budget, schedule and ownership checks permit an assignment, and every plan it depends on has landed. Editing approved requirements removes staging. Release and release-candidate plans require a direct human invocation.
+The personal-mac-tools iTerm2 status bar reads `iterate-run plan graph --json`. It shows stable A–Z execution labels in position order, separators between release groups, and `Next` for the next ready plan. State changes preserve positions. Waiting plans show their prerequisite in the popup.
 
-Configure a project through the dashboard or the conductor skill. **Keep it working** selects the first eligible launch sequence in your ordered list. **Run on a schedule** adds a named recurring window and closing behavior. **Follow subscription overdrive** uses the selected subscriptions' own enabled windows. Registration starts disabled.
+Each flag popup identifies the clicked pane's full project name and canonical folder path above inbox actions. Project text has compact variants for narrow panes. See the [status-bar operating guide](https://github.com/x85446/personal-mac-tools/blob/a2f20c8/docs/product/iterm-statusbar.md).
 
-The optional macOS nightly timer calls the same binary scheduler:
+### Execute plans
 
-```bash
-make nightly-install
-iterate-run nightly tick --dry-run
-iterate-run nightly status
-iterate-run nightly off
-iterate-run nightly on
-make nightly-uninstall
-```
+A bare `/iterate` or `$iterate` selects the sole ready plan when the project has no live execution owner. Several ready plans produce a list. A named plan obeys its unfinished dependencies. The shared `iterate-run plan claim|heartbeat|release|reconcile` contract excludes concurrent executors and preserves checkpoint evidence during recovery.
 
-`nightly off` disables that optional timer's admissions. Global Conductor Stop controls the shared scheduler, including the dashboard wake loop. `nightly enroll` registers a disabled canonical project; `nightly withdraw` disables it while preserving its queue and definitions. Tick and dashboard workers share project/account leases.
-
-Preview imported settings with `make conductor-migrate`. Review ownership and ambiguous scheduling notes before applying with `make conductor-migrate ARGS=--apply`. Import preserves source files and protected backups, and it never invents authenticated accounts or enables ambiguous overdrive rules.
+Stage approved work with `/ip stage <name>` in Claude Code or `$ip stage <name>` in Codex. The external `conductor` service at `~/workspace/tmctech/conductor` runs staged queues and hosts scheduling controls on localhost:8421. It uses the shared graph, ownership and record CLI contracts. Release and release-candidate plans require a direct human invocation.
 
 ### Order plans with dependencies
 
@@ -366,7 +355,7 @@ Each plan names the plans it builds on in one line near its top, so you can stag
 depends: M1-04, M1-05
 ```
 
-A plan waits until every plan on that line has finished, and plans with nothing unfinished behind them run in any order. When a plan parks on something only you can supply, every plan behind it waits instead of launching and parking in turn, and the dashboard notice names the plan holding them: `caiman holds 7 plans`.
+A plan waits until every plan on that line has finished, and explicit graph positions order plans with no unfinished predecessors. When a plan parks on something only you can supply, every plan behind it waits instead of launching and parking in turn, and the dashboard notice names the plan holding them: `caiman holds 7 plans`.
 
 - `/ip <name> depends on <x>` sets the line, `/ip drop dependency <x> from <name>` removes one, and `/ip <name> depends on nothing` marks a plan that needs only what main already holds. Editing the line keeps the plan staged.
 - `/ip graph` (or `iterate-run plan graph` in a project) prints the graph: `✔` done, `●` ready, `◌` waiting, `✖` blocked, with what each plan waits on. Add `--format mermaid` for a diagram you can paste into Markdown, `--json` for scripts, or `--check` to list problems such as a cycle or a name that matches no plan.
