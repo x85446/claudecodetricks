@@ -1,6 +1,6 @@
 # Configuration through the binary
 
-The current schema comes from `iterate-run conductor config show --json`. Keep the full returned `data` object, edit only requested fields, and submit it through `config validate` and revision-checked `config apply`. CLI help and the binary validate names, references, executable arguments and supported fields. Use `templates --json` to discover candidate subscriptions; a template does not establish installed/authenticated readiness.
+The current schema comes from `conductor config show --json`. Keep the full returned `data` object, edit only requested fields, and submit it through `config validate` and revision-checked `config apply`. CLI help and the binary validate names, references, executable arguments and supported fields. Use `templates --json` to discover candidate subscriptions; a template does not establish installed/authenticated readiness.
 
 ## Project automation
 

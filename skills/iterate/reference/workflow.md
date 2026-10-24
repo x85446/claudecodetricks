@@ -13,7 +13,7 @@ Before the interactive entry decisions, check whether the supervisor supplied a 
 3. Verify the assigned result and write the exact supplied JSON result contract to its destination. Set `task_complete` and `validation_met` truthfully, with concrete evidence. Use `completed` only when both are true; otherwise use `retry`, `blocked`, `partial` or `interrupted` and an actionable blocker. Preserve identity and source digest unchanged.
 4. Return after this assignment. A successful pair is not whole-plan completion. Merge, publish, archive and external delivery require an explicit delivery assignment or the direct human whole-plan workflow. The supervisor validates the result before advancement.
 
-For a direct human whole-plan invocation, first inspect `iterate-run conductor status --json` for the canonical project. An existing conductor owner prevents concurrent edits: report the owned assignment, or honor an explicit pause/kill request through the binary before continuing. A stale ownership claim requires binary reconciliation, not manual lease deletion.
+For a direct human whole-plan invocation, first inspect `conductor status --json` for the canonical project. An existing conductor owner prevents concurrent edits: report the owned assignment, or honor an explicit pause/kill request through the binary before continuing. A stale ownership claim requires binary reconciliation, not manual lease deletion.
 
 ## Named plans & state files (this is how resumption works)
 
@@ -58,7 +58,7 @@ stop.
      cancel comes back "not found", the loop was armed by another session and
      cannot be killed from here — leave the field and say so. Its ticks are
      no-ops while paused (0.5), which is safe, just not silent.
-   - If binary status identifies a conductor-owned assignment, use its project ID and current config revision with `iterate-run conductor pause --project ID --revision N --json`. Do not edit conductor state files or clean up resources owned by that assignment; the supervisor drains its checkpoint.
+   - If binary status identifies a conductor-owned assignment, use its project ID and current config revision with `conductor pause --project ID --revision N --json`. Do not edit conductor state files or clean up resources owned by that assignment; the supervisor drains its checkpoint.
    - **Stop what the plan left running** — every entry in `## Running
      resources` still up, then the leak sweep — exactly as "Running resources"
      describes. This is the half of pause that gives the machine back: a
@@ -72,7 +72,7 @@ stop.
      same line plus `resume with /iterate resume`.
 
    **`resume`** — remove `status: paused`, log `resumed by operator`, clear the
-   conductor project through revision-checked `iterate-run conductor resume` if this operator pause stopped it; if the binary owns it, return to its supervisor. Otherwise continue
+   conductor project through revision-checked `conductor resume` if this operator pause stopped it; if the binary owns it, return to its supervisor. Otherwise continue
    exactly as `/iterate <name>` does on an executing plan: re-check the branch,
    **start every resource pause stopped** (the `paused-by: pause` entries, in
    order, each verified up before the next), re-arm the loop, record the new

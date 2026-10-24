@@ -4,18 +4,18 @@
 import copy
 import json
 import os
+import shutil
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[3]
-BINARY = ROOT / 'bin/iterate-run'
+BINARY = Path(shutil.which('conductor') or '/missing/conductor')
 
 
 def run_client(client, store, *args, expected=0, payload=None, env=None):
     command = [str(client)]
-    if client == BINARY:
-        command.append('conductor')
     command += [*args, '--store', str(store), '--json']
     process = subprocess.run(command, input=None if payload is None else json.dumps(payload),
                              text=True, capture_output=True, timeout=15, env=env)
@@ -26,7 +26,9 @@ def run_client(client, store, *args, expected=0, payload=None, env=None):
 
 
 def main():
-    assert BINARY.is_file(), 'make bin/iterate-run first'
+    if not BINARY.is_file():
+        print('SKIP: conductor is not installed on PATH')
+        sys.exit(77)
     with tempfile.TemporaryDirectory(prefix='conductor-skill-') as work:
         folder = Path(work)
         env = dict(os.environ, PATH=str(ROOT / 'bin') + os.pathsep + os.environ['PATH'])

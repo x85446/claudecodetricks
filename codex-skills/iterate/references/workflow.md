@@ -2,7 +2,7 @@
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.26.0
+**Version:** iterate family 5.27.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -39,7 +39,7 @@ Before the interactive entry decisions, check whether the supervisor supplied a 
 3. Verify the assigned result and write the exact supplied JSON result contract to its destination. Set `task_complete` and `validation_met` truthfully, with concrete evidence. Use `completed` only when both are true; otherwise use `retry`, `blocked`, `partial` or `interrupted` and an actionable blocker. Preserve identity and source digest unchanged.
 4. Return after this assignment. A successful pair is not whole-plan completion. Merge, publish, archive and external delivery require an explicit delivery assignment or the direct human whole-plan workflow. The supervisor validates the result before advancement.
 
-For a direct human whole-plan invocation, first inspect `iterate-run conductor status --json` for the canonical project. An existing conductor owner prevents concurrent edits: report the owned assignment, or honor an explicit pause/kill request through the binary before continuing. A stale ownership claim requires binary reconciliation, not manual lease deletion.
+For a direct human whole-plan invocation, first inspect `conductor status --json` for the canonical project. An existing conductor owner prevents concurrent edits: report the owned assignment, or honor an explicit pause/kill request through the binary before continuing. A stale ownership claim requires binary reconciliation, not manual lease deletion.
 
 ## Named plans & state files (this is how resumption works)
 
@@ -69,7 +69,7 @@ Resolve in this order:
    - If the binary reports a live owner, an assignment is in progress. Do not interrupt it: set the flag below and say `pausing — step <n> finishes, then nothing more runs`. That tick ends its turn as normal; the next one hits the guard in 0.5.
    - Set `status: paused: <UTC now> at step <n>/<m>` in the frontmatter. `phase: executing` stays — paused is a run state, not an ending.
    - There is no loop to cancel here: under Codex the resumption trigger is the user's own Automation (see "Auto-resume"). Say so — `pause your Automation for <name> if you set one; its ticks are no-ops while paused, which is safe, just not silent` — and leave `loop-mechanism:` as it is.
-   - If binary status identifies a conductor-owned assignment, use its project ID and current config revision with `iterate-run conductor pause --project ID --revision N --json`. The supervisor drains its checkpoint; do not write conductor state or clean up its resources.
+   - If binary status identifies a conductor-owned assignment, use its project ID and current config revision with `conductor pause --project ID --revision N --json`. The supervisor drains its checkpoint; do not write conductor state or clean up its resources.
    - **Stop what the plan left running** — every entry in `## Running resources` still up, then the leak sweep — exactly as "Running resources" describes. This is the half of pause that gives the machine back: a paused plan whose VMs keep running has not paused anything that costs.
    - Commit loose work on the feature branch, as `$iterate-triage` does — a paused run is exactly the idle branch that loses work. A real message, never "wip".
    - Touch nothing else: not the branch, not the tree, not `running:`. Log one line — `paused by operator at step <n> — <k> files committed as <sha>, <j> resources stopped (<names>)` — and report the same line plus `resume with $iterate resume`.

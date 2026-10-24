@@ -333,7 +333,13 @@ The Claude Code status line carries the same states as one letter per plan after
 | cyan | unblocked, waiting to be picked back up |
 | magenta | paused by you |
 
-The icon itself lights up as `⚡` while a run is live. The last letter is always dim: it is the letter the *next* plan will get, so the segment is never empty — an empty segment means the status line itself is broken, not that there are no plans. `⏰` after the letters means this project is enrolled in the nightly tick; `⏰ off` means the tick is installed but switched off. Orange and dark green need a 256-colour terminal; on a 16-colour one they appear as bright yellow and plain green.
+The icon lights up as `⚡` while a run is live. A dim trailing letter indicates the next animal-name allocation in the Claude Code status line; it does not indicate execution order. `⏰` after the letters means this project is enrolled in the nightly tick; `⏰ off` means the tick is installed but switched off. Orange and dark green need a 256-colour terminal; on a 16-colour one they appear as bright yellow and plain green.
+
+### iTerm2 execution order
+
+The personal-mac-tools iTerm2 status bar reads `iterate-run plan graph --json`. It shows stable A–Z execution labels in position order, separators between release groups, and `Next` for the next ready plan. State changes preserve positions. Waiting plans show their prerequisite in the popup.
+
+Each flag popup identifies the clicked pane's full project name and canonical folder path above inbox actions. Project text has compact variants for narrow panes. See the [status-bar operating guide](https://github.com/x85446/personal-mac-tools/blob/main/docs/product/iterm-statusbar.md).
 
 ### Execute plans
 

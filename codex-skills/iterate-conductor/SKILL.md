@@ -6,14 +6,14 @@ description: "Control the binary conductor and its shared dashboard configuratio
 
 # $iterate-conductor — control the binary conductor
 
-**Version:** iterate family 5.26.0
+**Version:** iterate family 5.27.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
      plan's planner-version / executor-version. -->
 
 
-`iterate-run conductor` owns configuration, queue selection, schedules, budgets, leases, retries, process supervision and durable results. This skill translates the user's request into its CLI operations. The dashboard at http://localhost:8420 uses the same service and state.
+`conductor` owns configuration, queue selection, schedules, budgets, leases, retries, process supervision and durable results. This skill translates the user's request into its CLI operations. The dashboard at http://localhost:8421 uses the same service and state.
 
 ## Usage
 
@@ -27,15 +27,15 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$iterate` — ported.
 
-Use `scripts/control.sh` beside this skill, or invoke `iterate-run conductor` directly. The script only forwards literal arguments and preserves stdout, stderr and exit status. Run `iterate-run conductor --help` before relying on command syntax. If the binary is unavailable, report the missing installation; do not substitute an AI scheduler.
+Use `scripts/control.sh` beside this skill, or invoke `conductor` directly. The script only forwards literal arguments and preserves stdout, stderr and exit status. Run `conductor --help` before relying on command syntax. If the binary is unavailable, report the missing installation; do not substitute an AI scheduler.
 
 ## Read, explain and operate
 
 - Version: read the installed skill’s family version from disk and run `iterate-run version`; report both. Do not create a plan or mutate configuration.
-- Bare invocation or status: `iterate-run conductor status --json`. Resolve the current canonical project through `project list --json`; use its stable ID with `--project ID` for project-scoped operations. Basenames are not identities.
-- Explain: `iterate-run conductor explain --project ID --json`. Queue counts, reasons, budgets and next selections come from this response; do not recalculate them.
+- Bare invocation or status: `conductor status --json`. Resolve the current canonical project through `project list --json`; use its stable ID with `--project ID` for project-scoped operations. Basenames are not identities.
+- Explain: `conductor explain --project ID --json`. Queue counts, reasons, budgets and next selections come from this response; do not recalculate them.
 - Start/on, resume, pause, stop/off, kill: read `config show --json`, then call the corresponding root verb with `--project ID --revision N --json`. Start/resume enable admission and launch a detached binary worker. Pause/stop finish the current checkpoint and prevent subsequent admissions. Kill interrupts only owned work. These are project-scoped unless the user explicitly requests global control.
-- Run: `iterate-run conductor tick --project ID --json`. This explicitly attempts binary dispatch; status, explain, simulate and dry-run do not dispatch.
+- Run: `conductor tick --project ID --json`. This explicitly attempts binary dispatch; status, explain, simulate and dry-run do not dispatch.
 - Usage: `usage show --json` or `usage refresh --subscription ID --json`. Binding an authenticated account uses `usage refresh --subscription ID --bind --revision N --json`; never invent account IDs, percentages or reset evidence.
 - Activity: `run list --project ID --json`, then `event list --run RUN --json`. Report actual checkpoints and waiting reasons rather than interpreting token totals as remaining allowance.
 

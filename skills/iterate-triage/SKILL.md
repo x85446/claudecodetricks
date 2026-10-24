@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, then asks which fixes to queue. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: "[fix all [<plan>]]"
-version: 5.26.0
+version: 5.27.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -122,7 +122,7 @@ somewhere that is not about to be deleted.
 
 Read, in order: the current branch and whether the tree is dirty; every
 `./.claude/iterate/plans/*.md` frontmatter; `./.claude/iterate/current`;
-`iterate-run conductor status --json` and project-scoped explain output; and every
+`conductor status --json` and project-scoped explain output; and every
 `./.claude/iterate/inbox/*.md` key block. Then match the first case that fits.
 
 | State | Verdict and action |
@@ -139,7 +139,7 @@ Read, in order: the current branch and whether the tree is dirty; every
 | `phase: executing`, stopped mid-run, no terminal status | **Died mid-run** (session killed, context ran out, cron lost). Commit anything loose; `You can fix` it by typing `/iterate <name>`. |
 | Feature branch with no matching plan | **Orphan branch.** Its line says whose it looks like from the name. `I can fix` it by landing or dropping it — a choice; triage runs the one picked. Never delete unasked. |
 | `status: paused` (magenta) | Not a problem — a human stopped it with `/iterate pause`, and `/iterate resume <name>` continues. Commit loose work as always. |
-| `status: unblocked` (cyan) | Already cleared, waiting its turn; the conductor takes it next unless the graph shows it waiting (next row). If the conductor is off, `I can fix` it by starting it: `iterate-run conductor start --project <id>`. |
+| `status: unblocked` (cyan) | Already cleared, waiting its turn; the conductor takes it next unless the graph shows it waiting (next row). If the conductor is off, `I can fix` it by starting it: `conductor start --project <id>`. |
 | A plan `iterate-run plan graph` shows waiting | Not a problem: it waits on an unfinished predecessor and starts when that lands. The plan at the root of the hold is the problem, reported once in its own line as `<root> holds <n> plans`, routed by that root's own row in this table. A plan the graph shows blocked (an unknown name, a cycle, itself on `depends:`) is a problem whose route is fixing its `depends:` line with `/ip <name> depends on <x>`. |
 | Several plans all-green but unmerged | Batch them: one merge session landing every branch, in dependency order, rather than N separate ones. |
 | `phase: closed` sitting in `plans/` | Should have been archived. Archive it now (nothing is lost, it is the step `/iterate` owed); it counts as fixed. |
@@ -216,7 +216,7 @@ Only mark it when the blocker is actually gone — verify it, don't take "should
 be fine" for an answer. A plan wrongly marked cyan goes straight back into the
 queue to fail on the same wall.
 
-**Check binary status after unblocking.** Read `iterate-run conductor explain --project ID --json`; a waiting reason it reports is a problem line of its own, except `plan_waiting`: a plan held behind an unfinished predecessor is counted once, at its root. Existing enabled rules reconsider staged/unblocked work through the binary worker. Resume a paused project only when the user requests it — a `y` to that problem's question is the request — using its current revision; never arm a skill cron or silently override an operator stop.
+**Check binary status after unblocking.** Read `conductor explain --project ID --json`; a waiting reason it reports is a problem line of its own, except `plan_waiting`: a plan held behind an unfinished predecessor is counted once, at its root. Existing enabled rules reconsider staged/unblocked work through the binary worker. Resume a paused project only when the user requests it — a `y` to that problem's question is the request — using its current revision; never arm a skill cron or silently override an operator stop.
 
 ### Unblocking while the conductor is running something else
 

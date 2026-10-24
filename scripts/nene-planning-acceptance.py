@@ -9,6 +9,7 @@ import collections
 import subprocess
 import shutil
 import tempfile
+from contextlib import contextmanager
 
 
 def invoke(folder, prompt):
@@ -16,13 +17,50 @@ def invoke(folder, prompt):
           "message":"planning fixture started"}), flush=True)
     result = subprocess.run(
         ["claude", "-p", "--model", "haiku", "--max-turns", "24",
-         "--dangerously-skip-permissions", prompt],
+         "--dangerously-skip-permissions", "--effort", "low", prompt],
         cwd=folder, text=True, capture_output=True, timeout=115,
     )
     print(result.stdout)
     print(result.stderr)
     if result.returncode:
         raise SystemExit(f"planning fixture exited {result.returncode}")
+
+
+@contextmanager
+def fixture_workspace(scope, artifacts):
+    with tempfile.TemporaryDirectory(prefix="nene-planning-") as folder:
+        try:
+            yield folder
+        finally:
+            destination = artifacts / (scope + "-latest-fixture")
+            if destination.exists():
+                import datetime
+                previous = artifacts / (scope + "-fixture-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S"))
+                destination.rename(previous)
+            shutil.copytree(folder, destination)
+
+
+def owned_checkboxes(text, section):
+    current = ""
+    rows = []
+    for line in text.splitlines():
+        if line.startswith("## "):
+            current = line[3:].strip()
+        elif current == section and re.match(r"^\s*- \[[ xX]\]", line):
+            rows.append(line)
+    return rows
+
+
+def milestone_acceptances(text):
+    active, identifiers = False, []
+    for line in text.splitlines():
+        if line.startswith("**Exit criteria:**"):
+            active = True
+        elif line.startswith("#") or re.match(r"^\*\*[^*]+:\*\*", line):
+            active = False
+        elif active and re.match(r"^\s*- \[[ xX]\]", line):
+            identifiers.extend(sorted(set(re.findall(r"\bAC-\d+\b", line))))
+    return identifiers
 
 
 def main():
@@ -32,7 +70,7 @@ def main():
     root = Path(__file__).resolve().parents[1]
     artifacts = root / ".claude/iterate/plans/nene.evidence/planning"
     artifacts.mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="nene-planning-") as folder:
+    with fixture_workspace(args.scope, artifacts) as folder:
         p = Path(folder)
         (p / "docs").mkdir()
         guidance = (
@@ -153,11 +191,7 @@ def main():
             expected = {f"R-{i:03d}" for i in range(1, count+1)}
             if set(assigned) != expected or any(v != 1 for v in collections.Counter(assigned).values()):
                 raise SystemExit("milestone ownership is incomplete or duplicated")
-            acceptance = []
-            for line in text.splitlines():
-                checkbox = re.match(r"^\s*- \[[ x]\]\s*(.*)$", line)
-                if checkbox and re.match(r"^(?:\*\*|`)*(?:R-|AC-)\d+", checkbox.group(1)):
-                    acceptance += re.findall(r"\bAC-\d+\b", checkbox.group(1).split(":",1)[0])
+            acceptance = milestone_acceptances(text)
             if set(acceptance) != {f"AC-{i:03d}" for i in range(1, count+1)} or len(acceptance) != count:
                 raise SystemExit("acceptance ownership is incomplete or duplicated")
             (artifacts / (args.scope+"-milestones.md")).write_text(text)
@@ -191,10 +225,12 @@ def main():
             if not 0 < len(active) < 10:
                 raise SystemExit(f"consolidation left {len(active)} execution plans")
             combined = "\n".join(f.read_text() for f in active)
+            validation_rows = "\n".join(row for f in active for row in owned_checkboxes(f.read_text(), "Validation"))
+            step_rows = [row for f in active for row in owned_checkboxes(f.read_text(), "Steps")]
             for i in range(1, 11):
-                if len(re.findall(rf"AC-{i:03d}\b", combined)) != 1:
+                if len(re.findall(rf"AC-{i:03d}\b", validation_rows)) != 1:
                     raise SystemExit(f"acceptance AC-{i:03d} missing or duplicated")
-                if f"Implement action {i} " not in combined:
+                if sum(f"Implement action {i} " in row for row in step_rows) != 1:
                     raise SystemExit(f"source task {i} lost")
             archived = [f.read_text() for f in archive.glob("*.md")]
             for name, text in originals.items():

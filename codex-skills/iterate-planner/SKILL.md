@@ -5,7 +5,7 @@ description: "Never executes — the user runs $iterate for that. Triggers on \"
 
 # $iterate-planner
 
-**Version:** iterate family 5.26.0
+**Version:** iterate family 5.27.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

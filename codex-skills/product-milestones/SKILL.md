@@ -70,6 +70,12 @@ one part) applied a second time, inside each release.
    criteria plus one demo, the thing a person does to see the milestone work.
    An exit criterion that is not checkable by a command or an observable
    action is not finished.
+   Each owned acceptance criterion has one checkbox row beginning with its
+   stable identifier: `- [ ] AC-001: <criterion> (R-001)`. Preserve supplied
+   identifiers and give each criterion exactly one owning milestone. Put
+   repeated checks in a separate **Regression checks** section; references
+   there do not assign ownership. A regression check does not repeat an
+   acceptance ownership row.
 
 6. **Name the risk each milestone retires**: the assumption, ADR or external
    dependency it proves or disproves. A milestone that retires nothing and
@@ -102,7 +108,7 @@ one part) applied a second time, inside each release.
 **Retires:** <the risk, ADR or external dependency this proves>
 **Depends on:** — <or the internal ids, comma-separated, then any outside dependency marked (external): `M1-04, M1-05; Papyrus spec 1.0 (external)`>
 **Exit criteria:**
-- [ ] <from R-001's acceptance criteria, as a command or observable check>
+- [ ] AC-001: <R-001's acceptance criterion, as a command or observable check> (R-001)
 - [ ] <…>
 - [ ] `make test` green on fast + standard tiers; main shippable
 

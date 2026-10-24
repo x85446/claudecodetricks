@@ -60,9 +60,11 @@ Record milestone document dates and the grouping rationale in provenance.
 Diff the ownership map against all generated files. Every requirement, checkpoint
 and validation appears exactly once, and every predecessor names an existing
 plan or milestone. Run `iterate-run plan graph --check` and resolve graph errors.
-Use `iterate-run plan order set <all live names in dependency order>` to record
-stable positions. Read `position`, `label`, `release`, `waiting_reason` and `next`
-from the graph; animal names remain identity. Consolidate if more than 26 plans
+Read `position`, `label`, `release`, `waiting_reason` and `next` from the graph;
+animal names remain identity. Persist returned positions and labels only in the
+new plan files. Preserve every existing plan's bytes, including release plans.
+Use `iterate-run plan order set <all live names in dependency order>` only when
+this generation owns every live file or the user requests a project-wide reorder. Consolidate if more than 26 plans
 would occupy one execution sequence.
 
 For requested realignment, invoke `/ip consolidate <names>` with the ownership
