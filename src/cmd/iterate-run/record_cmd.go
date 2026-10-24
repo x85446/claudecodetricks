@@ -270,6 +270,9 @@ func runRecordCLI(args []string, input io.Reader, out, diag io.Writer) int {
 		if err != nil {
 			return recordFail(out, diag, asJSON, 1, err, "")
 		}
+		if strings.HasPrefix(strings.TrimSpace(string(data)), "[") {
+			return appendRecordBatch(data, f, project, plan, out, diag)
+		}
 		var e runrecord.Event
 		if len(strings.TrimSpace(string(data))) > 0 {
 			dec := json.NewDecoder(strings.NewReader(string(data)))
@@ -355,6 +358,78 @@ func runRecordCLI(args []string, input io.Reader, out, diag io.Writer) int {
 		return 0
 	}
 	return recordFail(out, diag, asJSON, 2, fmt.Errorf("unknown verb %q; verbs are list, show, append, import, types", verb), "Run: iterate-run record --help")
+}
+
+func appendRecordBatch(data []byte, f recordFlags, project, plan string, out, diag io.Writer) int {
+	asJSON := f.bools["json"]
+	if f.values["type"] != "" {
+		return recordFail(out, diag, asJSON, 2, errors.New("--type does not apply to a mixed event batch"), "Give every event its type")
+	}
+	var events []runrecord.Event
+	dec := json.NewDecoder(strings.NewReader(string(data)))
+	dec.DisallowUnknownFields()
+	if e := dec.Decode(&events); e != nil {
+		return recordFail(out, diag, asJSON, 2, e, "Pass one event object or an array of event objects")
+	}
+	var extra any
+	if e := dec.Decode(&extra); e != io.EOF {
+		return recordFail(out, diag, asJSON, 2, errors.New("one JSON document required"), "")
+	}
+	if len(events) == 0 {
+		return recordFail(out, diag, asJSON, 2, errors.New("event batch is empty"), "")
+	}
+	ids := []string{}
+	for i := range events {
+		e := &events[i]
+		if e.Type == "" {
+			return recordFail(out, diag, asJSON, 2, fmt.Errorf("event %d has no type", i+1), "")
+		}
+		if err := runrecord.ValidatePayload(*e); err != nil {
+			return recordFail(out, diag, asJSON, 2, err, "")
+		}
+		e.ProjectPath, e.ProjectKey, e.Plan = project, "", plan
+		if e.Source == "" {
+			e.Source = runrecord.SourceCLI
+		}
+		if e.ID == "" {
+			e.ID = runrecord.NewEventID()
+		}
+		ids = append(ids, e.ID)
+	}
+	store := iterrun.RecordStore()
+	runID := f.values["run"]
+	accepted := 0
+	var err error
+	if runID != "" {
+		for i := range events {
+			events[i].RunID = runID
+		}
+		accepted, err = store.AppendAll(events)
+	} else {
+		marker := ""
+		if ps, e := iterrun.GetPlanSummary(project, plan); e == nil {
+			if at, ok := ps.ExecutingAt(); ok {
+				marker = at.UTC().Format(time.RFC3339)
+			} else {
+				marker = strings.TrimSpace(ps.Executing)
+			}
+		}
+		first := events[0]
+		runID, accepted, err = store.Observe(runrecord.OpenRequest{Key: runrecord.PlanKey{ProjectPath: project, ProjectID: first.ProjectID, Plan: plan}, Marker: marker, Source: first.Source, At: first.At, AttemptKey: first.AttemptKey, Versions: iterrun.RecordPlanVersions(project, plan)}, func(runrecord.Run) []runrecord.Event { return events })
+	}
+	if err != nil {
+		return recordFail(out, diag, asJSON, 1, err, "")
+	}
+	status := "accepted"
+	if accepted == 0 {
+		status = "duplicate"
+	}
+	if asJSON {
+		recordJSON(out, map[string]any{"status": status, "accepted": accepted > 0, "accepted_count": accepted, "event_ids": ids, "run_id": runID})
+	} else {
+		fmt.Fprintf(out, "%s %d events %s\n", status, accepted, runID)
+	}
+	return 0
 }
 
 func orUnknown(s string) string {

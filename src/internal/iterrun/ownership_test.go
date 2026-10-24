@@ -23,9 +23,23 @@ func ownerFixture(t *testing.T) string {
 // TESTMASTER: id=nene-owner-1 tier=? parallel=no
 func TestOwnerCLIIdleStart(t *testing.T) {
 	p := ownerFixture(t)
+	path := filepath.Join(p, ".claude", "iterate", "plans", "alpha.md")
+	f, e := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0600)
+	if e != nil {
+		t.Fatal(e)
+	}
+	_, e = f.WriteString("\n## Examples\nowner: example\nrunning: false\n")
+	_ = f.Close()
+	if e != nil {
+		t.Fatal(e)
+	}
 	o, e := ClaimPlan(p, "alpha", "cli", os.Getpid(), time.Now())
 	if e != nil || !o.Live || o.Owner != "cli" {
 		t.Fatalf("CLI claim: %+v %v", o, e)
+	}
+	b, _ := os.ReadFile(path)
+	if !strings.Contains(string(b), "## Examples\nowner: example\nrunning: false\n") {
+		t.Fatal("claim edited a body example")
 	}
 }
 

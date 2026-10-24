@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/x85446/claudecodetricks/src/internal/plangraph"
 )
@@ -20,11 +21,12 @@ type GraphEdge struct {
 // GraphView is the one document `iterate-run plan graph --format json` and
 // `GET /api/graph` both serve.
 type GraphView struct {
-	Next    string           `json:"next,omitempty"`
-	Project string           `json:"project"`
-	Nodes   []plangraph.Node `json:"nodes"`
-	Edges   []GraphEdge      `json:"edges"`
-	Errors  []string         `json:"errors"`
+	ExecutionOwner *ExecutionOwner  `json:"execution_owner,omitempty"`
+	Next           string           `json:"next,omitempty"`
+	Project        string           `json:"project"`
+	Nodes          []plangraph.Node `json:"nodes"`
+	Edges          []GraphEdge      `json:"edges"`
+	Errors         []string         `json:"errors"`
 }
 
 // BuildGraphView resolves a project's plan graph into its serving shape.
@@ -41,6 +43,12 @@ func BuildGraphView(projectDir string) (GraphView, error) {
 		return GraphView{}, err
 	}
 	v := GraphView{Next: g.Next, Project: abs, Nodes: g.Nodes, Edges: []GraphEdge{}, Errors: g.Errors}
+	if owner, e := ProjectExecutionOwner(abs, time.Now()); e == nil && owner.Live {
+		if owner.Owner == "" {
+			owner.Owner = "cli"
+		}
+		v.ExecutionOwner = &owner
+	}
 	for _, n := range g.Nodes {
 		for _, e := range n.Edges {
 			v.Edges = append(v.Edges, GraphEdge{From: e.Target, To: n.Name, Satisfied: e.Satisfied, Reason: e.Reason, Implied: e.Implied})

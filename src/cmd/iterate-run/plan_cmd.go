@@ -24,7 +24,7 @@ type planFlags struct {
 }
 
 var (
-	planValued  = map[string]bool{"format": true, "project": true, "color": true, "owner": true, "pid": true}
+	planValued  = map[string]bool{"format": true, "project": true, "color": true, "owner": true, "pid": true, "child-pid": true}
 	planBoolean = map[string]bool{"check": true, "json": true, "apply": true, "help": true, "no-color": true}
 	planShort   = map[string]string{"-C": "project", "-h": "help"}
 )
@@ -548,6 +548,14 @@ func runPlanOwnership(f planFlags, out, diag io.Writer, now time.Time) int {
 	}
 	var value any
 	var err error
+	childPID := 0
+	if raw := f.values["child-pid"]; raw != "" {
+		var e error
+		childPID, e = strconv.Atoi(raw)
+		if verb != "heartbeat" || e != nil || childPID <= 0 {
+			return planUsageError(diag, "--child-pid requires a positive PID with heartbeat", "Run: iterate-run plan heartbeat "+name+" --child-pid <pid>")
+		}
+	}
 	if verb == "claim" {
 		pid, e := strconv.Atoi(f.values["pid"])
 		if e != nil {
@@ -556,6 +564,9 @@ func runPlanOwnership(f planFlags, out, diag io.Writer, now time.Time) int {
 		value, err = iterrun.ClaimPlan(project, name, f.values["owner"], pid, now)
 	} else {
 		err = iterrun.UpdatePlanOwnership(project, name, verb, now)
+		if err == nil && childPID > 0 {
+			err = iterrun.AttachPlanOwnerChild(project, name, childPID)
+		}
 		value = map[string]string{"plan": name, "operation": verb}
 	}
 	if err != nil {

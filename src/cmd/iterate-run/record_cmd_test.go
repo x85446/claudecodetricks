@@ -140,6 +140,43 @@ func TestNeneRecordAppendConductorIdentityAndClock(t *testing.T) {
 	}
 }
 
+// TESTMASTER: id=nene-record-phase-batch tier=? parallel=no
+func TestNeneRecordAppendBatchIsAtomicAndIdempotent(t *testing.T) {
+	env := newRecordEnv(t)
+	project := t.TempDir()
+	writePlan(t, project, "alpha", "2026-01-07T09:00:00Z")
+	payload := `[{"id":"batch-admitted","type":"run.lifecycle","at":"2026-01-07T09:00:00Z","source":"conductor","attempt_key":"a1","lifecycle":{"state":"admitted"}},{"id":"batch-started","type":"attempt.started","at":"2026-01-07T09:00:01Z","source":"conductor","attempt_key":"a1","requirement":1,"attempt_info":{"kind":"pair"}}]`
+	for attempt := 0; attempt < 2; attempt++ {
+		code, out := env.cli(payload, "append", "--project", project, "--plan", "alpha", "--json")
+		var reply struct {
+			Accepted int `json:"accepted_count"`
+		}
+		if code != 0 || json.Unmarshal([]byte(out), &reply) != nil {
+			t.Fatalf("batch append: %d %s", code, out)
+		}
+		want := 2
+		if attempt == 1 {
+			want = 0
+		}
+		if reply.Accepted != want {
+			t.Fatalf("batch accepted=%d want %d", reply.Accepted, want)
+		}
+	}
+	r := onlyRun(t, env.show(false, "--project", project, "--plan", "alpha"))
+	if r.Events != 3 {
+		t.Fatalf("batch replay added events: %+v", r)
+	}
+	before := storeSnapshot(t, env.storeDir())
+	invalid := strings.Replace(strings.Replace(payload, `"id":"batch-admitted"`, `"id":"batch-not-written"`, 1), `"type":"attempt.started"`, `"type":"evidence.observed"`, 1)
+	code, _ := env.cli(invalid, "append", "--project", project, "--plan", "alpha", "--json")
+	if code == 0 {
+		t.Fatal("invalid batch accepted")
+	}
+	if after := storeSnapshot(t, env.storeDir()); after != before {
+		t.Fatal("invalid batch wrote a partial phase")
+	}
+}
+
 func archivePlan(t *testing.T, project, name, archive string) {
 	t.Helper()
 	dir := filepath.Join(project, ".claude", "iterate", "archive")

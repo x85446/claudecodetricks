@@ -129,3 +129,7 @@ Use `plan heartbeat <name>` at validation and step boundaries,
 dead lease while retaining checkpoint evidence. The binary writes the plan's
 ownership key block under a project lock. Uncertain delivery evidence requires
 diagnosis before replay.
+
+After launching an owned child, `plan heartbeat <name> --child-pid <pid>` records
+the child's observed process identity. The lease excludes another executor while
+that child survives its supervisor.

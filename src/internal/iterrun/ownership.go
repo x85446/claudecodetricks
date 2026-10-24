@@ -190,6 +190,15 @@ func SetPlanOwnerChild(project, name string, pid int, identity string) error {
 	})
 }
 
+// AttachPlanOwnerChild observes a live child's identity for the heartbeat CLI.
+func AttachPlanOwnerChild(project, name string, pid int) error {
+	identity := ownerProcessIdentity(pid)
+	if identity == "" {
+		return fmt.Errorf("child pid %d has no observable process identity", pid)
+	}
+	return SetPlanOwnerChild(project, name, pid, identity)
+}
+
 // UpdatePlanOwnership refreshes, releases, or reconciles the named lease.
 func UpdatePlanOwnership(project, name, verb string, now time.Time) error {
 	return ownershipLocked(project, func() error {
@@ -227,6 +236,9 @@ func UpdatePlanOwnership(project, name, verb string, now time.Time) error {
 				text = setPlanField(text, "running", now.UTC().Format(time.RFC3339))
 			} else {
 				text = setPlanField(text, "running", "false")
+				if verb == "release" {
+					text = setPlanField(text, "conductor-assignment", "")
+				}
 				if verb == "reconcile" {
 					if assignment := ownerField(text, "conductor-assignment"); assignment != "" {
 						text = setPlanField(text, "reconciled-assignment", assignment)
@@ -267,9 +279,14 @@ func safePlanPath(project, name string) (string, error) {
 }
 
 func setPlanField(text, key, value string) string {
-	re := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + `:.*$`)
-	if re.MatchString(text) {
-		return re.ReplaceAllStringFunc(text, func(string) string { return key + ": " + value })
+	boundary := strings.Index(text, "\n## ")
+	head, tail := text, ""
+	if boundary >= 0 {
+		head, tail = text[:boundary], text[boundary:]
 	}
-	return key + ": " + value + "\n" + text
+	re := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + `:.*$`)
+	if re.MatchString(head) {
+		return re.ReplaceAllStringFunc(head, func(string) string { return key + ": " + value }) + tail
+	}
+	return key + ": " + value + "\n" + head + tail
 }

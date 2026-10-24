@@ -128,6 +128,18 @@ The dashboard serves the same reads:
 
 Any other method answers 405.
 
+## Atomic event batches
+
+`iterate-run record append` accepts one event object or an array of event objects.
+Every batch event supplies its own `type`; `--type` applies to single objects.
+The writer validates the whole batch before appending any event and accepts each
+stable event ID once. Replaying a batch returns `duplicate` with zero accepted
+events. With `--run`, the batch appends to that execution; otherwise the first
+event supplies the observation time, source, project ID and attempt identity
+used to select or open the run.
+
+Batch JSON output includes `accepted_count`, `event_ids` and `run_id`.
+
 ## Legacy plans
 
 A plan execution with no record gets a read-only view built in memory from its plan or archive file, the hook event log and the Conductor's run directories. Its events carry `provenance: legacy:plan-file`, `legacy:hook-events` or `legacy:conductor-runs`:

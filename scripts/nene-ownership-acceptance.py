@@ -33,7 +33,8 @@ def main():
                     for owner in ("cli", "conductor")]
         results = [(c.communicate(), c.returncode) for c in children]
         assert sorted(code for _, code in results) == [0, 1], results
-        run("heartbeat", "alpha")
+        run("heartbeat", "alpha", "--child-pid",str(os.getpid()))
+        assert f"owner-child-pid: {os.getpid()}" in alpha.read_text()
         run("release", "alpha")
         beta = plans / "beta.md"
         beta.write_text("name: beta\nphase: planned\ndepends: alpha\nrunning: false\n## Goal\nFixture.\n")
