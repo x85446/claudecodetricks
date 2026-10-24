@@ -1,7 +1,6 @@
 package iterrun
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"html"
@@ -15,12 +14,11 @@ import (
 	"time"
 )
 
-// Serve hosts the project dashboard, Conductor controls, and full plan timelines on one listener.
+// Serve hosts the project dashboard and recorded plan timelines.
 func Serve(addr, versionLine string) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", conductorShell)
-	registerConductorWeb(mux)
-	registerConductorAPI(mux)
+	mux.HandleFunc("/", dashboardShell)
+	registerDashboardWeb(mux)
 	registerRecordAPI(mux)
 	registerReportAPI(mux)
 	mux.HandleFunc("/plan", handlePlan)
@@ -32,11 +30,8 @@ func Serve(addr, versionLine string) error {
 		return err
 	}
 	fmt.Printf("iterate-run dashboard: http://%s\n", ln.Addr().String())
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go conductorWakeLoop(ctx, NewConductorService(""), StartConductorWorker)
 	return http.Serve(ln, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !conductorLocalHost(r.Host) {
+		if !dashboardLocalHost(r.Host) {
 			http.Error(w, "localhost Host required", http.StatusForbidden)
 			return
 		}
@@ -254,11 +249,6 @@ func writeLiveProjectSection(b *strings.Builder, dir, short string, plans []Plan
 	if roll := harnessRollup(plans); roll != "" {
 		fmt.Fprintf(b, `<span class="harness-rollup" title="harnesses seen among this project's live plans">%s</span>`, html.EscapeString(roll))
 	}
-	if cs, ok := ReadConductorState(dir); ok {
-		if line, show := ConductorStatusLine(cs, time.Now()); show {
-			fmt.Fprintf(b, `<div class="conductor">conductor %s</div>`, line)
-		}
-	}
 	if len(plans) == 0 {
 		b.WriteString(`<p class="empty">no plans found</p>`)
 	} else {
@@ -405,13 +395,13 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 	proj := r.URL.Query().Get("project")
 	name := r.URL.Query().Get("name")
 	if proj == "" || name == "" {
-		conductorDetailError(w, r, http.StatusBadRequest, "Missing project or plan name")
+		dashboardDetailError(w, r, http.StatusBadRequest, "Missing project or plan name")
 		return
 	}
 
 	initialProject, initialErr := safeDetailIdentity(proj, name, "plans")
 	if initialErr != nil && (initialProject == "" || !errors.Is(initialErr, fs.ErrNotExist)) {
-		conductorDetailError(w, r, http.StatusNotFound, initialErr.Error())
+		dashboardDetailError(w, r, http.StatusNotFound, initialErr.Error())
 		return
 	}
 	proj = initialProject
@@ -454,7 +444,7 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 
 	canonical, identityErr := safeDetailIdentity(proj, name, "plans")
 	if identityErr != nil {
-		conductorDetailError(w, r, http.StatusNotFound, identityErr.Error())
+		dashboardDetailError(w, r, http.StatusNotFound, identityErr.Error())
 		return
 	}
 	proj = canonical
@@ -466,7 +456,7 @@ func handlePlan(w http.ResponseWriter, r *http.Request) {
 
 	plan, err := GetPlanSummary(proj, name)
 	if err != nil {
-		conductorDetailError(w, r, http.StatusNotFound, err.Error())
+		dashboardDetailError(w, r, http.StatusNotFound, err.Error())
 		return
 	}
 	writePlanDetail(w, r, proj, rows, plan)
@@ -482,13 +472,13 @@ func handleArchive(w http.ResponseWriter, r *http.Request) {
 	proj := r.URL.Query().Get("project")
 	file := r.URL.Query().Get("file")
 	if proj == "" || file == "" {
-		conductorDetailError(w, r, http.StatusBadRequest, "Missing project or archive filename")
+		dashboardDetailError(w, r, http.StatusBadRequest, "Missing project or archive filename")
 		return
 	}
 
 	canonical, identityErr := safeDetailIdentity(proj, file, "archive")
 	if identityErr != nil {
-		conductorDetailError(w, r, http.StatusNotFound, identityErr.Error())
+		dashboardDetailError(w, r, http.StatusNotFound, identityErr.Error())
 		return
 	}
 	proj = canonical
@@ -540,7 +530,7 @@ func writePlanDetail(w http.ResponseWriter, r *http.Request, proj string, rows [
 	pageURL.RawQuery = q.Encode()
 	in := ReportInput{Plan: plan, Rows: rows, Tokens: tokens, HistoryLoaded: tokens != nil, Now: time.Now()}
 	in.Record, in.RecordErr = ReadRecordReport(proj, plan.Name, plan.ArchiveFile)
-	opt := PlanPageOptions{Chrome: conductorDetailHeader(proj, plan.Name, pageURL.RequestURI())}
+	opt := PlanPageOptions{Chrome: dashboardDetailHeader(proj, plan.Name, pageURL.RequestURI())}
 	if tokens == nil {
 		// detail.js fetches this URL and replaces #plan-recorded-content, the
 		// report included, with the history-enriched render.

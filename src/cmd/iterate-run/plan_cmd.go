@@ -244,9 +244,8 @@ func (p planPalette) paint(code, s string) string {
 }
 
 func newPlanPalette(f planFlags, out io.Writer) planPalette {
-	cf := conductorFlags{values: map[string]string{"color": f.values["color"]}, bools: map[string]bool{"no-color": f.bools["no-color"]}}
 	locale := strings.ToLower(os.Getenv("LC_ALL") + os.Getenv("LC_CTYPE") + os.Getenv("LANG"))
-	return planPalette{color: conductorColor(cf, out), utf8: strings.Contains(locale, "utf-8") || strings.Contains(locale, "utf8")}
+	return planPalette{color: planColor(f, out), utf8: strings.Contains(locale, "utf-8") || strings.Contains(locale, "utf8")}
 }
 
 func runPlanGraph(f planFlags, project string, out, diag io.Writer) int {
@@ -579,4 +578,37 @@ func runPlanOwnership(f planFlags, out, diag io.Writer, now time.Time) int {
 		fmt.Fprintf(out, "%s %s\n", verb, name)
 	}
 	return 0
+}
+
+func planColor(f planFlags, out io.Writer) bool {
+	if f.bools["no-color"] {
+		return false
+	}
+	switch f.values["color"] {
+	case "always":
+		return true
+	case "never":
+		return false
+	}
+	if os.Getenv("ITERATE_RUN_NO_COLOR") != "" {
+		return false
+	}
+	if os.Getenv("ITERATE_RUN_COLOR") == "always" {
+		return true
+	}
+	if os.Getenv("NO_COLOR") != "" {
+		return false
+	}
+	if os.Getenv("FORCE_COLOR") != "" || (os.Getenv("CLICOLOR_FORCE") != "" && os.Getenv("CLICOLOR_FORCE") != "0") {
+		return true
+	}
+	if os.Getenv("TERM") == "" || os.Getenv("TERM") == "dumb" || os.Getenv("CI") != "" {
+		return false
+	}
+	file, ok := out.(*os.File)
+	if !ok {
+		return false
+	}
+	st, e := file.Stat()
+	return e == nil && st.Mode()&os.ModeCharDevice != 0
 }

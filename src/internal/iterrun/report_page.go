@@ -13,7 +13,7 @@ type PlanPageOptions struct {
 	HomeURL string
 	// Chrome is trusted application navigation rendered first on the page.
 	// A page with chrome is the dashboard's view of recorded observations;
-	// a plan that is not archived also gets the Conductor activity region.
+	// recorded content supports asynchronous tool-history loading.
 	Chrome string
 	// HistoryURL, when set, is where the page fetches tool history after it
 	// renders. A status line says so and offers a retry when it fails.
@@ -25,7 +25,7 @@ type reportNavItem struct{ id, label string }
 
 // RenderPlanPage renders a plan's page in reading order: application
 // navigation, the plan header, the outcome, progress and evidence summary,
-// the execution timeline, the breakdowns, and the Conductor activity in a
+// the execution timeline and breakdowns in a
 // bounded region last. Everything that tool history can change sits inside
 // #plan-recorded-content, which the history loader replaces as one unit.
 func RenderPlanPage(in ReportInput, opt PlanPageOptions) string {
@@ -36,7 +36,6 @@ func RenderPlanPage(in ReportInput, opt PlanPageOptions) string {
 		rep = &r
 	}
 	recorded := plan.Archived || opt.Chrome != ""
-	live := opt.Chrome != "" && !plan.Archived
 
 	title := "iterate-run plan report"
 	if plan.Name != "" {
@@ -65,9 +64,6 @@ func RenderPlanPage(in ReportInput, opt PlanPageOptions) string {
 			reportNavItem{"report-rework", "Attempts"}, reportNavItem{"report-usage", "Usage"},
 			reportNavItem{"report-coverage", "Coverage"}, reportNavItem{"report-delivery", "Delivery"})
 	}
-	if live {
-		nav = append(nav, reportNavItem{"conductor-live-detail", "Conductor activity"})
-	}
 	b.WriteString(`<nav class="report-toc" aria-labelledby="report-toc-h"><h2 id="report-toc-h">On this page</h2><ol>`)
 	for _, n := range nav {
 		fmt.Fprintf(&b, `<li><a href="#%s">%s</a></li>`, n.id, n.label)
@@ -91,9 +87,6 @@ func RenderPlanPage(in ReportInput, opt PlanPageOptions) string {
 	writeTimelineSection(&b, in.Rows, recorded, reqs)
 	if rep != nil {
 		writeReportBreakdowns(&b, *rep)
-	}
-	if live {
-		b.WriteString(conductorActivityHTML)
 	}
 	b.WriteString(`<footer>Built from what's already on disk — each team's own log file plus any iterate-run-wrapped unit's registry timestamps, merged with hook-derived tool-call data wherever it's been captured, and the plan's run record.</footer>`)
 	b.WriteString(`</div></main>`)
@@ -230,9 +223,6 @@ func writeTimelineSection(b *strings.Builder, rows []Row, recorded bool, reqs ma
 	b.WriteString(`</section>`)
 }
 
-// conductorActivityHTML is the live Conductor region. detail.js fills it and
-// keeps the node across history loads; its event log scrolls inside a fixed
-// maximum height so a long log never pushes the report down.
 const conductorActivityHTML = `<section id="conductor-live-detail" aria-labelledby="conductor-activity-title"><h2 id="conductor-activity-title">Conductor activity</h2><div data-status aria-live="polite"><p>Loading activity…</p></div><details class="conductor-events" open><summary>Event log</summary><div class="conductor-event-scroll" role="region" aria-label="Conductor event log" tabindex="0"><p>Loading events…</p></div></details><details class="conductor-usage"><summary>Usage observations</summary><div data-usage></div></details></section>`
 
 // reportPageScript marks the requirement cell whose evidence the address
@@ -246,7 +236,7 @@ const planPageCSS = `
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 .skip-link{position:absolute;left:12px;top:-80px;z-index:200;background:var(--surface);color:var(--accent);border:2px solid var(--accent);border-radius:6px;padding:8px 12px;font-size:13px;font-weight:600;text-decoration:none}
 .skip-link:focus{top:12px}
-main,.plan-back,.conductor-detail-header,.conductor-detail-nav{max-width:900px;margin-left:auto;margin-right:auto}
+main,.plan-back,.dashboard-detail-header,.dashboard-detail-nav{max-width:900px;margin-left:auto;margin-right:auto}
 main{overflow-wrap:anywhere}
 main:focus{outline:none}
 main a:focus-visible,main summary:focus-visible,.skip-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -270,22 +260,11 @@ main a:focus-visible,main summary:focus-visible,.skip-link:focus-visible{outline
 #plan-timeline .sub a{color:var(--accent)}
 .step-ev{font-size:12px;color:var(--accent);align-self:flex-start;min-height:24px;display:inline-flex;align-items:center}
 @media (prefers-reduced-motion:reduce){.vmark.v-working{animation:none}.chev{transition:none}}
-.conductor-detail-header,.conductor-detail-nav{margin-bottom:20px;overflow-wrap:anywhere}
-.conductor-detail-header{display:flex;justify-content:space-between}
-.conductor-detail-header a,.conductor-detail-nav a{color:var(--accent)}
-.conductor-detail-nav{font-size:14px;line-height:1.8;padding-bottom:16px;border-bottom:1px solid var(--border)}
-.conductor-detail-nav p{font-size:12px;margin:2px 0;color:var(--text-dim)}
-#conductor-live-detail{margin:26px 0;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px;overflow-wrap:anywhere}
-#conductor-live-detail h2{margin:0 0 10px}
-#conductor-live-detail p{margin:6px 0;color:var(--text-dim)}
-#conductor-live-detail summary{cursor:pointer;padding:8px 0;min-height:24px;color:var(--accent);font-weight:600}
-.conductor-events{margin-top:10px;border-top:1px solid var(--border)}
-.conductor-event-scroll{min-height:72px;max-height:min(260px,40vh);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:10px 12px}
-.conductor-event-scroll:focus-visible,#conductor-live-detail summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.conductor-event-scroll h3{font-size:13px;margin:14px 0 8px}
-.conductor-event-scroll h3:first-child{margin-top:0}
-.conductor-event-scroll p{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.conductor-usage{font-size:12px}
+.dashboard-detail-header,.dashboard-detail-nav{margin-bottom:20px;overflow-wrap:anywhere}
+.dashboard-detail-header{display:flex;justify-content:space-between}
+.dashboard-detail-header a,.dashboard-detail-nav a{color:var(--accent)}
+.dashboard-detail-nav{font-size:14px;line-height:1.8;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.dashboard-detail-nav p{font-size:12px;margin:2px 0;color:var(--text-dim)}
 @media (max-width:600px){
 body{padding:20px 16px 40px}
 .row{flex-wrap:wrap;gap:4px 10px;padding:8px}

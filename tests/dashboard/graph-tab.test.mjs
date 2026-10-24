@@ -6,7 +6,7 @@
 // a project with no plans shows its empty state (dag-web-3). Exits 77 (skip)
 // when Chrome, Go or WebSocket is absent.
 //
-// Run: node --experimental-websocket tests/conductor/graph-tab.test.mjs
+// Run: node --experimental-websocket tests/dashboard/graph-tab.test.mjs
 import { execFileSync, spawn } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -49,7 +49,7 @@ writeFileSync(join(home, '.claude/iterate-run/projects.json'), JSON.stringify([c
 
 const freePort = () => new Promise(r => { const s = createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
 const port = await freePort();
-const env = { ...process.env, HOME: home, ITERATE_CONDUCTOR_DIR: join(root, 'conductor'), ITERATE_RUN_RECORD_DIR: join(root, 'records') };
+const env = { ...process.env, HOME: home, ITERATE_LEGACY_RUN_DIR: join(root, 'conductor'), ITERATE_RUN_RECORD_DIR: join(root, 'records') };
 const server = spawn(bin, ['serve', '--port', String(port)], { env, stdio: 'ignore' });
 procs.push(server);
 for (let i = 0; ; i++) {

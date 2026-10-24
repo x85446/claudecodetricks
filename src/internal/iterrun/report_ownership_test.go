@@ -15,10 +15,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/x85446/claudecodetricks/src/internal/conductor"
-	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
-	"github.com/x85446/claudecodetricks/src/internal/runrecord"
 )
 
 // Lifecycle report fixtures: an isolated HOME, record store and Conductor
@@ -56,7 +52,7 @@ func lcEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("ITERATE_RUN_RECORD_DIR", t.TempDir())
-	t.Setenv("ITERATE_CONDUCTOR_DIR", t.TempDir())
+	t.Setenv("ITERATE_LEGACY_RUN_DIR", t.TempDir())
 	t.Setenv("ITERATE_LIVE_SECS", "")
 }
 
@@ -176,14 +172,6 @@ func lcSection(html, id string) string {
 	return html[start : start+end]
 }
 
-func lcDecision(at time.Time, project, plan string, c conductor.Candidate) conductor.Decision {
-	c.Project = model.Project{ID: "p1", Path: project}
-	c.Plan = conductor.Plan{Name: plan, ProjectPath: project, State: "unblocked"}
-	return conductor.Decision{At: at, Candidates: []conductor.Candidate{c}, Queues: []conductor.Queue{{ProjectID: "p1", RunningOwners: map[string]string{}}}}
-}
-
-var lcProjects = func(project string) []model.Project { return []model.Project{{ID: "p1", Path: project}} }
-
 const lcExec = "phase: executing\nExecuting: 2026-01-07T09:00:00Z\nharness: claude-code"
 
 func lcRunning(at time.Time) string { return "\nrunning: " + at.UTC().Format(time.RFC3339) }
@@ -213,18 +201,18 @@ func TestKrHandoffResume(t *testing.T) {
 	lcHook(t, project, "s1")
 
 	// The Conductor's next tick admits the eligible plan, then claims it.
-	src := ConductorPlanSource{}
-	src.RecordAdmission(lcDecision(at(13*time.Minute), project, "heron", conductor.Candidate{Eligible: true, Selected: true, Code: "eligible", Reason: "Eligible"}), lcProjects(project))
-	a := model.Assignment{ID: "assignment-heron-1", RunID: "run-c1", ProjectID: "p1", ProjectPath: project, Plan: "heron", Step: 1, Kind: "pair", Task: "Write receipt", Validation: "Read receipt"}
+	src := recordFixtureSource{}
+	appendAdmissionFixture(t, at(13*time.Minute), project, "heron", "admitted", "", "selected for an assignment")
+	a := recordFixtureAssignment{ID: "assignment-heron-1", RunID: "run-c1", ProjectID: "p1", ProjectPath: project, Plan: "heron", Step: 1, Kind: "pair", Task: "Write receipt", Validation: "Read receipt"}
 	at(13*time.Minute + time.Second)
-	src.RecordAssignment(conductor.RecordAdmitted, a, nil, nil)
+	src.AppendPhase("admitted", a, nil, nil)
 	at(13*time.Minute + 2*time.Second)
-	src.RecordAssignment(conductor.RecordStarted, a, nil, nil)
+	src.AppendPhase("started", a, nil, nil)
 	// While the Conductor holds the marker, a CLI hook is not an owner.
 	writeRecordPlan(t, project, "heron", lcExec+lcRunning(clock.get())+"\nconductor-assignment: "+a.ID)
 	lcHook(t, project, "s2")
 	at(20 * time.Minute)
-	src.RecordAssignment(conductor.RecordFinished, a, &model.Result{Outcome: "completed", ValidationMet: true, Evidence: []string{"receipt read back"}}, nil)
+	src.AppendPhase("finished", a, &recordFixtureResult{Outcome: "completed", ValidationMet: true, Evidence: []string{"receipt read back"}}, nil)
 	writeRecordPlan(t, project, "heron", lcExec+"\nrunning: false\nconductor-assignment: ")
 
 	before := lcSnapshot(t)
@@ -312,8 +300,7 @@ func TestKrHandoffGated(t *testing.T) {
 		writeRecordPlan(t, project, "heron", lcExec+"\nstatus: unblocked"+lcRunning(clock.get()))
 		lcHook(t, project, "s1")
 		// The Conductor sees the CLI holding the plan and defers to it.
-		d := conductor.Decision{At: at(6 * time.Minute), Queues: []conductor.Queue{{ProjectID: "p1", RunningOwners: map[string]string{"heron": "cli"}}}}
-		ConductorPlanSource{}.RecordAdmission(d, lcProjects(project))
+		appendAdmissionFixture(t, at(6*time.Minute), project, "heron", "gated", "ownership", "a CLI /iterate run holds this plan")
 
 		rep, page := lcReport(t, project, "heron", "", false, t0.Add(7*time.Minute))
 		o := rep.Ownership
@@ -373,9 +360,8 @@ func TestKrHandoffGated(t *testing.T) {
 		writeRecordPlan(t, project, "egret", lcExec+"\nstatus: unblocked\nrunning: false")
 		lcHook(t, project, "s1")
 
-		src := ConductorPlanSource{}
-		tick := func(d time.Duration, c conductor.Candidate) {
-			src.RecordAdmission(lcDecision(at(d), project, "egret", c), lcProjects(project))
+		tick := func(d time.Duration, gate, reason string) {
+			appendAdmissionFixture(t, at(d), project, "egret", "gated", gate, reason)
 		}
 		pending := func(now time.Duration) *OwnershipPending {
 			rep, page := lcReport(t, project, "egret", "", false, t0.Add(now))
@@ -388,20 +374,20 @@ func TestKrHandoffGated(t *testing.T) {
 			return rep.Ownership.Pending
 		}
 
-		tick(5*time.Minute, conductor.Candidate{Code: "automation_disabled", Reason: "Automation disabled"})
+		tick(5*time.Minute, "automation_disabled", "Automation disabled")
 		if p := pending(6 * time.Minute); p.Gate != "automation_disabled" || p.Reason != "Automation disabled" || p.WaitingMS != 120000 || p.Decision != "gated" {
 			t.Fatalf("disabled: %+v", p)
 		}
-		tick(6*time.Minute, conductor.Candidate{Code: "automation_disabled", Reason: "Automation disabled"})
-		tick(10*time.Minute, conductor.Candidate{Code: "automation_window", Reason: "Outside automation time window"})
+		tick(6*time.Minute, "automation_disabled", "Automation disabled")
+		tick(10*time.Minute, "schedule", "Outside automation time window")
 		if p := pending(11 * time.Minute); p.Gate != "schedule" || p.Reason != "Outside automation time window" {
 			t.Fatalf("schedule: %+v", p)
 		}
-		tick(20*time.Minute, conductor.Candidate{Code: "weekly_exhausted", Reason: "Weekly allowance exhausted", Budget: model.BudgetDecision{Allowed: false, Code: "weekly_exhausted"}})
+		tick(20*time.Minute, "budget", "Weekly allowance exhausted")
 		if p := pending(21 * time.Minute); p.Gate != "budget" || p.Reason != "Weekly allowance exhausted" {
 			t.Fatalf("budget: %+v", p)
 		}
-		tick(25*time.Minute, conductor.Candidate{Code: "legacy_gate", Reason: "project launch policy: outside the launch schedule"})
+		tick(25*time.Minute, "schedule", "project launch policy: outside the launch schedule")
 		if p := pending(26 * time.Minute); p.Gate != "schedule" {
 			t.Fatalf("launch policy: %+v", p)
 		}
@@ -423,42 +409,4 @@ func TestKrHandoffGated(t *testing.T) {
 			t.Fatalf("waiting handoff: %+v", h)
 		}
 	})
-}
-
-// TESTMASTER: id=kr-admission-summary tier=fast parallel=no
-func TestRecordAdmissionGatesFromCandidates(t *testing.T) {
-	project := "/p"
-	cases := []struct {
-		c        conductor.Candidate
-		cli      bool
-		decision string
-		gate     string
-	}{
-		{conductor.Candidate{Selected: true, Eligible: true}, false, "admitted", ""},
-		{conductor.Candidate{Eligible: true}, false, "gated", "queue"},
-		{conductor.Candidate{Code: "disabled"}, false, "gated", "automation_disabled"},
-		{conductor.Candidate{Code: "project_window"}, false, "gated", "schedule"},
-		{conductor.Candidate{Code: "project_busy"}, true, "gated", "ownership"},
-		{conductor.Candidate{Code: "project_busy"}, false, "gated", "queue"},
-		{conductor.Candidate{Code: "legacy_gate", Reason: "manual iterate run lock owns this project"}, false, "gated", "ownership"},
-		{conductor.Candidate{Code: "short_exhausted", Budget: model.BudgetDecision{Code: "short_exhausted"}}, false, "gated", "budget"},
-		{conductor.Candidate{Code: "plan_blocked"}, false, "gated", "other"},
-	}
-	for _, tc := range cases {
-		d := lcDecision(time.Now(), project, "kite", tc.c)
-		if tc.cli {
-			d.Queues[0].RunningOwners["other"] = "cli"
-		}
-		got := summarizeAdmission(d, []model.Project{{ID: "p1", Path: project}})
-		var o admissionObservation
-		for _, x := range got {
-			if x.Plan == "kite" {
-				o = x
-			}
-		}
-		if o.Decision != tc.decision || o.Gate != tc.gate {
-			t.Fatalf("%s: got %s/%s want %s/%s", tc.c.Code, o.Decision, o.Gate, tc.decision, tc.gate)
-		}
-	}
-	_ = runrecord.SchemaVersion
 }

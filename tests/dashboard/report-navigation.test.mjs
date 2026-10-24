@@ -1,11 +1,11 @@
-// TESTMASTER: id=conductor.report-navigation tier=standard parallel=no
+// TESTMASTER: id=dashboard.report-navigation tier=standard parallel=no
 // Plan report navigation in headless Chrome over the sanitized Albatross,
 // Gemsbok and Waterbuck records: reading order, bounded Conductor activity,
 // history loading that keeps open disclosures, focus and the selected
 // requirement, keyboard reachability, 320px without horizontal scroll, and
 // read-only rendering. Exits 77 (skip) when Chrome, Go or WebSocket is absent.
 //
-// Run: node --experimental-websocket tests/conductor/report-navigation.test.mjs
+// Run: node --experimental-websocket tests/dashboard/report-navigation.test.mjs
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -66,7 +66,7 @@ writeFileSync(join(store, 'events.jsonl'), events);
 writeFileSync(join(store, 'projects.json'), JSON.stringify([project]));
 
 const port = await new Promise(r => { const s = createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => r(p)); }); });
-const env = { ...process.env, HOME: home, CODEX_HOME: join(home, '.codex'), ITERATE_RUN_RECORD_DIR: records, ITERATE_CONDUCTOR_DIR: conductorDir };
+const env = { ...process.env, HOME: home, CODEX_HOME: join(home, '.codex'), ITERATE_RUN_RECORD_DIR: records, ITERATE_LEGACY_RUN_DIR: conductorDir };
 const server = spawn(bin, ['serve', '--port', String(port)], { env, stdio: 'ignore' });
 procs.push(server);
 for (let i = 0; ; i++) {
@@ -149,7 +149,7 @@ try {
     const status = await historyLoaded();
     check(status.includes('loaded'), `${name}: tool history loads`, status);
     const r = await evaluate(`
-      const ids = ['main','plan-elapsed','report-progress','report-evidence','plan-timeline','report-time','report-ownership','report-rework','report-usage','report-coverage','report-delivery'${p.live ? ",'conductor-live-detail'" : ''}];
+      const ids = ['main','plan-elapsed','report-progress','report-evidence','plan-timeline','report-time','report-ownership','report-rework','report-usage','report-coverage','report-delivery'];
       const tops = ids.map(id => { const el = document.getElementById(id); return el ? Math.round(el.getBoundingClientRect().top + scrollY) : null; });
       const h1 = document.querySelector('h1'), toc = document.querySelector('.report-toc');
       const states = ['report-progress','report-evidence','report-time','report-ownership','report-rework','report-usage','report-coverage','report-delivery']
@@ -157,11 +157,11 @@ try {
       const broken = [...document.querySelectorAll('main a[href^="#"]')].map(a => a.getAttribute('href').slice(1)).filter(id => !document.getElementById(id));
       const first = [...document.querySelectorAll('a[href], button, summary, [tabindex]:not([tabindex="-1"])')][0];
       return { tops, h1: h1 && Math.round(h1.getBoundingClientRect().top + scrollY), toc: toc && Math.round(toc.getBoundingClientRect().top + scrollY),
-        crumbs: Math.round(document.querySelector('.conductor-detail-nav').getBoundingClientRect().top + scrollY), states, broken,
+        crumbs: Math.round(document.querySelector('.dashboard-detail-nav').getBoundingClientRect().top + scrollY), states, broken,
         first: first && first.className, mains: document.querySelectorAll('main').length,
         replaced: ['.stats','.runbox','.gapmark','.gaplist','.tk-top','#note-modal','#bd-detail','[onclick]'].filter(s => document.querySelector(s)) };`);
     check(r.tops.every(t => t !== null), `${name}: every section renders`, r.tops);
-    check(r.tops.every((t, i) => i === 0 || t >= r.tops[i - 1]), `${name}: sections read summary, timeline, breakdowns${p.live ? ', then Conductor activity' : ''}`, r.tops);
+    check(r.tops.every((t, i) => i === 0 || t >= r.tops[i - 1]), `${name}: sections read summary, timeline, breakdowns`, r.tops);
     check(r.crumbs < r.h1 && r.h1 < r.toc && r.toc < r.tops[2], `${name}: breadcrumbs, plan header and section list come first`, r);
     check(r.first === 'skip-link', `${name}: the skip link is the first focusable element`, r.first);
     check(r.mains === 1, `${name}: one main landmark`, r.mains);
@@ -228,26 +228,13 @@ try {
     await key('Tab', 'Tab', 9);
     const f = await evaluate(`const a = document.activeElement; const cs = getComputedStyle(a);
       return { id: a.getAttribute('href') || a.className || a.tagName, cell: a.classList.contains('bd-cell'), toc: !!a.closest('.report-toc'),
-        log: a.classList.contains('conductor-event-scroll'), ring: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2 };`);
-    if (f.cell || f.toc || f.log) { reached.add((f.cell ? 'cell' : f.toc ? 'toc' : 'log') + ':' + f.id); if (!f.ring) ringless.push(f.id); }
-    if (f.log) break;
+        ring: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2 };`);
+    if (f.cell || f.toc) { reached.add((f.cell ? 'cell' : 'toc') + ':' + f.id); if (!f.ring) ringless.push(f.id); }
   }
   const want = await evaluate(`return { cells: document.querySelectorAll('a.bd-cell').length, toc: document.querySelectorAll('.report-toc a').length }`);
   const got = { cells: [...reached].filter(k => k.startsWith('cell:')).length, toc: [...reached].filter(k => k.startsWith('toc:')).length, log: [...reached].some(k => k.startsWith('log:')) };
-  check(got.cells === want.cells && got.toc === want.toc && got.log, 'waterbuck: Tab reaches every requirement cell, section link and the event log', { got, want });
+  check(got.cells === want.cells && got.toc === want.toc, 'waterbuck: Tab reaches every requirement cell and section link', { got, want });
   check(ringless.length === 0, 'waterbuck: every keyboard-focused control shows a focus ring', ringless);
-
-  // 4. The Conductor activity stays bounded below the report however long
-  // its log grows.
-  await wait(1500);
-  const act = await evaluate(`
-    const log = document.querySelector('.conductor-event-scroll');
-    for (let i = 0; i < 600; i++) { const p = document.createElement('p'); p.textContent = 'injected event ' + i; log.append(p); }
-    const sec = document.getElementById('conductor-live-detail');
-    return { logH: log.clientHeight, logScroll: log.scrollHeight, secH: Math.round(sec.getBoundingClientRect().height), vh: innerHeight,
-      below: sec.getBoundingClientRect().top > document.getElementById('report-delivery').getBoundingClientRect().top };`);
-  check(act.logH <= Math.min(260, act.vh * 0.4) + 1 && act.logScroll > act.logH * 4 && act.secH < 480 && act.below,
-    'waterbuck: a 600-line event log scrolls inside a bounded region after the report', act);
 
   // 5. 320px: no horizontal scroll with every disclosure open, and a usable
   // gantt track.
@@ -257,7 +244,7 @@ try {
     await historyLoaded();
     const n = await evaluate(`document.querySelectorAll('details').forEach(d => d.open = true);
       const de = document.documentElement;
-      const wide = [...document.querySelectorAll('main *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > de.clientWidth + 1 && !e.closest('.vh,.conductor-event-scroll'); }).slice(0, 5).map(e => e.tagName + '.' + e.className);
+      const wide = [...document.querySelectorAll('main *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > de.clientWidth + 1 && !e.closest('.vh'); }).slice(0, 5).map(e => e.tagName + '.' + e.className);
       const tracks = [...document.querySelectorAll('.gantt .track')].map(t => Math.round(t.getBoundingClientRect().width));
       return { scrollW: de.scrollWidth, clientW: de.clientWidth, wide, minTrack: Math.min(...tracks) };`);
     check(n.scrollW <= n.clientW && n.wide.length === 0, `${name}: no horizontal scroll at 320px`, n);
@@ -274,6 +261,10 @@ const after = digest();
 const changed = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(p => before[p] !== after[p]);
 check(changed.length === 0, 'plan files, the run record, the Conductor store and the hook log are byte-identical after the checks', changed);
 
+if (!failures.length && process.env.DASHBOARD_VISUAL_READY) {
+ writeFileSync(process.env.DASHBOARD_VISUAL_READY,JSON.stringify({origin:`http://localhost:${port}`,project,pages}));
+ for(let i=0;i<600&&!existsSync(process.env.DASHBOARD_VISUAL_READY+'.done');i++)await wait(500);
+}
 ws.close();
 if (failures.length) {
   console.error(`FAIL: ${failures.length} of ${checks} report navigation checks failed`);

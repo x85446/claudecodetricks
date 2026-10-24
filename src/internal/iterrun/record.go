@@ -5,16 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/x85446/claudecodetricks/src/internal/runrecord"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/x85446/claudecodetricks/src/internal/conductor"
-	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
-	"github.com/x85446/claudecodetricks/src/internal/runrecord"
 )
 
 // BuildVersion is the iterate-run version stamped into records it opens.
@@ -145,9 +142,6 @@ func observeRecordHook(root, plan, team string, in hookInput) {
 		modTime = info.ModTime().UTC()
 	}
 	lock := readCLILock(raw)
-	if os.Getenv("ITERATE_CONDUCTOR_ASSIGNMENT_ID") != "" {
-		lock.conductor = true
-	}
 	now := recordNow()
 	bucket := now.Truncate(5 * time.Minute).Format(time.RFC3339)
 	req := runrecord.OpenRequest{
@@ -189,183 +183,6 @@ func observeRecordHook(root, plan, team string, in hookInput) {
 		out = append(out, cliOwnershipEvents(run, lock, in.SessionID, now)...)
 		return out
 	})
-}
-
-// RecordAssignment mirrors Conductor assignment lifecycle into the run
-// record. The Conductor's leases and checkpoints stay authoritative; the
-// record observes them.
-func (ConductorPlanSource) RecordAssignment(phase string, a model.Assignment, result *model.Result, ev *model.Event) {
-	// Intake triages an issue into a new plan; it executes no plan, so it
-	// opens no run.
-	if !runrecord.ValidName(a.Plan) || a.ProjectPath == "" || a.Kind == "intake" {
-		return
-	}
-	engine := recordEngine(a.Subscription.Adapter)
-	if engine == "" {
-		engine = a.Subscription.Adapter
-	}
-	now := recordNow()
-	base := runrecord.Event{
-		Source: runrecord.SourceConductor, At: now, ProjectID: a.ProjectID,
-		Requirement: a.Step, AttemptKey: a.ID, AssignmentID: a.ID, ConductorRunID: a.RunID, Team: a.Team,
-	}
-	id := func(parts ...string) string {
-		return runrecord.StableID("conductor", append([]string{a.ID}, parts...)...)
-	}
-	var events []runrecord.Event
-	push := func(e runrecord.Event) { events = append(events, e) }
-	// derive adds events that depend on the run's current view.
-	var derive func(runrecord.Run) []runrecord.Event
-	owner := &runrecord.Ownership{OwnerKind: "conductor", OwnerID: a.ID, PID: os.Getpid()}
-	switch phase {
-	case conductor.RecordAdmitted:
-		e := base
-		e.Type, e.ID = runrecord.TypeLifecycle, id("admitted")
-		e.Lifecycle = &runrecord.Lifecycle{State: "admitted", ObservedVia: "lease", Reason: a.Kind + " assignment " + a.ID}
-		push(e)
-		e = base
-		e.Type, e.ID, e.Ownership = runrecord.TypeOwnershipAcquired, id("acquired"), owner
-		push(e)
-		derive = func(run runrecord.Run) []runrecord.Event { return admissionClearances(run, now, a.ID) }
-	case conductor.RecordStarted:
-		e := base
-		e.Type, e.ID = runrecord.TypeAttemptStarted, id("started")
-		e.AttemptInfo = &runrecord.Attempt{Kind: a.Kind, Engine: engine, Model: a.Sequence.Model}
-		push(e)
-		e = base
-		e.Type, e.ID = runrecord.TypeLifecycle, id("executing")
-		e.Lifecycle = &runrecord.Lifecycle{State: "executing", ObservedVia: "lease"}
-		push(e)
-	case conductor.RecordEvent:
-		if ev == nil {
-			return
-		}
-		if beat, ok := conductorHeartbeat(a.ID, now); ok {
-			e := base
-			e.Type, e.ID, e.Ownership = beat.Type, beat.ID, beat.Ownership
-			push(e)
-		}
-		switch {
-		case ev.Kind == "session" && ev.SessionID != "":
-			e := base
-			e.Type, e.ID, e.SessionID = runrecord.TypeSessionObserved, id("session", ev.SessionID), ev.SessionID
-			e.Versions = &runrecord.Versions{Engine: engine, Model: a.Sequence.Model}
-			push(e)
-		case (ev.Kind == "terminal" || ev.Kind == "usage") && (ev.InputTokens > 0 || ev.OutputTokens > 0):
-			in, out := ev.InputTokens, ev.OutputTokens
-			e := base
-			e.Type, e.ID, e.SessionID = runrecord.TypeUsage, id("usage", fmt.Sprint(ev.Sequence), ev.ProviderID), ev.SessionID
-			e.Usage = &runrecord.Usage{
-				RequestID: a.ID + ":" + ev.SessionID, Scope: runrecord.ScopeExact, Cumulative: ev.Cumulative,
-				Model: a.Sequence.Model, InputTokens: &in, OutputTokens: &out,
-				Note: "conductor stream total; input includes cache read and creation tokens",
-			}
-			push(e)
-		}
-		if len(events) == 0 {
-			return
-		}
-	case conductor.RecordFinished:
-		if result == nil {
-			return
-		}
-		outcome := result.Outcome
-		if outcome == "completed" {
-			outcome = "passed"
-		}
-		e := base
-		e.Type, e.ID = runrecord.TypeAttemptFinished, id("finished")
-		e.AttemptInfo = &runrecord.Attempt{Kind: a.Kind, Outcome: outcome, Reason: result.Blocker, Engine: engine, Model: a.Sequence.Model}
-		push(e)
-		revision := gitHead(a.ProjectPath)
-		for i, text := range result.Evidence {
-			r := "unknown"
-			if result.Outcome == "completed" && result.ValidationMet {
-				r = "passed"
-			}
-			e = base
-			e.Type, e.ID = runrecord.TypeEvidence, id("evidence", fmt.Sprint(i))
-			e.Evidence = &runrecord.Evidence{Result: r, Summary: text, Revision: revision, Imported: true, ArtifactPath: a.ResultPath}
-			push(e)
-		}
-		if result.Outcome == "completed" && a.Kind == "pair" && a.Step > 0 {
-			yes := true
-			e = base
-			e.Type, e.ID = runrecord.TypeRequirement, id("requirement")
-			e.RequirementState = &runrecord.RequirementState{Task: a.Task, Validation: a.Validation, TaskChecked: &yes, ValidationChecked: &yes}
-			push(e)
-		}
-		if result.Outcome == "blocked" || result.Outcome == "partial" {
-			e = base
-			e.Type, e.ID = runrecord.TypeBlockerDetected, id("blocker")
-			e.Blocker = &runrecord.Blocker{Key: a.ID, Kind: "operator", Reason: result.Blocker}
-			push(e)
-			e = base
-			e.Type, e.ID = runrecord.TypeLifecycle, id("blocked")
-			e.Lifecycle = &runrecord.Lifecycle{State: "blocked", Reason: result.Blocker, ObservedVia: "lease"}
-			push(e)
-		}
-		if result.Outcome == "interrupted" {
-			e = base
-			e.Type, e.ID = runrecord.TypeLifecycle, id("interrupted")
-			e.Lifecycle = &runrecord.Lifecycle{State: "interrupted", Reason: result.Blocker, ObservedVia: "lease"}
-			push(e)
-		}
-		if a.Kind == "delivery" && result.Outcome == "completed" {
-			if archive := conductorDeliveryArchive(a); archive != "" {
-				e = base
-				e.Type, e.ID = runrecord.TypeLifecycle, id("completed")
-				e.Lifecycle = &runrecord.Lifecycle{State: "completed", ObservedVia: "lease"}
-				push(e)
-				// The archive move follows completion; one microsecond keeps
-				// that order under the (time, id) fold.
-				e = base
-				e.At = now.Add(time.Microsecond)
-				e.Type, e.ID = runrecord.TypeLifecycle, id("archived")
-				e.Lifecycle = &runrecord.Lifecycle{State: "archived", ArchiveFile: archive, ObservedVia: "lease"}
-				push(e)
-			}
-		}
-		e = base
-		e.Type, e.ID, e.Ownership = runrecord.TypeOwnershipReleased, id("released"), owner
-		e.Ownership.Reason = result.Outcome
-		push(e)
-	default:
-		return
-	}
-	var marker string
-	var versions *runrecord.Versions
-	if path, err := safePlanPath(a.ProjectPath, a.Plan); err == nil {
-		if ps, err := parsePlanFile(path, a.ProjectPath); err == nil {
-			marker = recordMarker(ps)
-			versions = recordVersions(path, ps)
-		}
-	}
-	if versions == nil {
-		versions = &runrecord.Versions{IterateRun: BuildVersion}
-	}
-	req := runrecord.OpenRequest{
-		Key:    runrecord.PlanKey{ProjectPath: a.ProjectPath, ProjectID: a.ProjectID, Plan: a.Plan},
-		Marker: marker, Source: runrecord.SourceConductor, Versions: versions, At: now, AttemptKey: a.ID,
-	}
-	_, _, _ = RecordStore().Observe(req, func(run runrecord.Run) []runrecord.Event {
-		if derive == nil {
-			return events
-		}
-		return append(events, derive(run)...)
-	})
-}
-
-// conductorDeliveryArchive finds the archive file a delivery assignment
-// wrote.
-func conductorDeliveryArchive(a model.Assignment) string {
-	files, _ := filepath.Glob(filepath.Join(a.ProjectPath, ".claude", "iterate", "archive", "*-"+a.Plan+"-done.md"))
-	for _, f := range files {
-		if b, err := os.ReadFile(f); err == nil && strings.Contains(string(b), "<!-- conductor delivery "+a.ID+" -->") {
-			return filepath.Base(f)
-		}
-	}
-	return ""
 }
 
 // gitHead reads the checked-out revision without running git.
@@ -609,12 +426,12 @@ func legacySources(project, projectID string, ps PlanSummary, path string) runre
 	}
 
 	src.ConductorRead = true
-	runDirs, err := filepath.Glob(filepath.Join(conductor.DefaultDir(), "runs", "*"))
+	runDirs, err := filepath.Glob(filepath.Join(legacyRunDirectory(), "runs", "*"))
 	if err != nil {
 		src.ConductorRead = false
 	}
 	for _, dir := range runDirs {
-		var lease conductor.Lease
+		var lease legacyLeaseDocument
 		b, err := os.ReadFile(filepath.Join(dir, "run.json"))
 		if err != nil || json.Unmarshal(b, &lease) != nil {
 			continue
@@ -632,7 +449,7 @@ func legacySources(project, projectID string, ps PlanSummary, path string) runre
 		}
 		resultPath := filepath.Join(dir, "validated-result.json")
 		if b, err := os.ReadFile(resultPath); err == nil {
-			var r model.Result
+			var r legacyResultDocument
 			if json.Unmarshal(b, &r) == nil {
 				la.Outcome, la.Blocker, la.ValidationMet, la.Evidence = r.Outcome, r.Blocker, r.ValidationMet, r.Evidence
 				if info, err := os.Stat(resultPath); err == nil {
@@ -659,7 +476,7 @@ func conductorRunUsage(path string) []runrecord.LegacyUsage {
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 4096), 1<<20)
 	for sc.Scan() {
-		var ev model.Event
+		var ev legacyUsageDocument
 		if json.Unmarshal(sc.Bytes(), &ev) != nil || !ev.Cumulative || (ev.InputTokens == 0 && ev.OutputTokens == 0) {
 			continue
 		}

@@ -118,22 +118,16 @@ func TestKrReportNavigation(t *testing.T) {
 			page := getPage(t, path)
 
 			// Reading order.
-			order := []string{`class="skip-link" href="#main"`, `class="conductor-detail-header"`, `aria-label="Breadcrumb"`,
+			order := []string{`class="skip-link" href="#main"`, `class="dashboard-detail-header"`, `aria-label="Breadcrumb"`,
 				`<main id="main"`, `<h1>`, `class="report-toc"`, `<div id="plan-recorded-content">`, `id="plan-elapsed"`,
 				`id="report-progress"`, `id="report-evidence"`, `id="plan-timeline"`, `id="report-time"`, `id="report-ownership"`,
 				`id="report-rework"`, `id="report-usage"`, `id="report-coverage"`, `id="report-delivery"`}
-			if p.live {
-				order = append(order, `id="conductor-live-detail"`)
-			}
 			inOrder(t, label, page, append(order, `<footer>`, `</main>`)...)
 			if n := strings.Count(page, "<main"); n != 1 {
 				t.Errorf("%s: %d main landmarks, want 1", label, n)
 			}
 			if strings.Index(page, `<a `) != strings.Index(page, `<a class="skip-link"`) {
 				t.Errorf("%s: the skip link is not the first link on the page", label)
-			}
-			if !p.live && strings.Contains(page, `id="conductor-live-detail"`) {
-				t.Errorf("%s: an archived execution shows live Conductor activity", label)
 			}
 
 			// The history loader replaces #plan-recorded-content as one unit,
@@ -170,11 +164,6 @@ func TestKrReportNavigation(t *testing.T) {
 				if !strings.Contains(sec, s.state) {
 					t.Errorf("%s: %s has no explicit availability state", label, s.id)
 				}
-			}
-
-			// The activity log scrolls inside a bounded region.
-			if p.live && !strings.Contains(page, `.conductor-event-scroll{min-height:72px;max-height:min(260px,40vh);overflow-y:auto`) {
-				t.Errorf("%s: the Conductor event log is not bounded", label)
 			}
 
 			// No unlabelled stat cards, severe-gap judgments, token panel,
@@ -218,12 +207,7 @@ func fixtureDigest(t *testing.T, roots ...string) map[string]string {
 // Conductor state.
 func TestKrReportLegacy(t *testing.T) {
 	project, pages := layoutProject(t)
-	// An installed dashboard has a Conductor store already; reading its
-	// configuration creates the store's lock file the first time.
-	if _, err := NewConductorService("").Config(); err != nil {
-		t.Fatal(err)
-	}
-	roots := []string{filepath.Join(project, ".claude"), RecordDir(), os.Getenv("ITERATE_CONDUCTOR_DIR")}
+	roots := []string{filepath.Join(project, ".claude"), RecordDir(), os.Getenv("ITERATE_LEGACY_RUN_DIR")}
 	before := fixtureDigest(t, roots...)
 
 	for _, p := range pages {
@@ -243,7 +227,7 @@ func TestKrReportLegacy(t *testing.T) {
 				"Elapsed</span> <strong>41m 15s</strong>", "/iterate gemsbok")
 		case "live waterbuck":
 			mustContain(t, p.name, page,
-				"still open at", `aria-label="Requirement 8, `, `id="evidence-req-8"`, `id="conductor-live-detail"`,
+				"still open at", `aria-label="Requirement 8, `, `id="evidence-req-8"`,
 				"Make every macOS bake delete its container on every outcome.",
 				"Cases bake.cleanup.failed, bake.cleanup.green and bake.cleanup.interrupted pass.")
 		}

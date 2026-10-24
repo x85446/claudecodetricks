@@ -1,7 +1,6 @@
 package iterrun
 
 import (
-	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,8 +8,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/x85446/claudecodetricks/src/internal/conductor/model"
 )
 
 func ownerFixture(t *testing.T) string {
@@ -46,17 +43,16 @@ func TestOwnerCLIIdleStart(t *testing.T) {
 // TESTMASTER: id=nene-owner-2 tier=? parallel=no
 func TestOwnerConductorIdleStart(t *testing.T) {
 	p := ownerFixture(t)
-	a := model.Assignment{ID: "assignment", ProjectPath: p, Plan: "alpha"}
-	if e := (ConductorPlanSource{}).Claim(context.Background(), a); e != nil {
+	if _, e := ClaimPlan(p, "alpha", "conductor", os.Getpid(), time.Now()); e != nil {
 		t.Fatal(e)
 	}
 	o, e := ProjectExecutionOwner(p, time.Now())
 	if e != nil || o.Owner != "conductor" || !o.Live {
 		t.Fatalf("conductor owner: %+v %v", o, e)
 	}
-	plans, e := (ConductorPlanSource{}).List(context.Background(), model.Project{ID: "fixture", Path: p})
-	if e != nil || len(plans) != 1 || !plans[0].Running || plans[0].ExecutionOwner != "conductor" {
-		t.Fatalf("status source lost plan owner: %+v %v", plans, e)
+	graph, e := BuildGraphView(p)
+	if e != nil || graph.ExecutionOwner == nil || graph.ExecutionOwner.Owner != "conductor" || !graph.ExecutionOwner.Live {
+		t.Fatalf("graph owner: %+v %v", graph.ExecutionOwner, e)
 	}
 }
 
@@ -66,7 +62,7 @@ func TestOwnerCLIExcludesConductor(t *testing.T) {
 	if _, e := ClaimPlan(p, "alpha", "cli", os.Getpid(), time.Now()); e != nil {
 		t.Fatal(e)
 	}
-	if e := (ConductorPlanSource{}).Claim(context.Background(), model.Assignment{ID: "other", ProjectPath: p, Plan: "alpha"}); e == nil || !strings.Contains(e.Error(), "cli") {
+	if _, e := ClaimPlan(p, "alpha", "conductor", os.Getpid(), time.Now()); e == nil || !strings.Contains(e.Error(), "cli") {
 		t.Fatalf("expected CLI busy: %v", e)
 	}
 }
