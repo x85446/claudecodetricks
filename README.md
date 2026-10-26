@@ -220,7 +220,7 @@ curl http://localhost:8420/healthz
 iterate-run version
 ```
 
-Logs live in `~/Library/Logs/iterate-run/serve.log`. The dashboard presents project plans, the dependency graph, recorded runs, archives and reports. Execution labels, positions, release groups and Next come from the same graph as `iterate-run plan graph --json`.
+Logs live in `~/Library/Logs/iterate-run/serve.log`. The dashboard presents project plans, the dependency graph, recorded runs, archives and reports. Plan letters, positions, release groups and Next come from the same graph as `iterate-run plan graph --json`.
 
 ### Keep it on screen
 
@@ -321,23 +321,29 @@ plan quokka queued
 
 States are `blocked`, `paused`, `unblocked`, `executing`, `queued` and `planned`, in that order of precedence.
 
-The Claude Code status line carries the same states as one letter per plan after the `⚙️` icon, coloured by state and cased by shape (UPPERCASE for a teamed plan, lowercase for a flat one):
+### Plan letters in the iTerm2 status bar
+
+The iTerm2 status bar shows the same states as one letter per plan after the `⚙️` icon, in panes running Claude Code or Codex. It reads `iterate-run plan graph --json` and follows four rules, defined in [docs/plan-graph.md](docs/plan-graph.md#execution-sequence):
+
+1. Plans appear in execution order, so a plan never appears before a plan it depends on.
+2. Each plan shows the first letter of its codename.
+3. The letter is upper case for a teamed plan and lower case for a flat one.
+4. The letter's colour is the plan's state:
 
 | Colour | Meaning |
 |---|---|
-| bold green | executing, and something touched a tool inside the last 15 minutes |
-| dark green | executing according to the plan file, but nothing has run in 15 minutes — the session stalled or died |
+| bright green | executing, with a live owner |
+| dark green | executing according to the plan file, with no live owner — the session stalled or died |
 | yellow | planned, not yet approved |
 | orange | queued — approved for the nightly tick |
 | red | blocked on something only you can supply |
 | cyan | unblocked, waiting to be picked back up |
 | magenta | paused by you |
+| grey | waiting on a predecessor, or closed |
 
-The icon lights up as `⚡` while a run is live. A dim trailing letter indicates the next animal-name allocation in the Claude Code status line; it does not indicate execution order. `⏰` after the letters means this project is enrolled in the nightly tick; `⏰ off` means the tick is installed but switched off. Orange and dark green need a 256-colour terminal; on a 16-colour one they appear as bright yellow and plain green.
+A project with `falcon` (teamed, complete), `jackdaw` (blocked) and `mackerel` (planned) reads `F j m`. A vertical bar separates release groups, and clicking the letters lists every plan with its waiting reason. The icon lights up as `⚡` while a run is live. `⏰` after the letters means this project is enrolled in the nightly tick; `⏰ off` means the tick is installed but switched off. The dashboard Graph tab and the Conductor queue show each plan with the same letter.
 
-### iTerm2 execution order
-
-The personal-mac-tools iTerm2 status bar reads `iterate-run plan graph --json`. It shows stable A–Z execution labels in dependency order, with separators between release groups. State changes preserve positions. Waiting plans show their prerequisite in the popup.
+The renderer is `applications/iterm2/pythonapi/itermsb.py` in personal-mac-tools, authored from this repo.
 
 Flags show only the icon and message count at every width. A separate soft-green bar label shows the complete project directory name without abbreviation and yields space when it cannot fit. Each flag popup identifies the clicked pane's full project name and canonical folder path in dark green, with one separator before the inbox actions. Clicking the full path copies it to the clipboard. See the [status-bar operating guide](https://github.com/x85446/personal-mac-tools/blob/20bcfe9/docs/product/iterm-statusbar.md).
 
