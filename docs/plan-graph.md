@@ -20,7 +20,7 @@ depends: M1-04, M1-05
 
 ## When a predecessor counts as landed
 
-The graph reads live plans from `.claude/iterate/plans/` and finished ones from `.claude/iterate/archive/`, taking each archive's outcome from its filename suffix:
+The graph reads live plans from `.claude/iterate/plans/` (a file there with no `name:`, `phase:` or `Started:` key is a note, not a plan, and the graph skips it) and finished ones from `.claude/iterate/archive/`, taking each archive's outcome from its filename suffix:
 
 | Predecessor | Edge |
 |---|---|

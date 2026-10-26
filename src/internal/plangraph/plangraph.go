@@ -382,6 +382,13 @@ func (kb *KeyBlock) Apply(line string) {
 	}
 }
 
+// IsPlan reports whether the key block belongs to a plan: every plan carries
+// name:, phase: or Started:. A note or handoff saved under plans/ carries none
+// and is not a plan.
+func (kb KeyBlock) IsPlan() bool {
+	return kb.Name != "" || kb.Phase != "" || kb.Started != ""
+}
+
 // Load reads a project's live plans and archive and resolves the graph.
 func Load(projectDir string) (Graph, error) {
 	in, err := Inputs(projectDir)
@@ -406,6 +413,9 @@ func Inputs(projectDir string) ([]Input, error) {
 				continue
 			}
 			return nil, err
+		}
+		if !kb.IsPlan() {
+			continue
 		}
 		name := strings.TrimSuffix(filepath.Base(path), ".md")
 		if kb.Name != "" {
