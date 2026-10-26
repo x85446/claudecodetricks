@@ -2,7 +2,7 @@
 
 # $iterate-planner — Build the plan (oracle-aware), don't execute
 
-**Version:** iterate family 5.27.0
+**Version:** iterate family 5.28.0
 
 ## What this skill does
 
@@ -747,7 +747,7 @@ correct way to bump.
 
 ## Shared execution admission
 
-`depends:` gates named and unnamed launches in both executors. A typed plan name does not bypass an unfinished, unknown or cyclic prerequisite. Read `iterate-run plan graph --json` for readiness and order. List plans by `position` and `label`, show `release`, `waiting_reason` and the project's `next`, and never derive sequence from animal names. Approved idle work can start through either executor. `iterate-run plan claim` alone grants execution ownership.
+`depends:` gates named and unnamed launches in both executors. A typed plan name does not bypass an unfinished, unknown or cyclic prerequisite. Read `iterate-run plan graph --json` for readiness and order. List plans by `position` and `letter`, show `release`, `waiting_reason` and the project's `next`, and never derive sequence from animal names. Approved idle work can start through either executor. `iterate-run plan claim` alone grants execution ownership.
 
 ## Consolidate related checkpoints
 
@@ -778,11 +778,11 @@ Acceptance checkpoints alone do not define branches, PRs or finisher boundaries.
 6. Diff source and target ownership sets: no missing or duplicated requirement,
    task or validation. Count completed history separately from remaining work.
    Read the canonical graph after grouping and persist its returned `position`
-   and `label` only in the new successor files. Leave every unselected plan's
+   only in the new successor files. Leave every unselected plan's
    order metadata unchanged, including missing keys. `plan order set` rewrites
    the complete live set: use it only when this operation owns every live file,
    or the user explicitly requests a project-wide reorder. Read the graph again
-   and run `iterate-run plan graph --check`; labels stay A–Z without wrapping.
+   and run `iterate-run plan graph --check`.
 7. Report the source-to-successor map, preserved history, split reasons and graph
    result. Refined plans remain unstaged until content approval through stage.
    This operation plans only; it never executes or merges product work.

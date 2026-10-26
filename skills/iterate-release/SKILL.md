@@ -2,7 +2,7 @@
 name: iterate-release
 description: "Plans a production release of this project — version, per-platform build/sign/notarize/package, clean-machine install checks, tag, publish — as an iterate plan with mode: release that /iterate executes. The only plan that may notarize, staple, push a version tag or publish. Triggers: \"/iterate-release\", \"plan the release\", \"cut a release\", \"ship v1.2\", \"production release\"."
 argument-hint: "[version]  (omit to have one proposed from the commits since the last tag)"
-version: 5.27.0
+version: 5.28.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->

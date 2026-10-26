@@ -2,7 +2,7 @@
 
 # $iterate — Run a task to completion without interrupting the user
 
-**Version:** iterate family 5.27.0
+**Version:** iterate family 5.28.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -102,7 +102,7 @@ Resolve in this order:
 2. **`$1` names an existing plan**: read `iterate-run plan graph --json`. If the plan waits on a predecessor, is unknown, or has cyclic dependencies, report the named prerequisite or graph error and stop without changing the plan. A typed name obeys dependencies. Claim the ready plan through `iterate-run plan claim <name> --owner cli --pid <session-pid> --json` before changing phase, current, branch, or resources. Use the long-lived session process PID, never the short-lived command shell's PID. A busy result reports the live owner and stops. On success set `current`, transition planned to executing, set `Executing:` once, remove `status: queued`, and begin the run. Preserve `Executing:` on resume.
 3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** plan, named via `iterate-run name next`, with `phase: executing`, **`Executing:` set to the same UTC timestamp as `Started:`**, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
 4. **`$1` empty**: read `iterate-run plan graph --json` and select live, ready, non-release, non-RC plans. An idle project with exactly one ready plan launches it through rule 2, including a queued plan. Planned, staged, queued and idle executing states reserve no executor.
-5. **Several ready plans**: list them in graph `position` order with label, name and goal. Claim none and wait for the user's selection. With no ready plan, report the graph's waiting reasons and claim none.
+5. **Several ready plans**: list them in graph `position` order with letter, name and goal. Claim none and wait for the user's selection. With no ready plan, report the graph's waiting reasons and claim none.
 6. **Neither `$1` nor any plan exists**: report "no plans yet — supply instructions or run $iterate-planner first" and stop. (Reporting is not the same as asking.)
 
 Create `./.claude/iterate/` and `./.claude/iterate/plans/` if they don't exist.
