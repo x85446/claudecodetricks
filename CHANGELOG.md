@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [annabergite] - 2026-10-26
+
+### Changed
+- `iterate-run plan graph --json` gives every live plan a `letter` (its codename's first letter, upper case when `teamed: true`, lower case otherwise) and a `teamed` flag, in execution order that follows `depends:`.
+- The dashboard Graph tab, the Conductor queue (tmctec/conductor) and the personal-mac-tools iTerm2 status bar show each plan by that letter, colored by state; a blocked or paused plan keeps its color while a session holds its claim.
+- `docs/plan-graph.md` states the four plan-letter rules; README points at them.
+- Iterate family 5.28.0, Codex ports included.
+
+### Removed
+- A–Z position labels, their label checks and the 26-plan cap; `plan order set` writes only `position:` and strips any `label:` line.
+
+### Fixed
+- Every plan in every project on this machine carries a `depends:` line, so the graph orders them by real prerequisites (81 backfilled from milestones, 12 settled by reading).
+
 ## [nene] - 2026-10-26
 
 ### Added
