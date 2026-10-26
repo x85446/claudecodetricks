@@ -1,6 +1,10 @@
 package plangraph
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func liveOrder(g Graph) []string {
 	out := []string{}
@@ -84,5 +88,17 @@ func TestLettersArchivedPredecessorHasNoLetter(t *testing.T) {
 func TestLetterOfEmptyName(t *testing.T) {
 	if Letter("", true) != "" {
 		t.Fatal("empty name has a letter")
+	}
+}
+
+func TestNonPlanFileInPlansIsSkipped(t *testing.T) {
+	p := newProject(t)
+	p.plan("aphid", "phase: planned", "depends: none", "Started: 2026-01-01T00:00:00Z")
+	note := filepath.Join(p.dir, ".claude", "iterate", "plans", "substate-handoff.md")
+	if err := os.WriteFile(note, []byte("# Handoff\n\nNotes for the next session.\n\n## Context\ntext\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := liveOrder(p.graph()); len(got) != 1 || got[0] != "aphid" {
+		t.Fatalf("live = %v, want [aphid]", got)
 	}
 }
