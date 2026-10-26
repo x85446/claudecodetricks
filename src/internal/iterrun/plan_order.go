@@ -35,7 +35,6 @@ func SetPlanOrder(project string, names []string) error {
 				return fmt.Errorf("execution order omits %s", in.Name)
 			}
 			in.Position = pos
-			in.Label = ""
 			b, err := os.ReadFile(in.File)
 			if err != nil {
 				return err
@@ -55,7 +54,7 @@ func SetPlanOrder(project string, names []string) error {
 				continue
 			}
 			text := setPlanField(original[in.File], "position", fmt.Sprint(in.Position))
-			text = setPlanField(text, "label", string(rune('A'+in.Position-1)))
+			text = dropPlanField(text, "label")
 			if e = writeOwnerPlan(in.File, text); e != nil {
 				for _, path := range written {
 					_ = writeOwnerPlan(path, original[path])

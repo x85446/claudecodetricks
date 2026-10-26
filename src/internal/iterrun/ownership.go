@@ -293,3 +293,14 @@ func setPlanField(text, key, value string) string {
 	}
 	return key + ": " + value + "\n" + head + tail
 }
+
+// dropPlanField removes every key-block line for key, leaving the body alone.
+func dropPlanField(text, key string) string {
+	boundary := strings.Index(text, "\n## ")
+	head, tail := text, ""
+	if boundary >= 0 {
+		head, tail = text[:boundary], text[boundary:]
+	}
+	re := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + `:.*\n?`)
+	return re.ReplaceAllString(head, "") + tail
+}

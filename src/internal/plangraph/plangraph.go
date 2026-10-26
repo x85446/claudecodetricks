@@ -29,7 +29,22 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
+
+// Letter is the plan's mark wherever plans are listed: the codename's first
+// letter, upper case for a teamed plan and lower case for a flat one.
+func Letter(name string, teamed bool) string {
+	r, size := utf8.DecodeRuneInString(name)
+	if size == 0 || r == utf8.RuneError {
+		return ""
+	}
+	if teamed {
+		return string(unicode.ToUpper(r))
+	}
+	return string(unicode.ToLower(r))
+}
 
 // Outcome is how an archived plan ended, read from its archive filename.
 type Outcome string
@@ -55,7 +70,7 @@ const (
 // Input is one plan as read from disk.
 type Input struct {
 	Position   int
-	Label      string
+	Teamed     bool // the key block says teamed: true
 	Release    string
 	Name       string
 	Milestone  string   // the first milestone id the plan carries
@@ -85,7 +100,8 @@ type Edge struct {
 // Node is one plan in the resolved graph.
 type Node struct {
 	Position      int      `json:"position"`
-	Label         string   `json:"label"`
+	Letter        string   `json:"letter"` // the codename's first letter: upper case when teamed, lower case when flat
+	Teamed        bool     `json:"teamed"`
 	Release       string   `json:"release"`
 	WaitingReason string   `json:"waiting_reason,omitempty"`
 	Name          string   `json:"name"`
@@ -293,7 +309,7 @@ func ParseArchiveName(file string) (name string, outcome Outcome, rolledTo strin
 // KeyBlock is the subset of a plan's key block the graph reads.
 type KeyBlock struct {
 	Position   int
-	Label      string
+	Teamed     bool
 	Release    string
 	Name       string
 	Phase      string
@@ -338,8 +354,8 @@ func (kb *KeyBlock) Apply(line string) {
 	switch m[1] {
 	case "position":
 		kb.Position, _ = strconv.Atoi(v)
-	case "label":
-		kb.Label = v
+	case "teamed":
+		kb.Teamed = v == "true"
 	case "release":
 		kb.Release = v
 	case "name":
@@ -395,7 +411,7 @@ func Inputs(projectDir string) ([]Input, error) {
 		if kb.Name != "" {
 			name = kb.Name
 		}
-		in = append(in, Input{Name: name, Position: kb.Position, Label: kb.Label, Release: kb.Release, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: StateOf(kb.Phase, kb.Status), Started: kb.Started, File: path})
+		in = append(in, Input{Name: name, Position: kb.Position, Teamed: kb.Teamed, Release: kb.Release, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: StateOf(kb.Phase, kb.Status), Started: kb.Started, File: path})
 	}
 	archived, err := filepath.Glob(filepath.Join(base, "archive", "*.md"))
 	if err != nil {
@@ -414,7 +430,7 @@ func Inputs(projectDir string) ([]Input, error) {
 		if kb.Name != "" {
 			name = kb.Name
 		}
-		in = append(in, Input{Name: name, Position: kb.Position, Label: kb.Label, Release: kb.Release, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: "archived", Archived: true, Outcome: outcome, RolledTo: rolledTo, Started: kb.Started, File: path})
+		in = append(in, Input{Name: name, Position: kb.Position, Teamed: kb.Teamed, Release: kb.Release, Milestone: kb.Milestone, Milestones: kb.Milestones, Depends: kb.Depends, Declared: kb.Declared, State: "archived", Archived: true, Outcome: outcome, RolledTo: rolledTo, Started: kb.Started, File: path})
 	}
 	return in, nil
 }
@@ -475,7 +491,7 @@ func Resolve(inputs []Input) Graph {
 	}
 	for _, name := range order {
 		in := r.live[name]
-		n := Node{Name: name, Position: in.Position, Label: in.Label, Release: in.Release, Milestone: in.Milestone, Milestones: milestonesOf(*in), State: in.State, Declared: in.Declared, Depends: append([]string{}, in.Depends...), Edges: []Edge{}, WaitingOn: []string{}, Errors: []string{}, Started: in.Started}
+		n := Node{Name: name, Position: in.Position, Teamed: in.Teamed, Release: in.Release, Milestone: in.Milestone, Milestones: milestonesOf(*in), State: in.State, Declared: in.Declared, Depends: append([]string{}, in.Depends...), Edges: []Edge{}, WaitingOn: []string{}, Errors: []string{}, Started: in.Started}
 		for _, ref := range in.Depends {
 			target, err := r.lookup(ref)
 			if err != nil {
@@ -853,12 +869,12 @@ func (g *Graph) depths(cyclic map[string]bool) {
 	}
 }
 
-// assignExecutionOrder derives unstamped positions from stable plan metadata.
-// Explicit position keys remain authoritative across status updates.
+// assignExecutionOrder derives unstamped positions from stable plan metadata
+// and gives every live plan its letter. Explicit position keys remain
+// authoritative across status updates.
 func (g *Graph) assignExecutionOrder() {
 	live := []int{}
 	used := map[int]string{}
-	labels := map[string]string{}
 	for i, n := range g.Nodes {
 		if n.Archived {
 			continue
@@ -871,13 +887,6 @@ func (g *Graph) assignExecutionOrder() {
 			used[n.Position] = n.Name
 		}
 	}
-	if len(live) > 26 {
-		names := []string{}
-		for _, i := range live {
-			names = append(names, g.Nodes[i].Name)
-		}
-		g.Errors = append(g.Errors, "execution sequence exceeds 26 plans; consolidate: "+strings.Join(names, ", "))
-	}
 	next := 1
 	for _, i := range live {
 		n := &g.Nodes[i]
@@ -889,22 +898,7 @@ func (g *Graph) assignExecutionOrder() {
 			used[next] = n.Name
 			next++
 		}
-		expected := ""
-		if n.Position <= 26 {
-			expected = string(rune('A' + n.Position - 1))
-		} else {
-			g.Errors = append(g.Errors, fmt.Sprintf("execution position for %s exceeds Z; consolidate plans", n.Name))
-		}
-		if n.Label != "" && n.Label != expected {
-			g.Errors = append(g.Errors, fmt.Sprintf("label %s for %s disagrees with position %d (%s)", n.Label, n.Name, n.Position, expected))
-		}
-		if prev := labels[n.Label]; n.Label != "" && prev != "" {
-			g.Errors = append(g.Errors, fmt.Sprintf("duplicate execution label %s: %s, %s", n.Label, prev, n.Name))
-		}
-		if n.Label != "" {
-			labels[n.Label] = n.Name
-		}
-		n.Label = expected
+		n.Letter = Letter(n.Name, n.Teamed)
 		n.WaitingReason = n.Reason
 	}
 	byName := map[string]Node{}

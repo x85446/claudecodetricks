@@ -26,7 +26,7 @@ func TestNeneOrderLabelsAndStablePositions(t *testing.T) {
 		t.Fatalf("next=%s", v.Next)
 	}
 	for i, n := range v.Nodes {
-		if n.Position != i+1 || n.Label != string(rune('A'+i)) || n.Release == "" {
+		if n.Position != i+1 || n.Letter != "a" || n.Release == "" {
 			t.Fatalf("node %d: %+v", i, n)
 		}
 		if i > 0 && n.WaitingReason == "" {
@@ -63,15 +63,44 @@ func TestNeneOrderRefusesCollisionOverflowAndDependencyReverse(t *testing.T) {
 	writeRecordPlan(t, p, "beta", "phase: planned\ndepends: alpha\nposition: 1\nlabel: A")
 	v, _ := BuildGraphView(p)
 	if len(v.Errors) == 0 {
-		t.Fatal("duplicate position and label accepted")
+		t.Fatal("duplicate position accepted")
 	}
-	p = t.TempDir()
+	if strings.Contains(strings.Join(v.Errors, " "), "label") {
+		t.Fatalf("a label line is an error: %+v", v.Errors)
+	}
+}
+
+// TESTMASTER: id=letters-6 tier=? parallel=no
+func TestLettersNoPlanCap(t *testing.T) {
+	p := t.TempDir()
 	for i := 0; i < 27; i++ {
 		writeRecordPlan(t, p, fmt.Sprintf("plan%02d", i), "phase: planned\ndepends: none")
 	}
-	v, _ = BuildGraphView(p)
-	if !strings.Contains(strings.Join(v.Errors, " "), "consolidate") {
-		t.Fatalf("overflow: %+v", v.Errors)
+	v, _ := BuildGraphView(p)
+	if len(v.Errors) > 0 {
+		t.Fatalf("27 plans: %+v", v.Errors)
+	}
+	for _, n := range v.Nodes {
+		if n.Letter != "p" {
+			t.Fatalf("letter %q for %s", n.Letter, n.Name)
+		}
+	}
+}
+
+// TESTMASTER: id=letters-5 tier=? parallel=no
+func TestLettersPlanOrderSetStripsLabel(t *testing.T) {
+	p := ownerFixture(t)
+	writeRecordPlan(t, p, "beta", "phase: planned\ndepends: alpha\nlabel: B\nposition: 2")
+	v, _ := BuildGraphView(p)
+	if len(v.Errors) > 0 {
+		t.Fatalf("label line reported: %+v", v.Errors)
+	}
+	if e := SetPlanOrder(p, []string{"alpha", "beta"}); e != nil {
+		t.Fatal(e)
+	}
+	b, _ := os.ReadFile(p + "/.claude/iterate/plans/beta.md")
+	if strings.Contains(string(b), "label:") || !strings.Contains(string(b), "position: 2") {
+		t.Fatalf("plan after order set:\n%s", b)
 	}
 }
 

@@ -42,7 +42,7 @@ const plans = {
   dace: ['phase: executing', 'status: unblocked', 'depends: caiman'],
   earthworm: ['phase: executing', 'status: unblocked', 'depends: dace'],
   fairywren: ['phase: planned', 'status: queued: 2026-10-22T00:00:00Z by /ip stage', 'depends: earthworm, independent'],
-  independent: ['phase: planned', 'status: queued: 2026-10-22T00:00:00Z by /ip stage'],
+  independent: ['phase: planned', 'status: queued: 2026-10-22T00:00:00Z by /ip stage', 'teamed: true'],
 };
 for (const [n, k] of Object.entries(plans)) writeFileSync(join(chain, `.claude/iterate/plans/${n}.md`), plan(n, k));
 writeFileSync(join(home, '.claude/iterate-run/projects.json'), JSON.stringify([chain, empty]));
@@ -104,8 +104,10 @@ check((await js("document.querySelector('.graph-summary')?.textContent || ''")).
 const graphAPI = await (await fetch(`http://localhost:${port}/api/graph?${new URLSearchParams({project:chain})}`)).json();
 const graphDocument = graphAPI.nodes ? graphAPI : graphAPI.data;
 for (const n of graphDocument.nodes.filter(n=>!n.archived)) {
-  check(await js(`Array.from(document.querySelectorAll('.graph-name')).some(x=>x.textContent.includes(${JSON.stringify(n.label+' · '+n.name)}))`), 'node shows canonical execution label '+n.name);
+  check(n.letter === (n.teamed ? n.name[0].toUpperCase() : n.name[0].toLowerCase()) && !('label' in n), 'graph API gives '+n.name+' its codename initial, cased by teamed', n.letter);
+  check(await js(`Array.from(document.querySelectorAll('.graph-name')).some(x=>x.textContent.includes(${JSON.stringify(n.letter+' · '+n.name)}))`), 'node shows its letter '+n.name);
 }
+check(graphDocument.nodes.find(n=>n.name==='independent')?.letter === 'I', 'a teamed plan shows an upper-case initial (letters-8)');
 if (process.env.NENE_GRAPH_SCREENSHOT) {
  const shot = await send('Page.captureScreenshot', {format:'png',captureBeyondViewport:false});
  writeFileSync(process.env.NENE_GRAPH_SCREENSHOT, Buffer.from(shot.result.data,'base64'));
