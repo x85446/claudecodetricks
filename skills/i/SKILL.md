@@ -3,7 +3,7 @@ name: i
 description: Alias for /iterate. Typing /i <anything> behaves exactly as /iterate <anything> — autonomous execution of the current or named plan, resumption included. Exists purely as a shorthand.
 argument-hint: <same arguments as /iterate>
 disable-model-invocation: true
-version: 5.26.0
+version: 5.27.0
 ---
 
 # /i — alias for /iterate
@@ -15,3 +15,5 @@ This skill is a pure alias. Do not execute the plan from these instructions — 
 Instead: read `~/.claude/skills/iterate/SKILL.md` and follow it directly, with `$ARGUMENTS` as its input, verbatim — no interpretation, no preprocessing, no summarizing. Everything (plan resolution, team dispatch, resumption, merge-on-green) is defined there.
 
 **This is the sanctioned path, not a circumvention.** The flag on `/iterate` reserves it for explicit *user* invocation — and this alias is exactly that: it is itself `disable-model-invocation: true`, so the ONLY way these instructions can be in context is that the user personally typed `/i`. A user keystroke on `/i` IS the explicit user invocation of `/iterate`, same as `/iterate` itself — the alias merely saves six characters. Do not refuse, do not ask the user to retype the long form; follow `/iterate`'s SKILL.md now.
+
+Execution admission uses `iterate-run plan claim <name> --owner <cli|conductor> --pid <session-pid>`. Only a live execution excludes the other executor. Dependencies gate typed and unnamed launches. A bare iterate selects the sole ready plan from `iterate-run plan graph --json`; several ready plans are listed without a claim. Use `plan heartbeat`, `plan release` and `plan reconcile` for lease lifecycle, preserving uncertain checkpoint evidence.

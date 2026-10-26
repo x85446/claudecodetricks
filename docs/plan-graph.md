@@ -100,3 +100,36 @@ iterate-run plan depends backfill --apply    # write the proposed lines
 6. The `/ip stage …` command that would let the graph order the plans not yet staged.
 
 The retrofit never stages anything.
+
+## Execution sequence
+
+`iterate-run plan graph --json` supplies each live node's `position` (1-based),
+`label` (A–Z), `release` group and `waiting_reason`. The project's `next` names
+the first ready, unpaused plan, or remains absent when no plan is ready.
+Animal codenames identify plans; labels identify their execution positions.
+Status transitions preserve positions and release groups.
+
+`iterate-run plan order show --json` displays the sequence. Set the complete
+live sequence with `iterate-run plan order set <name> <name> ...`.
+The command validates prerequisites, cycles, duplicate positions and labels,
+and the 26-plan maximum before writing any position. Consolidate related
+plans when a sequence exceeds 26 plans. Archived predecessors remain context
+nodes without execution labels.
+
+## Execution ownership
+
+`iterate-run plan claim <name> --owner cli --pid <session-pid> --json` atomically
+claims a ready plan for a long-lived session process. The Conductor uses
+`--owner conductor`. Every unfinished prerequisite gates both entry paths.
+A planned, queued, staged or idle executing plan reserves no executor.
+A matching live process or an owned orphaned child excludes another claim.
+
+Use `plan heartbeat <name>` at validation and step boundaries,
+`plan release <name>` at an ending, and `plan reconcile [<name>]` to finish a
+dead lease while retaining checkpoint evidence. The binary writes the plan's
+ownership key block under a project lock. Uncertain delivery evidence requires
+diagnosis before replay.
+
+After launching an owned child, `plan heartbeat <name> --child-pid <pid>` records
+the child's observed process identity. The lease excludes another executor while
+that child survives its supervisor.

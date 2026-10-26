@@ -140,14 +140,15 @@ type RequirementView struct {
 }
 
 type AttemptView struct {
-	Number       int        `json:"number"`
-	Key          string     `json:"key"`
-	AssignmentID string     `json:"assignment_id,omitempty"`
-	SessionID    string     `json:"session_id,omitempty"`
-	AgentID      string     `json:"agent_id,omitempty"`
-	Team         string     `json:"team,omitempty"`
-	StartedAt    *time.Time `json:"started_at,omitempty"`
-	FinishedAt   *time.Time `json:"finished_at,omitempty"`
+	Number         int        `json:"number"`
+	Key            string     `json:"key"`
+	AssignmentID   string     `json:"assignment_id,omitempty"`
+	ConductorRunID string     `json:"conductor_run_id,omitempty"`
+	SessionID      string     `json:"session_id,omitempty"`
+	AgentID        string     `json:"agent_id,omitempty"`
+	Team           string     `json:"team,omitempty"`
+	StartedAt      *time.Time `json:"started_at,omitempty"`
+	FinishedAt     *time.Time `json:"finished_at,omitempty"`
 	// Outcome is the finished outcome, or "open" when no finish was
 	// observed.
 	Outcome    string          `json:"outcome"`
@@ -450,6 +451,9 @@ func Fold(events []Event, info fileRead) Run {
 			a := attempt(e)
 			if e.AssignmentID != "" {
 				a.AssignmentID = e.AssignmentID
+			}
+			if e.ConductorRunID != "" {
+				a.ConductorRunID = e.ConductorRunID
 			}
 			if e.SessionID != "" {
 				a.SessionID = e.SessionID

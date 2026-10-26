@@ -6,14 +6,14 @@ description: "Alias for $iterate-conductor; controls the binary conductor with t
 
 # $ic — conductor alias
 
-**Version:** iterate family 5.26.0
+**Version:** iterate family 5.27.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
      plan's planner-version / executor-version. -->
 
 
-Read the sibling `iterate-conductor/SKILL.md` from the installed skill collection and follow it with the user’s complete arguments. This explicit alias carries the same authorization and project scope. It owns no state, timers, policy or scheduler. The conductor skill delegates execution and configuration to `iterate-run conductor`.
+Read the sibling `iterate-conductor/SKILL.md` from the installed skill collection and follow it with the user’s complete arguments. This explicit alias carries the same authorization and project scope. It owns no state, timers, policy or scheduler. The conductor skill delegates execution and configuration to `conductor`.
 
 ## Usage
 
@@ -26,3 +26,5 @@ Argument: <same arguments as /iterate-conductor>. `$1` is its first word; `$ARGU
 Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's skill-discovery path or the call will not resolve:
 
 - `$iterate-conductor` — ported.
+
+Execution admission uses `iterate-run plan claim <name> --owner <cli|conductor> --pid <session-pid>`. Only a live execution excludes the other executor. Dependencies gate typed and unnamed launches. A bare iterate selects the sole ready plan from `iterate-run plan graph --json`; several ready plans are listed without a claim. Use `plan heartbeat`, `plan release` and `plan reconcile` for lease lifecycle, preserving uncertain checkpoint evidence.

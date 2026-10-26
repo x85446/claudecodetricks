@@ -36,7 +36,7 @@ func newAcctEnv(t *testing.T, scenario string) acctEnv {
 	t.Setenv("HOME", home)
 	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
 	t.Setenv("ITERATE_RUN_RECORD_DIR", records)
-	t.Setenv("ITERATE_CONDUCTOR_DIR", t.TempDir())
+	t.Setenv("ITERATE_LEGACY_RUN_DIR", t.TempDir())
 	project, err := filepath.EvalSymlinks(t.TempDir())
 	if err != nil {
 		t.Fatal(err)

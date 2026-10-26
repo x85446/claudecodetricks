@@ -27,7 +27,7 @@ Ten documents, each earned from the one before it, then the plans. The chain exi
 | 9 | Environment | `/product-environment` | `docs/environment.md` + `./.iz` |
 | 10 | Plans | `/product-iteratemilestones` | `./.claude/iterate/plans/` |
 
-Stage 9 is the last document: every machine, credential and live-only proof the whole roadmap needs, proven or reduced to one operator act on one list. It opens with `/product-environment-qualify`, the operator's decision tree of qualifying questions (is it a Mac app; does it sign with Apple's official identity), whose branches set what every environment must already hold — signed builds and pre-set OS permissions, or SIP off and scripted grants — before the gate opens. Stage 10 is the **plans step**: `/product-iteratemilestones` turns `docs/milestones.md` into one `/ip` plan per milestone, each naming its milestone's predecessors on a `depends:` line, so the conductor runs every plan as soon as the plans it depends on land. It writes no document and has no gate. It is done once a plan in `./.claude/iterate/plans/` or `archive/` carries a `milestone:` key, and it stages the plans only when stage 9 is `done`, because plans launched into walls nobody listed park on the first one.
+Stage 9 is the last document: every machine, credential and live-only proof the whole roadmap needs, proven or reduced to one operator act on one list. It opens with `/product-environment-qualify`, the operator's decision tree of qualifying questions (is it a Mac app; does it sign with Apple's official identity), whose branches set what every environment must already hold — signed builds and pre-set OS permissions, or SIP off and scripted grants — before the gate opens. Stage 10 is the **plans step**: `/product-iteratemilestones` turns `docs/milestones.md` into coherent `/ip` execution plans, each naming its milestone's predecessors on a `depends:` line, so the conductor runs every plan as soon as the plans it depends on land. It writes no document and has no gate. It is done once a plan in `./.claude/iterate/plans/` or `archive/` carries a `milestone:` key, and it stages the plans only when stage 9 is `done`, because plans launched into walls nobody listed park on the first one.
 
 Invoke children with the Skill tool. Never write a stage's document yourself — the child owns its doc, and the meta owns the order, the gate and the state.
 
@@ -39,7 +39,7 @@ Invoke children with the Skill tool. Never write a stage's document yourself —
 /product next                 # run exactly one stage, then stop
 /product <stage>              # jump to a stage by name or number
 /product environment          # stage 9: prove every machine and credential, list the operator acts
-/product plans                # stage 10: milestones → one chained /ip plan each (runs by itself after stage 9)
+/product plans                # stage 10: milestones → coherent execution plans (runs by itself after stage 9)
 /product maintain             # all ten done and planned: reconcile docs and probes against reality
 /product unlock <stage>       # reopen a locked document for revision
 /product --fast               # run the whole chain unattended
@@ -162,7 +162,7 @@ Only when this loop has run does the gate open.
 
 All ten `done`, milestone plans written, and invoked again: the docs stop being a deliverable and become a claim about reality. Check the claim.
 
-1. **Reconcile** each document against current behavior — the code as it stands, shipped behavior, the roadmap against what actually released, milestones against what main actually delivers, competitors re-checked if the research is over 90 days old. A release that has shipped means the next release's ten milestones get re-cut against what it proved, and stage 9 proves that release's `## Later releases` rows. `docs/environment.md` is re-probed every time: a row whose probe stopped passing (an expired token, a destroyed guest) is drift, and its act goes back on the operator list. A plan that parked on a wall the document does not list is drift too, and the row is added.
+1. **Reconcile** each document against current behavior — the code as it stands, shipped behavior, the roadmap against what actually released, milestones against what main actually delivers, competitors re-checked if the research is over 90 days old. A release that has shipped means the next release's milestones get re-cut against what it proved, and stage 9 proves that release's `## Later releases` rows. `docs/environment.md` is re-probed every time: a row whose probe stopped passing (an expired token, a destroyed guest) is drift, and its act goes back on the operator list. A plan that parked on a wall the document does not list is drift too, and the row is added.
 2. **Report drift** as a list: the document, the stale claim, and what is true now. Append to the state file's drift log with the date.
 3. **Fix on request.** Maintain mode reports; it rewrites a locked document only when the user says to. Unlocking is explicit.
 4. Nothing drifted → `docs already true — no changes` and touch nothing.
