@@ -3,6 +3,22 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [nene] - 2026-10-26
+
+### Added
+- Atomic execution claims, heartbeats, child-process ownership and reconciliation through `iterate-run plan claim|heartbeat|release|reconcile`, shared by CLI iterate and the standalone Conductor.
+- Stable execution positions, unique A–Z labels, release groups, dependency waiting reasons and next-ready metadata in the canonical plan graph.
+- Atomic, idempotent run-record event batches with assignment, Conductor run, attempt, team, requirement and usage identities.
+
+### Changed
+- Named and automatic plan starts obey unfinished dependencies; idle projects remain available to either executor.
+- Product milestones and iterate plans group coherent implementation work, preserve acceptance ownership during consolidation, and keep publication plans distinct.
+- Iterate family 5.27.0 and its Codex clients use shared execution ownership and the standalone `conductor` command.
+- The port-8420 dashboard hosts plans, execution graphs and run reports. The independent private `tmctec/conductor` service hosts scheduling controls on port 8421 with its own LaunchAgents.
+
+### Removed
+- Embedded Conductor implementation, scheduler commands, nightly targets, service controls and moved tests/docs from claudecodetricks; shared plan and record contracts remain here.
+
 ## [manatee] - 2026-10-23
 
 ### Added

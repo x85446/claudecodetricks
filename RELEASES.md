@@ -2,6 +2,16 @@
 
 What changed, for people who use this.
 
+## 2026-10-26 — Shared execution ownership and independent scheduling
+
+**New**
+- CLI iterate and the scheduler share execution ownership, preventing two executors from starting the same project together.
+- The Conductor runs as an independent service, with scheduling controls separate from plan graphs and reports.
+
+**Improved**
+- Named plans respect unfinished prerequisites, and every execution view uses stable dependency order.
+- Product and iterate planning group related work into coherent plans while preserving requirements, acceptance checks and completed history.
+
 ## 2026-10-23 — Plans that wait their turn
 
 **New**
