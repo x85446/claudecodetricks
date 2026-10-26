@@ -337,9 +337,9 @@ The icon lights up as `⚡` while a run is live. A dim trailing letter indicates
 
 ### iTerm2 execution order
 
-The personal-mac-tools iTerm2 status bar reads `iterate-run plan graph --json`. It shows stable A–Z execution labels in position order, separators between release groups, and `Next` for the next ready plan. State changes preserve positions. Waiting plans show their prerequisite in the popup.
+The personal-mac-tools iTerm2 status bar reads `iterate-run plan graph --json`. It shows stable A–Z execution labels in dependency order, with separators between release groups. State changes preserve positions. Waiting plans show their prerequisite in the popup.
 
-Flags show only the icon and message count at every width. A separate soft-green bar label shows the complete project directory name without abbreviation and yields space when it cannot fit. Each flag popup identifies the clicked pane's full project name and canonical folder path in dark green, with one separator before the inbox actions. See the [status-bar operating guide](https://github.com/x85446/personal-mac-tools/blob/6e38c8f/docs/product/iterm-statusbar.md).
+Flags show only the icon and message count at every width. A separate soft-green bar label shows the complete project directory name without abbreviation and yields space when it cannot fit. Each flag popup identifies the clicked pane's full project name and canonical folder path in dark green, with one separator before the inbox actions. Clicking the full path copies it to the clipboard. See the [status-bar operating guide](https://github.com/x85446/personal-mac-tools/blob/20bcfe9/docs/product/iterm-statusbar.md).
 
 ### Execute plans
 
