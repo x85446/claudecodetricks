@@ -104,17 +104,33 @@ The retrofit never stages anything.
 ## Execution sequence
 
 `iterate-run plan graph --json` supplies each live node's `position` (1-based),
-`label` (A–Z), `release` group and `waiting_reason`. The project's `next` names
-the first ready, unpaused plan, or remains absent when no plan is ready.
-Animal codenames identify plans; labels identify their execution positions.
+`letter`, `teamed`, `release` group and `waiting_reason`. The project's `next`
+names the first ready, unpaused plan, or remains absent when no plan is ready.
 Status transitions preserve positions and release groups.
+
+Every place that lists plans — the iTerm2 status bar, the dashboard and the
+Conductor queue — marks each live plan by four rules:
+
+1. **Order:** plans appear in `position` order. Positions follow `depends:`,
+   so a plan never appears before a plan it depends on; independent plans
+   follow milestone, then `Started:`, then name.
+2. **Letter:** each plan shows the first letter of its codename (`letter`).
+3. **Case:** the letter is upper case when the plan's key block says
+   `teamed: true`, and lower case otherwise.
+4. **Color:** the letter's color is the plan's state — yellow planned, orange
+   queued, bright green executing with a live owner, dark green executing
+   with none, red blocked, cyan unblocked, magenta paused, grey waiting or
+   closed.
+
+Plans `falcon` (teamed, complete), `jackdaw` (blocked) and `mackerel`
+(planned), with no dependencies between them, read `F j m`. Archived
+predecessors remain context nodes and carry no letter. A project may hold
+any number of live plans.
 
 `iterate-run plan order show --json` displays the sequence. Set the complete
 live sequence with `iterate-run plan order set <name> <name> ...`.
-The command validates prerequisites, cycles, duplicate positions and labels,
-and the 26-plan maximum before writing any position. Consolidate related
-plans when a sequence exceeds 26 plans. Archived predecessors remain context
-nodes without execution labels.
+The command validates prerequisites, cycles and duplicate positions before
+writing any position.
 
 ## Execution ownership
 

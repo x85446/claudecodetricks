@@ -2,6 +2,13 @@
 
 What changed, for people who use this.
 
+## 2026-10-26 — Plans you can recognize at a glance
+
+**Improved**
+- Every place that lists your plans shows each one as the first letter of its name, in the order the plans will run: capital for a plan split into parallel teams, lower case otherwise, colored by state.
+- Blocked plans stay red even while a session is looking at them.
+- Projects of any size list every plan; the 26-plan limit is gone.
+
 ## 2026-10-26 — Shared execution ownership and independent scheduling
 
 **New**
