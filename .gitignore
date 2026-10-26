@@ -50,6 +50,8 @@ __pycache__/
 # Live iterate plans are per-machine state (one session's run in flight);
 # archived plans under .claude/iterate/archive/ are the record and stay tracked.
 .claude/iterate/plans/
+.claude/iterate/scratchpad/
+.claude/iterate/worktrees/
 # Mailbox messages are local state too; /mailbox never commits them.
 .claude/iterate/inbox/
 .claude/iterate/sent/
