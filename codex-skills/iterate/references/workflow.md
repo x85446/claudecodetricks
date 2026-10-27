@@ -77,75 +77,15 @@ Resolve in this order:
    **`resume`** — remove `status: paused`, log `resumed by operator`, resume the conductor project through its revisioned binary API if this operator pause stopped it, and return to that supervisor if it owns the plan. Otherwise continue exactly as `$iterate <name>` does on an executing plan: re-check the branch, **start every resource pause stopped** (the `paused-by: pause` entries, in order, each verified up before the next), pick up at the first unchecked step, and print the one-line auto-resume note from "Auto-resume". `$iterate <name>` on a paused plan does the same — an explicit human invocation is a resume. A no-arg tick never is (0.5).
 0.5. **Re-entry guard — a terminal plan does not resume on a no-arg tick.** If `$1` is empty and the resolved executing plan has `status: blocked-on-operator` (or `status: awaiting-human-gate`, or `status: paused`) already set, AND nothing material has changed since it was written (no new user message addressing the blocker, no change to the gate's input files): this tick has no job. **First check whether the loop is somehow still armed** (`loop-mechanism:` non-empty in the plan file) — it shouldn't be, the terminal path cancels it, but if it is (a prior run died before canceling, or canceled the wrong mechanism), cancel it NOW with verification, log one line `re-entry guard: killed leftover <mechanism>`, and exit. Otherwise **exit immediately and silently** — no status re-verification, no environment audits, no "handoff document" polishing, no re-asserting the wall. Confirmed live (civet): 13+ hours of once-a-minute ticks against an already-blocked plan, each manufacturing self-generated audit work because nothing told a resuming tick that "already terminal, nothing changed" means *stop*, not *find something to do*. A user-typed `$iterate <name>` (non-empty `$1`) bypasses this guard — an explicit human invocation IS a material change, so re-check the blocker for real then. For `status: paused` nothing else counts as material — not a new message, not a changed file; a paused plan stays paused until `$iterate resume` or `$iterate <name>` says otherwise.
 1. **Resolve execution and readiness.** Inspect the canonical project's live owner through the binary. A live owner stops this entry and identifies the owning executor. With no live owner, an executing plan resumes only after graph admission and an atomic claim. For no arguments, apply rules 4–5 to all ready plans; `current` and an idle `phase: executing` do not reserve an executor. Honor the terminal re-entry guard before resuming a parked plan.
-1.5. **Project launch gate (only if this project set one).** Read `./.claude/iterate/policy.md` if it exists (see "Project policy" below). If it sets `require-launch-keyword: <word>` and that word is **not** present anywhere in the argument, do NOT launch: print the policy's stated reason plus `re-run as \`$iterate <plan> <word>\`` and **stop**. Nothing is transitioned, no lock taken, no cron armed.
-
-   **This rule sits below rule 1 on purpose, and that placement is the whole design.** Rule 1 (resume an already-executing plan) has already returned by the time you get here, so a cron resumption tick — which passes no argument and therefore could never carry the keyword — is structurally incapable of tripping this gate. A gate that blocked resumption would kill every run on its first tick, one minute after a correctly-authorized launch. Only the fresh-launch paths (rules 2–5) are gated.
-
-   The keyword parses in **any position** — `$iterate owl permission`, `$iterate permission owl`, `$iterate permission` — and is stripped from the argument before the remaining rules read it, so it is never mistaken for a plan name or for task text. Most projects have no policy file; absent one, this rule is a silent no-op.
-
-1.6. **Launch schedule (only if this project set one).** If `policy.md` sets `launch-schedule:` (or the `launch-window:` shorthand), get the real local date and time — run `date +'%F %H:%M %a'`, never estimate it from context — and evaluate. Outside the permitted set, refuse a fresh launch: print the policy's reason, the rule that decided it, the current time, and when the next window opens; then **stop**.
-
-   Evaluation order: any matching `deny` refuses; else any matching `allow` permits; else, if allow rules exist and none match, refuse; no schedule at all permits. Deny beats allow, and any allow rule makes the schedule default-deny — so editing policy can only narrow when runs happen, never accidentally widen it. `$iterate-rules` owns the full grammar and writes this file; read it there rather than inferring the syntax.
-
-   **The window wraps midnight, and that is the normal case.** `22:00-06:00` means 22:00 through 05:59 the next morning. Compare by wrapping when `start > end`, never with a plain `start <= now <= end` — a naive comparison refuses 02:00 as "before 22:00", which is exactly backwards for the overnight block these windows exist to describe.
-
-   **A day label matches the day the window STARTED, not the current instant.** `allow mon-fri 22:00-06:00` includes Saturday 02:00, because that window opened Friday 22:00 — which is what "weeknights" means to a person. Matching the instant would silently truncate every such window at midnight.
-
-   **The launch keyword overrides the schedule.** If `require-launch-keyword` is set and the user supplied it, launch regardless of the window — and say so in one line: `outside the launch window (<rule>); proceeding on explicit "<word>"`. Never refuse a launch the user explicitly authorized.
-
-   This is not a loophole, it is what the two gates actually mean. Both exist to answer one question — *is the machine free to spend?* The schedule is a **guess** at that, from hours when the user is usually away. The keyword is the **answer**, from the person who knows. When the guess and the answer disagree, the answer wins; refusing someone who just told you they are leaving for the afternoon is the gate mistaking its proxy for its purpose.
-
-   The schedule still gates hard when no keyword was required or supplied — that is the case where nobody has said anything and the clock is the only evidence there is. A project that genuinely wants the hours enforced even against an explicit keyword sets `launch-window-strict: true`, and then the refusal stands.
-
-   Same placement logic as 1.5: this is below rule 1, so a run legitimately started at 23:00 keeps resuming at 07:00. Gating resumption on the window would kill every overnight run at dawn, which is the one thing an overnight window is for.
-
 2. **`$1` names an existing plan**: read `iterate-run plan graph --json`. If the plan waits on a predecessor, is unknown, or has cyclic dependencies, report the named prerequisite or graph error and stop without changing the plan. A typed name obeys dependencies. Claim the ready plan through `iterate-run plan claim <name> --owner cli --pid <session-pid> --json` before changing phase, current, branch, or resources. Use the long-lived session process PID, never the short-lived command shell's PID. A busy result reports the live owner and stops. On success set `current`, transition planned to executing, set `Executing:` once, remove `status: queued`, and begin the run. Preserve `Executing:` on resume.
 3. **`$1` is substantive task text** (a paragraph/steps, not a bare existing name): create a **new** plan, named via `iterate-run name next`, with `phase: executing`, **`Executing:` set to the same UTC timestamp as `Started:`**, set `current`, set up the auto-resume loop, and begin. (This is the direct fresh-task path.)
 4. **`$1` empty**: read `iterate-run plan graph --json` and select live, ready, non-release, non-RC plans. An idle project with exactly one ready plan launches it through rule 2, including a queued plan. Planned, staged, queued and idle executing states reserve no executor.
+
+   **A typed `$iterate` is the user's instruction to run now.** Two things hold it: a live owner of the project (rule 1) and an unfinished `depends:` predecessor (rule 2). Nothing else does. Scheduling belongs to the Conductor alone: staging, `status: queued`, the nightly tick, Conductor automations, time windows and `./.claude/iterate/policy.md` never refuse or defer a typed launch, and the executor never reads `policy.md`. Never answer a bare `$iterate` with "it waits for the nightly tick" or ask the user to retype the plan name; launch the sole ready plan.
 5. **Several ready plans**: list them in graph `position` order with letter, name and goal. Claim none and wait for the user's selection. With no ready plan, report the graph's waiting reasons and claim none.
 6. **Neither `$1` nor any plan exists**: report "no plans yet — supply instructions or run $iterate-planner first" and stop. (Reporting is not the same as asking.)
 
 Create `./.claude/iterate/` and `./.claude/iterate/plans/` if they don't exist.
-
-### Project policy (`./.claude/iterate/policy.md`)
-
-Project-scoped knowledge for the iterate stack — things true of THIS project that no plan should have to restate. Optional; most projects have none, and its absence is never a warning.
-
-```markdown
----
-require-launch-keyword: permission
-launch-window: 22:00-06:00
----
-
-# Iterate policy — <project>
-
-## Why the launch gate exists
-
-<Free text. The refusal in entry rule 1.5 quotes this verbatim, so write it as
-the sentence you want to read when you are told no.>
-```
-
-Keys `$iterate` acts on today:
-
-| Key | Effect |
-|---|---|
-| `require-launch-keyword: <word>` | a fresh launch must carry `<word>` anywhere in its argument |
-| `launch-window: HH:MM-HH:MM` | shorthand for a single `allow daily <window>`; wraps midnight when start > end |
-| `launch-schedule:` | list of `<allow\|deny> [days] [HH:MM-HH:MM] [dates]` rules — the full grammar, owned by `$iterate-rules` |
-| `launch-window-strict: true` | the schedule refuses even when the launch keyword was given; off by default, because the keyword is the user stating the very thing the schedule is guessing at |
-
-Both exist for projects where a run is expensive enough that starting one casually is the mistake. Set either, both, or neither.
-
-**Adding a key is a skill change, not a config change.** A key this table does not list is silently ignored, so writing an invented key into `policy.md` produces a file that looks like a rule and enforces nothing.
-
-Rules:
-
-- **The gate is per-project, never global.** It lives in the project's own tree and applies only there. Never infer a gate for a project that has no policy file, and never carry one project's gate to another.
-- **State the reason, don't invent one.** The refusal quotes the file. If the file gives no reason, say only that this project requires the keyword.
-- **Refusing is not asking.** Print the refusal and stop — no picker, no "shall I proceed anyway?", no offer to bypass. The keyword IS the authorization; without it there is nothing to decide.
-- **Read the clock, never estimate it.** Any time comparison runs `date +%H:%M` for real. Context timestamps go stale within a session and a stale clock silently inverts the gate.
-- **An explicit keyword beats the clock.** The schedule is a proxy for "the user is away"; the keyword is the user saying it directly. Report the override, never refuse over it, unless `launch-window-strict: true`.
-- **One keyword authorizes one launch.** It is consumed by the launch it appears in, not remembered. This is deliberately unlike standing risk acceptance: the gate exists precisely because each run is expensive, so each run is authorized on its own.
 
 ## Auto-resume — Codex cannot arm this itself
 
@@ -302,7 +242,7 @@ delivery checkpoint. Clear that marker only after concrete evidence establishes
 which side effects completed and which work remains; record that evidence in the
 plan log. This diagnosis is work under the claim, separate from ownership.
 
-At every step and validation boundary run `iterate-run plan heartbeat <name> --json`. On every terminal exit run `iterate-run plan release <name> --json`. The plan's phase, queue approval, launch policy and release/RC authorization are separate from concurrency.
+At every step and validation boundary run `iterate-run plan heartbeat <name> --json`. On every terminal exit run `iterate-run plan release <name> --json`. The plan's phase, queue approval and release/RC authorization are separate from concurrency.
 
 ## Team dispatch (parallel execution on teamed plans)
 

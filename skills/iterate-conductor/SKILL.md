@@ -3,7 +3,7 @@ name: iterate-conductor
 description: Control the binary conductor and its shared dashboard configuration; start, pause, inspect or configure project automations, AI subscriptions, launch sequences, schedules, power bands and overdrive.
 argument-hint: status | start | stop | pause | resume | run | kill | schedule <rule>
 disable-model-invocation: true
-version: 5.28.0
+version: 5.29.0
 ---
 
 # /iterate-conductor — control the binary conductor
