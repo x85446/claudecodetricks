@@ -115,7 +115,6 @@ iterate-notes	userglobal	self	iterate
 iterate-plan	-	self	-
 iterate-planner	userglobal	self	iterate
 iterate-release	userglobal	self	iterate
-iterate-rules	userglobal	self	iterate
 iterate-triage	userglobal	self	iterate
 izmachine	userglobal	~/workspace/izuma/izmachine/skills/izmachine	-
 list	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/list	-

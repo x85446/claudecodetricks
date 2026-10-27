@@ -31,7 +31,6 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$ip` — ported.
 - `$iterate` — ported.
 - `$iterate-inform` — ported.
-- `$iterate-rules` — ported.
 - `$iterate-triage` — ported.
 
 All deterministic work goes through one helper. Run it from the project root:
@@ -222,9 +221,7 @@ Typing `$mailbox … process` is the explicit invocation that `$iterate`'s
 uses. That holds whether a human typed it or the toolbar's Auto mode did,
 because you switched Auto mode on. Read `~/.agents/skills/iterate/SKILL.md`
 and follow it with the plan's name as its argument (in Codex, `$iterate
-<name>`). Its launch gate still applies: if `$iterate-rules` refuses now,
-stage the plan with `$ip stage <name>` so the nightly tick runs it in its
-window, and say so in the line.
+<name>`).
 
 ## Message format
 

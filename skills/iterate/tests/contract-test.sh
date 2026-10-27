@@ -81,7 +81,7 @@ why=""
 [ "$famrc" -eq 0 ] || why="skillctl family iterate exit $famrc"
 printf '%s' "$fam" | grep -q "version	$ver" || why="${why:+$why; }family line does not read $ver"
 members=$(awk -F'\t' '$NF == "iterate" || $4 == "iterate" { print $1 }' "$SK/skillmap.tsv")
-[ -n "$members" ] || members="i ibs ic in ip it iterate iterate-brainstorm iterate-conductor iterate-notes iterate-planner iterate-rules iterate-triage"
+[ -n "$members" ] || members="i ibs ic in ip it iterate iterate-brainstorm iterate-conductor iterate-notes iterate-planner iterate-triage"
 for m in $members; do
     grep -q "^version: $ver\$" "$SK/$m/SKILL.md" || why="${why:+$why; }$m source not $ver"
     diff -rq "$SK/$m" "$INSTALLED/$m" >/dev/null 2>&1 || why="${why:+$why; }$m installed copy differs"

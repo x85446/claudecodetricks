@@ -407,10 +407,6 @@ Every plan ends with the same three finisher steps, appended automatically at cr
 
 Placement: **Makefile → tests → docs** (targets must exist before TESTMASTER runs them; docs describe what survived the tests), and all three are the **last agent steps** — only a `human-gate` (Step 5.5) may follow; refinement adds always insert before them, and they keep their end position through every renumbering. All stay team-unassigned (coordinator-run after all teams merge — they sweep the whole plan's work) with provenance `Standing rule: end-of-plan finisher (tests then docs).` A project with genuinely no end-user product may drop the docs finisher (audit-trail note: `docs finisher skipped: no end-user product`).
 
-#### Project launch gate — surface it when printing a plan
-
-If `./.claude/iterate/policy.md` exists and sets `require-launch-keyword: <word>`, the plan's closing line must say how to launch it: `launch with $iterate <name> <word>` rather than a bare `$iterate <name>`. The planner does not enforce the gate — `$iterate` does — but handing someone a plan whose documented launch command is the one that will be refused is a paper cut this avoids. No policy file means print the bare form as usual.
-
 #### The `skip` modifier — the user's explicit override
 
 **`skip` anywhere in the request suppresses the finishers.** It is a modifier, not an operation: it parses in **any position** (`skip`, `$ip skip`, `plan the migration, skip`, `$ip skip the finishers and plan X`) and combines with every op that writes a plan. A bare `$ip skip` is not ambiguous — the request itself comes from conversation context per op 10, and `skip` only says what not to append.
