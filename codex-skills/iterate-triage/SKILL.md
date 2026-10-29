@@ -8,7 +8,7 @@ description: "Walk up to a stale terminal and find out what's going on in one sh
 
 # $iterate-triage — what happened here, and what gets me back to main
 
-**Version:** iterate family 5.28.0
+**Version:** iterate family 5.29.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
