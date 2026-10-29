@@ -5,7 +5,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate
 
-**Version:** iterate family 5.28.0
+**Version:** iterate family 5.29.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a

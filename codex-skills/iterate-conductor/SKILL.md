@@ -6,7 +6,7 @@ description: "Control the binary conductor and its shared dashboard configuratio
 
 # $iterate-conductor — control the binary conductor
 
-**Version:** iterate family 5.28.0
+**Version:** iterate family 5.29.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
