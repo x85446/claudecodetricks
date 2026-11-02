@@ -22,6 +22,7 @@
 -pdfify	-	self	-
 -renamer	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-renamer	-
 accounts	userglobal	self	-
+aihandoff	userglobal	self	-
 apiaryx-tab	-	~/workspace/izuma/fintool/.claude/skills/apiaryx-tab	-
 archive-closed	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/archive-closed	-
 argocd-skill	-	self	-
