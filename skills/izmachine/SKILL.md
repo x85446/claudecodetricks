@@ -273,6 +273,7 @@ Guest-naming commands carry `--provider` because
 | `izmachine top --remote not:local --interval 1s --iterations 3 --sort mem --format json` | three readings a second apart across the selected remotes, sorted by memory; positional `D71:` selects a remote too |
 | `izmachine remote find --kind vm --format json` | ranked placement candidates with load and reasons; exit 14 on no match |
 | `izmachine remote list --format json` | every registered remote: `{remotes:[{name,transport,target,default}],default,source}` |
+| `izmachine list --remote build --format json` | guests on the docker context `build`; `list build:` and `'build:web-*'` select the same way, and each guest carries `context`. A `--remote` selection asks only what it names |
 | `izmachine remote show <name> --format json` | one remote plus the `reach` izmachine acts through |
 | `izmachine remote --format json` | the remote command family |
 | `izmachine daemon --format json` | daemon command family |
@@ -316,6 +317,8 @@ Guest-naming commands carry `--provider` because
 | `izmachine daemon uninstall --remote B --format json` | remove `B`'s startup service; `~/.local/bin/izmachine` stays |
 | `izmachine remote subscribe incus --format json` | follow eligible client endpoints |
 | `izmachine remote unsubscribe incus --format json` | stop source membership tracking |
+| `izmachine remote subscribe docker --format json` | follow `docker context ls`: one entry per context, source `subscription:docker`; a collision or a context named `local` registers as `docker/<context>`; a discovery failure keeps cached entries with `stale: true` |
+| `izmachine remote unsubscribe docker --format json` | stop following contexts; explicit `docker:` registrations stay |
 | `izmachine remote sync --format json` | reconcile subscribed membership |
 | `izmachine init -f machine.iz` | scaffold a starter .iz naming a ready provider; refuses to clobber an existing `[machine]` section (prose, not JSON) |
 | `izmachine direct create <name> --kind container --os linux --osversion 3.20 --provider docker --image alpine:latest --cpus 2 --memory 2GiB --disk 20GiB --tag mine --opt key=value --format json` | create a guest |
@@ -334,7 +337,8 @@ Guest-naming commands carry `--provider` because
 | `izmachine direct lock <guest> --provider docker --reason held-by-agent --format json` | refuse destroys of this guest until unlocked; `--permanent` is one-way — see Safety |
 | `izmachine direct unlock <guest> --provider docker --format json` | lift a lock (never `--permanent`) |
 | `izmachine direct label <guest> owner=you role=build --provider docker --format json` | set operator labels; `--remove` takes bare keys. Recorded by izmachine host-wide, so every provider carries them; the `note` field names a provider whose own toolkit cannot also carry them |
-| `izmachine remote add <name> <transport> --default --format json` | register a place guests run: `local`, `incus:<remote>` or `ssh:<[user@]host>`; writes the user config |
+| `izmachine remote add <name> <transport> --default --format json` | register a place guests run: `local`, `incus:<remote>`, `ssh:<[user@]host>` or `docker:<context>`; writes the user config |
+| `izmachine remote add build docker:echo --format json` | register a docker context the client already knows; an unknown context exits 2 with a `docker context ls` hint. `docker:` runs this host's docker CLI with `--context`; `ssh:` runs izmachine on the host. See [Docker contexts](references/remotes.md#docker-context-remotes) |
 | `izmachine remote default <name> --format json` | make a registered remote the `*` default for guest-targeting verbs |
 | `izmachine remote delete <name> --format json` | forget a remote; nothing on the far side is touched |
 | `izmachine up dev --provider docker --format json -f machine.iz` | create **and** provision from a .iz file |
