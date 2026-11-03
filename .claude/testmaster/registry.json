@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-26T22:01:58Z",
+  "updated": "2026-11-03T20:22:55Z",
   "sources": [
     {
       "kind": "go",
@@ -8,10 +8,10 @@
     }
   ],
   "last_run": {
-    "ts": "2026-10-26T22:01:58Z",
-    "selection": "plangraph.TestLetters*+iterrun.TestLetters*+dashboard.graph-tab",
-    "ms": 12272,
-    "passed": 8,
+    "ts": "2026-11-03T20:22:55Z",
+    "selection": "feature-branch.branch-sweep",
+    "ms": 3254,
+    "passed": 1,
     "failed": 0,
     "skipped": 0,
     "missing": 0,
@@ -158,6 +158,16 @@
       "tier": "fast",
       "last_result": "pass",
       "updated": "2026-10-26T22:01:14Z"
+    },
+    "feature-branch.branch-sweep": {
+      "kind": "shell",
+      "cmd": "skills/feature-branch/tests/branch-sweep-test.sh",
+      "runs": 1,
+      "avg_ms": 3253,
+      "last_ms": 3253,
+      "tier": "fast",
+      "last_result": "pass",
+      "updated": "2026-11-03T20:22:55Z"
     },
     "git.TestScreenPath": {
       "kind": "go",

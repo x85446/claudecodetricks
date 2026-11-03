@@ -1,6 +1,6 @@
 ---
 name: feature-branch
-description: "Enforce the Atlassian feature-branch workflow for GitHub and GitLab repos: branch off the default branch, work, open a PR/MR, and delete the local + remote branch once merged. Use when the user says 'start a feature', 'fix a bug', 'work on X', 'open a PR', 'open an MR', 'merge this branch', 'clean up branches', 'prune branches', or runs `/feature-branch`. Also: BEFORE any code edit (Edit/Write) in a git repo, this skill must check the current branch — if on the default branch (main/master/develop), block the edit and create a feature/bugfix branch first."
+description: "Enforce the Atlassian feature-branch workflow for GitHub and GitLab repos: branch off the default branch, work, open a PR/MR, and delete the local + remote branch once merged. Use when the user says 'start a feature', 'fix a bug', 'work on X', 'open a PR', 'open an MR', 'merge this branch', 'clean up branches', 'prune branches', 'sweep the branches', 'get branches back to the starting point', or runs `/feature-branch`. Also: BEFORE any code edit (Edit/Write) in a git repo, this skill must check the current branch — if on the default branch (main/master/develop), block the edit and create a feature/bugfix branch first."
 argument-hint: <start|finish|cleanup|status> [feature|bugfix] [slug-or-description]
 ---
 
@@ -11,7 +11,7 @@ Keeps git working trees clean by enforcing one workflow for everyone:
 1. **Start** on the default branch, pull, create `feature/<slug>` or `bugfix/<slug>`.
 2. **Work** on that branch only — never on `main`/`master`/`develop`.
 3. **Finish** — push, open a GitHub PR or GitLab MR, and (once merged) delete the local + remote branch and switch back to the default branch.
-4. **Cleanup** — periodically prune any merged-but-still-present local branches and dead remote-tracking refs.
+4. **Cleanup** — return every branch, local and remote, to the starting point: merged ones deleted, colleagues' unmerged ones kept, yours reported with drift, `main` synced.
 
 Bugs use the same lifecycle as features; the only difference is the `bugfix/` prefix.
 
@@ -22,7 +22,7 @@ Bugs use the same lifecycle as features; the only difference is the `bugfix/` pr
   - "let's start a new feature for ...", "add a feature that ...", "build the X feature"
   - "fix the bug where ...", "fix this bug", "work on bug Y"
   - "open a PR for this", "create an MR", "ship this", "merge this branch"
-  - "clean up branches", "prune branches", "delete old branches"
+  - "clean up branches", "prune branches", "delete old branches", "sweep the branches", "get the branches back to the starting point", "delete anything already in main"
 - **Pre-edit gate**: any Edit/Write in a git repo. Before the edit lands, verify branch — see [Pre-Edit Gate](#pre-edit-gate) below.
 
 ## Subcommands
@@ -31,7 +31,7 @@ Bugs use the same lifecycle as features; the only difference is the `bugfix/` pr
 |---|---|---|
 | `start` | `[feature\|bugfix] <slug-or-description>` | Switch to default branch, pull, create + checkout new branch. |
 | `finish` | none | Push current branch, ensure PR/MR exists, and if merged → delete branch + return to default. |
-| `cleanup` | none | Sweep local branches that are merged into the default branch (or squash-merged via a closed PR/MR), delete them locally and remotely, prune stale refs. |
+| `cleanup` | `[--dry-run]` | Return branches to the starting point: delete every local and remote branch already on the default branch, keep colleagues' unmerged branches, report yours with their drift, fast-forward local `main` to origin. `/iterate` runs it after every merge. |
 | `status` | none | Show current branch, PR/MR state if any, count of stale local branches. |
 
 If the skill auto-invokes on intent without an explicit subcommand, infer:
@@ -107,23 +107,24 @@ Remote-type detection from `origin` URL:
 
 ### Step 3 — `cleanup`
 
-1. **Refresh refs.** `git fetch --all --prune` — `--prune` deletes remote-tracking refs whose remote branch no longer exists.
-2. **Determine the default branch** (Step 0 logic).
-3. **Find merged branches.**
-   - `git for-each-ref --format='%(refname:short)' refs/heads/` → all locals.
-   - Exclude: the default branch, `master`, `develop`, the current branch.
-   - For each remaining branch:
-     - Fast path: `git merge-base --is-ancestor <branch> origin/<default>` → exit 0 means fully merged.
-     - Squash-merge path: if fast path fails, check whether a merged PR/MR exists for the branch:
-       - GitHub: `gh pr list --state merged --head <branch> --json number --limit 1 -q '.[].number'` → if non-empty, treat as merged.
-       - GitLab: `glab mr list --state merged --source-branch <branch> --output json -L 1` → if non-empty, merged.
-4. **Summarize and confirm.**
-   - Show the list of candidates with reasons ("merged into main", "squash-merged via PR #123"). If the list is empty, say so and exit.
-   - Ask: "Delete these N branches (local + remote where applicable)? (y/N)" Default no.
-5. **Delete.** For each:
-   - `git branch -d <branch>` then fall back to `-D` if the fast-path check passed for a squash-merge.
-   - `git push origin --delete <branch>` only if the remote branch still exists (`git ls-remote --exit-code --heads origin <branch>`). Don't error on already-gone branches.
-6. **Report.** "Deleted X branches. Pruned Y stale remote-tracking refs."
+Returns the repo's branches to the starting point: every branch whose work is on the default branch is gone, local and remote; every unmerged branch of yours is reported with its drift; a colleague's unmerged branch is left alone; local `main` matches `origin/main` unless it is ahead. The whole verb is one script run, no confirmation, because the rules below are the authorization:
+
+```bash
+~/.claude/skills/feature-branch/scripts/branch-sweep.sh            # do it
+~/.claude/skills/feature-branch/scripts/branch-sweep.sh --dry-run  # show what it would do
+```
+
+What the script does, in order:
+
+1. `git fetch --all --prune`, then resolves the default branch (Step 0 logic).
+2. **Local branches.** Each one except the default, `master`, `develop` and the current branch: *merged* (`git merge-base --is-ancestor <b> origin/<default>`, or a merged PR/MR for it via `gh pr list --state merged --head <b>` / `glab mr list --state merged --source-branch <b>`) → `git branch -D`. Unmerged → kept, with `behind=<n>` commits and `base-age=<d>d`, and marked `drifted` when behind by ≥ 50 commits or the merge-base is ≥ 30 days old (`--drift-commits`, `--drift-days`).
+3. **Remote branches.** Each `origin/*` except the default and the current branch: merged → `git push origin --delete`, whoever wrote it. Unmerged and **yours** (author email of the tip equals `git config user.email`, which covers every commit Claude or Codex makes in your sessions) → kept, reported when no local copy exists. Unmerged and a **colleague's** → kept and never deleted; reported `fresh` or `stale=<d>d` past 90 days (`--stale-days`).
+4. **Default branch.** Local behind `origin/<default>` → fast-forwarded (merge on it, or a ref update when another branch is checked out). Local ahead → reported `main ahead … not pushed`, nothing pushed. Diverged → reported, untouched.
+5. One `summary deleted=<n> kept=<n> drifted=<n>` line.
+
+Output is tab-separated facts, one per line (`deleted`, `kept`, `main`, `summary`). Print it as is, then one sentence naming anything `drifted`, `stale`, `ahead` or `diverged`. Nothing to say when the summary is all zeros and `main synced`.
+
+Exit 3 means not a git repo or no `origin`: say so and stop. `skills/feature-branch/tests/branch-sweep-test.sh` proves every path on a fixture repo.
 
 ### Step 4 — `status`
 
