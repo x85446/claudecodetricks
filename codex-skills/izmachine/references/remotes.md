@@ -15,6 +15,27 @@ verb on Incus and SSH remotes; a conflicting `--remote`, a glob or several
 targets are refused without writes, and two providers holding the name on that
 remote require `--provider`. Repeated `--remote` values form a union; acting verbs require one matching guest.
 
+**Pin an Incus server by identity, not by the operator's alias.** In a
+machine's `remote`: `incus:server=<name>`, `incus:sha256:<64-hex fingerprint>`
+or `incus:server=<name>,sha256:<fingerprint>`. A pin carries no `:guest`
+suffix — put the guest in `name =`. It still excludes `needs`. `remote show
+<alias>` reports `server_name` and `fingerprint`; a resolution carries
+`remote.identity` with the `pin` and the `alias` it bound to (unprobed aliases
+under `identity.unprobed`). Two aliases with different fingerprints under one
+name pin exit 2 naming both — pin the fingerprint; a strict mismatch exits 14
+with expected and observed; no match exits 14 with an `incus remote add` hint.
+
+**Hosted directory records** are `izuma:<account>.<domain>.<uuid>` (the
+`izuma:` prefix is optional; first label is the account, last is the UUID,
+the rest is the domain), usable as a machine's `remote`. Authenticate once
+with `izmachine login <account>.<domain> --token <token>`. The first use of an
+unpaired record asks for consent: pass `--yes`, because under `--format json`
+without it the command returns top-level `pending_action: {pair, alias,
+address}` and exits 14 — read it, do not retry blindly. Directory function
+refs are `izuma:<account>.<domain>/<name>@<version>`. A cached record carries
+`stale: true` and `warnings` when the directory is unreachable.
+`IZMACHINE_DIRECTORY_FAKE` points the client at file fixtures for tests.
+
 **Select remotes in a listing** with positional `remote:` (all guests there),
 `'remote:glob'` (quote it) and a repeatable `--remote`. They form one
 deduplicated union; `--name`, `--state`, `--kind`, `--tag`, `--os` and

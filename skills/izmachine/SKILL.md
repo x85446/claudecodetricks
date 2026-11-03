@@ -228,7 +228,12 @@ izmachine [global flags] direct <verb> [guest] [flags]
 Per-guest verbs live under `direct`. The .iz-file commands — `init`, `up`,
 `down`, `info`, `ssh`, `ssh-config`, `provision`, `validate`, `destroy` — are
 root-level and scoped to the machines the file defines, as are the host-wide
-reads `list`, `locks` and `top`. `izmachine direct list` and `izmachine direct locks`
+reads `list`, `locks` and `top`. Four more root nouns ride on the .iz file's
+machines: `call` runs an attached function, `fact` reads and stores cached
+guest facts, `function` inspects the function library and the hosted
+directory, `secret` manages the key that encrypts secret facts; `login`
+stores a hosted-directory token. See
+[references/iz-files.md](references/iz-files.md#lifecycle-functions-and-facts). `izmachine direct list` and `izmachine direct locks`
 are exit-2 stubs naming the root forms.
 
 Global flags: `--format table|json`, `--os <id|platform>`, `--provider <p>`,
@@ -288,6 +293,15 @@ Guest-naming commands carry `--provider` because
 | `izmachine up dev --dry-run --print-artifact --format json -f machine.iz` | what the file *would* build — `resolution`, `lowering`, `image_mapping`, `artifacts`, `notes` — building nothing |
 | `izmachine up --dry-run --format json --izfile machine.iz` | every definition's plan, prerequisites first: `{plan:[{order,definition,guest,remote,provider,after}]}` when there is more than one machine — building nothing |
 | `izmachine ssh-config dev -f machine.iz` | `ssh_config` Host blocks (prose, not JSON — see contract rule 5) |
+| `izmachine provision --dry-run --format json -f machine.iz` | the provision steps and the `on = ["provision"]` functions that would run, running none |
+| `izmachine fact --format json` | the fact noun's four verbs |
+| `izmachine fact list dev --format json` | `facts[]` with `name`, `source`, `secret` and TTL metadata — never values; omit the machine for every machine the file defines |
+| `izmachine fact get dev ip --format json` | one cached fact, refreshed first when its `ttl` has lapsed; `--refresh` forces it, `--reveal` shows a secret instead of `<secret>`, `--file <path>` writes the value to a 0600 file |
+| `izmachine function --format json` | the function noun's five verbs |
+| `izmachine function list dev --format json -f machine.iz` | the functions attached to a machine: effective triggers, `where`, origin layer |
+| `izmachine function search k3s --account ford.xyz --label role=k3s --os ubuntu --format json` | published directory functions matching the text and filters |
+| `izmachine function show izuma:ford.xyz/fetchKubeconfig@1 --format json` | one published function: verified body, hash, signer |
+| `izmachine secret --format json` | the secret noun's one verb |
 
 **Mutating — these change host state. Know what you are touching first:**
 
@@ -329,6 +343,15 @@ Guest-naming commands carry `--provider` because
 | `izmachine ssh dev --format json -f machine.iz -- uname -a` | one command in a .iz machine, guest's exit code passed through |
 | `izmachine down --format json -f machine.iz` | stop every running machine the file defines; idempotent, never destroys |
 | `izmachine destroy dev --yes --format json -f machine.iz` | destroy the machines the file defines; `--yes` required, refused while locked |
+| `izmachine up dev --recreate --format json -f machine.iz` | lifecycle override: destroy and build the guest fresh from the compiled definition, capturing a new baseline; `--restore[=tag]` puts it back on a snapshot without provisioning, `--reuse` starts what exists, `--snapshot=tag` names the baseline tag. The three modes are mutually exclusive (exit 2); a lock refuses recreate and restore (exit 11); `--dry-run` reports `lifecycle: {action, rule, source}` and touches nothing |
+| `izmachine down --destroy --format json -f machine.iz` | teardown override: destroy instead of the file's `on_down`; `--snapshot=tag` snapshots then stops; `--dry-run` reports the decision |
+| `izmachine call dev fetchKubeconfig --format json -f machine.iz -- --flag` | run a function attached to a machine, in the guest or on the host per its `where`; stdout comes back verbatim and the exit code passes through. A `where = "host"` function runs with Makefile trust |
+| `izmachine fact set dev token --secret - --format json` | store a permanent operator fact (`-` reads the value from stdin); `--secret` encrypts it at rest |
+| `izmachine fact gc --format json` | drop cached facts whose guest identity is gone, only for providers whose inventory succeeded |
+| `izmachine function add izuma:ford.xyz/fetchKubeconfig@1 --project --format json` | pin a directory function into the personal library, or the project library with `--project` |
+| `izmachine function publish fetchKubeconfig --public --format json` | push a library function to its directory record |
+| `izmachine secret rotate --format json` | re-encrypt every stored secret fact under a replacement master key; resumable |
+| `izmachine login ford.xyz --token <token> --format json` | store a hosted-directory account token; pass the token by flag from a secret store, never typed into a transcript |
 
 <!-- command-index:end -->
 

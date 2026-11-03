@@ -230,3 +230,76 @@ After the guest is up, `izmachine provision` re-runs the file's provision list
 live through the provider's exec channel — the guest is not recreated and its
 identity does not change. `izmachine down` stops the file's machines without
 destroying them; `izmachine destroy --yes` is the file-scoped teardown.
+
+## Lifecycle, functions and facts
+
+Read this when a definition carries a `lifecycle`, `functions` or `facts`
+table, when `up` reuses a guest you expected rebuilt, or before `call`, `fact`
+or `function`. The full contract is `docs/iz.md` in the izmachine repo.
+
+### Lifecycle — what `up` and `down` do to a guest that already exists
+
+`[machine.<key>.lifecycle]` (defaults from `[defaults.lifecycle]` in
+`global.iz`, each key overridable per layer):
+
+| key | values | default |
+|---|---|---|
+| `on_up` | `reuse` (start what exists), `recreate` (destroy and build from the definition), `restore` (stop, restore `snapshot`, start without provisioning) | `reuse` |
+| `on_down` | `stop`, `destroy`, `snapshot` (snapshot then stop) | `stop` |
+| `snapshot` | the baseline tag; required by `restore` and `on_down = "snapshot"` | unset |
+| `on_drift` | `warn`, `recreate` — when the guest's recorded digest differs from the definition's | `warn` |
+| `ttl` | a Go duration (`8h`); ages from the recorded creation time | unset |
+
+First creation captures the baseline after provisioning; an existing guest
+with no baseline is captured before its first restore. The digest covers
+executable artifacts and the envelope — labels, lifecycle, facts and functions
+do not change it. A provider with no snapshot or restore verb reports a note
+and reuses. A lock refuses recreate and restore with exit 11. `validate
+--format json` shows the effective policy and each field's origin;
+`up --dry-run` reports `lifecycle: {action, rule, source}`.
+
+Command-line overrides: `up --recreate | --restore[=tag] | --reuse`
+(mutually exclusive, exit 2) and `--snapshot=tag`; `down --destroy |
+--snapshot=tag`.
+
+### Functions — reusable commands attached to machines
+
+`[function.<name>]` declares one, with exactly one body: `run` (a command),
+`script` (a file relative to the definition), `exec` (a host executable), or a
+pinned directory `from`. `where = "guest" | "host"` (default guest; a host
+function runs with the same trust as a Makefile). `on` lists triggers:
+`demand`, `up` (after provisioning), `down` (before stopping), `provision`,
+`every <duration>` (runs on the inventory daemon, registered by `up`, for the
+daemon's lifetime). `match = { os, kind, provider, labels }` is eligibility
+only — **matching never attaches**. A machine attaches with
+`functions = ["name"]`; `attach = "auto"` attaches to every eligible machine
+and `functions -= ["name"]` detaches one. `[machine.<key>.functions.<name>]`
+declares a machine-local function or narrows a library one's triggers.
+Libraries merge from `IZMACHINE_FUNCTION_PATH` directories, `global.iz`, the
+project file and `.izlocal`; `--bare` excludes the external layers. Dry runs
+execute no function.
+
+`call <machine> <function> [-- args]` returns stdout verbatim and the
+function's exit code. Host executables receive `IZMACHINE_NAME` and the canned
+facts as `IZMACHINE_FACT_<NAME>` (dots become underscores). `{{fact.NAME}}`
+resolves inside a body at run time.
+
+### Facts — cached values keyed by guest identity
+
+`[machine.<key>.facts]` holds static values, or tables with `from = "<function>"`,
+`ttl`, `secret = true`, `publish`. A function's own `fact = { name, ttl,
+secret }` declares its cached output. Canned names, never shadowable:
+`name`, `identity`, `provider`, `remote`, `kind`, `os`, `osversion`, `arch`,
+`ip`, `state`, `uptime`, `ssh.user`, `ssh.port`, `ssh.key`, `created_at`,
+`digest`, `snapshot` — each carries `observed_at`, empty when the provider does
+not report it. A TTL is lazy: the next read refreshes; a failed producer keeps
+the cached value, warns and exits 0, or exits 14 with nothing cached. An
+operator value (`fact set`) never expires. A replaced guest under the same name
+has its own cache (Incus keys include the instance UUID); `fact gc` drops the
+orphans.
+
+Secrets: AES-256-GCM, master key in the OS keychain or
+`~/.izmachine/master.key` (0600; `IZMACHINE_MASTER_KEY_FILE` overrides,
+`IZMACHINE_FACTS_DIR` moves the cache). JSON masks them as `<secret>` unless
+`--reveal`; `fact get --file` writes 0600; `secret rotate` re-encrypts and
+resumes after an interruption. **Never put `--reveal` output in a transcript.**
