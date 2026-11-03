@@ -164,6 +164,49 @@ remain stable across URL changes. Source failures retain stale membership;
 manual/directory entries win. `incus/local` is an endpoint label, not proof of
 physical locality. Host/member evidence determines the guest's displayed remote.
 
+## Docker context remotes
+
+`remote add build docker:echo` registers a context the docker client already
+knows; an unknown name exits 2 with a `docker context ls` hint, and a host
+with no docker client registers the name and says so. `docker:<context>` runs
+this host's docker CLI with `--context <name>` and `DOCKER_HOST` cleared;
+`ssh:<host>` runs izmachine on the host. Use `docker:` when a context exists
+and no izmachine runs on the far side. `list --remote build`, `list build:`,
+`'build:web-*'` and `direct start build:web` address it.
+
+`remote subscribe docker` / `unsubscribe docker` follow `docker context ls`
+as `subscribe incus` follows `incus remote list`: one entry per context,
+source `subscription:docker`. A context named `local` or one colliding with an
+explicit entry registers as `docker/<context>`. A discovery failure keeps the
+cached entries with `stale: true`; removing a context drops only its
+subscription-owned entry; unsubscribing keeps explicit registrations.
+`DOCKER_CONFIG` selects the client configuration.
+
+Registered contexts add to the client's current context in a listing; two
+contexts reaching one engine list a container once. `--local` means this
+host's sockets: a `unix://` or `npipe://` endpoint is this host, `ssh://` and
+`tcp://` are not, even over loopback. `list --local` asks every context on
+this host's socket and never reaches another engine; verbs under `--local`
+act through the current context when it is on this host, else the first
+context that is, and refuse when none is. A guest on an unregistered
+other-engine current context appears under the context's name, never
+`local`.
+
+`remote show <name>` prints `endpoint`, `engine_id`, `engine_name` and
+`version`, under `remote.identity` in JSON. A `.iz` pins the engine with
+`remote = "docker:id=<engine-id>"`: it binds whichever context reaches that
+engine for `up`, `down`, `provision`, `ssh`, `info`, `destroy` and
+`validate`, reporting `resolution.remote.identity` with `pin: {engine_id}`,
+`alias` and `aliases`; no match exits 14 with a `docker context create` hint,
+and unprobed contexts appear in `identity.unprobed`. Engine evidence is
+shared across requests for five minutes.
+
+JSON: a guest listed through a named context carries `context`; on another
+engine `identity.kind` is `context-container-id` with value `<context>:<id>`.
+A failing context reports under `unreachable` with transport `docker` and as
+`docker/<remote>` in `snapshots.local.observations`; the other remotes stay
+listed.
+
 `remote migrate --dry-run <paths>...` previews selected legacy files;
 `remote migrate <paths>...` applies backup and atomic replacement. Conflicting
 declarations/backups are refused. Keep the canonical remote vocabulary in new
