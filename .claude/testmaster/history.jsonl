@@ -11289,3 +11289,5 @@
 {"id":"plangraph.TestLettersOrderFollowsDepends","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-26T22:01:58Z"}
 {"id":"plangraph.TestLettersTeamedIsUpperCase","ms":0,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-10-26T22:01:58Z"}
 {"batch":"plangraph.TestLetters*+iterrun.TestLetters*+dashboard.graph-tab","failed":0,"missing":0,"ms":12272,"not_run":0,"passed":8,"runner":"testmaster","skipped":0,"ts":"2026-10-26T22:01:58Z"}
+{"id":"feature-branch.branch-sweep","ms":3253,"result":"pass","runner":"testmaster","tier":"fast","ts":"2026-11-03T20:22:55Z"}
+{"batch":"feature-branch.branch-sweep","failed":0,"missing":0,"ms":3254,"not_run":0,"passed":1,"runner":"testmaster","skipped":0,"ts":"2026-11-03T20:22:55Z"}
