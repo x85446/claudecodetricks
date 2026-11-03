@@ -31,7 +31,9 @@ The skill maintains the placement directive; izmachine chooses the host.
    non-`[machine]` tables and the project's other tools' settings. Definitions
    the project file does not carry come from the user's `global.iz`
    (`izmachine config path --format json` names it); a project key replaces a
-   global key wholesale.
+   global key wholesale; a global `[defaults]` and `[personal]` section and a
+   sibling `.izlocal` layer onto it field by field (the layer rules are in
+   the same reference).
 2. **Author a definition when one is missing.** If `./.iz` is absent, run
    `izmachine init` (it prints a status line, not JSON, and writes `./.iz`),
    then maintain that file in place. Give the
@@ -66,6 +68,14 @@ kind = "vm"
 os = "macos"
 needs = { kind = "vm" }
 ```
+
+When the user wants the **physical host itself** — this Mac, or a registered
+SSH host — and not a guest on it, declare a native machine: `provider =
+"native"`, `kind = "native"`, an explicit `os`, and `remote = "local"` or the
+SSH remote. It takes no `needs`, no image and no guest directives, and only
+`[[provision]]` steps change it; `down` and `destroy` are a no-op. Keys stay
+lowercase (`[machine.mbp]` with `remote = "cypressMBP"`). See
+[references/providers.md](references/providers.md).
 
 The command reference follows `izmachine help --json` from the executing binary.
 Inspect the live command and flag definitions before authoring a CLI invocation.
@@ -349,6 +359,11 @@ Two rules, both of which bite:
 
 Under `--format json`, `run` returns `{"guest","provider","command","stdout",
 "stderr","exit_code"}` — the guest's streams as data, not mixed into yours.
+
+**Close stdin from a harness.** `izmachine ssh <machine> -- <cmd>` and
+`direct run` read all non-terminal stdin before running, so from a harness
+whose stdin never closes they hang. Call them with `</dev/null` (or pipe the
+input you mean to send).
 
 **Use `run`, not interactive `ssh`.** `izmachine direct ssh <guest>` replaces
 itself with an interactive shell and expects a terminal you are sitting at; it

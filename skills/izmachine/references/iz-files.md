@@ -6,24 +6,120 @@ Read this before authoring or editing a project's `./.iz`. The placement workflo
 
 `create` gives you a bare guest. `izmachine up` takes a **.iz file** — a
 description of a machine, not a script — and goes from nothing to provisioned in
-one command. Definitions come from two layers. The **project layer** is `./.iz`
-in the current directory, or the file the global `--izfile <file>` (or the
-command's own `-f/--file`, the same selection) names instead. Beneath it sits
-the **global layer**, `$XDG_CONFIG_HOME/izmachine/global.iz` (falling back to
-`~/.config/izmachine/global.iz`), for machines every project may use. A project
-machine replaces a global machine of the same key wholesale, never key by key. A
-named machine (`izmachine up <key>`) resolves across both layers; a bare verb
-(`izmachine up`, `down`, `info`, `validate`) acts on the project machines when a
-project file exists, else on the global ones. Imports (`[[file]]` payloads,
-provision files) resolve relative to the file that defines the machine.
-`validate --format json` and `info --format json` carry each machine's
-`source` (`{layer, path}`) and, for a project machine that hides a global one,
-`shadows` (the global `{layer, path}`); `izmachine config path --format json`
-lists `global.iz` under the `global` layer. A named file such as `backup.iz` is
-**never** a fallback: with no project file and no global file, every
-file-scoped command exits 14 naming `izmachine init` and `--izfile`, and lists
-the named files it did not read. Two different paths (`--izfile a.iz -f b.iz`)
-are exit 2; the same path twice is fine. There is no parent-directory search.
+one command. The file is **TOML plus five assignment operators** (the Papyrus
+layered-definition format, see [Layers](#layers)). A **project machine** is
+`[machine.<key>]` in `./.iz` in the current directory, or in the file the
+global `--izfile <file>` (or the command's own `-f/--file`, the same selection)
+names instead. A named machine (`izmachine up <key>`) resolves across the
+project and global layers; a bare verb (`izmachine up`, `down`, `info`,
+`validate`) acts on the project machines when a project file exists, else on
+the global ones. Inputs (`[[file]]` payloads, provision files) resolve relative
+to the file that defines the field. `validate --format json` and `info --format
+json` carry each machine's `source` (`{layer, path}`) and, for a project
+machine that hides a global one, `shadows` (the global `{layer, path}`);
+`izmachine config path --format json` lists `global.iz` under the `global`
+layer. A named file such as `backup.iz` is **never** a fallback: with no
+project file and no global file, every file-scoped command exits 14 naming
+`izmachine init` and `--izfile`, and lists the named files it did not read.
+Two different paths (`--izfile a.iz -f b.iz`) are exit 2; the same path twice
+is fine. There is no parent-directory search.
+
+## Layers
+
+A definition is assembled from four layers, applied in this order:
+
+| order | layer | file | supplies |
+|---|---|---|---|
+| 1 | envelope defaults | `global.iz` `[defaults]` | `provider`, `remote`, `needs`, `resources` — a machine can override each |
+| 2 | machine definition | `[machine.<key>]` in the project file, else `global.iz` | everything |
+| 3 | personal contents | `global.iz` `[personal]` | `packages`, `user`, `file`, `provision` — merged after the machine, before local |
+| 4 | local overrides | `.izlocal` beside the project file | any field, private to this checkout |
+
+`global.iz` is `$XDG_CONFIG_HOME/izmachine/global.iz` (falling back to
+`~/.config/izmachine/global.iz`). Any other key under `[defaults]` or
+`[personal]` is an error. **A project definition replaces a global definition
+with the same key wholesale, before the field merge** — never key by key. A
+project `:=` value excludes the corresponding personal value; `.izlocal` can
+still override it. A project `dependency.up` must name a project-declared key.
+`izmachine init` adds `.izlocal` to `.gitignore` once; `validate` warns when
+Git tracks it. A machine defined only in `.izlocal` needs explicit selection
+when a project file exists.
+
+```iz
+# global.iz
+[defaults]
+provider = "docker"
+
+[defaults.resources]
+cpus = 2
+
+[personal]
+packages = ["git", "curl"]
+```
+
+```toml
+# .iz — complete on its own
+[machine.dev]
+provider = "docker"
+kind = "container"
+image = "debian:bookworm"
+packages = ["git", "curl"]
+```
+
+```iz
+# .izlocal — private adjustments
+[machine.dev]
+packages -= ["curl"]
+labels := { owner = "developer" }
+
+[machine.dev.resources]
+cpus ?= 4
+```
+
+Here `packages` becomes `["git"]`, and `cpus` stays 2 because `?=` fills only
+an absent value.
+
+**`--bare` reads only the selected project file.** `up --bare`,
+`validate --bare` and `info --bare` skip `global.iz` (defaults and personal
+contents) and `.izlocal`. Use it to prove the project file reproduces the
+intended definitions on a machine with no global layer — the reproducibility
+check before you call a `.iz` done.
+
+### Operators
+
+The set is exactly `=`, `+=`, `-=`, `:=`, `?=`; `=~` and `~=` are invalid.
+Operators go in key assignments, never table headers or inline-table entries.
+Put whitespace before `-=`: `packages -= ["curl"]` removes a package,
+`packages-= ["curl"]` assigns a key named `packages-`.
+
+| value shape | `=` / `+=` | `-=` | `:=` | `?=` |
+|---|---|---|---|---|
+| scalar | `=` replaces; `+=` is an error | error | replace | set only if absent |
+| scalar list | stable union, lower-layer order kept | remove matching values | replace the whole list | set only if absent |
+| table | merge keys recursively | remove named keys | replace the whole table | set only if absent |
+| record array | merge records by identity; append unmatched | remove matching identities | replace the whole array | set only if absent |
+
+Record identities: `user.name`, `file.path`, `ports.guest` (also `port`),
+`provision.id`, `mount.target`, `tuning.systemd.name`. A provision step without
+an `id` matches only an identical record — give steps you expect a layer to
+touch an `id`. Removing an unknown identity produces a note, and `+=` with no
+lower value produces a positioned note; read `validate`'s notes.
+
+### References
+
+`{{env.NAME}}` reads an environment variable after all layers merge;
+`{{env.NAME | "value"}}` supplies a default. An unset variable with no default
+is exit 14 with the source path, line and column. Only the `env` scope
+resolves; other scopes stay literal with a note. Variables only — no sections,
+loops, partials or filters. Escape a literal with a backslash, `\{{` inside a
+TOML basic string.
+
+```iz
+[machine.referenced]
+provider = "docker"
+kind = "container"
+image = '{{env.IZMACHINE_DOC_IMAGE | "debian:bookworm"}}'
+```
 
 **The `[machine]` argument is a definition key, not a guest name.** It must
 match a `[machine.<key>]` section, or name the target a section declares as
@@ -76,8 +172,9 @@ file is exit 14 / `error.code: izfile_error`, with the file:line:col in
 
 ## The file, and the one key that is required
 
-The file is **TOML** — a shared envelope in which izmachine owns the `[machine]`
-section and preserves every other top-level table untouched. A
+The file is TOML with the operators above — a shared envelope in which
+izmachine owns the `[machine]` section and preserves every other top-level
+table untouched. A
 `[machine.<name>]` section holds:
 
 | key | required? | what it is |
