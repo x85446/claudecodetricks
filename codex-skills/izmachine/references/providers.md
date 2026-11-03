@@ -13,7 +13,7 @@ but leaning on it is how you end up with a 40-second Lima VM when you wanted a
 | kind | platform | default provider | others serving that pair |
 |---|---|---|---|
 | `vm` | `linux` | `lima` | `incus`, `utm` |
-| `vm` | `macos` | `lume` | `utm` |
+| `vm` | `macos` | `lume` | `utm`, `incus` (as a `container` kind: macOS runs inside an Incus application container) |
 | `vm` | `windows` | `utm` | `incus` |
 | `container` | `linux` | `docker` | `container`, `incus` |
 
@@ -39,17 +39,41 @@ Read it rather than assuming — the differences are large:
 | `container` | container | linux | everything: create, run, ssh, snapshot ×4, snapshot-to-clone, clone, export, import |
 | `docker` | container | linux | everything, same set as `container` |
 | `lima` | vm | linux | create, run, ssh, clone, snapshot ×4 — no export/import |
-| `incus` | vm, container | linux, windows | create, run, ssh, snapshot ×4 — no clone, no export/import |
+| `incus` | vm, container | linux, windows, macos | create, run, ssh, snapshot ×4 — no clone, no export/import |
+| `native` | native | linux, macos, windows | validate, info, up, ssh, provision on an existing host — `down`/`destroy` are a no-op; snapshot, clone, export, import and create return `unsupported_verb` |
 | `lume` | vm | macos | create, run, ssh, clone — **no snapshot at all** |
 | `utm` | vm | windows, macos, linux | start, stop, destroy, list, info, status, clone — **no create, no run, no ssh** |
 
-Three consequences worth carrying:
+Four consequences worth carrying:
 
 - **`incus` serves Windows only as a VM, from an explicit Windows image.** A
   Windows container is a usage error. Without `--profile`, creation applies the
   host's `default` and `windows` profiles. Commands reach the guest through the
   Incus Windows agent, so Windows setup lives in the prepared image, not in
   izmachine.
+- **`incus` serves macOS as `kind = "container"`, never as a VM.** The guest
+  runs inside an Incus application container with a nested QEMU runtime, from
+  a prepared runtime image (`image = "tmc-images:osx-runtime-sequoia"`), with
+  `[machine.<key>.incus]` supplying `profiles = ["default", "macos-kvm"]`,
+  `config."security.nesting" = "true"` and `post_start` hooks (default
+  `macosctl up`). Run, ssh, OS probes, Homebrew packages, files, shell and
+  ansible steps reach macOS through `macosctl mac`. It is an alternative to
+  Lume for `os = "macos"` when the placement is an Incus remote that carries
+  the runtime image and profiles; `lume` stays the default.
+- **`native` is the host itself, not a guest.** `provider = "native"`,
+  `kind = "native"`, with `remote = "local"` or a registered SSH remote
+  (`izmachine remote add cypressMBP ssh:cypressMBP`) and an explicit `os`
+  (`osversion` optional, matched as a prefix). `validate`, `info`, `up`
+  (reachability and OS checks, then the `[[provision]]` steps on the host),
+  `ssh` and `provision` run directly on the host; `down` and `destroy` report
+  a no-op; snapshot, clone, export, import and create refuse with
+  `unsupported_verb`. A native machine refuses `needs`, remote selectors,
+  `image`, `resources`, mounts, ports, build, devcontainer, tuning, `user`,
+  `file` and `packages`. Machine keys stay lowercase — `[machine.mbp]` with
+  `remote = "cypressMBP"`, never `[machine.cypressMBP]`. Use it only when the
+  user wants the physical host itself; a guest's placement is still
+  izmachine's call. Native hosts do not appear as guests in inventory. The
+  full contract is `docs/native-machines.md` in the izmachine repo.
 - **`utm` serves Linux as well as Windows and macOS**, so it shows up as an
   alternative for `vm`/`linux`. But it cannot create or exec, so it manages VMs
   that already exist rather than building you one.

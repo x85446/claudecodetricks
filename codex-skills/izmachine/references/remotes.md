@@ -6,9 +6,9 @@ Read this when addressing a guest on a remote, narrowing a listing, previewing p
 
 Guest `name` in JSON and NAME in tables is bare. JSON `remote` and table REMOTE
 say where it runs; the stable lock identity still carries `remote:instance`.
-Use `izmachine direct info --remote cypress k3s-dev`,
-`izmachine direct info cypress:k3s-dev`, or
-`izmachine direct info cypressLinux:k3s-dev`. A bare name prefers the `*`
+Use `izmachine direct info --remote cypress k3s-cypress`,
+`izmachine direct info cypress:k3s-cypress`, or
+`izmachine direct info cypressLinux:k3s-cypress`. A bare name prefers the `*`
 default; if absent there and present in two other remotes, exit 2 names
 both and asks for `--remote`. An exact `remote:guest` works for every direct
 verb on Incus and SSH remotes; a conflicting `--remote`, a glob or several
@@ -71,7 +71,15 @@ successful refresh restores the rows. Treat hidden rows as unknown, not absent.
 The daemon bounds its load on remotes: each Incus endpoint is listed at most
 once per refresh across every cached scope, never twice at once, and backs off
 after a listing outruns `fetch_timeout`; guest OS details are probed once per
-guest boot. A scope unread for `idle_after` (10m) becomes idle: it leaves the
+guest boot. A provider with no running guest in a scope, or an unavailable
+one, rests: it is listed once per `idle_refresh_interval` (10m) instead of
+every refresh, and its rows stay fresh through that interval plus
+`stale_after`. A guest that starts through izmachine, any successful mutating
+command, or `izmachine list --refresh` queries it at once. Docker inventory is
+one `docker ps` per refresh, with `docker inspect` only for running or paused
+containers; `docker stats` runs only for `izmachine top`, so a listing alone
+lets Docker Desktop's Resource Saver idle. A scope unread for `idle_after`
+(10m) becomes idle: it leaves the
 `refresh_interval` cadence and is refreshed every `idle_refresh_interval`
 (10m; `0s` disables idle refresh), so its snapshot stays fresh through
 `idle_refresh_interval` + `stale_after`; the next read wakes it. A scope is
