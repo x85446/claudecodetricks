@@ -1,0 +1,3 @@
+interface:
+  display_name: "Disk Cleanup"
+  short_description: "Find disk usage, reclaim space, and limit growth"

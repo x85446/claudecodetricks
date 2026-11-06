@@ -69,6 +69,7 @@ decommission-machine	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/glo
 dedupe-against-open	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/dedupe-against-open	-
 delete-slug	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/operator/delete-slug	-
 dev-makefiles	userglobal	self	-
+disk-cleanup	userglobal	self	-
 docket-runner	-	~/workspace/gravhl/smugjudge/.claude/skills/docket-runner	-
 docs-organizer	all	self	-
 downloader	personaldb	self	-
@@ -127,6 +128,7 @@ marketing-doc-formatter	imarketing	self	-
 marketing-template-studio	imarketing	self	-
 md-tester	-	self	-
 metro-recovery	-	~/workspace/gravhl/GROUPS/backend/gravhl-mobile-rn/.claude/skills/metro-recovery	-
+mitosu-doc-import-skill	userglobal	~/workspace/mitosu/mitosu/skills/mitosu-doc-import-skill	-
 monitor	all	self	-
 notify	-	~/workspace/gravhl/GROUPS/backend/gravhl-code-factory/global/skills/chopper2/notify	-
 oracle	userglobal	self	-
