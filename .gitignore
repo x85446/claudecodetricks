@@ -66,3 +66,6 @@ __pycache__/
 
 # Per-project execution lease lock
 .claude/iterate/execution.lock
+
+# Per-project scratch installs (another project's testmaster binary landed here once); never tracked.
+.local/
