@@ -360,10 +360,55 @@ not report it. A TTL is lazy: the next read refreshes; a failed producer keeps
 the cached value, warns and exits 0, or exits 14 with nothing cached. An
 operator value (`fact set`) never expires. A replaced guest under the same name
 has its own cache (Incus keys include the instance UUID); `fact gc` drops the
-orphans.
+orphans. A static value in `[machine.<key>.facts]` is a definition value:
+answered from the merged definition, never stored.
+
+A read of a TTL-valid or operator value never walks the provider. The guest's
+identity comes from the running inventory daemon's snapshot of the remote, or
+from the state file's identity cache, either no older than the daemon's
+`stale_after` (default 1m), so the read costs about 0.2–0.4 s. A miss, a
+snapshot naming a different instance than the cache, or `--refresh` asks the
+provider; producing a value always binds it to the guest as the provider
+reports it now. izmachine forgets a cached identity when it creates, replaces
+or destroys the guest; one replaced outside izmachine is noticed by the
+daemon's next refresh or once the identity passes `stale_after`.
+
+`fact get <machine> <name>...` takes several names: the guest resolves once,
+the table prints one row per name with secrets masked, and `--format json`
+returns `{machine, facts}` keyed by name; one name keeps the single-record
+shape, and `--file` takes one name only (exit 2 otherwise).
+
+A fact's `publish` scope belongs to the global or project layer. `.izlocal`
+may unset it (`publish = ""`) but may not publish a fact no lower layer
+publishes, or point a published fact at another record; either exits 14
+naming the `.izlocal` line.
 
 Secrets: AES-256-GCM, master key in the OS keychain or
 `~/.izmachine/master.key` (0600; `IZMACHINE_MASTER_KEY_FILE` overrides,
 `IZMACHINE_FACTS_DIR` moves the cache). JSON masks them as `<secret>` unless
 `--reveal`; `fact get --file` writes 0600; `secret rotate` re-encrypts and
 resumes after an interruption. **Never put `--reveal` output in a transcript.**
+
+### The state file
+
+Fact values, the guest identities they belong to, and fetched directory
+function bodies live in one bbolt file, `~/.izmachine/state.db` (mode 0600),
+in three buckets: `facts`, `identity` and `functions`. The `state` setting
+selects another file (`IZMACHINE_STATE`, or `state` in `config.toml`), and
+`IZMACHINE_FACTS_DIR` relocates it to `<that directory>.state.db`. Every
+izmachine process opens the file for one operation and closes it; a process
+that finds it held for 2 s exits 1 naming the file. A function the definition
+pins by hash runs from its cached body for up to `stale_after` without a
+directory fetch; a cached body that fails its pin exits 14. Labels, locks, the
+pool ledger and the daemon's snapshot cache keep their own files.
+
+Read the store through two commands, never by opening the file:
+
+```sh
+izmachine state path --format json      # {path, exists}
+izmachine state export --format json    # {path, buckets:[{name,count,records:[{key,value}]}]}
+izmachine state export --reveal         # decrypt secret values — never in a transcript
+```
+
+`export` masks every secret as `<secret>` and carries no ciphertext unless
+`--reveal`.

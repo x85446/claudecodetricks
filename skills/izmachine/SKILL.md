@@ -242,7 +242,11 @@ reads `list`, `locks` and `top`. Four more root nouns ride on the .iz file's
 machines: `call` runs an attached function, `fact` reads and stores cached
 guest facts, `function` inspects the function library and the hosted
 directory, `secret` manages the key that encrypts secret facts; `login`
-stores a hosted-directory token. `definition` renders and edits the layered
+stores a hosted-directory token. `state` shows the state file that holds
+what izmachine observed — fact values, the guest identities they belong to
+and fetched directory function bodies — through `state path` and
+`state export`, the only way to read it (see
+[references/iz-files.md](references/iz-files.md#the-state-file)). `definition` renders and edits the layered
 definition stack itself (`global.iz`, the function libraries, `.iz`,
 `.izlocal`): `definition show --format json` answers "where did this value
 come from" and "what did my .izlocal override" through per-field `origins`,
@@ -317,7 +321,11 @@ Guest-naming commands carry `--provider` because
 | `izmachine provision --dry-run --format json -f machine.iz` | the provision steps and the `on = ["provision"]` functions that would run, running none |
 | `izmachine fact --format json` | the fact noun's four verbs |
 | `izmachine fact list dev --format json` | `facts[]` with `name`, `source`, `secret` and TTL metadata — never values; omit the machine for every machine the file defines |
-| `izmachine fact get dev ip --format json` | one cached fact, refreshed first when its `ttl` has lapsed; `--refresh` forces it, `--reveal` shows a secret instead of `<secret>`, `--file <path>` writes the value to a 0600 file |
+| `izmachine fact get dev ip --format json` | one cached fact, refreshed first when its `ttl` has lapsed; `--refresh` forces it, `--reveal` shows a secret instead of `<secret>`, `--file <path>` writes the value to a 0600 file. A TTL-valid or operator value never walks the provider: the guest identity comes from the running daemon's snapshot or the identity cache, each no older than the daemon's `stale_after` (default 1m), so the read costs about 0.2–0.4 s; a static `[machine.<key>.facts]` value is answered from the definition and never stored |
+| `izmachine fact get dev ip kubeconfig region --format json` | several names at once: the guest resolves once and the answer is `{machine, facts}` keyed by name, each a record (`value`, `source`, `observed_at`, `ttl`, `secret`), secrets masked unless `--reveal`; one name keeps the single-record shape; `--file` with several names is exit 2 |
+| `izmachine state --format json` | the state noun's two verbs |
+| `izmachine state path --format json` | `{path, exists}` for the state file — `~/.izmachine/state.db`, or the `state` setting (`IZMACHINE_STATE`, `state` in `config.toml`), or `<IZMACHINE_FACTS_DIR>.state.db` when facts are relocated |
+| `izmachine state export --format json` | `{path, buckets}` — every bucket of the state file (`facts`, `identity`, `functions`), each `{name, count, records: [{key, value}]}`, secrets as `<secret>` with no plaintext and no ciphertext; `--reveal` decrypts them. **The only sanctioned read of the store: never open the file.** A state file another process holds past 2 s exits 1 naming the file |
 | `izmachine function --format json` | the function noun's five verbs |
 | `izmachine function list dev --format json -f machine.iz` | the functions attached to a machine: effective triggers, `where`, origin layer |
 | `izmachine function search k3s --account ford.xyz --label role=k3s --os ubuntu --format json` | published directory functions matching the text and filters |
