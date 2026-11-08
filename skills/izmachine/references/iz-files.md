@@ -15,8 +15,14 @@ project and global layers; a bare verb (`izmachine up`, `down`, `info`,
 `validate`) acts on the project machines when a project file exists, else on
 the global ones. Inputs (`[[file]]` payloads, provision files) resolve relative
 to the file that defines the field. `validate --format json` and `info --format
-json` carry each machine's `source` (`{layer, path}`) and, for a project
-machine that hides a global one, `shadows` (the global `{layer, path}`);
+json` carry each machine's `source` (`{layer, path}`) and per-field `origins`:
+each names the winning assignment's `layer`, `path`, `origin`, `line`, `column`
+and `operator`; its `shadows` is a list, lowest first, of every lower
+assignment the winner displaced, each `{layer, path, line, column, operator,
+value}`; its `ignored` lists the assignments that never took effect — a `?=`
+that found the key set, or a personal value a `:=` kept out. Papyrus computes
+the merge and this provenance; `definition show --format json` returns the
+same origins for the whole stack (see [Viewing and editing the stack](#viewing-and-editing-the-stack));
 `izmachine config path --format json` lists `global.iz` under the `global`
 layer. A named file such as `backup.iz` is **never** a fallback: with no
 project file and no global file, every file-scoped command exits 14 naming
@@ -84,6 +90,64 @@ an absent value.
 contents) and `.izlocal`. Use it to prove the project file reproduces the
 intended definitions on a machine with no global layer — the reproducibility
 check before you call a `.iz` done.
+
+### Viewing and editing the stack
+
+`izmachine definition show [machine]` renders the stack the way the merge saw
+it. Papyrus records, for every field, the layer that won and every assignment
+it displaced; the three views are that record. Layer names are `default`,
+`library:<dir>` (one per `IZMACHINE_FUNCTION_PATH` directory that supplies
+functions), `global`, `personal`, `project` and `local`.
+
+| view | prints |
+|---|---|
+| `--view merged` (default) | the merged definition as plain Papyrus, ready to pipe into a file; it re-parses to the tree `validate` compiles |
+| `--view blame` | each assignment behind a gutter of layer and `file:line`, then `# was <value> <file>:<line> <op>` for every displaced lower assignment and `# ignored <op> <value> <file>:<line>` for one that never took effect; the text right of the gutter is still Papyrus |
+| `--view layers` | one row per field and one column per layer, lowest first, `★` on the winner and the operator beside a `?=` or `:=` value; below 110 columns the table shows the winner and its shadows and a note names `--format json` |
+
+`--layer <name>` prints one layer as parsed, operators included, without
+merging. Without a machine every machine the stack defines is printed. An
+unknown machine exits 14 naming the keys the stack defines; an unknown
+`--view` or `--layer` exits 2. `--format json` returns `machines[]` with
+`fields`, `layers` (`{name, path}` lowest first), per-field `origins` with the
+`shadows` chain and `ignored` list, `functions` (attached library functions
+with their own `origins`) and `detached_functions`. Definition files hold no
+secret values and the command never reads the fact store.
+
+For a project file whose `[machine.k3s-golden]` sets `provider`, `kind`, `os`
+and `image = "alpine:3.19"` on lines 2–5, with an `.izlocal` beside it setting
+`image = "alpine:3.20"`, `definition show k3s-golden --view blame` prints:
+
+```text
+project  .iz:2       provider = "docker"
+project  .iz:3       kind = "container"
+project  .iz:4       os = "alpine"
+local    .izlocal:2  image = "alpine:3.20"  # was "alpine:3.19" .iz:5 =
+```
+
+
+`izmachine definition edit <machine> [field]` changes exactly one layer.
+`--set <field>=<value>` writes the value into the winning layer's file through
+the Papyrus writer, which keeps every comment, blank line, key order and
+foreign table byte for byte; it repeats, and the edits apply atomically. The
+value is Papyrus: a quoted string, a number, `true`, a `[list]` or an
+`{ inline = "table" }`. `--layer local` sends a `--set` into `.izlocal` as an
+override instead. A field a library owns is read-only here; `--layer local`
+writes the override under the machine's own `functions.<name>`. `--format
+json` returns `edits[]` as `{field, value, file, layer, line}`. A value that
+does not parse, an unknown machine, a library-owned field without `--layer
+local`, or an unset `$EDITOR` without `--set` exits 14 and changes nothing;
+`--set` without `=` exits 2. With a field and no `--set`, `$EDITOR` opens the
+file of the layer that won it at that line; without a field it opens
+`.izlocal` at `[machine.<key>]`, creating the file and the header when absent.
+Editor mode is for humans; an agent passes `--set`.
+
+```sh
+izmachine definition show dev --view layers
+izmachine definition show --layer local
+izmachine definition edit dev --set 'image="alpine:3.20"'
+izmachine definition edit dev --set 'packages=["git"]' --layer local
+```
 
 ### Operators
 
