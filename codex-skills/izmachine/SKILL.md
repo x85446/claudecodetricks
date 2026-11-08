@@ -1,18 +1,13 @@
 ---
 name: "izmachine"
-description: "Use when a task needs a VM or container: choose where it runs by keeping a placement directive (needs or remote) in the project's .iz and letting izmachine rank compatible hosts, then create, run commands in, snapshot, clone, lock or destroy guests across all six providers (lume, lima, utm, container, docker, incus) and every registered remote. Triggers on \"run this on a linux box\", \"test it on windows\", \"check that on a mac VM\", \"spin up a VM\", \"make me a linux box\", \"I need a windows machine\", \"fresh mac VM\", \"give me a throwaway box to test on\", \"run this in a container\", \"ssh into the VM\", \"snapshot this VM\", \"roll it back\", \"clone that VM\", \"destroy the test VM\", \"what VMs do I have\", \"what guests are on this host\", \"is the provider ready\", \".iz file\", \"izmachine\"."
+description: "Use when a task needs a VM or container: choose where it runs by keeping a placement directive (needs or remote) in the project's .iz and letting izmachine rank compatible hosts, then create, run commands in, snapshot, clone, lock or destroy guests across all six providers (lume, lima, utm, container, docker, incus) and every registered remote. Also use for explicitly activated IZMachine capacity pools, native work requests and guest leases."
 ---
 
 
 # `izmachine` — VMs and containers, wherever they run
 
-The request: $ARGUMENTS
-
-## Usage
-
-Argument: <what you want, e.g. "a throwaway linux box called t1" or "run the test suite in dev1" or "destroy t1">. `$1` is its first word; `$ARGUMENTS` is the whole thing.
-
-<!-- codex-port: `argument-hint` has no Codex frontmatter home; folded into this Usage section. Argument substitution is documented for Codex custom prompts but not for skills, so the meaning is stated in prose rather than left to the token alone. -->
+Describe the guest, native host or capacity pool to operate, including its
+purpose and any explicit placement constraints.
 
 `izmachine` manages **guests** — VMs and containers — through one grammar, across six
 providers and every registered remote. Every command answers in JSON, so you
@@ -82,6 +77,16 @@ Inspect the live command and flag definitions before authoring a CLI invocation.
 Maintain this skill's reference with `make test-skill-parity` when that surface
 changes, including selector expressions and saved selectors when the binary
 supports them.
+
+## Capacity pools
+
+For a pool, read [references/pools.md](references/pools.md). Define its machine
+with the ordinary placement rules, then reference it from
+`[izmachine.pool.<name>]`. Registration captures a disabled revision; only
+`izmachine pool up` activates maintenance. Ordinary `up` does not activate pools.
+Use request IDs and generation claims from JSON, and inspect uncertain outcomes
+before retrying work. Check the live provider manifest for supported pool
+operations; native host support does not imply guest-backend certification.
 
 ## Remote selection
 
@@ -228,6 +233,7 @@ tree does not carry (`izmachine help list` documents every column character;
 ```
 izmachine [global flags] <command> [args] [flags]
 izmachine [global flags] direct <verb> [guest] [flags]
+izmachine [global flags] pool <verb> [identity] [flags]
 ```
 
 Per-guest verbs live under `direct`. The .iz-file commands — `init`, `up`,
@@ -246,7 +252,8 @@ Global flags: `--format table|json`, `--os <id|platform>`, `--provider <p>`,
 `--remote <selector>` (a name, @saved or comma-joined terms; repeat for a union),
 `--izfile <file>` (the project-layer .iz file the file-scoped commands read
 instead of `./.iz`; the user's `global.iz` sits beneath either), `--yes`,
-`-v/--verbose`, `-q/--quiet`, `--version`.
+`-v/--verbose`, `-q/--quiet`, `--version`, and `--lease <request-id>@<generation>`
+for mutations under a current pool acquisition.
 
 `--kind vm|container`, `--osversion <v>`, `--image`, `--cpus`, `--memory`,
 `--disk`, `--tag` and `--opt` are **`direct create` flags, not global ones** —
@@ -350,7 +357,7 @@ Guest-naming commands carry `--provider` because
 | `izmachine up --format json --izfile machine.iz` | every definition in the file, prerequisites first; one `results[]` row per machine (`up`, `failed` or `blocked`), nonzero exit if any did not come up |
 | `izmachine provision dev --format json -f machine.iz` | re-run the file's provision list on running machines, no recreate |
 | `izmachine ssh dev --format json -f machine.iz -- uname -a` | one command in a .iz machine, guest's exit code passed through |
-| `izmachine down --format json -f machine.iz` | stop every running machine the file defines; idempotent, never destroys |
+| `izmachine down --format json -f machine.iz` | apply each defined machine's teardown policy; the default stops it |
 | `izmachine destroy dev --yes --format json -f machine.iz` | destroy the machines the file defines; `--yes` required, refused while locked |
 | `izmachine up dev --recreate --format json -f machine.iz` | lifecycle override: destroy and build the guest fresh from the compiled definition, capturing a new baseline; `--restore[=tag]` puts it back on a snapshot without provisioning, `--reuse` starts what exists, `--snapshot=tag` names the baseline tag. The three modes are mutually exclusive (exit 2); a lock refuses recreate and restore (exit 11); `--dry-run` reports `lifecycle: {action, rule, source}` and touches nothing |
 | `izmachine down --destroy --format json -f machine.iz` | teardown override: destroy instead of the file's `on_down`; `--snapshot=tag` snapshots then stops; `--dry-run` reports the decision |
@@ -361,6 +368,37 @@ Guest-naming commands carry `--provider` because
 | `izmachine function publish fetchKubeconfig --public --format json` | push a library function to its directory record |
 | `izmachine secret rotate --format json` | re-encrypt every stored secret fact under a replacement master key; resumable |
 | `izmachine login ford.xyz --token <token> --format json` | store a hosted-directory account token; pass the token by flag from a secret store, never typed into a transcript |
+
+**Pool control — activation, requests and cleanup change state:**
+
+| invocation | effect |
+|---|---|
+| `izmachine pool --format json` | Read the pool command family |
+| `izmachine pool acquire build --request-id worker-42 --format json` | Request an exclusive guest lease |
+| `izmachine pool authority --format json` | Read the authority command family |
+| `izmachine pool authority list --format json` | Read claimed resource domains |
+| `izmachine pool authority release <domain> --yes --format json` | Release an authority after its pools and allocations drain |
+| `izmachine pool cancel build-42 --format json` | Cancel queued demand or request confirmed termination |
+| `izmachine pool destroy <allocation-id> --generation 1 --yes --format json` | Destroy an unoccupied retained allocation |
+| `izmachine pool down build --format json` | Disable demand and drain idle capacity |
+| `izmachine pool endpoint --format json` | Read the endpoint command family |
+| `izmachine pool endpoint list --format json` | Read explicit capacity owners |
+| `izmachine pool endpoint register build-host --format json` | Register an existing local or SSH remote as a capacity owner |
+| `izmachine pool endpoint remove build-host --format json` | Remove the explicit owner selection |
+| `izmachine pool prune <revision> --yes --format json` | Remove exact unused owned prepared images |
+| `izmachine pool recover <allocation-id> --generation 1 --format json` | Verify an uncertain unoccupied allocation without replaying work |
+| `izmachine pool register build --file machine.iz --format json` | Capture a disabled pool definition |
+| `izmachine pool release worker-42 --generation 1 --format json` | Release a current acquisition for lifecycle cleanup |
+| `izmachine pool renew worker-42 --generation 1 --format json` | Extend an unexpired current lease |
+| `izmachine pool request build-42 --format json` | Read durable request state and results |
+| `izmachine pool status build --format json` | Read capacity, occupancy, limits and diagnostics |
+| `izmachine pool submit build work --request-id build-42 --format json -- hello 37` | Submit an approved guest function |
+| `izmachine pool template --format json` | Read the template command family |
+| `izmachine pool template list --format json` | Read captured revisions |
+| `izmachine pool template prune <revision> --yes --format json` | Remove an unreferenced captured revision |
+| `izmachine pool template select build <revision> --format json` | Select a retained revision while the pool is disabled |
+| `izmachine pool unregister build --format json` | Forget a disabled pool after its resources drain |
+| `izmachine pool up build --format json` | Activate maintenance for a registered pool |
 
 <!-- command-index:end -->
 
@@ -424,6 +462,12 @@ UTM bundles both named `flamedev2` — so a name alone can act on the wrong one.
 Create with `--tag project=<slug>`, then find yours with
 `izmachine list --tag project=<slug> --format json` and act on the `identity`
 or the `remote:guest` form it reports.
+
+**Pool occupancy requires a current lease.** Inspect `izmachine pool request`
+and use its request ID and generation for a claimed mutation. Release or cancel
+through the pool owner so cleanup preserves shared accounting. An expired lease
+or low CPU does not establish that work ended; inspect `unknown` outcomes before
+retrying. Preserve provider instance identity and existing locks.
 
 **A Windows guest shell is PowerShell 5.1.** `&&` is a syntax error there;
 chain with `;` or separate `direct run` calls, and read `exit_code` from each.
@@ -495,6 +539,9 @@ Each loads only when read. Read the one the task needs.
 - [references/iz-files.md](references/iz-files.md) — `up` and the `.iz` file: the
   project and global layers, the `[machine]` keys (including `remote` and `needs`),
   dependencies, provisioning and lowering. Read before authoring or editing `./.iz`.
+- [references/pools.md](references/pools.md) — disabled registration, activation,
+  approved functions, leases, drain, revisions and explicit remote owners. Read
+  before operating a capacity pool.
 - [references/remotes.md](references/remotes.md) — addressing a guest on a remote,
   listing selectors, `remote find`, the directory file, the inventory daemon and
   its idle policy, and SSH hosts.
