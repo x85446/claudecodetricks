@@ -242,7 +242,12 @@ reads `list`, `locks` and `top`. Four more root nouns ride on the .iz file's
 machines: `call` runs an attached function, `fact` reads and stores cached
 guest facts, `function` inspects the function library and the hosted
 directory, `secret` manages the key that encrypts secret facts; `login`
-stores a hosted-directory token. See
+stores a hosted-directory token. `definition` renders and edits the layered
+definition stack itself (`global.iz`, the function libraries, `.iz`,
+`.izlocal`): `definition show --format json` answers "where did this value
+come from" and "what did my .izlocal override" through per-field `origins`,
+and `definition edit --set` writes one layer in place — see
+[references/iz-files.md](references/iz-files.md#viewing-and-editing-the-stack). See
 [references/iz-files.md](references/iz-files.md#lifecycle-functions-and-facts). `izmachine direct list` and `izmachine direct locks`
 are exit-2 stubs naming the root forms.
 
@@ -301,6 +306,10 @@ Guest-naming commands carry `--provider` because
 | `izmachine direct snapshot --format json` | the snapshot noun's four verbs |
 | `izmachine direct snapshot list <guest> --provider docker --format json` | a guest's snapshots; empty is exit 0, not an error |
 | `izmachine validate --format json -f machine.iz` | full compile diagnostics for every machine in the file, creating nothing |
+| `izmachine definition --format json` | the definition noun's two verbs |
+| `izmachine definition show dev --format json -f machine.iz` | `machines[]` with `fields` (the merged tree), `layers` (`{name,path}` lowest first: `default`, `library:<dir>`, `global`, `personal`, `project`, `local`), per-field `origins` (`layer`, `path`, `origin`, `line`, `column`, `operator`, `shadows[]` — displaced lower assignments, lowest first, each `{layer,path,line,column,operator,value}` — and `ignored[]`, assignments that never took effect), `functions` (attached library functions with their own `origins`) and `detached_functions`; omit the machine for every machine the stack defines; exit 14 names the keys on an unknown machine. Reads no secret values |
+| `izmachine definition show dev --view blame -f machine.iz` | human views, prose not JSON: `merged` (default; plain Papyrus that re-parses to the tree `validate` compiles), `blame` (a `<layer> <file>:<line>` gutter, then `# was <value> <file>:<line> <op>` per displaced assignment and `# ignored <op> <value> <file>:<line>`), `layers` (one column per layer, lowest first, `★` on the winner); an unknown `--view` is exit 2 |
+| `izmachine definition show --layer local --format json -f machine.iz` | one layer as parsed, operators included and nothing merged; `--layer` takes `default`, `library`, `global`, `personal`, `project` or `local`, anything else exit 2; `--bare` loads only the project file |
 | `izmachine info --format json -f machine.iz` | each machine the file defines: `{definition,guest,kind,os,provider,exists,running}` |
 | `izmachine up dev --dry-run --print-artifact --format json -f machine.iz` | what the file *would* build — `resolution`, `lowering`, `image_mapping`, `artifacts`, `notes` — building nothing |
 | `izmachine up --dry-run --format json --izfile machine.iz` | every definition's plan, prerequisites first: `{plan:[{order,definition,guest,remote,provider,after}]}` when there is more than one machine — building nothing |
@@ -361,6 +370,8 @@ Guest-naming commands carry `--provider` because
 | `izmachine up dev --recreate --format json -f machine.iz` | lifecycle override: destroy and build the guest fresh from the compiled definition, capturing a new baseline; `--restore[=tag]` puts it back on a snapshot without provisioning, `--reuse` starts what exists, `--snapshot=tag` names the baseline tag. The three modes are mutually exclusive (exit 2); a lock refuses recreate and restore (exit 11); `--dry-run` reports `lifecycle: {action, rule, source}` and touches nothing |
 | `izmachine down --destroy --format json -f machine.iz` | teardown override: destroy instead of the file's `on_down`; `--snapshot=tag` snapshots then stops; `--dry-run` reports the decision |
 | `izmachine call dev fetchKubeconfig --format json -f machine.iz -- --flag` | run a function attached to a machine, in the guest or on the host per its `where`; stdout comes back verbatim and the exit code passes through. A `where = "host"` function runs with Makefile trust |
+| `izmachine definition edit dev --set 'image="alpine:3.20"' --format json -f machine.iz` | write a Papyrus value (`'image="alpine:3.20"'`, `'packages=["git"]'`, `'labels={ role = "k3s" }'`) into the file of the layer that won the field, through the Papyrus writer — comments, blank lines, key order and foreign tables preserved byte for byte; `--set` repeats and the edits apply atomically; returns `edits[]` as `{field,value,file,layer,line}`. Exit 14 and nothing written on an unparsable value, a library-owned field or an unknown machine; `--set` without `=` is exit 2 |
+| `izmachine definition edit dev --set 'packages=["git"]' --layer local --format json -f machine.iz` | the same write as an override into `.izlocal` (created with its `[machine.<key>]` header when absent); the only way to change a field a library on `IZMACHINE_FUNCTION_PATH` owns. Without `--set` the verb opens `$EDITOR` on the owning layer's line — human mode; an agent always passes `--set`, and no `$EDITOR` without `--set` is exit 14 |
 | `izmachine fact set dev token --secret - --format json` | store a permanent operator fact (`-` reads the value from stdin); `--secret` encrypts it at rest |
 | `izmachine fact gc --format json` | drop cached facts whose guest identity is gone, only for providers whose inventory succeeded |
 | `izmachine function add izuma:ford.xyz/fetchKubeconfig@1 --project --format json` | pin a directory function into the personal library, or the project library with `--project` |
