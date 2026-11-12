@@ -5,7 +5,7 @@ description: "Never executes — the user runs $iterate for that. Triggers on \"
 
 # $iterate-planner
 
-**Version:** iterate family 5.31.0
+**Version:** iterate family 5.31.1
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -19,7 +19,14 @@ report format. Preserve the user's complete arguments.
 The workflow contains the execution steps, state schema, examples and constraints.
 Supporting procedures remain required when the workflow references them.
 
-Group related acceptance checkpoints into coherent execution plans. Justify each
-split, preserve every requirement and validation exactly once, and keep release
-publication distinct. `consolidate <plans…>` preserves completed history, rewrites
-dependencies together and validates the shared graph before staging.
+**One request makes one plan.** A planning request writes exactly one plan,
+however many numbered parts, surfaces or repos it names: the parts become steps,
+and their order is step order. A second plan exists only when the user asks for
+it ("new plan", "separate plans", "split this"), or when `$iterate-release` or
+`$product-iteratemilestones` asks for one.
+
+`consolidate <plans…>`, and only it, groups checkpoint-sized plans that
+already exist into coherent execution plans. It justifies each split, preserves
+every requirement and validation exactly once, keeps release publication
+distinct, preserves completed history, rewrites dependencies together and
+validates the shared graph before staging.

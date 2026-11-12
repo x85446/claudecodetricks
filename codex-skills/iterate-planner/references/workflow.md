@@ -747,6 +747,8 @@ correct way to bump.
 
 39. **Staging is a human act, and editing keeps it.** Only `stage`/`approve`/`queue` (op 4.5) writes `status: queued`, and only `unstage` removes it; an edit to a queued plan that has not started leaves the line in place and says nothing about it, because staging approved the plan's execution as the user and the AI refine it before launch. Never stage a plan on your own initiative — a fresh draft and a rolled successor start unstaged — never edit a plan that is executing or held by a live owner, and never refuse to stage a planned plan — the line is the user's authorization for an unattended launch, and nothing else is.
 
+40. **One request makes one plan.** Ops 9 and 10 write or refine exactly one plan. A request with numbered parts, several surfaces, several repos, or parts that depend on each other is still one plan: each part becomes steps, its dependency becomes step order, and a step that needs an earlier part's output validates against it. Different surfaces, sequential dependencies, a long step list and one-branch-per-surface tidiness are never reasons to split. A second plan is written only when the user's words ask for it, or for a release (op 8.7) or a milestone plans step; a part that turns out to be blocked mid-execution is rolled to a successor by `$iterate`, not pre-split here.
+
 ## Shared execution admission
 
 `depends:` gates named and unnamed launches in both executors. A typed plan name does not bypass an unfinished, unknown or cyclic prerequisite. Read `iterate-run plan graph --json` for readiness and order. List plans by `position` and `letter`, show `release`, `waiting_reason` and the project's `next`, and never derive sequence from animal names. Approved idle work can start through either executor. `iterate-run plan claim` alone grants execution ownership.
@@ -754,7 +756,8 @@ correct way to bump.
 ## Consolidate related checkpoints
 
 `consolidate <plans…>` groups checkpoint-sized plans into coherent execution
-plans. Apply this procedure both to requested realignment and initial generation.
+plans. Apply this procedure to a `consolidate` request and to the plans step of
+`$product-iteratemilestones`, never to an ordinary planning request (rule 40).
 Read every selected plan in full and its requirement documents before choosing
 boundaries. Keep shared lifecycle and implementation work together; separate only
 for independent delivery, a real dependency, distinct risk or an operational
