@@ -44,7 +44,7 @@ A requirement stated in plain language almost always specifies the happy path an
    - the **restore-state case** — what if the thing was already in the target state before the trigger? Restoring blindly can clobber the user's own setting
    - the **interrupted case** — the trigger starts and something aborts it (quit, error, crash) — is the state left correct?
 3. **Flag genuine ambiguity as a question, don't invent an answer.** When the requirement doesn't determine the expected result (the restore-state case usually doesn't), write the case with `expected: AMBIGUOUS — <the two candidate behaviors>` and surface it to the caller. The planner turns these into `Inferred:` decisions it logs; a human can overrule.
-4. **Write the specs** to `./.claude/testmaster/catalog.json` as a new requirement entry (see `$testmaster-catalog` for the schema): the requirement statement in the user's own words, plus one case per enumerated scenario with `id`, `given`, `when`, `then`, and `tier: "?"`.
+4. **Write the specs** to `./.claude/testmaster/catalog.json` as a new entry in `requirements[]`, its cases in that entry's `cases[]` (see `$testmaster-catalog` for the schema; never a flat top-level `cases[]`): the requirement statement in the user's own words, plus one case per enumerated scenario with `id`, `given`, `when`, `then`, and `tier: "?"`.
 5. **Report** to the caller: one line per case — `<id>: given <state>, when <trigger>, then <effect>` — with ambiguous ones marked, then one `not built:` line per long-running property (rule 6). Keep it to the case list; no commentary.
 
 ## Worked example

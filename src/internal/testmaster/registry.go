@@ -173,6 +173,9 @@ func (e Entry) MarshalJSON() ([]byte, error) {
 type plainRegistry Registry
 
 func (r *Registry) UnmarshalJSON(b []byte) error {
+	if t := bytes.TrimSpace(b); len(t) > 0 && t[0] == '[' {
+		return r.fromArray(t)
+	}
 	var p plainRegistry
 	if err := json.Unmarshal(b, &p); err != nil {
 		return err
@@ -183,6 +186,31 @@ func (r *Registry) UnmarshalJSON(b []byte) error {
 	}
 	*r = Registry(p)
 	r.extra = extra
+	return nil
+}
+
+// fromArray reads the legacy bare-array registry: a list of test objects,
+// each naming its registry id in `id`. The next save writes the object shape.
+func (r *Registry) fromArray(b []byte) error {
+	var raw []json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	*r = Registry{Schema: 1, Tests: map[string]*Entry{}}
+	for i, item := range raw {
+		var head struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal(item, &head); err != nil || head.ID == "" {
+			return fmt.Errorf("legacy array registry: entry %d has no \"id\"; give each entry an id or delete the file and run `testmaster suite discover`", i)
+		}
+		var e Entry
+		if err := json.Unmarshal(item, &e); err != nil {
+			return fmt.Errorf("legacy array registry: entry %q: %w", head.ID, err)
+		}
+		delete(e.extra, "id")
+		r.Tests[head.ID] = &e
+	}
 	return nil
 }
 

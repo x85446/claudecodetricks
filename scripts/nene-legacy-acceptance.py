@@ -55,7 +55,7 @@ def main():
             assert "status: queued" not in (project / "unstage.md").read_text()
             assert executing.read_bytes() == before, "executing plan changed"
             edited = (project / "edited.md").read_text()
-            assert "EXTRA" in edited and "status: queued" not in edited
+            assert "EXTRA" in edited and "status: queued" in edited, "an edit before execution must keep staging"
             assert not (project / "receipt.txt").exists(), "planning executed a step"
         else:
             assert (project / "receipt.txt").read_text().strip() == "PROVEN"

@@ -31,6 +31,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 - `$testmaster-derive` — ported.
 - `$testmaster-maintain` — ported.
 - `$testmaster-prune` — ported.
+- `$testmaster-register` — ported.
 - `$testmaster-run` — ported.
 
 ## The catalog
@@ -64,7 +65,9 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 }
 ```
 
-`test` is the **registry id** of the test that proves the case, exactly as `testmaster test list` prints it (`iterrun.TestStatus`, a pytest node id, `target::name`, a shell test's id), or a list of ids when several tests prove it together. A bare function name is not a link. `testmaster suite discover` reports every link that names no registered test as `UNLINKED <case> <test>`, and `/testmaster-register` repairs it. A case with no `test` is either not implemented yet (`unverified`) or proven by a recorded live check (`evidence`, `verified_by`, `verified_at`) that no registered test repeats.
+Every case lives under a requirement's `cases`, and `test` is singular: write only this shape. The binary also reads a flat top-level `cases[]` and a `tests` key, so a catalog in that shape still stamps and reports links, but `$testmaster-catalog` rewrites it into the nested shape on its next pass.
+
+`test` is the **registry id** of the test that proves the case, exactly as `testmaster test list` prints it (`iterrun.TestStatus`, a pytest node id, `target::name`, a shell test's id), or a list of ids when several tests prove it together. A bare function name is not a link. `testmaster suite discover` reports every link that names no registered test as `UNLINKED <case> <test>`, and `$testmaster-register` repairs it. A case with no `test` is either not implemented yet (`unverified`) or proven by a recorded live check (`evidence`, `verified_by`, `verified_at`) that no registered test repeats.
 
 ## Validity states — this is what makes tests go valid and invalid with each change
 

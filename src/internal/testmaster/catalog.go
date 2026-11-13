@@ -27,7 +27,8 @@ func (p *Project) readCatalog() (map[string]any, error) {
 	return cat, nil
 }
 
-// catalogCases returns every case object, in catalog order.
+// catalogCases returns every case object, in catalog order: the nested
+// `requirements[].cases[]`, then any flat top-level `cases[]`.
 func catalogCases(cat map[string]any) []map[string]any {
 	var out []map[string]any
 	reqs, _ := cat["requirements"].([]any)
@@ -40,13 +41,23 @@ func catalogCases(cat map[string]any) []map[string]any {
 			}
 		}
 	}
+	flat, _ := cat["cases"].([]any)
+	for _, c := range flat {
+		if cs, ok := c.(map[string]any); ok {
+			out = append(out, cs)
+		}
+	}
 	return out
 }
 
 // caseTests returns the registry ids a case's `test` names: one id, or a
 // list when several tests back the case together.
 func caseTests(cs map[string]any) []string {
-	switch v := cs["test"].(type) {
+	v := cs["test"]
+	if v == nil {
+		v = cs["tests"]
+	}
+	switch v := v.(type) {
 	case string:
 		if v != "" {
 			return []string{v}
