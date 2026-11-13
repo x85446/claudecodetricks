@@ -338,7 +338,10 @@ daemon's lifetime). `match = { os, kind, provider, labels }` is eligibility
 only — **matching never attaches**. A machine attaches with
 `functions = ["name"]`; `attach = "auto"` attaches to every eligible machine
 and `functions -= ["name"]` detaches one. `[machine.<key>.functions.<name>]`
-declares a machine-local function or narrows a library one's triggers.
+declares a machine-local function or narrows a library one's triggers; a
+table that narrows a library function may set only `on`. A function name is
+letters, digits, `-` and `_`, starting with a letter. Two attached functions
+that produce the same fact need that fact's table to name `from`.
 Libraries merge from `IZMACHINE_FUNCTION_PATH` directories, `global.iz`, the
 project file and `.izlocal`; `--bare` excludes the external layers. Dry runs
 execute no function.
