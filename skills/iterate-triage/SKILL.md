@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, then asks which fixes to queue. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: "[fix all [<plan>]]"
-version: 5.32.0
+version: 5.33.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -72,7 +72,7 @@ Nothing before, between, or after, until the questions.
 
 Plan every route before the list is shown, so each line is a promise triage
 can keep. Then ask about each problem, in list order, with `AskUserQuestion`:
-up to four questions per call, header `Fix N`, options `y` and `n`.
+up to four questions per call, header `Fix N`, options `y`, `n` and `yr`.
 
 Each question opens with a plain-language explanation of two or three short
 sentences, then the ask. The list line is shorthand for someone who knows the
@@ -85,22 +85,28 @@ plan names, branch names, step numbers or internal terms (`park`, `drift`,
 3. The storage test has failed five times, and nobody knows why. Saying yes
    writes a short plan that only investigates and reports the cause, with a
    time limit. Saying no leaves the storage upgrade stuck.
-   queue this fix?
+   queue this fix? y/n/yr
 ```
+
+`yr` is yes plus a report: queue the fix, and also tell claudecodetricks that
+the run should never have blocked on this or broken it, so something in the
+/iterate-planner or /iterate instructions pushed the executor there. Every
+question offers it, the `You can fix` ones included.
 
 - `I can fix`: `<explanation> N. queue this fix?`
 - `You can fix`: `<explanation> N. queue this fix in script?`
 - A choice asks the choice itself — its options (`land`, `drop`) plus `n`,
-  and the explanation says what each option leads to.
+  and the explanation says what each option leads to. A typed `<option> r`
+  (`land r`) is that option plus the report.
 
 Every question keeps its `Type something.` row, where the user answers
 anything that is not on the list. **Never give an option a `preview`:** a
 single-select question with one renders side by side, and that layout has no
 `Type something.` row. Put the route in the option's `description` instead.
 
-Without `AskUserQuestion`, print the explanation and `queue this fix? y/n` (or
-`queue this fix in script? y/n`) under each line and end the turn; read the reply's answers in
-list order (`y n y y n y y`). `fix all [<plan>]` answers `y` to every question
+Without `AskUserQuestion`, print the explanation and `queue this fix? y/n/yr`
+(or `queue this fix in script? y/n/yr`) under each line and end the turn; read
+the reply's answers in list order (`y n yr y n y y`). `fix all [<plan>]` answers `y` to every question
 for that plan's problems, or every problem, and asks only the choices.
 
 Once every answer is in, without another word:
@@ -114,8 +120,34 @@ Once every answer is in, without another word:
    `open <url|file>` plus one echoed instruction. Nothing in it reads stdin — a
    `!` command has no terminal. Run `bash -n` on it, run its read-only parts,
    then put one line on the clipboard: `printf 'bash %s' "$script" | pbcopy`.
-3. **Answer** with one line per failed fix — `N failed at <where>: <error>` —
-   then, when the script exists, exactly:
+3. **Send one report per `yr`** to claudecodetricks, after its fix has run, as
+   an inform through the mailbox:
+
+   ```bash
+   python3 ~/.claude/skills/mailbox/scripts/mbx.py msg send --to claudecodetricks --kind inform \
+     --title "iterate blocked on <problem> in <project>; it should not have" <<'EOF'
+   ## Problem
+   <the plan> stopped on, or broke, <problem>. The operator judges that a
+   run should have carried this through, so an instruction in
+   /iterate-planner or /iterate encouraged the stop.
+   ## Evidence
+   <plan file path, the step and its checkbox state, the blocked or park
+   reason quoted verbatim, the branch, a commit sha of 12+ characters, the
+   log lines that show the stop, and the fix triage ran and its result>
+   ## Needed
+   Find the planner or executor instruction that led the run to stop or
+   break here, and rewrite it so the same situation runs through.
+   ## Done when
+   A run that meets the same situation finishes it without operator help.
+   EOF
+   ```
+
+   Evidence is what triage saw. Prefix anything it reasoned out with
+   `inferred:`, including its guess at which instruction is to blame. Send the
+   report even when the fix failed, and say so in `## Evidence`.
+4. **Answer** with one line per failed fix — `N failed at <where>: <error>` —
+   then one `→ sent claudecodetricks: <title>` line per report, then, when the
+   script exists, exactly:
 
    ```
    your queued fixes are now on the clipboard.  run them with "! <paste>"
