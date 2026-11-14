@@ -2,7 +2,7 @@
 name: iterate-triage
 description: Walk up to a stale terminal and find out what's going on in one short answer. Reads the real state — plans, branch, uncommitted work, blockers — and reports only what is broken, then asks which fixes to queue. Use when the status line shows a feature branch instead of "main ✔", when a plan looks stuck, or when you've been away and don't remember where you left off.
 argument-hint: "[fix all [<plan>]]"
-version: 5.31.1
+version: 5.32.0
 ---
 
 <!-- version: FAMILY version, shared by every iterate skill — never bump this file alone. `skillctl family iterate set X.Y.Z` stamps all members at once; drift between them is a defect, not a state. -->
@@ -74,17 +74,32 @@ Plan every route before the list is shown, so each line is a promise triage
 can keep. Then ask about each problem, in list order, with `AskUserQuestion`:
 up to four questions per call, header `Fix N`, options `y` and `n`.
 
-- `I can fix`: `N. queue this fix?`
-- `You can fix`: `N. queue this fix in script?`
-- A choice asks the choice itself — its options (`land`, `drop`) plus `n`.
+Each question opens with a plain-language explanation of two or three short
+sentences, then the ask. The list line is shorthand for someone who knows the
+project; the explanation is for someone who does not. It says what is wrong,
+what the fix does, and what stays stuck on `n`. It uses everyday words: no
+plan names, branch names, step numbers or internal terms (`park`, `drift`,
+`gate`, `inbox`) without a few words saying what they are.
+
+```
+3. The storage test has failed five times, and nobody knows why. Saying yes
+   writes a short plan that only investigates and reports the cause, with a
+   time limit. Saying no leaves the storage upgrade stuck.
+   queue this fix?
+```
+
+- `I can fix`: `<explanation> N. queue this fix?`
+- `You can fix`: `<explanation> N. queue this fix in script?`
+- A choice asks the choice itself — its options (`land`, `drop`) plus `n`,
+  and the explanation says what each option leads to.
 
 Every question keeps its `Type something.` row, where the user answers
 anything that is not on the list. **Never give an option a `preview`:** a
 single-select question with one renders side by side, and that layout has no
 `Type something.` row. Put the route in the option's `description` instead.
 
-Without `AskUserQuestion`, print `queue this fix? y/n` (or `queue this fix in
-script? y/n`) under each line and end the turn; read the reply's answers in
+Without `AskUserQuestion`, print the explanation and `queue this fix? y/n` (or
+`queue this fix in script? y/n`) under each line and end the turn; read the reply's answers in
 list order (`y n y y n y y`). `fix all [<plan>]` answers `y` to every question
 for that plan's problems, or every problem, and asks only the choices.
 

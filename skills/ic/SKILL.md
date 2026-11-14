@@ -3,7 +3,7 @@ name: ic
 description: Alias for /iterate-conductor; controls the binary conductor with the same request and scope.
 argument-hint: <same arguments as /iterate-conductor>
 disable-model-invocation: true
-version: 5.31.1
+version: 5.32.0
 ---
 
 # /ic — conductor alias
