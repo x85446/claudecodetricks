@@ -15,8 +15,12 @@
 #             unit, and a plan stamped "iterate 5.0.0" says which era of the
 #             WHOLE stack built it — which is the useful fact. Per-skill
 #             versions could not express that.
+# bundle      optional: files copied into the installed skill from outside
+#             its folder, as <path in skill>=<source file>, comma-separated,
+#             or "-". For an owner that keeps a skill's helper at its repo
+#             root, so the installed copy runs on its own.
 #
-#name	targets	owner	family
+#name	targets	owner	family	bundle
 -check-images	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-check-images	-
 -image-fetcher	-	~/workspace/x85446/financeSheets/personaldb/.claude/skills/-image-fetcher	-
 -pdfify	-	self	-
@@ -221,3 +225,5 @@ uxmaster-web	userglobal	self	-
 uxmaster-windows	userglobal	self	-
 window-schedule	houses	self	-
 zot-populate	-	~/workspace/gravhl/GROUPS/backend/.claude/skills/zot-populate	-
+hive-cards	gravbackend,gravbackendcodex	~/workspace/gravhl/GROUPS/backend/gravhl-hive-mind/.agents/skills/hive-cards	-	scripts/hive-store.py=~/workspace/gravhl/GROUPS/backend/gravhl-hive-mind/hive-store.py
+hive-store	gravbackend,gravbackendcodex	~/workspace/gravhl/GROUPS/backend/gravhl-hive-mind/.agents/skills/hive-store	-	scripts/hive-store.py=~/workspace/gravhl/GROUPS/backend/gravhl-hive-mind/hive-store.py

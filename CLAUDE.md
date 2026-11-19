@@ -144,7 +144,7 @@ health check is one line and ~40 characters.
 
 ```bash
 skills/skillctl status [-v]     # skills N stale N broken N no-source N
-skills/skillctl sync [--apply]  # install everything stale
+skills/skillctl sync [--apply] [--mirrored]  # install everything stale (--mirrored: owner-repo skills only)
 skills/skillctl install <name>… # install to mapped targets
 skills/skillctl where <name>…   # targets + owner
 skills/skillctl why <name>…     # source, ownership,each target and its path
@@ -153,7 +153,7 @@ skills/skillctl targets         # symbolic target -> path
 ```
 
 **`skills/skillmap.tsv` is the single source of truth** for "installed where and
-why" — `name`, `targets`, `owner`, `family`. Nothing else records a skill's
+why" — `name`, `targets`, `owner`, `family`, `bundle`. Nothing else records a skill's
 targets or owner. `skillinstall.sh` is a thin human-facing shim over
 `skillctl`, not a second implementation.
 
@@ -166,6 +166,19 @@ No other project's session writes, restructures or ports a skill; one that
 needs a skill change sends claudecodetricks a request.
 `targets` of `-` means backup-only: registered so it is backed up, never
 deployed. That is the normal state for most adopted skills, not a problem.
+
+A mirrored skill installs straight from its owner path, so an owner change
+reads as `stale` until it is pushed. The nightly job
+(`skills/skill-2-codex/scripts/daily-sync.sh`) runs `skillctl sync --apply
+--mirrored`, and a typed request ("push the hive skills") runs `skillctl install
+<name>…`. `bundle` (`<path in skill>=<source file>`) copies a helper the owner
+keeps outside the skill folder into every install: `hive-cards` and
+`hive-store`, owned by `gravhl-hive-mind`, ship its root `hive-store.py` as
+`scripts/hive-store.py` to the gravhl backend group (`gravbackend` for Claude
+Code, `gravbackendcodex` for Codex). A target is a directory a session starts
+in. Neither Claude Code nor Codex reads skills from a parent of the project
+directory, so a group of repos gets a skill only by installing it into each
+target.
 
 **`sync` refuses to push over a target that is newer than its source** unless
 `--force`. Installing is a one-way push, so a newer target means someone edited
