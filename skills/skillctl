@@ -15,12 +15,14 @@ So the contract here is inverted:
     opt-in with -v, so the common check costs a handful of tokens.
   - ONE CALL ANSWERS THE QUESTION. No follow-up greps to interpret a result.
 
-Source of truth is skills/skillmap.tsv (name, targets, owner).
+Source of truth is skills/skillmap.tsv (name, targets, owner, family, bundle).
 
 Verbs:
   status [-v]        one-line health; -v adds one line per problem
-  sync [--apply]     install every skill whose target copy is stale; refuses
-                     any target NEWER than its source unless --force
+  sync [--apply] [--mirrored]
+                     install every skill whose target copy is stale; refuses
+                     any target NEWER than its source unless --force;
+                     --mirrored limits it to skills another repo owns
   install <name>...  install named skills to their mapped targets
   where <name>...    targets + owner
   why <name>...      why it is installed where it is
@@ -76,7 +78,17 @@ def load():
         name, tgt, owner = parts[0], parts[1], parts[2]
         fam = parts[3] if len(parts) > 3 and parts[3] != "-" else None
         rows[name] = ([] if tgt == "-" else tgt.split(",")), owner, fam
+        if len(parts) > 4 and parts[4] != "-":
+            BUNDLE[name] = {rel: os.path.expanduser(path) for rel, path in
+                            (e.split("=", 1) for e in parts[4].split(","))}
     return rows
+
+
+# name -> {path inside the installed skill: source file}, from skillmap's
+# bundle column. A skill whose owner keeps a helper outside the skill folder
+# (hive-cards runs the hive-mind repo's root hive-store.py) ships with that
+# file copied in, so the installed copy runs on its own.
+BUNDLE = {}
 
 
 def src_of(name, owner):
@@ -88,10 +100,15 @@ def src_of(name, owner):
     return f"{REG}/{name}"
 
 
-def differs(src, dst):
+def differs(src, dst, bundle=None):
     """Tracked files only — runtime state living in dst alone is not drift."""
     if not os.path.isdir(dst):
         return True
+    for rel, f in (bundle or {}).items():
+        d = os.path.join(dst, rel)
+        if not os.path.exists(d) or subprocess.run(
+                ["diff", "-q", f, d], capture_output=True).returncode:
+            return True
     for root, _, files in os.walk(src):
         for f in files:
             if f in RUNTIME:
@@ -105,7 +122,7 @@ def differs(src, dst):
     return False
 
 
-def install_one(name, src, dst_root):
+def install_one(name, src, dst_root, bundle=None):
     """Atomic publish: stage outside the scanned root, rename SKILL.md in last.
 
     A scanner reading dst mid-install must never see a directory without a
@@ -121,6 +138,11 @@ def install_one(name, src, dst_root):
                         symlinks=True, ignore_dangling_symlinks=True)
         if not os.path.exists(f"{stage}/{name}/SKILL.md"):
             return "no-skill-md"
+        for rel, f in (bundle or {}).items():
+            if not os.path.isfile(f):
+                return f"bundle source missing: {f.replace(H, '~')}"
+            os.makedirs(os.path.dirname(f"{stage}/{name}/{rel}"), exist_ok=True)
+            shutil.copy2(f, f"{stage}/{name}/{rel}")
         for junk in (".origin", ".portstamp"):
             j = f"{stage}/{name}/{junk}"
             if os.path.exists(j):
@@ -155,10 +177,12 @@ def target_is_newer(src, dst):
     return os.path.getmtime(b) > os.path.getmtime(a) + 2
 
 
-def stale(rows, tmap):
+def stale(rows, tmap, mirrored=False):
     """[(name, target, path, src, newer)] for every mapped copy out of date."""
     out = []
     for name, (tgts, owner, _fam) in sorted(rows.items()):
+        if mirrored and owner == "self":
+            continue
         src = src_of(name, owner)
         if not os.path.exists(f"{src}/SKILL.md"):
             continue
@@ -167,7 +191,7 @@ def stale(rows, tmap):
             if not root:
                 continue
             dst = f"{root}/{name}"
-            if differs(src, dst):
+            if differs(src, dst, BUNDLE.get(name)):
                 out.append((name, t, root, src, target_is_newer(src, dst)))
     return out
 
@@ -179,7 +203,8 @@ def cmd_status(args):
     broken = [d for d in glob.glob(f"{H}/.claude/skills/*/") + glob.glob(f"{H}/.agents/skills/*/")
               if not os.access(f"{d}/SKILL.md", os.R_OK) and not harness_store(d)]
     missing_src = [n for n, (t, o, _f) in rows.items()
-                   if not os.path.exists(f"{src_of(n, o)}/SKILL.md")]
+                   if not os.path.exists(f"{src_of(n, o)}/SKILL.md")
+                   or not all(os.path.isfile(f) for f in BUNDLE.get(n, {}).values())]
     print(f"skills\t{len(rows)}\tstale\t{len(st)}\tbroken\t{len(broken)}\tno-source\t{len(missing_src)}")
     if v:
         for n, t, _, _, newer in st:
@@ -194,7 +219,7 @@ def cmd_status(args):
 
 def cmd_sync(args):
     rows, tmap = load(), targets_map()
-    st = stale(rows, tmap)
+    st = stale(rows, tmap, "--mirrored" in args)
     if not st:
         return 0                      # silent: nothing to do
     if "--apply" not in args:
@@ -211,7 +236,7 @@ def cmd_sync(args):
             print(f"SKIP\t{n}\t{t}\ttarget is newer — pull it back or pass --force")
             bad = 1
             continue
-        err = install_one(n, src, root)
+        err = install_one(n, src, root, BUNDLE.get(n))
         print(f"{'FAIL' if err else 'installed'}\t{n}\t{root.replace(H,'~')}"
               + (f"\t{err}" if err else ""))
         bad += bool(err)
@@ -234,7 +259,7 @@ def cmd_install(args):
             root = tmap.get(t)
             if not root:
                 print(f"FAIL\t{n}\t{t}\tunknown target"); bad = 1; continue
-            err = install_one(n, src, root)
+            err = install_one(n, src, root, BUNDLE.get(n))
             print(f"{'FAIL' if err else 'installed'}\t{n}\t{root.replace(H,'~')}"
                   + (f"\t{err}" if err else ""))
             bad += bool(err)
@@ -261,6 +286,8 @@ def cmd_why(args):
         print(f"{n}\tsource\t{src.replace(H,'~')}")
         print(f"{n}\towner\t" + ("authored here" if owner == "self"
               else f"mirrored from {owner} — edit it there, not here"))
+        for rel, f in BUNDLE.get(n, {}).items():
+            print(f"{n}\tbundle\t{rel}\t{f.replace(H,'~')}")
         if fam:
             print(f"{n}\tfamily\t{fam} — shares the family version, never bumped alone")
         if not tgts:
