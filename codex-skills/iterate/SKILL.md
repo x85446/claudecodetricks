@@ -5,7 +5,7 @@ description: Use when given a multi-step task with validation criteria and asked
 
 # $iterate
 
-**Version:** iterate family 5.33.0
+**Version:** iterate family 5.34.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -19,8 +19,12 @@ report format. Preserve the user's complete arguments.
 The workflow contains the execution steps, state schema, examples and constraints.
 Supporting procedures remain required when the workflow references them.
 
-Whole-plan admission uses `iterate-run plan claim <name> --owner cli --pid <session-pid>`.
-Read `iterate-run plan graph --json` for the sole ready plan, its prerequisites
-and execution order. A typed name obeys dependencies. Only a live owner excludes
-the other executor. Use `plan heartbeat`, `plan release` and `plan reconcile`;
-preserve checkpoint evidence and an alive owned child.
+Whole-plan admission uses `iterate-run plan claim <name>`, which binds the plan
+to this thread. Read `iterate-run plan graph --json` for the sole ready plan, its
+prerequisites and execution order. A typed name obeys dependencies. Only a live
+owner excludes the other executor, and `iterate-run plan owner` says whether a
+claim is driven. Use `plan heartbeat`, `plan wait`, `plan release` and
+`plan reconcile`; preserve checkpoint evidence and an alive owned child.
+
+The thread's Goal carries the run: the executor creates it at claim time and
+marks it complete when the plan is released in a terminal state. Schedule nothing.
