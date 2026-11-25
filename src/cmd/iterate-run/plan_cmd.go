@@ -24,8 +24,8 @@ type planFlags struct {
 }
 
 var (
-	planValued  = map[string]bool{"format": true, "project": true, "color": true, "owner": true, "pid": true, "child-pid": true}
-	planBoolean = map[string]bool{"check": true, "json": true, "apply": true, "help": true, "no-color": true}
+	planValued  = map[string]bool{"format": true, "project": true, "color": true, "owner": true, "pid": true, "child-pid": true, "session": true, "for": true, "minutes": true}
+	planBoolean = map[string]bool{"check": true, "json": true, "apply": true, "help": true, "no-color": true, "force": true}
 	planShort   = map[string]string{"-C": "project", "-h": "help"}
 )
 
@@ -120,7 +120,7 @@ func runPlanCLI(args []string, out, diag io.Writer, now time.Time) int {
 	if err != nil {
 		return planUsageError(diag, err.Error(), "See the flags with: iterate-run plan --help")
 	}
-	if len(f.words) > 0 && (f.words[0] == "claim" || f.words[0] == "heartbeat" || f.words[0] == "release" || f.words[0] == "reconcile") && !f.bools["help"] {
+	if len(f.words) > 0 && (f.words[0] == "claim" || f.words[0] == "heartbeat" || f.words[0] == "release" || f.words[0] == "reconcile" || f.words[0] == "wait" || f.words[0] == "owner") && !f.bools["help"] {
 		return runPlanOwnership(f, out, diag, now)
 	}
 	if len(f.words) >= 2 && f.words[0] == "order" && !f.bools["help"] {
@@ -440,9 +440,12 @@ func planHelp(w io.Writer) {
 
 Usage:
   iterate-run plan <command> [flags]
-  iterate-run plan claim <name> --owner <cli|conductor> --pid <pid> [--json]
-  iterate-run plan heartbeat|release <name> [--json]
+  iterate-run plan claim <name> [--owner <cli|conductor>] [--pid <pid>] [--json]
+  iterate-run plan heartbeat <name> [--child-pid <pid>] [--json]
+  iterate-run plan wait <name> --for <what> [--minutes <n>] [--json]
+  iterate-run plan release <name> [--force] [--json]
   iterate-run plan reconcile [<name>] [--json]
+  iterate-run plan owner [<name>] [--json]
   iterate-run plan order show|set [<names...>] [--json]
 
 Examples:
@@ -453,18 +456,24 @@ Examples:
   iterate-run plan depends backfill --apply       # write them
 
 Commands:
-  claim               atomically claim a ready plan for a live session
-  heartbeat           refresh the execution owner's heartbeat
-  release             release an execution owner
-  reconcile           finish dead leases and preserve checkpoint evidence
+  claim               atomically claim a ready plan for this session; the same session claims again freely
+  heartbeat           refresh the claim; only the session that holds it can
+  wait                declare that work this session started continues elsewhere, so its turn may end
+  release             release the claim this session holds and print the state the plan is left in
+  reconcile           finish claims nobody is driving and preserve checkpoint evidence
+  owner               report each claim: who holds it, whether it is driven, the evidence and its age
   order show|set      inspect or set stable execution positions
   graph               print the plan graph: each plan, its state, what it waits on
   depends backfill    derive depends: lines from milestones and Depends on prose
 
 Global flags:
   -C, --project <dir>         project directory (default .)
-      --owner <kind>          claim: cli or conductor
-      --pid <pid>             claim: long-lived session process PID
+      --owner <kind>          claim: cli (default) or conductor
+      --pid <pid>             claim: the owning process, when the runtime exports none
+      --session <id>          the calling session, when the runtime exports none
+      --for <what>            wait: what the plan waits for
+      --minutes <n>           wait: how long, up to the busy window (default)
+      --force                 release: an operator releases a claim it does not hold
       --json                  machine-readable result
       --color <when>          auto, always or never (default auto)
       --no-color              same as --color never
@@ -538,7 +547,7 @@ func runPlanOwnership(f planFlags, out, diag io.Writer, now time.Time) int {
 	if len(f.words) > 1 {
 		name = f.words[1]
 	}
-	if len(f.words) > 2 || (name == "" && verb != "reconcile") {
+	if len(f.words) > 2 || (name == "" && verb != "reconcile" && verb != "owner") {
 		return planUsageError(diag, "plan name required", "Run: iterate-run plan "+verb+" <name>")
 	}
 	project := f.values["project"]
@@ -547,6 +556,10 @@ func runPlanOwnership(f planFlags, out, diag io.Writer, now time.Time) int {
 	}
 	var value any
 	var err error
+	caller := planCaller()
+	if v := f.values["session"]; v != "" {
+		caller.Session = v
+	}
 	childPID := 0
 	if raw := f.values["child-pid"]; raw != "" {
 		var e error
@@ -555,18 +568,65 @@ func runPlanOwnership(f planFlags, out, diag io.Writer, now time.Time) int {
 			return planUsageError(diag, "--child-pid requires a positive PID with heartbeat", "Run: iterate-run plan heartbeat "+name+" --child-pid <pid>")
 		}
 	}
-	if verb == "claim" {
-		pid, e := strconv.Atoi(f.values["pid"])
-		if e != nil {
-			return planUsageError(diag, "--pid requires the owning process PID", "Run: iterate-run plan claim "+name+" --owner cli --pid <pid>")
+	text := verb + " " + name
+	switch verb {
+	case "claim":
+		if raw := f.values["pid"]; raw != "" {
+			pid, e := strconv.Atoi(raw)
+			if e != nil || pid <= 0 {
+				return planUsageError(diag, "--pid requires the owning process PID", "Run: iterate-run plan claim "+name+" --owner cli")
+			}
+			caller.PID = pid
 		}
-		value, err = iterrun.ClaimPlan(project, name, f.values["owner"], pid, now)
-	} else {
-		err = iterrun.UpdatePlanOwnership(project, name, verb, now)
+		if caller.Session == "" && caller.PID <= 0 {
+			return planUsageError(diag, "claim found no session identity and no --pid", "Run it from a Claude Code or Codex session, or pass --pid <pid>")
+		}
+		owner := f.values["owner"]
+		if owner == "" {
+			owner = "cli"
+		}
+		if owner == "conductor" {
+			// The Conductor claims as its own process, never as a session.
+			caller.Session = ""
+		}
+		value, err = iterrun.ClaimPlanAs(project, name, owner, caller, now)
+	case "owner":
+		var claims []iterrun.ExecutionOwner
+		claims, err = iterrun.ProjectClaims(project, now)
+		if name != "" {
+			kept := claims[:0]
+			for _, c := range claims {
+				if c.Plan == name {
+					kept = append(kept, c)
+				}
+			}
+			claims = kept
+		}
+		value = claims
+		text = ownerText(claims, now)
+	case "wait":
+		minutes, _ := strconv.Atoi(f.values["minutes"])
+		var until time.Time
+		until, err = iterrun.DeclareWait(project, name, f.values["for"], time.Duration(minutes)*time.Minute, caller, now)
+		value = map[string]string{"plan": name, "operation": verb, "for": f.values["for"], "until": until.UTC().Format(time.RFC3339)}
+		text = fmt.Sprintf("waiting %s until %s: %s", name, until.UTC().Format(time.RFC3339), f.values["for"])
+	default:
+		var receipt iterrun.ReleaseReceipt
+		receipt, err = iterrun.UpdatePlanOwnershipAs(project, name, verb, caller, f.bools["force"], now)
 		if err == nil && childPID > 0 {
-			err = iterrun.AttachPlanOwnerChild(project, name, childPID)
+			err = iterrun.AttachPlanOwnerChildAs(project, name, childPID, caller, now)
 		}
-		value = map[string]string{"plan": name, "operation": verb}
+		value = receipt
+		if verb == "release" {
+			word := "terminal"
+			if !receipt.Terminal {
+				word = "not-terminal"
+			}
+			text = fmt.Sprintf("released %s %s (%s)", name, word, receipt.State)
+		}
+		if receipt.Note != "" {
+			fmt.Fprintln(diag, "Note:", receipt.Note)
+		}
 	}
 	if err != nil {
 		fmt.Fprintln(diag, "Error:", err)
@@ -575,9 +635,50 @@ func runPlanOwnership(f planFlags, out, diag io.Writer, now time.Time) int {
 	if f.bools["json"] {
 		_ = json.NewEncoder(out).Encode(value)
 	} else {
-		fmt.Fprintf(out, "%s %s\n", verb, name)
+		fmt.Fprintln(out, text)
 	}
 	return 0
+}
+
+// planCaller reads who is invoking an ownership verb. A test replaces it so
+// the session that happens to run the suite never leaks into a case.
+var planCaller = iterrun.CallerFromEnv
+
+// ownerText renders each claim as one line: who holds it, what the
+// coordinator is doing, the evidence and its age, and the next action when
+// nobody is driving it.
+func ownerText(claims []iterrun.ExecutionOwner, now time.Time) string {
+	if len(claims) == 0 {
+		return "no claim"
+	}
+	var b strings.Builder
+	for i, c := range claims {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		word := "not driven"
+		switch {
+		case c.CoordinatorLive && c.State == iterrun.CoordUnverified:
+			// The claim excludes other executors, and nothing shows a
+			// coordinator behind it.
+			word = "held, coordinator unverified"
+		case c.CoordinatorLive:
+			word = "driven"
+		}
+		fmt.Fprintf(&b, "%s\t%s\t%s\t%s", c.Plan, c.Owner, word, c.State)
+		if !c.EvidenceAt.IsZero() {
+			fmt.Fprintf(&b, "\t%s ago: %s", now.Sub(c.EvidenceAt).Round(time.Second), c.Evidence)
+		} else if c.Evidence != "" {
+			fmt.Fprintf(&b, "\t%s", c.Evidence)
+		}
+		if c.ChildLive {
+			fmt.Fprintf(&b, "\tchild pid %d running", c.ChildPID)
+		}
+		if c.Next != "" {
+			fmt.Fprintf(&b, "\tnext: %s", c.Next)
+		}
+	}
+	return b.String()
 }
 
 func planColor(f planFlags, out io.Writer) bool {

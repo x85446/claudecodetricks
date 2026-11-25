@@ -67,6 +67,8 @@ Usage:
   iterate-run plan depends backfill [--apply] [-C <dir>]                    (derive depends: lines)
   iterate-run record list|show|append|import|types  (durable run record; iterate-run record --help)
   iterate-run hook pre|post          (wired into PreToolUse/PostToolUse in settings.json, not run by hand)
+  iterate-run hook stop [--continue] (wired into Stop: records the turn end; --continue keeps a claimed plan's turn going)
+  iterate-run hook subagent-start|subagent-stop|interrupt   (wired into the matching lifecycle events)
   iterate-run timeline [--plan <name>] [--home <dir>] [scan-dir...]
   iterate-run tokens [--plan <name>]  (token spend by lane, tool and wake-up; defaults to this project's current plan)
   iterate-run serve [--port 8420]    (unified dashboard at http://localhost:8420; GET /healthz reports build identity)
@@ -159,26 +161,40 @@ func registerCWD() {
 }
 
 func hookCmd(args []string) {
+	const phases = "pre, post, subagent-start, subagent-stop, stop, or interrupt"
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "iterate-run: hook requires pre, post, subagent-start, or subagent-stop")
+		fmt.Fprintln(os.Stderr, "iterate-run: hook requires "+phases)
 		os.Exit(2)
 	}
 	phase := args[0]
+	// Never fail loudly here: a hook that exits non-zero or hangs can
+	// interfere with the real tool call it's observing. Observability
+	// must be strictly best-effort.
 	switch phase {
 	case "pre", "post":
 		// PreToolUse/PostToolUse — every hook-wired platform (Claude Code,
 		// Codex) sends one of these.
+		iterrun.HandleHook(phase, os.Stdin)
 	case "subagent-start", "subagent-stop":
-		// Codex-only lifecycle events (SubagentStart/SubagentStop) — see
-		// HandleHook's doc comment for why subagent-start matters here.
+		// SubagentStart/SubagentStop: which agents a coordinator has in
+		// flight, and on Codex the label for a new agent's id.
+		iterrun.HandleHook(phase, os.Stdin)
+	case "stop":
+		// Stop: the session's turn is ending. --continue keeps a turn
+		// going while a plan the session drives has runnable work.
+		cont := false
+		for _, a := range args[1:] {
+			if a == "--continue" {
+				cont = true
+			}
+		}
+		iterrun.HandleStopHook(os.Stdin, os.Stdout, cont)
+	case "interrupt":
+		iterrun.HandleInterruptHook(os.Stdin)
 	default:
-		fmt.Fprintln(os.Stderr, "iterate-run: hook phase must be pre, post, subagent-start, or subagent-stop")
+		fmt.Fprintln(os.Stderr, "iterate-run: hook phase must be "+phases)
 		os.Exit(2)
 	}
-	// Never fail loudly here: a hook that exits non-zero or hangs can
-	// interfere with the real tool call it's observing. Observability
-	// must be strictly best-effort.
-	iterrun.HandleHook(phase, os.Stdin)
 }
 
 func timelineCmd(args []string) {

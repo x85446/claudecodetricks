@@ -45,3 +45,7 @@ func ownerProcessIdentity(pid int) string {
 	}
 	return fmt.Sprintf("%d:%d", created.HighDateTime, created.LowDateTime)
 }
+
+// callerDescendsFrom cannot walk the process tree here, so a caller that
+// carries a session is not refused on ancestry alone.
+func callerDescendsFrom(pid int) bool { return pid > 0 }

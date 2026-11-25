@@ -14,6 +14,12 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	os.Setenv("ITERATE_RUN_RECORD_DIR", dir)
+	// Coordinator evidence goes to the same temporary store, and the
+	// session that happens to run the suite is not a caller in any case.
+	os.Setenv("ITERATE_RUN_SESSIONS_DIR", dir+"/sessions")
+	for _, k := range []string{"ITERATE_RUN_SESSION", "CLAUDE_CODE_SESSION_ID", "CODEX_THREAD_ID", "CLAUDE_PID"} {
+		os.Unsetenv(k)
+	}
 	code := m.Run()
 	os.RemoveAll(dir)
 	os.Exit(code)

@@ -6,7 +6,7 @@ description: "Alias for $iterate-conductor; controls the binary conductor with t
 
 # $ic — conductor alias
 
-**Version:** iterate family 5.33.0
+**Version:** iterate family 5.34.0
 
 <!-- codex-port: Codex frontmatter permits only name and description, so the
      version lives here in the body. Read it from this line when stamping a
@@ -27,4 +27,4 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 - `$iterate-conductor` — ported.
 
-Execution admission uses `iterate-run plan claim <name> --owner <cli|conductor> --pid <session-pid>`. Only a live execution excludes the other executor. Dependencies gate typed and unnamed launches. A bare iterate selects the sole ready plan from `iterate-run plan graph --json`; several ready plans are listed without a claim. Use `plan heartbeat`, `plan release` and `plan reconcile` for lease lifecycle, preserving uncertain checkpoint evidence.
+A session claims with `iterate-run plan claim <name>`, which binds the plan to it; the Conductor claims with `--owner conductor --pid <its pid>`. Only a live execution excludes the other executor, and `iterate-run plan owner` says whether a claim is driven. Dependencies gate typed and unnamed launches. A bare iterate selects the sole ready plan from `iterate-run plan graph --json`; several ready plans are listed without a claim. Use `plan heartbeat`, `plan release` and `plan reconcile` for lease lifecycle, preserving uncertain checkpoint evidence.

@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 Sister skill to `/iterate`. **This skill plans, it does not execute.** It writes a structured plan to `./.claude/iterate/active.md` with `phase: planned`, prints the plan back to the user in paired 1a/1b format, and waits for either natural-language refinements or the user typing `/iterate` to kick off execution.
 
-It does **not** set up `/loop`. It does **not** take the running lock. It does **not** execute anything.
+It does **not** claim the plan or arm its continuation. It does **not** execute anything.
 
 ## When to use
 
@@ -98,7 +98,7 @@ Each refinement round = one full re-print, so the user always sees the current p
 ## Rules (hard)
 
 1. **Never execute the plan.** Only `/iterate` does that. Your responsibility ends at writing + presenting.
-2. **Never set up `/loop` or take the `running:` lock.** Those happen at `/iterate` execution time.
+2. **Never claim a plan or arm its continuation.** Both happen at `/iterate` execution time.
 3. **Pair every step (Na) with a validation (Nb).** If the user didn't specify a validation, infer the most reasonable one (a runnable command + expected output) and note "(validation inferred)" so they can override.
 4. **Re-presenting after a refinement is fine** — overwrite `active.md` in place, don't archive.
 5. **If `active.md` is `phase: executing`**, never modify — stop and inform the user.

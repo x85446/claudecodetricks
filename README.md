@@ -349,7 +349,7 @@ Flags show only the icon and message count at every width. A separate soft-green
 
 ### Execute plans
 
-A bare `/iterate` or `$iterate` selects the sole ready plan when the project has no live execution owner. Several ready plans produce a list. A named plan obeys its unfinished dependencies. The shared `iterate-run plan claim|heartbeat|release|reconcile` contract excludes concurrent executors and preserves checkpoint evidence during recovery.
+A bare `/iterate` or `$iterate` selects the sole ready plan when the project has no live execution owner. Several ready plans produce a list. A named plan obeys its unfinished dependencies. The shared `iterate-run plan claim|heartbeat|wait|release|reconcile|owner` contract binds a claim to the session that can drive it, excludes concurrent executors and preserves checkpoint evidence during recovery. The session's Stop hook carries a Claude Code run across turn ends, and a Goal the executor creates carries a Codex run; no plan contains goal text and nothing is scheduled.
 
 Stage approved work with `/ip stage <name>` in Claude Code or `$ip stage <name>` in Codex. The external `conductor` service at `~/workspace/tmctech/conductor` runs staged queues and hosts scheduling controls on localhost:8421. It uses the shared graph, ownership and record CLI contracts. Release and release-candidate plans require a direct human invocation.
 

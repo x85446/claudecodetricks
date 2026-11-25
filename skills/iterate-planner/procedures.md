@@ -59,7 +59,7 @@ Print nothing else — no advice, no next-step suggestions, no per-plan prose be
 Unlike Teamify, this is never expensive — Teams is purely additive metadata (see the Teams schema in SKILL.md: "the flat lists themselves are untouched"), so undoing it is just removing that layer, not re-deriving anything.
 
 1. Resolve the target plan (named, else current).
-2. If the plan has `phase: executing`: **refuse** — "that plan is executing; stripping its Teams table mid-run would orphan any dispatched team's tracked status. Let it finish or stop the loop first." Same guard as the delete op. Do not modify the file.
+2. If the plan has `phase: executing`: **refuse** — "that plan is executing; stripping its Teams table mid-run would orphan any dispatched team's tracked status. Let it finish or pause it first (`/iterate pause <name>`)." Same guard as the delete op. Do not modify the file.
 3. If the plan is already flat (no `## Teams` section / `teamed` not `true`): report "`<name>` is already flat" and **stop** — a no-op, not an error.
 4. Delete the `## Teams` section from the plan file entirely. Set `teamed: false` (keep the field, same convention as a plan that was never teamed).
 5. The `## Steps` / `## Validation` lists are untouched — no step content, numbering, or validation is affected. Any step that had its own access-preflight step (inserted per-team) stays exactly where it is in the flat list, without a team-name grouping.
@@ -70,8 +70,8 @@ Unlike Teamify, this is never expensive — Teams is purely additive metadata (s
 The user is deliberately ending a plan that didn't finish all-green. Honor it — don't argue, don't try to finish the remaining steps first — but make the consequences visible.
 
 1. Resolve the target plan (named, else current).
-2. If `running:` is a fresh timestamp (within 90s — a live `/iterate` run): refuse — "a run is live on `<name>`; stop the loop first (`/loop` with no args), then close." Otherwise proceed (a stale heartbeat or `running: false` is the normal case here).
-3. Cancel any auto-resume loop/cron the plan set up (`/loop` no-args, or the recorded `cron_job_id:`), so nothing re-fires against an archived plan.
+2. If `iterate-run plan owner <name>` says `driven`: refuse — "a run is live on `<name>`; pause it first (`/iterate pause <name>`), then close." Otherwise proceed (a claim nobody is driving, or none, is the normal case here).
+3. Cancel a session timer the plan records (`loop-mechanism: /loop` or `loop-mechanism: cron <job-id>`), so nothing re-fires against an archived plan. A plan on `stop-hook`, `goal` or `external` has none.
 4. Set `running: false`. In the plan file, leave the Steps/Validation checkboxes exactly as they stand — the archive IS the record of what didn't finish.
 4.5. **Publish the partial changelog — through the same final sweep.** If `## Changelog draft` has entries, run `/iterate`'s two-pass sweep (consolidate multi-attempt lines into as-landed lines; validate every claim against the actual tree — a closed plan is especially likely to hold draft lines for work later abandoned) and distill the survivors into `CHANGELOG.md` + `RELEASES.md`, entry heading suffixed `(partial — plan closed unfinished)`. Completed work deserves its record even when the plan didn't; an empty or fully-swept-away draft publishes nothing.
 5. Move `plans/<name>.md` → `archive/<UTC-timestamp>-<name>-closed.md` (and `plans/<name>.teams/` → `archive/<UTC-timestamp>-<name>-closed.teams/` if teamed). Repoint/clear `current` same as the delete op.
@@ -87,7 +87,7 @@ The user is deliberately ending a plan that didn't finish all-green. Honor it �
 
 The user wants the unfinished work to continue as a fresh plan without losing the branch state accumulated so far.
 
-1. Resolve the source plan (named, else current). Same fresh-`running:` refusal as Close step 2; same loop/cron cancellation as Close step 3.
+1. Resolve the source plan (named, else current). Same driven-claim refusal as Close step 2; same timer cancellation as Close step 3.
 2. Identify the unfinished steps: unchecked entries in `## Steps` (and any step whose paired Validation isn't met per the Status/Log). Completed steps stay behind in the source plan.
 3. Create the new plan: name from `iterate-run name next`, `phase: planned`, `Started: <now>`, carrying over — renumbered 1:1 from 1 — the unfinished Steps + their paired Validations, the Goal (reworded to cover only the remaining scope if the original scope is too broad), all still-relevant Constraints (including `Access:` ones whose steps carried over), the source's `depends:` and `milestone:` lines, and **`branch: <the source plan's branch>` verbatim — do NOT create a new branch and do NOT invoke `/feature-branch start`**. The whole point is the new plan continues on the same branch, on top of the commits already there. Carry `harness: <the source plan's harness>` verbatim too — same treatment as `branch:`: this is a new plan *file*, but it is not a new plan *provenance*, so the field never gets re-stamped by whichever harness happens to run the roll-forward. Carry each surviving step's `## Provenance` line with it (renumbered alongside). Also carry the source's `## Changelog draft` lines forward verbatim into the new plan's draft section — nothing publishes now; when the successor completes, its distillation covers the whole branch's accumulated story. If the source was teamed, re-run Teamify fresh over the carried steps (the old table's step numbers are meaningless after renumbering).
 4. Set `current` = the new plan.

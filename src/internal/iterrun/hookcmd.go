@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -22,6 +24,8 @@ type hookInput struct {
 	ToolInput  json.RawMessage `json:"tool_input"`
 	ToolResp   json.RawMessage `json:"tool_response"`
 	DurationMs *int            `json:"duration_ms"`
+	// StopHookActive is set on a Stop event that follows a continued turn.
+	StopHookActive bool `json:"stop_hook_active"`
 }
 
 // HandleHook is the entry point for `iterate-run hook
@@ -57,12 +61,19 @@ func HandleHook(phase string, r io.Reader) {
 	root := ProjectRoot(in.CWD)
 
 	RegisterProject(root)
-	TouchHeartbeat(root)
+	// The project heartbeat says a plan is being driven. A session that
+	// only reads a project another session has claimed -- a status check, a
+	// triage -- is not driving it and must not make it look driven.
+	drives := sessionDrivesProject(root, in.SessionID)
+	if drives {
+		TouchHeartbeat(root)
+	}
+	observeSessionHook(phase, in, time.Now().UTC())
 
-	// SubagentStart/SubagentStop carry no tool_name/tool_input — they're
-	// Codex-only lifecycle events (Claude Code has no equivalent hook this
-	// binary needs to act on), not a PreToolUse/PostToolUse observation, so
-	// they never reach the Event-recording path below.
+	// SubagentStart/SubagentStop carry no tool_name/tool_input: they are
+	// lifecycle events, not a PreToolUse/PostToolUse observation, so they
+	// never reach the Event-recording path below. Both feed the session's
+	// coordinator evidence above; the label queue is Codex's alone.
 	if phase == "subagent-start" {
 		handleCodexSubagentStart(in)
 		return
@@ -96,7 +107,9 @@ func HandleHook(phase string, r io.Reader) {
 	}
 
 	_ = AppendEvent(e)
-	observeRecordHook(root, plan, team, in)
+	if drives {
+		observeRecordHook(root, plan, team, in)
+	}
 
 	// Resolve agent_id -> team label the moment a dispatch confirms it,
 	// so subsequent events from that agent_id render under a real name.
@@ -115,6 +128,68 @@ func HandleHook(phase string, r io.Reader) {
 			_ = PushPendingSpawnLabel(in.SessionID, label)
 		}
 	}
+}
+
+// sessionDrivesProject reports whether a hook event from session counts as
+// work on root's current plan. It does unless that plan is claimed by a
+// different session.
+func sessionDrivesProject(root, session string) bool {
+	name := CurrentPlanName(root)
+	if name == "" {
+		return true
+	}
+	b, err := os.ReadFile(filepath.Join(root, ".claude", "iterate", "plans", name+".md"))
+	if err != nil {
+		return true
+	}
+	text := string(b)
+	owner := ownerField(text, "owner-session")
+	return owner == "" || owner == session || ownerField(text, "running") == "false"
+}
+
+// stopHookInput is the part of a Stop or Interrupt payload this binary reads.
+type stopHookInput struct {
+	SessionID string `json:"session_id"`
+	AgentID   string `json:"agent_id"`
+}
+
+// HandleStopHook is the entry point for `iterate-run hook stop`. It records
+// that the session's turn is ending. With cont set and a plan this session
+// drives still runnable, it writes the decision that continues the turn;
+// otherwise it writes nothing and the turn ends. A session that holds no
+// claim costs one stat. An agent's own stop is not the coordinator's.
+func HandleStopHook(r io.Reader, w io.Writer, cont bool) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return
+	}
+	var in stopHookInput
+	if json.Unmarshal(data, &in) != nil || in.SessionID == "" || in.AgentID != "" {
+		return
+	}
+	d := DecideStop(in.SessionID, cont, time.Now().UTC())
+	if !d.Block {
+		return
+	}
+	out, err := json.Marshal(map[string]string{"decision": "block", "reason": d.Reason})
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(w, string(out))
+}
+
+// HandleInterruptHook is the entry point for `iterate-run hook interrupt`:
+// the runtime reports that the session's turn was cut off.
+func HandleInterruptHook(r io.Reader) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return
+	}
+	var in stopHookInput
+	if json.Unmarshal(data, &in) != nil || in.SessionID == "" || in.AgentID != "" {
+		return
+	}
+	MarkInterrupted(in.SessionID, time.Now().UTC())
 }
 
 // handleCodexSubagentStart claims this session's oldest queued spawn label

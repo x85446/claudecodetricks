@@ -52,7 +52,7 @@ Invoked with Codex's explicit `$name` syntax. Each must also exist under Codex's
 
 Before writing, it always reads `./.claude/data/oracle.md` (and the global `~/.agents/skills/oracle/known.md`) and folds any in-scope project knowledge into the plan. When no oracle exists, that step is a silent no-op — the skill still runs and produces a plain plan.
 
-It does **not** execute. It does **not** set up `/loop`. It does **not** take the running lock.
+It does **not** execute. It does **not** claim the plan or arm its continuation.
 
 ## Conductor configuration boundary
 
@@ -154,7 +154,7 @@ If a current plan exists and the user just describes more work, **add it to the 
 
    Mark the current plan with `(current)`, and one whose `depends:` predecessor is unfinished with `(waiting on <x>)`, read from `iterate-run plan graph --json` (each node's `status` and `reason`). Sort by `Started:` ascending. If no plans exist, say so. Then **stop** — this is a read-only op.
 
-2. **delete `<name>`** — "delete `<name>`", "remove plan `<name>`", "drop `<name>`": delete `plans/<name>.md`. If it was the current plan, repoint `current` to the sole remaining plan (if exactly one) else clear it. If the plan is `phase: executing`, refuse and tell the user to let it finish or stop the loop first. If the plan had a `branch:` with commits on it, say so — the branch is left in place, unmerged (sweep it later with `$feature-branch cleanup` or merge it explicitly). Confirm in one line. Then **stop**.
+2. **delete `<name>`** — "delete `<name>`", "remove plan `<name>`", "drop `<name>`": delete `plans/<name>.md`. If it was the current plan, repoint `current` to the sole remaining plan (if exactly one) else clear it. If the plan is `phase: executing`, refuse and tell the user to let it finish or pause it first (`$iterate pause <name>`). If the plan had a `branch:` with commits on it, say so — the branch is left in place, unmerged (sweep it later with `$feature-branch cleanup` or merge it explicitly). Confirm in one line. Then **stop**.
 
 3. **remove-from** — "from `<name>` remove `<thing>`", "remove `<thing>` from `<name>`", "from `<name>` drop step N": open `plans/<name>.md`, remove the matching Step + its paired Validation + its Provenance line (renumber all three lists 1:1), re-print that plan. Then **stop**.
 
@@ -642,7 +642,7 @@ When genuinely unsure whether the streak has ended, print the full plan — a sl
 ## Rules (hard)
 
 1. **Never execute the plan.** Only `$iterate` does that. Your responsibility ends at writing + presenting.
-2. **Never set up `/loop` or take the `running:` lock.** Those happen at `$iterate` execution time.
+2. **Never claim a plan or arm its continuation.** Both happen at `$iterate` execution time.
 2a. **Creating a new plan is explicit-only.** Default every planning request to the current plan; only create a new animal-named plan when the user says "new plan" (or there are zero plans). When unsure, add to current. See "Named plans" above.
 3. **Apply oracle rules selectively, not blindly.** Only fold in rules that are plausibly in scope for the user's plan. Log skipped rules in the audit trail so the user can override.
 4. **Be transparent about what oracle changed.** The "Oracle rules applied" section is mandatory when the oracle contributed anything. The user must be able to see what got bolted on.

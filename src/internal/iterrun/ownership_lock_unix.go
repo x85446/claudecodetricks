@@ -26,3 +26,25 @@ func ownerProcessIdentity(pid int) string {
 	}
 	return strings.TrimSpace(string(b))
 }
+
+// callerDescendsFrom reports whether this process has pid among its
+// ancestors: the Conductor's own calls descend from the Conductor.
+func callerDescendsFrom(pid int) bool {
+	if pid <= 0 {
+		return false
+	}
+	cur := os.Getppid()
+	for i := 0; i < 12 && cur > 1; i++ {
+		if cur == pid {
+			return true
+		}
+		b, e := exec.Command("ps", "-p", strconv.Itoa(cur), "-o", "ppid=").Output()
+		if e != nil {
+			return false
+		}
+		if cur, e = strconv.Atoi(strings.TrimSpace(string(b))); e != nil {
+			return false
+		}
+	}
+	return cur == pid
+}

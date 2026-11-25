@@ -134,17 +134,71 @@ writing any position.
 
 ## Execution ownership
 
-`iterate-run plan claim <name> --owner cli --pid <session-pid> --json` atomically
-claims a ready plan for a long-lived session process. The Conductor uses
-`--owner conductor`. Every unfinished prerequisite gates both entry paths.
-A planned, queued, staged or idle executing plan reserves no executor.
-A matching live process or an owned orphaned child excludes another claim.
+`iterate-run plan claim <name> --json` atomically claims a ready plan for the
+calling session. The binary reads the session from `CLAUDE_CODE_SESSION_ID` or
+`CODEX_THREAD_ID` and writes it to the plan's `owner-session:` line; `--pid`
+and `--session` supply an identity the runtime does not export. The same
+session claims its plan again freely. The Conductor uses
+`--owner conductor --pid <its pid>`. Every unfinished prerequisite gates both
+entry paths. A planned, queued, staged or idle executing plan reserves no
+executor.
 
-Use `plan heartbeat <name>` at validation and step boundaries,
-`plan release <name>` at an ending, and `plan reconcile [<name>]` to finish a
-dead lease while retaining checkpoint evidence. The binary writes the plan's
+A claim excludes another executor while its coordinator can still advance the
+plan, or while a child it owns still runs. For a session claim the evidence is
+the session's own turn, reported by hooks:
+
+| State | Meaning | Excludes |
+|---|---|---|
+| `coordinating` | The session's turn is running: a tool call inside 15 minutes, or work in flight inside 2 hours. | yes |
+| `waiting` | The turn ended with agents in flight or a declared wait. | yes |
+| `turn-ended` | The turn ended with nothing in flight. | no |
+| `interrupted` | The runtime reported an interruption. | no |
+| `idle` | No evidence inside the window, or a wait expired. | no |
+| `process-gone` | The recorded process is absent. | no |
+| `dedicated-process` | A Conductor claim whose process runs. | yes |
+| `unverified` | The claim names no session; only its heartbeat speaks for it. | while the heartbeat is fresh |
+
+`ITERATE_IDLE_SECS` and `ITERATE_BUSY_SECS` override the two windows.
+`plan owner [<name>] [--json]` prints every claim with its state, the latest
+evidence, its age and the next action.
+
+Only the session that holds a claim can run `plan heartbeat <name>`,
+`plan wait <name> --for <what>`, or `plan release <name>`; a heartbeat on an
+`unverified` claim from a session caller succeeds and refreshes nothing.
+`plan release` prints the state it leaves the plan in, `terminal` or
+`not-terminal`, and `--force` is the operator's release of a claim it does not
+hold, logged in the plan. `plan reconcile [<name>]` finishes a claim nobody is
+driving while retaining checkpoint evidence. The binary writes the plan's
 ownership key block under a project lock. Uncertain delivery evidence requires
 diagnosis before replay.
+
+### Hook wiring
+
+The evidence comes from hooks, so both runtimes wire the same binary. Claude
+Code, in `~/.claude/settings.json`:
+
+| Event | Command |
+|---|---|
+| `PreToolUse`, `PostToolUse` | `iterate-run hook pre`, `iterate-run hook post` |
+| `SubagentStart`, `SubagentStop` | `iterate-run hook subagent-start`, `iterate-run hook subagent-stop` |
+| `Stop` | `iterate-run hook stop --continue` |
+
+Codex, in `~/.codex/hooks.json`:
+
+| Event | Command |
+|---|---|
+| `PreToolUse`, `PostToolUse` | `iterate-run hook pre`, `iterate-run hook post` |
+| `SubagentStart`, `SubagentStop` | `iterate-run hook subagent-start`, `iterate-run hook subagent-stop` |
+| `Stop` | `iterate-run hook stop` |
+| `Interrupt` | `iterate-run hook interrupt` |
+
+`hook stop` records that the session's turn is ending. With `--continue` it
+also answers `{"decision":"block","reason":…}` while a plan the session
+claimed is executing, holds on nothing and has nothing in flight, which is
+what carries a Claude Code run to a terminal state. Under Codex the thread's
+Goal does that, so its `Stop` hook only records. A session that holds no claim
+costs each hook one `stat`. Without the hooks a claim falls back to its own
+session-bound heartbeat and lapses 15 minutes after the last one.
 
 After launching an owned child, `plan heartbeat <name> --child-pid <pid>` records
 the child's observed process identity. The lease excludes another executor while
